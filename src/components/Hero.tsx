@@ -1,7 +1,9 @@
 
-import { useEffect } from 'react';
-import { Github, Linkedin, Mail, ChevronDown } from 'lucide-react';
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { Github, Linkedin, Mail, ChevronDown, RotateCcw } from 'lucide-react';
+import Cookies from 'js-cookie';
+import { ReverseHyperspace } from './backgrounds/three/hero/ReverseHyperspace';
+import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
 import { ThreeHeroBackground } from './backgrounds/three/ThreeHeroBackground';
 
@@ -27,20 +29,80 @@ const devOpsBadges = ['AWS', 'Kubernetes', 'Terraform', 'CI/CD', 'Docker', 'Helm
 const gameDevBadges = ['Unity', 'C#', 'Game Feel', 'Shaders', 'Godot'];
 
 export const Hero = () => {
+  const [hasCookie] = useState(() => !!Cookies.get('hero_visited'));
+  const [skipIntro, setSkipIntro] = useState(hasCookie);
+  const [isRewinding, setIsRewinding] = useState(false);
+  const [animationKey, setAnimationKey] = useState(0);
+
+  useEffect(() => {
+    Cookies.set('hero_visited', 'true', { expires: 7 });
+  }, []);
+
+  const handleReplay = () => {
+    setIsRewinding(true);
+    setSkipIntro(false);
+    
+    // Rewind lasts 2 seconds, then resets
+    setTimeout(() => {
+      setIsRewinding(false);
+      setAnimationKey(prev => prev + 1);
+    }, 2000);
+  };
+
+  const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay);
+
   return (
     <section id="about" className="min-h-screen flex items-center justify-center pt-16 relative overflow-hidden bg-gray-900">
       
-      {/* Three.js Background */}
+      {/* Background Layer */}
       <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">
-        <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
-          <ThreeHeroBackground />
-        </Canvas>
+        <AnimatePresence mode="wait">
+          {isRewinding ? (
+            <motion.div
+              key="rewind"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="absolute inset-0 h-full w-full"
+            >
+              <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+                <ReverseHyperspace />
+              </Canvas>
+              <motion.div 
+                className="absolute inset-0 bg-black"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 0, 1] }} 
+                transition={{ duration: 2, times: [0, 0.9, 1] }}
+              />
+            </motion.div>
+          ) : (
+            <motion.div
+              key={`bg-${animationKey}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: skipIntro ? 1 : 0 }}
+              className="absolute inset-0 h-full w-full"
+            >
+              <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+                <ThreeHeroBackground skipIntro={skipIntro} />
+              </Canvas>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       {/* Subtle overlay to ensure text readability */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-gray-900/40 via-transparent to-gray-900 pointer-events-none"></div>
 
       {/* Padding wrapper — outside the border so padding doesn't affect border thickness */}
-      <div className="relative z-10 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-0" style={{ perspective: '1200px' }}>
+      <AnimatePresence>
+        {!isRewinding && (
+          <motion.div
+            key={`content-${animationKey}`}
+            exit={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
+            transition={{ duration: 0.5 }}
+            className="relative z-10 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-0" style={{ perspective: '1200px' }}
+          >
       {/* Animated Gradient Border Wrapper */}
       <motion.div
         initial={{ 
@@ -60,7 +122,7 @@ export const Hero = () => {
           filter: 'brightness(1) blur(0px)' 
         }}
         transition={{ 
-          delay: 12.5, 
+          delay: getDelay(12.5), 
           duration: 0.5,
           type: "spring",
           stiffness: 200,
@@ -97,18 +159,31 @@ export const Hero = () => {
           }}
           transition={{
             duration: 0.6,
-            delay: 13.2, // Matches exactly with the text impact
+            delay: getDelay(13.2), // Matches exactly with the text impact
             times: [0, 0.08, 0.4, 1], // Sudden punch, bounce back, settle
             ease: "easeInOut"
           }}
           style={{ transformOrigin: 'bottom center', width: 'calc(100% - 3px)', height: 'calc(100% - 3px)' }}
           className="relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl p-8 shadow-inner text-center"
         >
+          {/* Replay Button */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: getDelay(13.5) }}
+            whileHover={{ scale: 1.1, rotate: -15 }}
+            whileTap={{ scale: 0.8, rotate: 180 }}
+            onClick={handleReplay}
+            className="absolute top-4 right-4 p-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white rounded-full shadow-lg hover:shadow-pink-500/50 transition-all z-20 group"
+            title="Replay Animation"
+          >
+            <RotateCcw className="w-5 h-5 group-hover:animate-spin-fast" />
+          </motion.button>
           {/* Big Title Tagline - Stamps in first */}
           <motion.h1
             initial={{ opacity: 0, scale: 5, y: -180, filter: 'blur(10px)' }}
             animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 0.2, delay: 13.0, ease: 'easeIn' }}
+            transition={{ duration: 0.2, delay: getDelay(13.0), ease: 'easeIn' }}
             className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 relative"
             style={{ transformOrigin: 'center center' }}
           >
@@ -127,8 +202,8 @@ export const Hero = () => {
               initial={{ backgroundPosition: '200% 0', opacity: 0 }}
               animate={{ backgroundPosition: '-50% 0', opacity: 1 }}
               transition={{ 
-                backgroundPosition: { duration: 1.2, delay: 13.9, ease: 'easeInOut' },
-                opacity: { duration: 0.1, delay: 13.9 } 
+                backgroundPosition: { duration: 1.2, delay: getDelay(13.9), ease: 'easeInOut' },
+                opacity: { duration: 0.1, delay: getDelay(13.9) } 
               }}
               className="absolute inset-0 block text-transparent bg-clip-text pointer-events-none"
               style={{
@@ -145,7 +220,7 @@ export const Hero = () => {
           <motion.h2
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 14.1 }}
+            transition={{ duration: 0.5, delay: getDelay(14.1) }}
             className="text-3xl md:text-4xl text-gray-300 font-medium mb-6"
           >
             Hello, I'm <span className="text-white font-bold">Guy Erreich</span>
@@ -155,40 +230,40 @@ export const Hero = () => {
           <div className="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-gray-300 font-medium mb-8 leading-relaxed flex flex-col items-center">
             <div className="w-full text-center">
               <p className="mb-2 relative inline-flex items-center min-h-[30px]">
-                <TypewriterText text="DevOps engineer specializing in AWS, Kubernetes, Terraform, and CI/CD automation." delay={14.7} duration={1.8} />
+                <TypewriterText text="DevOps engineer specializing in AWS, Kubernetes, Terraform, and CI/CD automation." delay={getDelay(14.7)} duration={1.8} />
                 {/* Cursor jumps to line 1 */}
                 <motion.span 
                    initial={{ opacity: 0 }}
                    animate={{ 
                       opacity: [0, 1, 0, 1, 0], // Blink while typing
                    }}
-                   transition={{ delay: 14.7, duration: 1.8, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
+                   transition={{ delay: getDelay(14.7), duration: 1.8, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
               </p>
               <br />
               <p className="mb-2 relative inline-flex items-center min-h-[30px]">
-                <TypewriterText text="Focused on reliability and clean architecture—by day." delay={16.7} duration={1.2} />
+                <TypewriterText text="Focused on reliability and clean architecture—by day." delay={getDelay(16.7)} duration={1.2} />
                 {/* Cursor jumps to line 2 */}
                 <motion.span 
                    initial={{ opacity: 0 }}
                    animate={{ 
                       opacity: [0, 1, 0, 1, 0], 
                    }}
-                   transition={{ delay: 16.7, duration: 1.2, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
+                   transition={{ delay: getDelay(16.7), duration: 1.2, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
               </p>
               <br />
               <p className="relative inline-flex items-center min-h-[30px]">
-                <TypewriterText text="Game developer passionate about game feel and player experience—by passion." delay={18.1} duration={1.6} />
+                <TypewriterText text="Game developer passionate about game feel and player experience—by passion." delay={getDelay(18.1)} duration={1.6} />
                 {/* Cursor jumps to line 3 and stays blinking forever */}
                 <motion.span 
                    initial={{ opacity: 0 }}
                    animate={{ 
                       opacity: [0, 1, 0], 
                    }}
-                   transition={{ delay: 18.1, duration: 0.8, repeat: Infinity, repeatType: "loop", ease: "linear" }}
+                   transition={{ delay: getDelay(18.1), duration: 0.8, repeat: Infinity, repeatType: "loop", ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
               </p>
@@ -199,7 +274,7 @@ export const Hero = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 19.8 }}
+            transition={{ duration: 0.5, delay: getDelay(19.8) }}
             className="mb-8 space-y-3"
           >
             {/* DevOps badges — blue toned */}
@@ -209,7 +284,7 @@ export const Hero = () => {
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 19.8 + i * 0.07 }}
+                  transition={{ duration: 0.3, delay: getDelay(19.8) + i * 0.07 }}
                   className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors cursor-default"
                 >
                   {badge}
@@ -223,7 +298,7 @@ export const Hero = () => {
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3, delay: 20.3 + i * 0.07 }}
+                  transition={{ duration: 0.3, delay: getDelay(20.3) + i * 0.07 }}
                   className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-default"
                 >
                   {badge}
@@ -236,7 +311,7 @@ export const Hero = () => {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 20.7 }}
+            transition={{ duration: 0.5, delay: getDelay(20.7) }}
             className="flex justify-center space-x-6"
           >
             <motion.a
@@ -276,18 +351,27 @@ export const Hero = () => {
           </motion.div>
         </motion.div>
       </motion.div>
-      </div>{/* end padding wrapper */}
+      </motion.div>
+        )}
+      </AnimatePresence>
+      {/* end padding wrapper */}
       
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 21.5, duration: 1 }}
+      <AnimatePresence>
+        {!isRewinding && (
+          <motion.div 
+            key={`chevron-${animationKey}`}
+            exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: getDelay(21.5), duration: 1 }}
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-10 hidden md:block"
       >
         <a href="#gamedev" className="text-gray-400 hover:text-white bg-gray-800/80 rounded-full p-2 block">
           <ChevronDown className="w-6 h-6" />
         </a>
-      </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
