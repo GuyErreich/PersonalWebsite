@@ -34,7 +34,7 @@ export const SonarRipples = () => {
     if (isDone) return;
 
     // Delay the explosion shockwaves until after the silent gap finishes
-    const t = clock.elapsedTime - 8.6;
+    const t = clock.elapsedTime - 9.2;
     
     // Start immediately with the initial shockwave (once we cross the t=0 threshold)
     const rippleStartT = t; 
@@ -135,7 +135,7 @@ export const SonarRipples = () => {
           </group>
         ))}
       </group>
-      <ConstellationWeb delay={8.6} orbitsInfo={orbitsInfo} globalOpacityRef={webOpacityRef} connectionThreshold={100} />
+      <ConstellationWeb delay={9.2} orbitsInfo={orbitsInfo} globalOpacityRef={webOpacityRef} connectionThreshold={100} />
     </>
   );
 };

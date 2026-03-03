@@ -9,7 +9,7 @@ export const DysonSphere = () => {
 
   useFrame(({ clock }) => {
     // Delay creation until after implosion
-    const t = Math.max(0, clock.elapsedTime - 8.6);
+    const t = Math.max(0, clock.elapsedTime - 9.2);
     
     // The Dyson Sphere (Pulses inversely to the sun)
     if (dysonSphereRef.current) {
