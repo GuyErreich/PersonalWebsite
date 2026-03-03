@@ -28,7 +28,7 @@ export const OrbitingShapes = () => {
 
   useFrame(({ clock }) => {
     // Delay creation until after implosion
-    const t = Math.max(0, clock.elapsedTime - 8.6);
+    const t = Math.max(0, clock.elapsedTime - 9.2);
     
     // Scale up the orbits from 0 to 1 just behind the sun's formation
     const orbitProgress = Math.min(1, Math.max(0, (t - 0.2) / 2.0));
@@ -111,7 +111,7 @@ export const OrbitingShapes = () => {
 
       {/* Constellation Web connecting the orbital rings globally */}
       <ConstellationWeb 
-        delay={8.6}
+        delay={9.2}
         orbitsInfo={[
           { ref: orbit1Ref, shapes: orbit1Shapes },
           { ref: orbit2Ref, shapes: orbit2Shapes },

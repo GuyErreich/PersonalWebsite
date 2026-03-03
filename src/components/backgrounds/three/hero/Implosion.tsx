@@ -68,6 +68,51 @@ export const Implosion = () => {
     });
   }, []);
 
+  // Custom plasma ember shader — soft radial glow per particle, driven fully by GPU
+  const dustUniforms = useMemo(() => ({
+    uOpacity:    { value: 0.0 },
+    uIntensity:  { value: 1.0 },
+    uSize:       { value: 3.0 },
+    uAbsorption: { value: 0.0 }, // 0 = glowing plasma, 1 = light-consuming void
+  }), []);
+
+  const dustVertexShader = `
+    uniform float uSize;
+    void main() {
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      gl_Position = projectionMatrix * mvPosition;
+      gl_PointSize = uSize * (300.0 / -mvPosition.z);
+    }
+  `;
+
+  const dustFragmentShader = `
+    uniform float uOpacity;
+    uniform float uIntensity;
+    uniform float uAbsorption;
+
+    void main() {
+      float d = length(gl_PointCoord - vec2(0.5)) * 2.0;
+      if (d > 1.0) discard;
+
+      float core = 1.0 - smoothstep(0.0, 0.25, d);
+      float glow = pow(1.0 - smoothstep(0.0, 1.0, d), 2.0);
+
+      // Plasma glow color
+      vec3 coreColor  = vec3(0.98, 0.88, 1.0);
+      vec3 outerColor = vec3(0.55, 0.1,  0.75);
+      vec3 plasmaColor = mix(outerColor, coreColor, core) * uIntensity;
+
+      // Absorbed void color — deep black with a faint dark-blue rim
+      vec3 voidColor = vec3(0.0, 0.0, 0.02) * (1.0 - core * 0.5);
+
+      // Lerp between plasma glow and absorbed void
+      vec3 color = mix(plasmaColor, voidColor, uAbsorption);
+
+      float alpha = (core * 0.95 + glow * 0.5) * uOpacity;
+      gl_FragColor = vec4(color, alpha);
+    }
+  `;
+
   const [isDone, setIsDone] = useState(false);
 
   useFrame(({ clock }) => {
@@ -277,49 +322,59 @@ export const Implosion = () => {
         const y = positions[i * 3 + 1];
         const z = positions[i * 3 + 2];
         const dist = Math.sqrt(x * x + y * y + z * z);
-        
-        if (dist < 0.2 || progress > 0.95) {
-          // Send back to outer shell if not finished
-          if (progress <= 0.95) {
+
+        if (dist < 0.05 || progress > 0.98) {
+          if (progress <= 0.85) {
+            // Normal phase: respawn at outer edge
             const r = 8 + Math.random() * 4;
             const theta = Math.random() * Math.PI * 2;
-            positions[i * 3] = r * Math.cos(theta);
+            positions[i * 3]     = r * Math.cos(theta);
             positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
             positions[i * 3 + 2] = r * Math.sin(theta);
           } else {
-            positions[i * 3] = 0;
-            positions[i * 3 + 1] = 0;
-            positions[i * 3 + 2] = 0;
+            // Past 0.85: keep at origin, no respawn
+            positions[i * 3] = 0; positions[i * 3 + 1] = 0; positions[i * 3 + 2] = 0;
           }
         } else {
-          // Gravity acceleration pulling to center cleanly
-          const speed = (dustSpeeds[i] * 4.0); // Smooth constant pull
-          positions[i * 3] -= (x / dist) * speed * 0.016;
+          // Gravity pull — ramp up speed from 0.70 onward for the condensing feel
+          const condenseFactor = progress > 0.70
+            ? 1.0 + Math.pow((progress - 0.70) / 0.30, 2.0) * 4.0  // loosened from 10 → 4
+            : 1.0;
+          const speed = dustSpeeds[i] * 4.0 * condenseFactor;
+          positions[i * 3]     -= (x / dist) * speed * 0.016;
           positions[i * 3 + 1] -= (y / dist) * speed * 0.016;
           positions[i * 3 + 2] -= (z / dist) * speed * 0.016;
-          
-          // Add a strong horizontal swirl so they orbit around the black hole while falling in
-          const spinSpeed = 3.0 / (dist + 0.1);
+
+          // Orbital swirl — tightens and speeds up as they approach the core
+          const swarmBoost = progress > 0.70 ? 1.0 + Math.pow((progress - 0.70) / 0.30, 1.5) * 2.5 : 1.0; // loosened from 6 → 2.5
+          const spinSpeed = (3.0 / (dist + 0.1)) * swarmBoost;
           const oldX = positions[i * 3];
           const oldZ = positions[i * 3 + 2];
-          positions[i * 3] = oldX * Math.cos(spinSpeed * 0.016) - oldZ * Math.sin(spinSpeed * 0.016);
+          positions[i * 3]     = oldX * Math.cos(spinSpeed * 0.016) - oldZ * Math.sin(spinSpeed * 0.016);
           positions[i * 3 + 2] = oldX * Math.sin(spinSpeed * 0.016) + oldZ * Math.cos(spinSpeed * 0.016);
         }
       }
       dustRef.current.geometry.attributes.position.needsUpdate = true;
       
-      const mat = dustRef.current.material as THREE.PointsMaterial;
+      const mat = dustRef.current.material as THREE.ShaderMaterial;
       
-      // Make particles much brighter, scale slightly over time, and radically pulse at the climax
-      const sceneClimaxPulse = Math.pow(progress, 3.0);
-      const intensity = 1.0 + (sceneClimaxPulse * 8.0); // Flare up intensely right before swallowing
-      
-      // Increase base opacity to make them pop out more against the background
-      mat.opacity = Math.min(0.85, activeT * 2.0) * finalPinch;
-      
-      // Give them a vibrant hot-pink / electric blue cosmic glowing tint rather than plain white dust
-      mat.color = new THREE.Color("#d8b4fe").multiplyScalar(intensity); // Bright lavender/pink
-      mat.size = 0.03 + (sceneClimaxPulse * 0.04); // swell their physical size right as they die
+      // Before 0.70: glowing plasma spiraling inward
+      // 0.70 to 0.85: cross-fade to light-absorbing void particles engulfing the black hole
+      // 0.85+: fully absorbed, pinch out with finalPinch
+      const absorptionProgress = progress > 0.70
+        ? Math.min(1.0, (progress - 0.70) / 0.15)
+        : 0.0;
+
+      // Opacity: visible during the engulf, then pinched to zero at final collapse
+      mat.uniforms.uOpacity.value    = Math.pow(Math.min(1.0, progress * 1.5), 2.0) * 0.7 * finalPinch;
+      // Intensity: glows up briefly at 0.70 then dies as absorption takes over
+      const prePeakGlow = progress > 0.65 && progress < 0.75
+        ? Math.sin(((progress - 0.65) / 0.10) * Math.PI) * 4.0  // brief flare right before they go dark
+        : 0.0;
+      mat.uniforms.uIntensity.value  = 1.0 + prePeakGlow;
+      // Absorption: 0 = bright plasma, 1 = dark void sphere
+      mat.uniforms.uAbsorption.value = Math.pow(absorptionProgress, 1.5);
+      mat.uniforms.uSize.value       = 0.8;
     }
 
     if (voidRef.current && horizonRef.current) {
@@ -393,7 +448,7 @@ export const Implosion = () => {
         </mesh>
       ))}
 
-      {/* Sucked-in Particle Dust - Tilted so it forms a visible 3D accretion disk instead of a flat line */}
+      {/* Sucked-in Particle Dust - Plasma Embers with custom radial glow shader */}
       <points ref={dustRef} rotation={[0.5, 0.2, -0.3]}>
         <bufferGeometry>
           <bufferAttribute
@@ -403,14 +458,13 @@ export const Implosion = () => {
             itemSize={3}
           />
         </bufferGeometry>
-        <pointsMaterial
-          size={0.03}
-          color="#d8b4fe"
-          transparent
-          opacity={0}
+        <shaderMaterial
+          uniforms={dustUniforms}
+          vertexShader={dustVertexShader}
+          fragmentShader={dustFragmentShader}
+          transparent={true}
           blending={THREE.AdditiveBlending}
           depthWrite={false}
-          sizeAttenuation={true}
         />
       </points>
     </group>

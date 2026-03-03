@@ -162,7 +162,7 @@ export const StarParticles = () => {
     // The implosion finishes at 7.8s. We give it a brief tiny gap, 
     // then spawn the stars at 8.2s out of the silence, 
     // leading up to the main Big Bang explosion at 8.6s!
-    const t = Math.max(0, clock.elapsedTime - 8.2);
+    const t = Math.max(0, clock.elapsedTime - 8.6);
     
     // Update GPU uniform (we pass real clock time for the glimmer so they animate even while invisible)
     if (materialRef.current) {
