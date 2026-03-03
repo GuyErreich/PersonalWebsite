@@ -17,32 +17,130 @@ const CameraShake = () => {
 
     let power = 0;
     
-    if (time > 6.8 && time <= 7.8) {
-      // Phase 1: Heavy rumble as the implosion reaches its climax
+    // We update FOV to give a Dolly Zoom effect or slow pan
+    let targetFov = 50; // default R3F fov is often 50 or 75, we'll manage it loosely
+    let targetZ = 5;
+
+    // Phase 0: Taglines (0 to 4.8)
+    if (time < 4.8) {
+      // Gentle cinematic reverse dolly (drifting slowly backward)
+      targetZ = 5.0 + time * 0.15;
+    }
+    // Phase 1: Implosion Start (4.8 to 6.8)
+    else if (time >= 4.8 && time <= 6.8) {
+      // Hold position and start sucking the FOV inward
+      const p = (time - 4.8) / 2.0;
+      targetZ = 5.72; // max from previous phase
+      targetFov = 50 + p * 15; // FOV widening (stretching the edges)
+    }
+    // Phase 2: Implosion Climax (6.8 to 7.8)
+    else if (time > 6.8 && time <= 7.8) {
       const progress = (time - 6.8) / 1.0; 
-      power = Math.pow(progress, 3) * 0.06; // Scales up right as the universe pinches out
-    } else if (time >= 8.6 && time < 9.6) {
-      // Phase 2: Massive explosive hit for the Big Bang
+      power = Math.pow(progress, 3) * 0.06; // Heavy rumble
+      
+      // Extreme Vertigo: Push camera in heavily while warping FOV out
+      targetZ = 5.72 - Math.pow(progress, 2) * 3.5; // fly into the black hole!
+      targetFov = 65 + Math.pow(progress, 3) * 40; // warp speed fov
+    }
+    // Phase 3: The Eerie Silence (7.8 to 8.6)
+    else if (time > 7.8 && time < 8.6) {
+      // Snaps to perfect clarity
+      targetZ = 5;
+      targetFov = 50;
+      power = 0;
+    }
+    // Phase 4: Big Bang (8.6 to 9.6)
+    else if (time >= 8.6 && time < 9.6) {
       const t = time - 8.6;
       const trauma = 1.0 - t;
-      power = Math.pow(trauma, 3) * 0.25; // Much harder initial hit
+      power = Math.pow(trauma, 3) * 0.25; // Massive hit
+      targetZ = 5; 
+      targetFov = 50 - Math.pow(trauma, 3) * 10; // Slight FOV punch inward on impact
+    } else {
+      targetZ = 5;
+      targetFov = 50;
     }
 
+    // Apply the deterministic FOV and Z
+    // (Type cast to any because PerspectiveCamera typing might not automatically be detected)
+    const pCam = camera as THREE.PerspectiveCamera;
+    if (pCam.fov !== undefined && Math.abs(pCam.fov - targetFov) > 0.1) {
+      pCam.fov += (targetFov - pCam.fov) * 0.1; // Smooth interpolate
+      pCam.updateProjectionMatrix();
+    }
+    
+    // We lerp the Z position so it's smooth
+    pCam.position.z += (targetZ - pCam.position.z) * 0.1;
+
+    // Apply erratic translational shaking on X and Y ONLY if power > 0
     if (power > 0) {
-      // Wild erratic positional shaking
       camera.position.x = (Math.random() - 0.5) * power;
       camera.position.y = (Math.random() - 0.5) * power;
-      
-      // Slight rotational shaking for extra disorientation
       camera.rotation.z = (Math.random() - 0.5) * power * 0.5;
     } else {
-      // Return to dead zero center when calm (This gives us the eerie stillness!)
       camera.position.x = 0;
       camera.position.y = 0;
       camera.rotation.z = 0;
     }
   });
   return null;
+};
+
+// Massive Screen flashes that don't need post-processing (Overlay plane)
+const ScreenFlash = () => {
+  const materialRef = useRef<THREE.MeshBasicMaterial>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    let opacity = 0;
+    let hex = '#ffffff';
+
+    // Flash 1: Taglines dying, Implosion starts (~4.8s) - Smooth violet flash
+    if (t >= 4.6 && t < 5.4) {
+      if (t < 4.8) {
+        // 0.2s ramp up
+        opacity = ((t - 4.6) / 0.2) * 0.4; // Max opacity 0.4 so it's not totally blinding
+      } else {
+        // 0.6s fade out
+        opacity = (1.0 - (t - 4.8) / 0.6) * 0.4;
+      }
+      hex = '#4c1d95'; // Deep purple
+    }
+    // Flash 2: Black Hole Climax (7.4s - 7.8s) - Building blinding blue/white
+    else if (t >= 7.4 && t < 7.8) {
+       // Smooth exponential ramp up to 0.8 opacity
+       opacity = Math.pow((t - 7.4) / 0.4, 2) * 0.8;
+       hex = '#e0f2fe';
+    } 
+    // The Eerie Silence Gap (7.8s - 8.2s) - Pure black that fades to reveal the arriving stars
+    else if (t >= 7.8 && t < 8.2) {
+       opacity = 1.0 - Math.pow((t - 7.8) / 0.4, 2); // Black fades out as stars appear
+       hex = '#000000';
+    }
+    // Flash 3: The Big Bang (8.6s) - Nuclear White
+    else if (t >= 8.6 && t < 10.0) {
+      const progress = (t - 8.6) / 1.4; // 1.4s duration
+      if (progress < 0.05) {
+        opacity = progress / 0.05; // 1-2 frames very fast attack
+      } else {
+        opacity = Math.pow(1 - ((progress - 0.05) / 0.95), 3); // smooth long tail decay
+      }
+      hex = '#ffffff';
+    }
+
+    if (materialRef.current) {
+      materialRef.current.opacity = opacity;
+      materialRef.current.color.set(hex);
+      // NOTE: We NEVER toggle transparent at runtime, it breaks ThreeJS depth/alpha sorting!
+    }
+  });
+
+  return (
+    <mesh position={[0, 0, 4.8]}> {/* Put it very close to default camera Z=5 */}
+      <planeGeometry args={[100, 100]} />
+      <meshBasicMaterial ref={materialRef} transparent={true} opacity={0} color="#ffffff" depthWrite={false} />
+    </mesh>
+  );
 };
 
 export const ThreeHeroBackground = () => {
@@ -71,6 +169,7 @@ export const ThreeHeroBackground = () => {
       <pointLight position={[0, 0, 0]} intensity={3} color="#f59e0b" distance={20} /> {/* Central Sun Core Light emitting outward */}
 
       <CameraShake />
+      <ScreenFlash />
 
       <FloatingThoughts />
       <Implosion />
