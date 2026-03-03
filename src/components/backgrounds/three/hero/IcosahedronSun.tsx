@@ -7,7 +7,7 @@ export const IcosahedronSun = () => {
 
   useFrame(({ clock }) => {
     // Delay creation until after implosion + pure silence gap (8.6s total)
-    const t = Math.max(0, clock.elapsedTime - 8.6);
+    const t = Math.max(0, clock.elapsedTime - 9.2);
     
     // The Icosahedron Sun Formation
     if (sunRef.current) {

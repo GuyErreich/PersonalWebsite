@@ -42,16 +42,16 @@ const CameraShake = () => {
       targetZ = 5.72 - Math.pow(progress, 2) * 3.5; // fly into the black hole!
       targetFov = 65 + Math.pow(progress, 3) * 40; // warp speed fov
     }
-    // Phase 3: The Eerie Silence (7.8 to 8.6)
-    else if (time > 7.8 && time < 8.6) {
+    // Phase 3: The Eerie Silence (7.8 to 9.2)
+    else if (time > 7.8 && time < 9.2) {
       // Snaps to perfect clarity
       targetZ = 5;
       targetFov = 50;
       power = 0;
     }
-    // Phase 4: Big Bang (8.6 to 9.6)
-    else if (time >= 8.6 && time < 9.6) {
-      const t = time - 8.6;
+    // Phase 4: Big Bang (9.2 to 10.2)
+    else if (time >= 9.2 && time < 10.2) {
+      const t = time - 9.2;
       const trauma = 1.0 - t;
       power = Math.pow(trauma, 3) * 0.25; // Massive hit
       targetZ = 5; 
@@ -106,20 +106,27 @@ const ScreenFlash = () => {
       }
       hex = '#4c1d95'; // Deep purple
     }
-    // Flash 2: Black Hole Climax (7.4s - 7.8s) - Building blinding blue/white
-    else if (t >= 7.4 && t < 7.8) {
-       // Smooth exponential ramp up to 0.8 opacity
-       opacity = Math.pow((t - 7.4) / 0.4, 2) * 0.8;
+    // Flash 2a: Light Absorption (7.3s - 7.6s) — Black hole consumes all ambient light
+    else if (t >= 7.3 && t < 7.6) {
+      // Ramp up darkness like light is being drained from the room
+      opacity = Math.pow((t - 7.3) / 0.3, 1.5) * 0.72;
+      hex = '#000000';
+    }
+    // Flash 2b: Singularity Blowout (7.6s - 7.8s) — Compressed energy bursts out as ice-blue
+    else if (t >= 7.6 && t < 7.8) {
+       // Instantly transitions from dark to blinding as the core implodes
+       const p = (t - 7.6) / 0.2;
+       opacity = 0.72 + p * (0.9 - 0.72); // cross-fade from dark level up to blinding
        hex = '#e0f2fe';
     } 
-    // The Eerie Silence Gap (7.8s - 8.2s) - Pure black that fades to reveal the arriving stars
-    else if (t >= 7.8 && t < 8.2) {
-       opacity = 1.0 - Math.pow((t - 7.8) / 0.4, 2); // Black fades out as stars appear
+    // The Eerie Silence Gap (7.8s - 8.6s) - Pure black that fades to reveal the arriving stars
+    else if (t >= 7.8 && t < 8.6) {
+       opacity = 1.0 - Math.pow((t - 7.8) / 0.8, 2); // Black fades out as stars appear
        hex = '#000000';
     }
-    // Flash 3: The Big Bang (8.6s) - Nuclear White
-    else if (t >= 8.6 && t < 10.0) {
-      const progress = (t - 8.6) / 1.4; // 1.4s duration
+    // Flash 3: The Big Bang (9.2s) - Nuclear White
+    else if (t >= 9.2 && t < 10.6) {
+      const progress = (t - 9.2) / 1.4; // 1.4s duration
       if (progress < 0.05) {
         opacity = progress / 0.05; // 1-2 frames very fast attack
       } else {

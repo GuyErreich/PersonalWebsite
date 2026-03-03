@@ -7,7 +7,7 @@ export const Shockwave = () => {
 
   useFrame(({ clock }) => {
     // Offset for the implosion phase (4.8s + 3.0s = 7.8s) + 0.8s of pure silence = 8.6s
-    const t = clock.elapsedTime - 8.6;
+    const t = clock.elapsedTime - 9.2;
 
     // Initial Explosive Sonar Wave (Shockwave flash effect on load)
     if (explosionRef.current) {
