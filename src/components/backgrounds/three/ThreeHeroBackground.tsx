@@ -11,6 +11,7 @@ import { StarParticles } from './hero/StarParticles';
 import { Implosion } from './hero/Implosion';
 import { FloatingThoughts } from './hero/FloatingThoughts';
 import { HyperspaceJump } from './hero/HyperspaceJump';
+import { TimeController } from './hero/TimeController';
 
 const CameraShake = () => {
   useFrame(({ clock, camera }) => {
@@ -161,7 +162,7 @@ const ScreenFlash = () => {
   );
 };
 
-export const ThreeHeroBackground = () => {
+export const ThreeHeroBackground = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const systemRef = useRef<THREE.Group>(null);
 
   useFrame(({ clock }) => {
@@ -178,6 +179,7 @@ export const ThreeHeroBackground = () => {
 
   return (
     <>
+      <TimeController skipIntro={skipIntro} />
       <fog attach="fog" args={['#111827', 10, 25]} />
       <ambientLight intensity={0.2} />
       
