@@ -10,6 +10,7 @@ import { OrbitingShapes } from './hero/OrbitingShapes';
 import { StarParticles } from './hero/StarParticles';
 import { Implosion } from './hero/Implosion';
 import { FloatingThoughts } from './hero/FloatingThoughts';
+import { HyperspaceJump } from './hero/HyperspaceJump';
 
 const CameraShake = () => {
   useFrame(({ clock, camera }) => {
@@ -134,6 +135,16 @@ const ScreenFlash = () => {
       }
       hex = '#ffffff';
     }
+    // Flash 4: Hyperspace Exit Flash (12.5s)
+    else if (t >= 12.45 && t < 12.9) {
+      const progress = (t - 12.45) / 0.45;
+      if (progress < 0.1) {
+        opacity = (progress / 0.1) * 0.8; // sharp attack, not completely blinding
+      } else {
+        opacity = Math.pow(1 - ((progress - 0.1) / 0.9), 2) * 0.8;
+      }
+      hex = '#e0ecff'; // slight blue-ish white
+    }
 
     if (materialRef.current) {
       materialRef.current.opacity = opacity;
@@ -180,6 +191,8 @@ export const ThreeHeroBackground = () => {
 
       <FloatingThoughts />
       <Implosion />
+
+      <HyperspaceJump />
 
       <Shockwave />
       

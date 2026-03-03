@@ -11,6 +11,8 @@ export const Implosion = () => {
   const voidRef = useRef<THREE.Mesh>(null);
   const horizonRef = useRef<THREE.Mesh>(null);
   const dustRef = useRef<THREE.Points>(null);
+  const blueDustRef = useRef<THREE.Points>(null);
+  const wormholeRef = useRef<THREE.LineSegments>(null);
   
   // Create space ripples that will fall inward
   const rippleRefs = useMemo(() => {
@@ -43,6 +45,35 @@ export const Implosion = () => {
     return { dustPositions: positions, dustSpeeds: speeds };
   }, []);
 
+  // Static blue dust cloud — scattered anchor points that wormhole lasers fire from
+  const blueDustPositions = useMemo(() => {
+    const count = 400;
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      const r = 10 + Math.random() * 28; // 10–38 units: fills the whole visible volume
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      positions[i * 3]     = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.cos(phi);
+      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    return positions;
+  }, []);
+
+  const blueDustUniforms = useMemo(() => ({ uOpacity: { value: 0.0 }, uSize: { value: 1.8 } }), []);
+
+  const blueDustFragmentShader = `
+    uniform float uOpacity;
+    void main() {
+      float d = length(gl_PointCoord - vec2(0.5)) * 2.0;
+      if (d > 1.0) discard;
+      float core = 1.0 - smoothstep(0.0, 0.3, d);
+      float glow = pow(1.0 - smoothstep(0.0, 1.0, d), 2.0);
+      vec3 color = mix(vec3(0.05, 0.3, 0.9), vec3(0.7, 0.9, 1.0), core);
+      gl_FragColor = vec4(color, (core * 0.9 + glow * 0.35) * uOpacity);
+    }
+  `;
+
   // Create 3 rings that will collapse inward
   const rings = useMemo(() => {
     // Generate distinct, orthogonal rotation offsets to ensure no overlap
@@ -67,6 +98,54 @@ export const Implosion = () => {
       };
     });
   }, []);
+
+  // --------------- Wormhole line system ---------------
+
+  // Per-line state machine: 0=idle, 1=stretching, 2=hold, 3=fading
+  const wormholeState = useRef(
+    Array.from({ length: 50 }, (_, si) => ({
+      phase: 0 as 0 | 1 | 2 | 3,
+      t: 0,
+      idleT: si * 0.05 + Math.random() * 0.08, // spread initial burst over ~2.5s
+      triggerInterval: 0.04 + Math.random() * 0.08, // short re-fire — guarantees 400+ fires
+      outerX: 0, outerY: 0, outerZ: 0,
+      dustIdx: -1,
+      color: Math.random() < 0.55 ? 0 : 1,
+    }))
+  );
+
+  // Pool of unconsumed blue dust indices — shuffled so firing order is random
+  const availablePool = useRef<number[]>(Array.from({ length: 400 }, (_, i) => i).sort(() => Math.random() - 0.5));
+  const poolDrained = useRef(false); // one-shot flag to hide all remaining specks at collapse
+
+  // 2 vertices per line
+  const wormholePositions = useMemo(() => new Float32Array(50 * 6), []);
+  const wormholeAlphas    = useMemo(() => new Float32Array(50 * 2), []);
+  const wormholeColors    = useMemo(() => new Float32Array(50 * 6), []);
+
+  const wormholeUniforms = useMemo(() => ({ uOpacity: { value: 0.0 } }), []);
+
+  const wormholeVertexShader = `
+    attribute float aAlpha;
+    attribute vec3  aColor;
+    uniform float   uOpacity;
+    varying float   vAlpha;
+    varying vec3    vColor;
+    void main() {
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      vAlpha = aAlpha;
+      vColor = aColor;
+    }
+  `;
+
+  const wormholeFragmentShader = `
+    uniform float uOpacity;
+    varying float vAlpha;
+    varying vec3  vColor;
+    void main() {
+      gl_FragColor = vec4(vColor, vAlpha * uOpacity);
+    }
+  `;
 
   // Custom plasma ember shader — soft radial glow per particle, driven fully by GPU
   const dustUniforms = useMemo(() => ({
@@ -133,9 +212,13 @@ export const Implosion = () => {
       if (voidRef.current) voidRef.current.scale.setScalar(0);
       if (horizonRef.current) horizonRef.current.scale.setScalar(0);
       if (dustRef.current) dustRef.current.visible = false;
+      if (blueDustRef.current) blueDustRef.current.visible = false;
+      if (wormholeRef.current) wormholeRef.current.visible = false;
       return;
     } else {
       if (dustRef.current) dustRef.current.visible = true;
+      if (blueDustRef.current) blueDustRef.current.visible = true;
+      if (wormholeRef.current) wormholeRef.current.visible = true;
     }
 
     const activeT = t - entryDelay;
@@ -151,20 +234,22 @@ export const Implosion = () => {
     let currentScale = 1.0;
     
     // Phase 1: 0.0 to 0.45 (Hover close to the black hole, charging energy over almost half the animation)
-    // Phase 2: 0.45 to 0.85 (Expand outward, rapidly increasing speed)
-    // Phase 3: 0.85 to 1.0 (Violent collapse inward)
+    // Phase 2: 0.45 to 0.78 (Expand outward, rapidly increasing speed)
+    // Phase 3: 0.78 to 0.88 (Violent collapse inward before the black hole itself collapses)
 
     let expandCollapse = 0;
-    if (progress > 0.45 && progress <= 0.85) {
-        // Map 0.45-0.85 to 0.0-1.0
-        const outProgress = (progress - 0.45) / 0.4;
+    if (progress > 0.45 && progress <= 0.78) {
+        // Map 0.45-0.78 to 0.0-1.0
+        const outProgress = (progress - 0.45) / 0.33;
         // Ease-in so it starts slow and accelerates outward
         expandCollapse = Math.pow(outProgress, 2.0);
-    } else if (progress > 0.85) {
-        // Map 0.85-1.0 to 1.0-0.0
-        const inProgress = (1.0 - progress) / 0.15;
+    } else if (progress > 0.78 && progress <= 0.88) {
+        // Map 0.78-0.88 to 1.0-0.0
+        const inProgress = (0.88 - progress) / 0.10;
         // Ease-out so it starts incredibly fast and slams into the core
         expandCollapse = Math.pow(inProgress, 0.5); 
+    } else if (progress > 0.88) {
+        expandCollapse = 0; // Stays fully collapsed securely at the core
     }
     
     // The rings appear slightly offset to juice the manifestation!
@@ -192,7 +277,7 @@ export const Implosion = () => {
     currentScale = (1.0 + (expandCollapse * 1.8)) * ringBounce;
     
     // Near the very end, make sure to completely pinch to 0 so the universe "disappears" right before big bang
-    const finalPinch = progress > 0.95 ? (1 - (progress - 0.95) * 20) : 1;
+    const finalPinch = progress > 0.88 ? Math.max(0, 1 - (progress - 0.88) * (1 / 0.12)) : 1;
 
     rings.forEach((ring) => {
       const mesh = ring.ref.current;
@@ -200,8 +285,8 @@ export const Implosion = () => {
 
       // Z-axis stretch creates a "flare/motion blur" smear effect as they burn up and collapse
       let zStretch = 1.0;
-      if (progress > 0.8) {
-          zStretch = 1.0 + Math.pow((progress - 0.8) / 0.2, 3.0) * 8.0; 
+      if (progress > 0.75) {
+          zStretch = 1.0 + Math.pow(Math.min(1.0, (progress - 0.75) / 0.13), 3.0) * 8.0; 
       }
       mesh.scale.set(currentScale * finalPinch, currentScale * finalPinch, currentScale * finalPinch * zStretch);
       
@@ -223,9 +308,9 @@ export const Implosion = () => {
         let intensity = 1.0 + (Math.pow(expandCollapse, 2.0) * 8.0); // Spikes brightly as they pull back
         let whiteMix = 0.0;
 
-        // SUPER GLOW BURN UP: In the final 20% of the animation, they go white-hot supernova
-        if (progress > 0.8) {
-           const burnProgress = (progress - 0.8) / 0.2;
+        // SUPER GLOW BURN UP: As they violently collapse, they go white-hot supernova
+        if (progress > 0.75) {
+           const burnProgress = Math.min(1.0, (progress - 0.75) / 0.13);
            intensity += Math.pow(burnProgress, 3.0) * 50.0; // Absolutely blow out the HDR bloom
            whiteMix = Math.pow(burnProgress, 2.0); // Shift base color completely to pure white
         }
@@ -258,10 +343,10 @@ export const Implosion = () => {
       let cycle = rawCycle % 1.0; 
 
       // Accumulate & Collapse: Delay just a brief moment behind the 3 main Torus rings!
-      // The 3 main rings start snapping inward at 0.85.
-      // We start sucking the ripples in at 0.88 so they violently *follow* the rings down like a wake.
-      if (progress > 0.88) {
-        const timeAtLock = (0.88 * activeDuration) - ripple.startDelay;
+      // The 3 main rings start snapping inward at 0.78.
+      // We start sucking the ripples in at 0.82 so they violently *follow* the rings down like a wake.
+      if (progress > 0.82) {
+        const timeAtLock = (0.82 * activeDuration) - ripple.startDelay;
         const lockLoop = Math.max(0, Math.floor(timeAtLock * ripple.speed));
         const currentLoop = Math.floor(rawCycle);
         
@@ -270,7 +355,7 @@ export const Implosion = () => {
             cycle = 1.0; 
         } else {
             // It was already on its way in... violently pull it to the core trailing *just* behind the main rings!
-            const suckPhase = Math.min(1.0, (progress - 0.88) / 0.12); // Exactly fills the remaining 0.88 to 1.0 window
+            const suckPhase = Math.min(1.0, (progress - 0.82) / 0.18); // Exactly fills the remaining 0.82 to 1.0 window
             // Use 1.5 exponent here (down from 2.0) to make it snap a bit faster since it has less time to collapse
             cycle = cycle + (1.0 - cycle) * Math.pow(suckPhase, 1.5); 
         }
@@ -324,21 +409,21 @@ export const Implosion = () => {
         const dist = Math.sqrt(x * x + y * y + z * z);
 
         if (dist < 0.05 || progress > 0.98) {
-          if (progress <= 0.85) {
-            // Normal phase: respawn at outer edge
+          if (progress <= 0.92) {
+            // Respawn at full radius — disk stays dense until the final collapse window
             const r = 8 + Math.random() * 4;
             const theta = Math.random() * Math.PI * 2;
             positions[i * 3]     = r * Math.cos(theta);
             positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
             positions[i * 3 + 2] = r * Math.sin(theta);
           } else {
-            // Past 0.85: keep at origin, no respawn
+            // Past 0.92: accumulate at origin, finalPinch fades opacity
             positions[i * 3] = 0; positions[i * 3 + 1] = 0; positions[i * 3 + 2] = 0;
           }
         } else {
-          // Gravity pull — ramp up speed from 0.70 onward for the condensing feel
+          // Gravity pull — ramp up speed from 0.70 onward, capped so particles stay visible
           const condenseFactor = progress > 0.70
-            ? 1.0 + Math.pow((progress - 0.70) / 0.30, 2.0) * 4.0  // loosened from 10 → 4
+            ? Math.min(2.2, 1.0 + Math.pow((progress - 0.70) / 0.30, 2.0) * 4.0)
             : 1.0;
           const speed = dustSpeeds[i] * 4.0 * condenseFactor;
           positions[i * 3]     -= (x / dist) * speed * 0.016;
@@ -375,6 +460,97 @@ export const Implosion = () => {
       // Absorption: 0 = bright plasma, 1 = dark void sphere
       mat.uniforms.uAbsorption.value = Math.pow(absorptionProgress, 1.5);
       mat.uniforms.uSize.value       = 0.8;
+    }
+
+    // Wormhole laser lines — randomly fired beams that stretch from a far point to the core then fade
+    if (wormholeRef.current) {
+      const STRETCH = 0.12;
+      const HOLD    = 0.03;
+      const FADE    = 0.15;
+      const posArr   = wormholeRef.current.geometry.attributes.position.array as Float32Array;
+      const alphaArr = wormholeRef.current.geometry.attributes.aAlpha.array   as Float32Array;
+      const colorArr = wormholeRef.current.geometry.attributes.aColor.array   as Float32Array;
+      const dt = 0.016;
+
+      wormholeState.current.forEach((wl, i) => {
+        wl.t += dt;
+
+        if (wl.phase === 0) {
+          // IDLE: invisible, waiting
+          posArr.fill(0, i * 6, i * 6 + 6);
+          alphaArr[i * 2] = alphaArr[i * 2 + 1] = 0;
+          if (wl.t >= wl.idleT && progress > 0.04 && progress < 0.92) {
+            // Pick the next unconsumed blue dust speck from the pool
+            const pool = availablePool.current;
+            if (pool.length === 0) return; // all consumed, stay idle
+            const pick = pool.pop()!;
+            wl.dustIdx = pick;
+            wl.outerX = blueDustPositions[pick * 3];
+            wl.outerY = blueDustPositions[pick * 3 + 1];
+            wl.outerZ = blueDustPositions[pick * 3 + 2];
+            // Hide the consumed dust speck immediately
+            if (blueDustRef.current) {
+              const bd = blueDustRef.current.geometry.attributes.position.array as Float32Array;
+              bd[pick * 3] = 10000; bd[pick * 3 + 1] = 0; bd[pick * 3 + 2] = 0;
+              blueDustRef.current.geometry.attributes.position.needsUpdate = true;
+            }
+            wl.phase = 1; wl.t = 0;
+          }
+        } else if (wl.phase === 1) {
+          // STRETCHING: inner end shoots from outer position to origin (ease-out cubic)
+          const ease = 1.0 - Math.pow(1.0 - Math.min(1, wl.t / STRETCH), 3);
+          posArr[i * 6]     = wl.outerX; posArr[i * 6 + 1] = wl.outerY; posArr[i * 6 + 2] = wl.outerZ;
+          posArr[i * 6 + 3] = wl.outerX * (1 - ease);
+          posArr[i * 6 + 4] = wl.outerY * (1 - ease);
+          posArr[i * 6 + 5] = wl.outerZ * (1 - ease);
+          alphaArr[i * 2] = 1.0; alphaArr[i * 2 + 1] = 0.7;
+          if (wl.t >= STRETCH) { wl.phase = 2; wl.t = 0; }
+        } else if (wl.phase === 2) {
+          // HOLD: full line from outer to core
+          posArr[i * 6]     = wl.outerX; posArr[i * 6 + 1] = wl.outerY; posArr[i * 6 + 2] = wl.outerZ;
+          posArr[i * 6 + 3] = 0; posArr[i * 6 + 4] = 0; posArr[i * 6 + 5] = 0;
+          alphaArr[i * 2] = 1.0; alphaArr[i * 2 + 1] = 0.7;
+          if (wl.t >= HOLD) { wl.phase = 3; wl.t = 0; }
+        } else if (wl.phase === 3) {
+          // FADING: outer (dust/star) end fades first, inner (core) end fades after
+          const f = Math.min(1, wl.t / FADE);
+          posArr[i * 6]     = wl.outerX; posArr[i * 6 + 1] = wl.outerY; posArr[i * 6 + 2] = wl.outerZ;
+          posArr[i * 6 + 3] = 0; posArr[i * 6 + 4] = 0; posArr[i * 6 + 5] = 0;
+          alphaArr[i * 2]     = Math.max(0, 1 - f / 0.55);          // outer gone by 55%
+          alphaArr[i * 2 + 1] = Math.max(0, 1 - Math.max(0, f - 0.3) / 0.7); // inner lags
+          if (wl.t >= FADE) { wl.phase = 0; wl.t = 0; wl.idleT = wl.triggerInterval; }
+        }
+
+        // Colors: outer vertex = white hot tip, inner = coloured glow
+        colorArr[i * 6]     = 1.0; colorArr[i * 6 + 1] = 1.0; colorArr[i * 6 + 2] = 1.0;
+        if (wl.color === 0) { // electric blue tail
+          colorArr[i * 6 + 3] = 0.1; colorArr[i * 6 + 4] = 0.55; colorArr[i * 6 + 5] = 1.0;
+        } else {              // purple-white tail
+          colorArr[i * 6 + 3] = 0.7; colorArr[i * 6 + 4] = 0.1;  colorArr[i * 6 + 5] = 0.9;
+        }
+      });
+
+      wormholeRef.current.geometry.attributes.position.needsUpdate = true;
+      wormholeRef.current.geometry.attributes.aAlpha.needsUpdate    = true;
+      wormholeRef.current.geometry.attributes.aColor.needsUpdate    = true;
+
+      const wMat = wormholeRef.current.material as THREE.ShaderMaterial;
+      wMat.uniforms.uOpacity.value = Math.pow(Math.min(1, progress * 4), 2) * finalPinch;
+    }
+
+    // Blue dust opacity — fades in with the scene, geometry-drained at 0.90 as safety net
+    if (blueDustRef.current) {
+      if (progress >= 0.90 && !poolDrained.current) {
+        poolDrained.current = true;
+        const bd = blueDustRef.current.geometry.attributes.position.array as Float32Array;
+        availablePool.current.forEach(idx => {
+          bd[idx * 3] = 10000; bd[idx * 3 + 1] = 0; bd[idx * 3 + 2] = 0;
+        });
+        availablePool.current = [];
+        blueDustRef.current.geometry.attributes.position.needsUpdate = true;
+      }
+      const bMat = blueDustRef.current.material as THREE.ShaderMaterial;
+      bMat.uniforms.uOpacity.value = Math.pow(Math.min(1, progress * 3), 2) * 0.6 * finalPinch;
     }
 
     if (voidRef.current && horizonRef.current) {
@@ -448,11 +624,44 @@ export const Implosion = () => {
         </mesh>
       ))}
 
+      {/* Static blue dust cloud — anchor points that wormhole lasers originate from */}
+      <points ref={blueDustRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[blueDustPositions, 3]} count={blueDustPositions.length / 3} array={blueDustPositions} itemSize={3} />
+        </bufferGeometry>
+        <shaderMaterial
+          uniforms={blueDustUniforms}
+          vertexShader={dustVertexShader}
+          fragmentShader={blueDustFragmentShader}
+          transparent={true}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </points>
+
+      {/* Wormhole laser lines — randomly fired beams that stretch from a dust point to the core then vanish */}
+      <lineSegments ref={wormholeRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[wormholePositions, 3]} count={wormholePositions.length / 3} array={wormholePositions} itemSize={3} />
+          <bufferAttribute attach="attributes-aAlpha"   args={[wormholeAlphas,    1]} count={wormholeAlphas.length}          array={wormholeAlphas}    itemSize={1} />
+          <bufferAttribute attach="attributes-aColor"   args={[wormholeColors,    3]} count={wormholeColors.length / 3}      array={wormholeColors}    itemSize={3} />
+        </bufferGeometry>
+        <shaderMaterial
+          uniforms={wormholeUniforms}
+          vertexShader={wormholeVertexShader}
+          fragmentShader={wormholeFragmentShader}
+          transparent={true}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </lineSegments>
+
       {/* Sucked-in Particle Dust - Plasma Embers with custom radial glow shader */}
       <points ref={dustRef} rotation={[0.5, 0.2, -0.3]}>
         <bufferGeometry>
           <bufferAttribute
             attach="attributes-position"
+            args={[dustPositions, 3]}
             count={dustPositions.length / 3}
             array={dustPositions}
             itemSize={3}
