@@ -209,7 +209,27 @@ export const Implosion = () => {
 
       // Start large and drop scale exponentially fast
       // Modulo to repeat a few ripples while the black hole is open
-      const cycle = (rippleActiveT * ripple.speed) % 1.0; 
+      const rawCycle = rippleActiveT * ripple.speed;
+      let cycle = rawCycle % 1.0; 
+
+      // Accumulate & Collapse: Delay just a brief moment behind the 3 main Torus rings!
+      // The 3 main rings start snapping inward at 0.85.
+      // We start sucking the ripples in at 0.88 so they violently *follow* the rings down like a wake.
+      if (progress > 0.88) {
+        const timeAtLock = (0.88 * activeDuration) - ripple.startDelay;
+        const lockLoop = Math.max(0, Math.floor(timeAtLock * ripple.speed));
+        const currentLoop = Math.floor(rawCycle);
+        
+        if (currentLoop > lockLoop) {
+            // It has reached the center, don't respawn it at the edge!
+            cycle = 1.0; 
+        } else {
+            // It was already on its way in... violently pull it to the core trailing *just* behind the main rings!
+            const suckPhase = Math.min(1.0, (progress - 0.88) / 0.12); // Exactly fills the remaining 0.88 to 1.0 window
+            // Use 1.5 exponent here (down from 2.0) to make it snap a bit faster since it has less time to collapse
+            cycle = cycle + (1.0 - cycle) * Math.pow(suckPhase, 1.5); 
+        }
+      }
       
       const currentScale = Math.max(0, 1.0 - Math.pow(cycle, 0.5)) * ripple.scaleMultiplier;
       
@@ -227,10 +247,10 @@ export const Implosion = () => {
         // Ramp up the energy massively as the global scene nears its climax point
         const sceneClimaxPulse = Math.pow(progress, 3.0); 
 
-        let intensity = 1.0 + Math.pow(cycle, 1.5) * 3.0 + (sceneClimaxPulse * 15.0);
+        const intensity = 1.0 + Math.pow(cycle, 1.5) * 3.0 + (sceneClimaxPulse * 15.0);
         
         // Fade in when forming, fade out as it reaches the core
-        const startFade = Math.min(1.0, cycle * 5.0);
+        const startFade = cycle === 1.0 ? 0 : Math.min(1.0, cycle * 5.0);
         const endFade = Math.max(0, 1.0 - Math.pow(cycle, 3.0));
         
         // Base opacity starts subtle (0.15), but surges violently to 0.8+ as the void collapses
@@ -253,9 +273,9 @@ export const Implosion = () => {
     if (dustRef.current) {
       const positions = dustRef.current.geometry.attributes.position.array as Float32Array;
       for (let i = 0; i < dustPositions.length / 3; i++) {
-        let x = positions[i * 3];
-        let y = positions[i * 3 + 1];
-        let z = positions[i * 3 + 2];
+        const x = positions[i * 3];
+        const y = positions[i * 3 + 1];
+        const z = positions[i * 3 + 2];
         const dist = Math.sqrt(x * x + y * y + z * z);
         
         if (dist < 0.2 || progress > 0.95) {
@@ -287,8 +307,19 @@ export const Implosion = () => {
         }
       }
       dustRef.current.geometry.attributes.position.needsUpdate = true;
-      // Keep opacity low so it's a subtle background detail and doesn't steal focus
-      (dustRef.current.material as THREE.PointsMaterial).opacity = Math.min(0.35, activeT * 1.0) * finalPinch;
+      
+      const mat = dustRef.current.material as THREE.PointsMaterial;
+      
+      // Make particles much brighter, scale slightly over time, and radically pulse at the climax
+      const sceneClimaxPulse = Math.pow(progress, 3.0);
+      const intensity = 1.0 + (sceneClimaxPulse * 8.0); // Flare up intensely right before swallowing
+      
+      // Increase base opacity to make them pop out more against the background
+      mat.opacity = Math.min(0.85, activeT * 2.0) * finalPinch;
+      
+      // Give them a vibrant hot-pink / electric blue cosmic glowing tint rather than plain white dust
+      mat.color = new THREE.Color("#d8b4fe").multiplyScalar(intensity); // Bright lavender/pink
+      mat.size = 0.03 + (sceneClimaxPulse * 0.04); // swell their physical size right as they die
     }
 
     if (voidRef.current && horizonRef.current) {
@@ -373,8 +404,8 @@ export const Implosion = () => {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.02}
-          color="#60a5fa"
+          size={0.03}
+          color="#d8b4fe"
           transparent
           opacity={0}
           blending={THREE.AdditiveBlending}
