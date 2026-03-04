@@ -54,11 +54,16 @@ export const Hero = () => {
   const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay);
 
   return (
-    <section id="about" className="min-h-screen flex items-center justify-center pt-16 relative overflow-hidden bg-gray-900">
+    <section id="about" className="min-h-screen flex items-center justify-center pt-24 sm:pt-16 relative overflow-hidden flex-col bg-gray-900">
       {/* Replay Background Animation Lever */}
-      <div id="lever-panel" className="relative z-50 pointer-events-auto">
-        <HyperspaceLever onActivate={handleReplay} getDelay={getDelay} skipIntro={skipIntro} />
-      </div>
+      <motion.div 
+        id="lever-panel" 
+        className={`relative z-50 ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
+        animate={{ opacity: isRewinding ? 0 : 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <HyperspaceLever key={`lever-${animationKey}`} onActivate={handleReplay} getDelay={getDelay} skipIntro={skipIntro} />
+      </motion.div>
       
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">
@@ -107,7 +112,7 @@ export const Hero = () => {
             key={`content-${animationKey}`}
             exit={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-12 md:mt-0" style={{ perspective: '1200px' }}
+            className="relative z-10 max-w-4xl w-full mx-auto px-2 sm:px-6 lg:px-8 mt-12 md:mt-0" style={{ perspective: '1200px' }}
           >
       {/* Animated Gradient Border Wrapper */}
       <motion.div
@@ -170,7 +175,7 @@ export const Hero = () => {
             ease: "easeInOut"
           }}
           style={{ transformOrigin: 'bottom center', width: 'calc(100% - 3px)', height: 'calc(100% - 3px)' }}
-          className="relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl p-8 shadow-inner text-center"
+          className="relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl p-4 sm:p-6 md:p-8 shadow-inner text-center"
         >
           
           {/* Big Title Tagline - Stamps in first */}
@@ -178,7 +183,7 @@ export const Hero = () => {
             initial={{ opacity: 0, scale: 5, y: -180, filter: 'blur(10px)' }}
             animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
             transition={{ duration: 0.2, delay: getDelay(13.0), ease: 'easeIn' }}
-            className="text-4xl md:text-6xl font-extrabold tracking-tight mb-4 relative"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 sm:mb-4 relative flex justify-center"
             style={{ transformOrigin: 'center center' }}
           >
             {/* Base static gradient text */}
