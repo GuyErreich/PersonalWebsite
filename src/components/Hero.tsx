@@ -40,6 +40,111 @@ export const Hero = () => {
     Cookies.set('hero_visited', 'true', { expires: 7 });
   }, []);
 
+  // Synced Audio/SFX track for the main intro animation
+  useEffect(() => {
+    // Only play if not rewinding and the intro isn't skipped
+    if (isRewinding || skipIntro) return;
+
+    let ctx: AudioContext | null = null;
+    let isCancelled = false;
+
+    const initAudio = () => {
+      if (isCancelled) return;
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        ctx = new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const now = ctx.currentTime;
+
+        const scheduleTone = (timeOffset: number, freq: number, type: OscillatorType, duration: number, vol: number) => {
+           if (!ctx) return;
+           const osc = ctx.createOscillator();
+           const gain = ctx.createGain();
+           osc.type = type;
+           osc.frequency.setValueAtTime(freq, now + timeOffset);
+           
+           gain.gain.setValueAtTime(0, now + timeOffset);
+           gain.gain.linearRampToValueAtTime(vol, now + timeOffset + Math.min(0.05, duration * 0.1));
+           gain.gain.exponentialRampToValueAtTime(0.001, now + timeOffset + duration);
+           
+           osc.connect(gain);
+           gain.connect(ctx.destination);
+           
+           osc.start(now + timeOffset);
+           osc.stop(now + timeOffset + duration);
+        };
+        
+        const scheduleNoise = (timeOffset: number, duration: number, vol: number) => {
+           if (!ctx) return;
+           const bufferSize = ctx.sampleRate * duration;
+           const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+           const data = buffer.getChannelData(0);
+           for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
+           
+           const noise = ctx.createBufferSource();
+           noise.buffer = buffer;
+           const gain = ctx.createGain();
+           
+           gain.gain.setValueAtTime(0, now + timeOffset);
+           gain.gain.linearRampToValueAtTime(vol, now + timeOffset + duration * 0.1);
+           gain.gain.exponentialRampToValueAtTime(0.001, now + timeOffset + duration);
+           
+           noise.connect(gain);
+           gain.connect(ctx.destination);
+           
+           noise.start(now + timeOffset);
+           noise.stop(now + timeOffset + duration);
+        };
+
+        // UI Sounds Start Post-Background Animation
+
+        // 3. Big Title Stamp (13.0s)
+        scheduleTone(13.0, 80, 'square', 0.6, 0.2);
+        scheduleNoise(13.0, 0.4, 0.1);
+
+        // 4. Shine Sweep (13.9s)
+        scheduleTone(13.9, 800, 'sine', 1.2, 0.05);
+        scheduleTone(13.9, 1200, 'sine', 1.2, 0.05);
+
+        // 5. Name Fade In (14.1s)
+        scheduleTone(14.1, 400, 'triangle', 0.5, 0.05);
+        scheduleTone(14.1, 600, 'triangle', 0.5, 0.05);
+
+        // 6. Typewriter UI sounds
+        for(let i=0; i<25; i++) scheduleTone(14.7 + i*(1.8/25), 600 + (Math.random()*100), 'square', 0.03, 0.015);
+        for(let i=0; i<15; i++) scheduleTone(16.7 + i*(1.2/15), 600 + (Math.random()*100), 'square', 0.03, 0.015);
+        for(let i=0; i<20; i++) scheduleTone(18.1 + i*(1.6/20), 600 + (Math.random()*100), 'square', 0.03, 0.015);
+
+        // 7. Badges Spawning
+        for(let i=0; i<6; i++) scheduleTone(19.8 + i*0.07, 700 + i*40, 'sine', 0.15, 0.04);
+        for(let i=0; i<5; i++) scheduleTone(20.3 + i*0.07, 900 + i*40, 'sine', 0.15, 0.04);
+
+        // 8. Social Links popping in
+        scheduleTone(20.7, 440, 'sine', 2.0, 0.05); // A4
+        scheduleTone(20.7, 554, 'sine', 2.0, 0.05); // C#5
+        scheduleTone(20.7, 659, 'sine', 2.0, 0.05); // E5
+
+        // 9. Chevron Down Arrow Ping
+        scheduleTone(21.5, 300, 'triangle', 0.5, 0.04);
+        scheduleTone(21.7, 400, 'triangle', 0.5, 0.04);
+
+      } catch (e) {
+        console.warn("Web audio not supported or blocked", e);
+      }
+    };
+
+    const t = setTimeout(initAudio, 50);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(t);
+      if (ctx && ctx.state !== 'closed') {
+        ctx.close().catch(() => {});
+      }
+    };
+  }, [isRewinding, skipIntro, animationKey]);
+
   const handleReplay = () => {
     setIsRewinding(true);
     setSkipIntro(false);

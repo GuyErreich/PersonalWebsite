@@ -191,12 +191,12 @@ export const ThreeHeroBackground = ({ skipIntro = false }: { skipIntro?: boolean
       <CameraShake />
       <ScreenFlash />
 
-      <FloatingThoughts />
-      <Implosion />
+      <FloatingThoughts skipIntro={skipIntro} />
+      <Implosion skipIntro={skipIntro} />
 
-      <HyperspaceJump />
+      <HyperspaceJump skipIntro={skipIntro} />
 
-      <Shockwave />
+      <Shockwave skipIntro={skipIntro} />
       
       <StarParticles />
 

@@ -1,11 +1,78 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export const Implosion = () => {
+export const Implosion = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const implosionDuration = 3.0; // The active duration of the collapse phase
   const entryDelay = 4.8; // Starts right near the end of the text collapse
   const totalPhaseTime = implosionDuration + entryDelay;
+
+  useEffect(() => {
+    if (skipIntro) return;
+    
+    let ctx: AudioContext | null = null;
+    let isCancelled = false;
+
+    const t = setTimeout(() => {
+      if (isCancelled) return;
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        ctx = new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const now = ctx.currentTime;
+
+        // Big implosion drone/suck sound starting at right now (which is t=4.8s global)
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.exponentialRampToValueAtTime(30, now + 3.0); // pitch down heavily
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.5, now + 2.0); // gets louder as it sucks in
+        gain.gain.linearRampToValueAtTime(0, now + 3.0); 
+
+        // Rumbly noise 
+        const bufferSize = ctx.sampleRate * 3.0;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(100, now);
+        noiseFilter.frequency.exponentialRampToValueAtTime(800, now + 2.5); // opens up
+        noiseFilter.frequency.exponentialRampToValueAtTime(40, now + 3.0); // closes abruptly
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0, now);
+        noiseGain.gain.linearRampToValueAtTime(0.4, now + 2.5);
+        noiseGain.gain.linearRampToValueAtTime(0, now + 2.8);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+
+        osc.start(now);
+        noise.start(now);
+
+        osc.stop(now + 3.2);
+        noise.stop(now + 3.2);
+      } catch(e) {}
+    }, entryDelay * 1000); // 4.8 seconds
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(t);
+      if (ctx && ctx.state !== 'closed') ctx.close().catch(()=>{});
+    };
+  }, [skipIntro, entryDelay]);
   
   const groupRef = useRef<THREE.Group>(null);
   const voidRef = useRef<THREE.Mesh>(null);
