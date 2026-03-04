@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -6,6 +6,70 @@ export const ReverseHyperspace = () => {
   const linesRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.LineBasicMaterial>(null);
   const count = 400;
+
+  useEffect(() => {
+    // Generative Synth Time-Jump Sound Effect
+    let ctx: AudioContext | null = null;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      ctx = new AudioCtx();
+      
+      // 1. Synth sweep
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      
+      const now = ctx.currentTime;
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 1.8); // pitch swoosh down
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 1.8);
+      
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      
+      // 2. White noise rumble to give it a "wind/tearing" feel
+      const bufferSize = ctx.sampleRate * 2.0; 
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const noiseFilter = ctx.createBiquadFilter();
+      noiseFilter.type = 'lowpass';
+      noiseFilter.frequency.setValueAtTime(2000, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(100, now + 1.8);
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0, now);
+      noiseGain.gain.linearRampToValueAtTime(0.8, now + 0.8); // gets loudest in the middle
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 1.8);
+      
+      noise.connect(noiseFilter);
+      noiseFilter.connect(noiseGain);
+      noiseGain.connect(ctx.destination);
+
+      osc.start(now);
+      noise.start(now);
+      
+      osc.stop(now + 2);
+      noise.stop(now + 2);
+
+    } catch(e) {
+      console.warn("Web Audio API not supported", e);
+    }
+    
+    return () => {
+      if (ctx && ctx.state !== 'closed') {
+        ctx.close().catch(() => {});
+      }
+    };
+  }, []);
   
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 6);
@@ -40,7 +104,7 @@ export const ReverseHyperspace = () => {
     return data;
   }, [count]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, delta) => {
     const t = clock.elapsedTime;
     if (linesRef.current && materialRef.current) {
         const pos = linesRef.current.geometry.attributes.position.array as Float32Array;
@@ -50,9 +114,10 @@ export const ReverseHyperspace = () => {
         const speed = 200 + Math.pow(flightProgress, 3) * 1500;
         
         for(let i=0; i<count; i++) {
-            // move away from camera
-            pos[i*6 + 2] -= speed * 0.016;
-            pos[i*6 + 5] -= speed * 0.016;
+            // move away from camera using actual delta time for smoothness
+            const moveDist = speed * delta;
+            pos[i*6 + 2] -= moveDist;
+            pos[i*6 + 5] -= moveDist;
 
             // if they are too far away, recycle them near camera
             if (pos[i*6 + 5] < -150) {
