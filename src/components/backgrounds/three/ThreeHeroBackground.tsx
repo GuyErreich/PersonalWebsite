@@ -198,7 +198,7 @@ export const ThreeHeroBackground = ({ skipIntro = false }: { skipIntro?: boolean
 
       <Shockwave skipIntro={skipIntro} />
       
-      <StarParticles />
+      <StarParticles skipIntro={skipIntro} />
 
       <group ref={systemRef} position={[0, -1, -5]}>
         <IcosahedronSun />
