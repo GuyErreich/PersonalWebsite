@@ -136,9 +136,9 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
       const targetOpacity = 0.85; 
       let opacity = Math.min(targetOpacity, (activeT / 0.8) * targetOpacity); 
 
-      // 2. Collapse Phase (4.0s - 5.0s)
-      if (t > 4.0) {
-        const collapseProgress = Math.min(1, (t - 4.0) / 1.0);
+      // 2. Collapse Phase (5.2s - 6.0s) Suck into the already created black hole
+      if (t > 5.2) {
+        const collapseProgress = Math.min(1, (t - 5.2) / 0.8);
         // Exponential ease-in for the suck-in effect
         const suckEase = Math.pow(collapseProgress, 3);
         
