@@ -24,22 +24,48 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
 
         const now = ctx.currentTime;
         
-        // High pitched wind-up sound mimicking the "lightspeed" stretch effect
+        // Cinematic fast forward WHOOSH (no tetris sawtooth)
         const osc = ctx.createOscillator();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(200, now);
-        osc.frequency.exponentialRampToValueAtTime(1200, now + 1.0); // winds up right as it hits 12.5s
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(50, now);
+        osc.frequency.exponentialRampToValueAtTime(600, now + 1.0); // winds up smoothly
         
         const gain = ctx.createGain();
         gain.gain.setValueAtTime(0, now);
-        gain.gain.linearRampToValueAtTime(0.2, now + 0.8);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+        gain.gain.linearRampToValueAtTime(0.4, now + 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
         
         osc.connect(gain);
         gain.connect(ctx.destination);
+
+        // Add wind rushing effect for realism
+        const bufferSize = ctx.sampleRate * 1.5;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for(let i=0; i<bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseFilter = ctx.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.Q.value = 1.5;
+        noiseFilter.frequency.setValueAtTime(200, now);
+        noiseFilter.frequency.exponentialRampToValueAtTime(3000, now + 1.0);
+
+        const noiseGain = ctx.createGain();
+        noiseGain.gain.setValueAtTime(0, now);
+        noiseGain.gain.linearRampToValueAtTime(0.5, now + 0.8);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
         
         osc.start(now);
-        osc.stop(now + 1.2);
+        noise.start(now);
+        
+        osc.stop(now + 1.3);
+        noise.stop(now + 1.3);
 
       } catch(e) {}
     }, startOffsetMs);

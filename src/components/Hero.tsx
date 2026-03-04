@@ -357,11 +357,11 @@ export const Hero = () => {
               <br />
               <p className="relative inline-flex items-center min-h-[30px]">
                 <TypewriterText text="Game developer passionate about game feel and player experience—by passion." delay={getDelay(18.1)} duration={1.6} />
-                {/* Cursor jumps to line 3 and stays blinking forever */}
+                {/* Cursor jumps to line 3 and then disappears after typing */}
                 <motion.span 
                    initial={{ opacity: 0 }}
-                   animate={skipIntro ? { opacity: 0 } : { opacity: [0, 1, 0] }}
-                   transition={{ delay: getDelay(18.1), duration: 0.8, repeat: Infinity, repeatType: "loop", ease: "linear" }}
+                   animate={skipIntro ? { opacity: 0 } : { opacity: [0, 1, 0, 1, 0] }}
+                   transition={{ delay: getDelay(18.1), duration: 1.6, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
               </p>

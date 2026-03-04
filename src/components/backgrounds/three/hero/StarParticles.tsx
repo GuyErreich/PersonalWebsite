@@ -1,13 +1,97 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export const StarParticles = () => {
+export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const particlesRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   
   // Dense particle count to engulf the 3 orbit tracks effectively
   const particleCount = 3500;
+
+  useEffect(() => {
+    if (skipIntro) return;
+
+    let ctx: AudioContext | null = null;
+    let timeouts: NodeJS.Timeout[] = [];
+
+    const playRevelation = () => {
+      ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      const tStart = ctx.currentTime;
+      
+      // Revelation drone (low evolving sine)
+      const drone = ctx.createOscillator();
+      drone.type = 'sine';
+      drone.frequency.setValueAtTime(110, tStart); // A2
+      drone.frequency.exponentialRampToValueAtTime(112, tStart + 4);
+      
+      const droneGain = ctx.createGain();
+      droneGain.gain.setValueAtTime(0, tStart);
+      droneGain.gain.linearRampToValueAtTime(0.3, tStart + 2);
+      droneGain.gain.linearRampToValueAtTime(0, tStart + 8);
+      
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(200, tStart);
+      filter.frequency.exponentialRampToValueAtTime(800, tStart + 4);
+      
+      drone.connect(filter);
+      filter.connect(droneGain);
+      droneGain.connect(ctx.destination);
+      
+      drone.start(tStart);
+      drone.stop(tStart + 8);
+
+      // Star twinkles
+      const baseFreqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00]; // C maj pentatonic C5-C7
+      
+      for (let i = 0; i < 20; i++) {
+        // Start playing soon after visual start (which is at 8.6s in timeline)
+        // We'll map this delay directly to that window.
+        // The stars fade in visibly around 8.2s and persist.
+        const delay = Math.random() * 5.0 + 0.1; 
+        
+        const t2 = setTimeout(() => {
+          if (!ctx || ctx.state === 'closed') return;
+          const now = ctx.currentTime;
+          
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          
+          const freq = baseFreqs[Math.floor(Math.random() * baseFreqs.length)];
+          osc.type = 'sine';
+          osc.frequency.value = freq;
+          
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.05, now + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5 + Math.random() * 1.5);
+          
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          
+          osc.start(now);
+          osc.stop(now + 3);
+          
+        }, delay * 1000);
+        
+        timeouts.push(t2);
+      }
+    };
+
+    // Stars start rendering around 8.2-8.6 seconds relative to global timeline
+    const startupDelay = setTimeout(() => {
+      playRevelation();
+    }, 8200);
+
+    return () => {
+      clearTimeout(startupDelay);
+      timeouts.forEach(clearTimeout);
+      if (ctx && ctx.state !== 'closed') {
+        ctx.close();
+      }
+    };
+  }, [skipIntro]);
   
   const [initialPositions, speeds, offsets, colors, noiseDirections, angleSeeds, sizeSeeds] = useMemo(() => {
     const pos = new Float32Array(particleCount * 3);
