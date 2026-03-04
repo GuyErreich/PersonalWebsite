@@ -81,7 +81,7 @@ export const Hero = () => {
               key={`bg-${animationKey}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: skipIntro ? 1 : 0 }}
+              transition={{ duration: 0 }}
               className="absolute inset-0 h-full w-full"
             >
               <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
@@ -157,10 +157,10 @@ export const Hero = () => {
             y: [0, 20, -6, 0],
             scale: [1, 0.94, 1.02, 1],
           }}
-          transition={{
+          transition={skipIntro ? { duration: 0 } : {
             duration: 0.6,
-            delay: getDelay(13.2), // Matches exactly with the text impact
-            times: [0, 0.08, 0.4, 1], // Sudden punch, bounce back, settle
+            delay: getDelay(13.2),
+            times: [0, 0.08, 0.4, 1],
             ease: "easeInOut"
           }}
           style={{ transformOrigin: 'bottom center', width: 'calc(100% - 3px)', height: 'calc(100% - 3px)' }}
@@ -234,9 +234,7 @@ export const Hero = () => {
                 {/* Cursor jumps to line 1 */}
                 <motion.span 
                    initial={{ opacity: 0 }}
-                   animate={{ 
-                      opacity: [0, 1, 0, 1, 0], // Blink while typing
-                   }}
+                   animate={skipIntro ? { opacity: 0 } : { opacity: [0, 1, 0, 1, 0] }}
                    transition={{ delay: getDelay(14.7), duration: 1.8, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
@@ -247,9 +245,7 @@ export const Hero = () => {
                 {/* Cursor jumps to line 2 */}
                 <motion.span 
                    initial={{ opacity: 0 }}
-                   animate={{ 
-                      opacity: [0, 1, 0, 1, 0], 
-                   }}
+                   animate={skipIntro ? { opacity: 0 } : { opacity: [0, 1, 0, 1, 0] }}
                    transition={{ delay: getDelay(16.7), duration: 1.2, times: [0, 0.25, 0.5, 0.75, 1], ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
@@ -260,9 +256,7 @@ export const Hero = () => {
                 {/* Cursor jumps to line 3 and stays blinking forever */}
                 <motion.span 
                    initial={{ opacity: 0 }}
-                   animate={{ 
-                      opacity: [0, 1, 0], 
-                   }}
+                   animate={skipIntro ? { opacity: 0 } : { opacity: [0, 1, 0] }}
                    transition={{ delay: getDelay(18.1), duration: 0.8, repeat: Infinity, repeatType: "loop", ease: "linear" }}
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
