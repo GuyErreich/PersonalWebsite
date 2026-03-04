@@ -1,7 +1,9 @@
+import { Github, Linkedin, Mail, ChevronDown } from "lucide-react";
 
 import { useState, useEffect } from 'react';
-import { Github, Linkedin, Mail, ChevronDown, RotateCcw } from 'lucide-react';
+
 import Cookies from 'js-cookie';
+import { HyperspaceLever } from "./HyperspaceLever";
 import { ReverseHyperspace } from './backgrounds/three/hero/ReverseHyperspace';
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
 import { Canvas } from '@react-three/fiber';
@@ -53,6 +55,10 @@ export const Hero = () => {
 
   return (
     <section id="about" className="min-h-screen flex items-center justify-center pt-16 relative overflow-hidden bg-gray-900">
+      {/* Replay Background Animation Lever */}
+      <div id="lever-panel" className="relative z-50 pointer-events-auto">
+        <HyperspaceLever onActivate={handleReplay} getDelay={getDelay} skipIntro={skipIntro} />
+      </div>
       
       {/* Background Layer */}
       <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">
@@ -166,19 +172,7 @@ export const Hero = () => {
           style={{ transformOrigin: 'bottom center', width: 'calc(100% - 3px)', height: 'calc(100% - 3px)' }}
           className="relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl p-8 shadow-inner text-center"
         >
-          {/* Replay Button */}
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: getDelay(13.5) }}
-            whileHover={{ scale: 1.1, rotate: -15 }}
-            whileTap={{ scale: 0.8, rotate: 180 }}
-            onClick={handleReplay}
-            className="absolute top-4 right-4 p-2 bg-gradient-to-r from-pink-500 to-violet-500 text-white rounded-full shadow-lg hover:shadow-pink-500/50 transition-all z-20 group"
-            title="Replay Animation"
-          >
-            <RotateCcw className="w-5 h-5 group-hover:animate-spin-fast" />
-          </motion.button>
+          
           {/* Big Title Tagline - Stamps in first */}
           <motion.h1
             initial={{ opacity: 0, scale: 5, y: -180, filter: 'blur(10px)' }}
