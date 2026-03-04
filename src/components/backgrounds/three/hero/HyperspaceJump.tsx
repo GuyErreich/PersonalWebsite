@@ -1,10 +1,55 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export const HyperspaceJump = () => {
+export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const linesRef = useRef<THREE.LineSegments>(null);
   const materialRef = useRef<THREE.LineBasicMaterial>(null);
+  
+  useEffect(() => {
+    if (skipIntro) return;
+    
+    let ctx: AudioContext | null = null;
+    let isCancelled = false;
+
+    // 11.5 is the startT inside the frame loop below.
+    const startOffsetMs = 11.5 * 1000;
+    
+    const t = setTimeout(() => {
+      if (isCancelled) return;
+      try {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        ctx = new AudioCtx();
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const now = ctx.currentTime;
+        
+        // High pitched wind-up sound mimicking the "lightspeed" stretch effect
+        const osc = ctx.createOscillator();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(200, now);
+        osc.frequency.exponentialRampToValueAtTime(1200, now + 1.0); // winds up right as it hits 12.5s
+        
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 1.2);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(now);
+        osc.stop(now + 1.2);
+
+      } catch(e) {}
+    }, startOffsetMs);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(t);
+      if (ctx && ctx.state !== 'closed') ctx.close().catch(()=>{});
+    };
+  }, [skipIntro]);
   
   const count = 300;
   
