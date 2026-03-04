@@ -14,23 +14,24 @@ export const ReverseHyperspace = () => {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       ctx = new AudioCtx();
       
-      // 1. Synth sweep
+      // 1. Cinematic reverse suction (Sine sweeping UPwards instead of down)
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sawtooth';
+      osc.type = 'sine'; // much smoother, zero retro vibes
       
       const now = ctx.currentTime;
-      osc.frequency.setValueAtTime(1200, now);
-      osc.frequency.exponentialRampToValueAtTime(40, now + 1.8); // pitch swoosh down
+      osc.frequency.setValueAtTime(30, now); // starts deep and sub-audible
+      osc.frequency.exponentialRampToValueAtTime(800, now + 1.9); // sweeps up rapidly at the end
       
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.15, now + 0.1);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 1.8);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.2); 
+      gain.gain.exponentialRampToValueAtTime(0.6, now + 1.8); // volume peaks right before snapping back
+      gain.gain.linearRampToValueAtTime(0.001, now + 1.9); 
       
       osc.connect(gain);
       gain.connect(ctx.destination);
       
-      // 2. White noise rumble to give it a "wind/tearing" feel
+      // 2. White noise reverse cymbal/wind rush effect
       const bufferSize = ctx.sampleRate * 2.0; 
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
@@ -41,14 +42,17 @@ export const ReverseHyperspace = () => {
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
       const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'lowpass';
-      noiseFilter.frequency.setValueAtTime(2000, now);
-      noiseFilter.frequency.exponentialRampToValueAtTime(100, now + 1.8);
+      noiseFilter.type = 'bandpass'; // Bandpass creates a realistic 'whooshing wind' effect
+      noiseFilter.Q.value = 1.0;
+      
+      // Filter sweeps from muffled up to crisp to simulate moving incredibly fast backward
+      noiseFilter.frequency.setValueAtTime(100, now);
+      noiseFilter.frequency.exponentialRampToValueAtTime(4000, now + 1.9);
       
       const noiseGain = ctx.createGain();
       noiseGain.gain.setValueAtTime(0, now);
-      noiseGain.gain.linearRampToValueAtTime(0.8, now + 0.8); // gets loudest in the middle
-      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 1.8);
+      noiseGain.gain.exponentialRampToValueAtTime(0.8, now + 1.8); // Crescendos heavily into the drop
+      noiseGain.gain.linearRampToValueAtTime(0.001, now + 1.9);
       
       noise.connect(noiseFilter);
       noiseFilter.connect(noiseGain);
