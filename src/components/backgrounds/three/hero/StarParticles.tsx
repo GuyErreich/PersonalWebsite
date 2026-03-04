@@ -43,14 +43,12 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
       drone.start(tStart);
       drone.stop(tStart + 8);
 
-      // Star twinkles
-      const baseFreqs = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98, 2093.00]; // C maj pentatonic C5-C7
+      // Cosmic Glass / Stellar Atmosphere (Replacing the merry twinkles)
+      // We use a Lydian/augmented cluster of higher frequencies to sound spacey and mysterious
+      const baseFreqs = [587.33, 739.99, 880.00, 1174.66, 1479.98, 1760.00]; // D Lydian cluster (D, F#, A) across octaves mapping to space
       
-      for (let i = 0; i < 20; i++) {
-        // Start playing soon after visual start (which is at 8.6s in timeline)
-        // We'll map this delay directly to that window.
-        // The stars fade in visibly around 8.2s and persist.
-        const delay = Math.random() * 5.0 + 0.1; 
+      for (let i = 0; i < 15; i++) {
+        const delay = Math.random() * 6.0; // Spread out the swells
         
         const t2 = setTimeout(() => {
           if (!ctx || ctx.state === 'closed') return;
@@ -59,19 +57,30 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
           
-          const freq = baseFreqs[Math.floor(Math.random() * baseFreqs.length)];
-          osc.type = 'sine';
+          const freq = baseFreqs[Math.floor(Math.random() * baseFreqs.length)] + (Math.random() * 4 - 2); // slight natural detune
+          osc.type = Math.random() > 0.5 ? 'sine' : 'triangle'; // Mix of pure and slightly harmonic
           osc.frequency.value = freq;
           
-          gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(0.05 + Math.random() * 0.05, now + 0.1);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5 + Math.random() * 1.5);
+          // Very slow, atmospheric swells instead of fast bells
+          const swellDuration = 3.0 + Math.random() * 3.0; // 3 to 6 second swells
           
-          osc.connect(gain);
+          gain.gain.setValueAtTime(0, now);
+          // Slow rise
+          gain.gain.linearRampToValueAtTime(0.015 + Math.random() * 0.015, now + swellDuration * 0.4);
+          // Slow decay
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + swellDuration);
+          
+          // Add a gentle panning or highpass filter if desired, but keeping it simple for stability
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.value = 400;
+          
+          osc.connect(filter);
+          filter.connect(gain);
           gain.connect(ctx.destination);
           
           osc.start(now);
-          osc.stop(now + 3);
+          osc.stop(now + swellDuration);
           
         }, delay * 1000);
         

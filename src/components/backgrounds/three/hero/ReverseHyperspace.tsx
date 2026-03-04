@@ -14,54 +14,84 @@ export const ReverseHyperspace = () => {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       ctx = new AudioCtx();
       
-      // 1. Cinematic reverse suction (Sine sweeping UPwards instead of down)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine'; // much smoother, zero retro vibes
-      
       const now = ctx.currentTime;
-      osc.frequency.setValueAtTime(30, now); // starts deep and sub-audible
-      osc.frequency.exponentialRampToValueAtTime(800, now + 1.9); // sweeps up rapidly at the end
       
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.05, now + 0.2); 
-      gain.gain.exponentialRampToValueAtTime(0.6, now + 1.8); // volume peaks right before snapping back
-      gain.gain.linearRampToValueAtTime(0.001, now + 1.9); 
+      // Master Compressor for punch
+      const compressor = ctx.createDynamicsCompressor();
+      compressor.threshold.value = -10;
+      compressor.knee.value = 5;
+      compressor.ratio.value = 12;
+      compressor.attack.value = 0.05;
+      compressor.release.value = 0.1;
+      compressor.connect(ctx.destination);
       
-      osc.connect(gain);
-      gain.connect(ctx.destination);
+      // 1. Dual Oscillators tearing apart (One sweeps UP into a scream, one DOWN into sub-bass)
+      const oscUp = ctx.createOscillator();
+      const oscDown = ctx.createOscillator();
+      const gainOsc = ctx.createGain();
       
-      // 2. White noise reverse cymbal/wind rush effect
+      oscUp.type = 'triangle';
+      oscDown.type = 'sine';
+      
+      oscUp.frequency.setValueAtTime(110, now); // A2
+      oscUp.frequency.exponentialRampToValueAtTime(1800, now + 1.85); // Screams upward
+      
+      oscDown.frequency.setValueAtTime(220, now); // A3
+      oscDown.frequency.exponentialRampToValueAtTime(10, now + 1.85); // Plummets into rumble
+      
+      gainOsc.gain.setValueAtTime(0, now);
+      gainOsc.gain.linearRampToValueAtTime(0.1, now + 0.2);
+      gainOsc.gain.exponentialRampToValueAtTime(0.5, now + 1.8); 
+      gainOsc.gain.linearRampToValueAtTime(0.001, now + 1.9); 
+      
+      oscUp.connect(gainOsc);
+      oscDown.connect(gainOsc);
+      gainOsc.connect(compressor);
+      
+      // 2. Heavy Flange/Phaser Noise (Simulates matter tearing/warp drive)
       const bufferSize = ctx.sampleRate * 2.0; 
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
+        // Brown/Pinkish noise integration for deeper rumble
+        data[i] = (Math.random() * 2 - 1) + (i > 0 ? data[i-1] * 0.9 : 0);
       }
       
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
-      const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'bandpass'; // Bandpass creates a realistic 'whooshing wind' effect
-      noiseFilter.Q.value = 1.0;
       
-      // Filter sweeps from muffled up to crisp to simulate moving incredibly fast backward
-      noiseFilter.frequency.setValueAtTime(100, now);
-      noiseFilter.frequency.exponentialRampToValueAtTime(4000, now + 1.9);
+      // Double filter configuration to create a sweeping phase/flange effect
+      const noiseFilter1 = ctx.createBiquadFilter();
+      noiseFilter1.type = 'lowpass'; 
+      noiseFilter1.Q.value = 3.0; // Resonance
+      noiseFilter1.frequency.setValueAtTime(50, now);
+      noiseFilter1.frequency.exponentialRampToValueAtTime(8000, now + 1.85);
       
+      const noiseFilter2 = ctx.createBiquadFilter();
+      noiseFilter2.type = 'highpass'; 
+      noiseFilter2.Q.value = 2.0;
+      noiseFilter2.frequency.setValueAtTime(8000, now);
+      noiseFilter2.frequency.exponentialRampToValueAtTime(40, now + 1.85);
+
       const noiseGain = ctx.createGain();
       noiseGain.gain.setValueAtTime(0, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.8, now + 1.8); // Crescendos heavily into the drop
+      noiseGain.gain.linearRampToValueAtTime(0.2, now + 0.3);
+      noiseGain.gain.linearRampToValueAtTime(1.5, now + 1.8); // Builds up immensely
       noiseGain.gain.linearRampToValueAtTime(0.001, now + 1.9);
       
-      noise.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
+      noise.connect(noiseFilter1); // Signal splits into two filters sweeping oppositely
+      noise.connect(noiseFilter2);
+      
+      noiseFilter1.connect(noiseGain);
+      noiseFilter2.connect(noiseGain);
+      noiseGain.connect(compressor);
 
-      osc.start(now);
+      oscUp.start(now);
+      oscDown.start(now);
       noise.start(now);
       
-      osc.stop(now + 2);
+      oscUp.stop(now + 2);
+      oscDown.stop(now + 2);
       noise.stop(now + 2);
 
     } catch(e) {
