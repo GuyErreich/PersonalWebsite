@@ -147,7 +147,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, ge
     <motion.div
       initial={skipIntro ? false : { opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: getDelay(13.6), type: "spring", stiffness: 80 }}
+      transition={{ delay: getDelay(22.5), type: "spring", stiffness: 80 }}
       className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex items-center gap-3 sm:gap-6 bg-[#0a0f1a]/80 backdrop-blur-xl border-l-[3px] border-y-[3px] border-cyan-900/40 rounded-l-3xl p-3 sm:p-6 shadow-[-10px_0_30px_rgba(0,0,0,0.8)] scale-75 origin-right sm:scale-100"
     >
       <motion.div 

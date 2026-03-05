@@ -13,7 +13,7 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
     let isCancelled = false;
 
     // 11.5 is the startT inside the frame loop below.
-    const startOffsetMs = 11.5 * 1000;
+    const startOffsetMs = 14.2 * 1000;
     
     const t = setTimeout(() => {
       if (isCancelled) return;
@@ -120,8 +120,8 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
     
     // The Hero UI drops at 12.5s.
     // The hyperspace should start at ~11.8s, rapidly accelerate, and flash/brake at 12.5s.
-    const startT = 11.5;
-    const endT = 12.7;
+    const startT = 14.2;
+    const endT = 15.5;
 
     if (t < startT || t > endT) {
         if (linesRef.current) linesRef.current.visible = false;
@@ -135,7 +135,7 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
         
         // As it approaches 12.5, speed goes absolutely crazy
         // at 11.5 progress is 0. at 12.5 progress is 1.0.
-        const flightProgress = Math.max(0, Math.min(1, (t - startT) / (12.5 - startT)));
+        const flightProgress = Math.max(0, Math.min(1, (t - startT) / (15.3 - startT)));
         
         // Speeds up exponentially
         const speed = 30 + Math.pow(flightProgress, 4) * 800;
@@ -165,12 +165,12 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
         // Opacity fading
         // Fade in from 11.5 to 11.8
         let opacity = 1;
-        if (t < 11.8) {
-            opacity = (t - 11.5) / 0.3;
+        if (t < 14.5) {
+            opacity = (t - 14.2) / 0.3;
         }
         // Suddenly blink out right after 12.5
-        if (t > 12.5) {
-            opacity = Math.max(0, 1.0 - ((t - 12.5) / 0.2));
+        if (t > 15.3) {
+            opacity = Math.max(0, 1.0 - ((t - 15.3) / 0.2));
         }
         materialRef.current.opacity = opacity;
     }
