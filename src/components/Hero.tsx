@@ -98,36 +98,37 @@ export const Hero = () => {
         };
 
         // UI Sounds Start Post-Background Animation
+        const uiOffset = 3.0;
 
         // 3. Big Title Stamp (13.0s)
-        scheduleTone(13.0, 80, 'square', 0.6, 0.2);
-        scheduleNoise(13.0, 0.4, 0.1);
+        scheduleTone(13.0 + uiOffset, 80, 'square', 0.6, 0.2);
+        scheduleNoise(13.0 + uiOffset, 0.4, 0.1);
 
         // 4. Shine Sweep (13.9s)
-        scheduleTone(13.9, 800, 'sine', 1.2, 0.05);
-        scheduleTone(13.9, 1200, 'sine', 1.2, 0.05);
+        scheduleTone(13.9 + uiOffset, 800, 'sine', 1.2, 0.05);
+        scheduleTone(13.9 + uiOffset, 1200, 'sine', 1.2, 0.05);
 
         // 5. Name Fade In (14.1s)
-        scheduleTone(14.1, 400, 'triangle', 0.5, 0.05);
-        scheduleTone(14.1, 600, 'triangle', 0.5, 0.05);
+        scheduleTone(14.1 + uiOffset, 400, 'triangle', 0.5, 0.05);
+        scheduleTone(14.1 + uiOffset, 600, 'triangle', 0.5, 0.05);
 
         // 6. Typewriter UI sounds
-        for(let i=0; i<25; i++) scheduleTone(14.7 + i*(1.8/25), 600 + (Math.random()*100), 'square', 0.03, 0.015);
-        for(let i=0; i<15; i++) scheduleTone(16.7 + i*(1.2/15), 600 + (Math.random()*100), 'square', 0.03, 0.015);
-        for(let i=0; i<20; i++) scheduleTone(18.1 + i*(1.6/20), 600 + (Math.random()*100), 'square', 0.03, 0.015);
+        for(let i=0; i<25; i++) scheduleTone(14.7 + uiOffset + i*(1.8/25), 600 + (Math.random()*100), 'square', 0.03, 0.015);
+        for(let i=0; i<15; i++) scheduleTone(16.7 + uiOffset + i*(1.2/15), 600 + (Math.random()*100), 'square', 0.03, 0.015);
+        for(let i=0; i<20; i++) scheduleTone(18.1 + uiOffset + i*(1.6/20), 600 + (Math.random()*100), 'square', 0.03, 0.015);
 
         // 7. Badges Spawning
-        for(let i=0; i<6; i++) scheduleTone(19.8 + i*0.07, 700 + i*40, 'sine', 0.15, 0.04);
-        for(let i=0; i<5; i++) scheduleTone(20.3 + i*0.07, 900 + i*40, 'sine', 0.15, 0.04);
+        for(let i=0; i<6; i++) scheduleTone(19.8 + uiOffset + i*0.07, 700 + i*40, 'sine', 0.15, 0.04);
+        for(let i=0; i<5; i++) scheduleTone(20.3 + uiOffset + i*0.07, 900 + i*40, 'sine', 0.15, 0.04);
 
         // 8. Social Links popping in
-        scheduleTone(20.7, 440, 'sine', 2.0, 0.05); // A4
-        scheduleTone(20.7, 554, 'sine', 2.0, 0.05); // C#5
-        scheduleTone(20.7, 659, 'sine', 2.0, 0.05); // E5
+        scheduleTone(20.7 + uiOffset, 440, 'sine', 2.0, 0.05); // A4
+        scheduleTone(20.7 + uiOffset, 554, 'sine', 2.0, 0.05); // C#5
+        scheduleTone(20.7 + uiOffset, 659, 'sine', 2.0, 0.05); // E5
 
         // 9. Chevron Down Arrow Ping
-        scheduleTone(21.5, 300, 'triangle', 0.5, 0.04);
-        scheduleTone(21.7, 400, 'triangle', 0.5, 0.04);
+        scheduleTone(21.5 + uiOffset, 300, 'triangle', 0.5, 0.04);
+        scheduleTone(21.7 + uiOffset, 400, 'triangle', 0.5, 0.04);
 
       } catch (e) {
         console.warn("Web audio not supported or blocked", e);
@@ -156,7 +157,8 @@ export const Hero = () => {
     }, 2000);
   };
 
-  const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay);
+  const UI_DELAY_OFFSET = 3.0;
+  const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay + UI_DELAY_OFFSET);
 
   return (
     <section id="about" className="min-h-screen flex items-center justify-center pt-24 sm:pt-16 relative overflow-hidden flex-col bg-gray-900">

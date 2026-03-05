@@ -18,81 +18,58 @@ export const ReverseHyperspace = () => {
       
       // Master Compressor for punch
       const compressor = ctx.createDynamicsCompressor();
-      compressor.threshold.value = -10;
+      compressor.threshold.value = -12;
       compressor.knee.value = 5;
-      compressor.ratio.value = 12;
-      compressor.attack.value = 0.05;
+      compressor.ratio.value = 10;
+      compressor.attack.value = 0.01;
       compressor.release.value = 0.1;
       compressor.connect(ctx.destination);
-      
-      // 1. Dual Oscillators tearing apart (One sweeps UP into a scream, one DOWN into sub-bass)
-      const oscUp = ctx.createOscillator();
-      const oscDown = ctx.createOscillator();
-      const gainOsc = ctx.createGain();
-      
-      oscUp.type = 'triangle';
-      oscDown.type = 'sine';
-      
-      oscUp.frequency.setValueAtTime(110, now); // A2
-      oscUp.frequency.exponentialRampToValueAtTime(1800, now + 1.85); // Screams upward
-      
-      oscDown.frequency.setValueAtTime(220, now); // A3
-      oscDown.frequency.exponentialRampToValueAtTime(10, now + 1.85); // Plummets into rumble
-      
-      gainOsc.gain.setValueAtTime(0, now);
-      gainOsc.gain.linearRampToValueAtTime(0.1, now + 0.2);
-      gainOsc.gain.exponentialRampToValueAtTime(0.5, now + 1.8); 
-      gainOsc.gain.linearRampToValueAtTime(0.001, now + 1.9); 
-      
-      oscUp.connect(gainOsc);
-      oscDown.connect(gainOsc);
-      gainOsc.connect(compressor);
-      
-      // 2. Heavy Flange/Phaser Noise (Simulates matter tearing/warp drive)
-      const bufferSize = ctx.sampleRate * 2.0; 
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        // Brown/Pinkish noise integration for deeper rumble
-        data[i] = (Math.random() * 2 - 1) + (i > 0 ? data[i-1] * 0.9 : 0);
-      }
-      
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-      
-      // Double filter configuration to create a sweeping phase/flange effect
-      const noiseFilter1 = ctx.createBiquadFilter();
-      noiseFilter1.type = 'lowpass'; 
-      noiseFilter1.Q.value = 3.0; // Resonance
-      noiseFilter1.frequency.setValueAtTime(50, now);
-      noiseFilter1.frequency.exponentialRampToValueAtTime(8000, now + 1.85);
-      
-      const noiseFilter2 = ctx.createBiquadFilter();
-      noiseFilter2.type = 'highpass'; 
-      noiseFilter2.Q.value = 2.0;
-      noiseFilter2.frequency.setValueAtTime(8000, now);
-      noiseFilter2.frequency.exponentialRampToValueAtTime(40, now + 1.85);
 
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0, now);
-      noiseGain.gain.linearRampToValueAtTime(0.2, now + 0.3);
-      noiseGain.gain.linearRampToValueAtTime(1.5, now + 1.8); // Builds up immensely
-      noiseGain.gain.linearRampToValueAtTime(0.001, now + 1.9);
+      // Sci-Fi Delay Line (creates a dimensional bouncing / accelerating teleport echo)
+      const delayNode = ctx.createDelay();
+      delayNode.delayTime.setValueAtTime(0.18, now); // Starts with distinct echoes
+      delayNode.delayTime.exponentialRampToValueAtTime(0.015, now + 1.8); // Accelerates into a warp stutter
       
-      noise.connect(noiseFilter1); // Signal splits into two filters sweeping oppositely
-      noise.connect(noiseFilter2);
+      const feedbackNode = ctx.createGain();
+      feedbackNode.gain.setValueAtTime(0.7, now);
+      feedbackNode.gain.linearRampToValueAtTime(0.9, now + 1.5); // Feedback intensifies as it speeds up
       
-      noiseFilter1.connect(noiseGain);
-      noiseFilter2.connect(noiseGain);
-      noiseGain.connect(compressor);
+      delayNode.connect(feedbackNode);
+      feedbackNode.connect(delayNode);
+      delayNode.connect(compressor);
 
-      oscUp.start(now);
-      oscDown.start(now);
-      noise.start(now);
+      // 1. The "Chew" Zap (Sawtooth with high-resonance lowpass drop)
+      const chewOsc = ctx.createOscillator();
+      const chewGain = ctx.createGain();
+      const chewFilter = ctx.createBiquadFilter();
+
+      chewOsc.type = 'sawtooth';
       
-      oscUp.stop(now + 2);
-      oscDown.stop(now + 2);
-      noise.stop(now + 2);
+      // Pitch drop (the 'pew/chew' transient)
+      chewOsc.frequency.setValueAtTime(2000, now);
+      chewOsc.frequency.exponentialRampToValueAtTime(80, now + 0.15); // extremely fast drop for "ch" transient
+      chewOsc.frequency.linearRampToValueAtTime(40, now + 1.8);
+      
+      // Vocal Formant Filter (the 'eww' sound) 
+      chewFilter.type = 'lowpass';
+      chewFilter.Q.value = 20; // Super high resonance creates the liquid/laser squelch
+      chewFilter.frequency.setValueAtTime(4000, now);
+      chewFilter.frequency.exponentialRampToValueAtTime(100, now + 0.2);
+      
+      // Volume envelope (Very short burst)
+      chewGain.gain.setValueAtTime(0, now);
+      chewGain.gain.linearRampToValueAtTime(0.8, now + 0.02); // instant attack
+      chewGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3); // fast snappy decay
+      
+      chewOsc.connect(chewFilter);
+      chewFilter.connect(chewGain);
+      
+      // Route the chew directly to output, AND into the accelerating delay line
+      chewGain.connect(compressor);
+      chewGain.connect(delayNode);
+
+      chewOsc.start(now);
+      chewOsc.stop(now + 2.0);
 
     } catch(e) {
       console.warn("Web Audio API not supported", e);

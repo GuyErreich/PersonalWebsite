@@ -136,9 +136,9 @@ const ScreenFlash = () => {
       }
       hex = '#ffffff';
     }
-    // Flash 4: Hyperspace Exit Flash (12.5s)
-    else if (t >= 12.45 && t < 12.9) {
-      const progress = (t - 12.45) / 0.45;
+    // Flash 4: Hyperspace Exit Flash (15.45s)
+    else if (t >= 15.45 && t < 15.9) {
+      const progress = (t - 15.45) / 0.45;
       if (progress < 0.1) {
         opacity = (progress / 0.1) * 0.8; // sharp attack, not completely blinding
       } else {
