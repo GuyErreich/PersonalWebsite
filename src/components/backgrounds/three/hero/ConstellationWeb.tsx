@@ -71,7 +71,7 @@ export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThres
             
             if (dist < pulsingThreshold) {
                 // Smoother, slightly more gracious alpha falloff to allow the dense web to look atmospheric
-                let alphaRatio = 1.0 - (dist / pulsingThreshold);
+                const alphaRatio = 1.0 - (dist / pulsingThreshold);
                 const alpha = Math.pow(alphaRatio, 1.2); // Less harsh dropoff so far lines still show
 
                 positions[lineIdx * 6] = p1.x;
