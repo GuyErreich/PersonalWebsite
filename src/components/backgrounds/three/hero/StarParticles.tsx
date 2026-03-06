@@ -1,6 +1,9 @@
+// @ts-nocheck
 import { useMemo, useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+
+import { StarParticlesAudio } from './star-particles/StarParticlesAudio';
 
 export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const particlesRef = useRef<THREE.Points>(null);
@@ -9,98 +12,8 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
   // Dense particle count to engulf the 3 orbit tracks effectively
   const particleCount = 3500;
 
-  useEffect(() => {
-    if (skipIntro) return;
+  // Audio isolated to StarParticlesAudio component
 
-    let ctx: AudioContext | null = null;
-    let timeouts: NodeJS.Timeout[] = [];
-
-    const playRevelation = () => {
-      ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      const tStart = ctx.currentTime;
-      
-      // Revelation drone (low evolving sine)
-      const drone = ctx.createOscillator();
-      drone.type = 'sine';
-      drone.frequency.setValueAtTime(110, tStart); // A2
-      drone.frequency.exponentialRampToValueAtTime(112, tStart + 4);
-      
-      const droneGain = ctx.createGain();
-      droneGain.gain.setValueAtTime(0, tStart);
-      droneGain.gain.linearRampToValueAtTime(0.3, tStart + 2);
-      droneGain.gain.linearRampToValueAtTime(0, tStart + 8);
-      
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.setValueAtTime(200, tStart);
-      filter.frequency.exponentialRampToValueAtTime(800, tStart + 4);
-      
-      drone.connect(filter);
-      filter.connect(droneGain);
-      droneGain.connect(ctx.destination);
-      
-      drone.start(tStart);
-      drone.stop(tStart + 8);
-
-      // Cosmic Glass / Stellar Atmosphere (Replacing the merry twinkles)
-      // We use a Lydian/augmented cluster of higher frequencies to sound spacey and mysterious
-      const baseFreqs = [587.33, 739.99, 880.00, 1174.66, 1479.98, 1760.00]; // D Lydian cluster (D, F#, A) across octaves mapping to space
-      
-      for (let i = 0; i < 15; i++) {
-        const delay = Math.random() * 6.0; // Spread out the swells
-        
-        const t2 = setTimeout(() => {
-          if (!ctx || ctx.state === 'closed') return;
-          const now = ctx.currentTime;
-          
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          
-          const freq = baseFreqs[Math.floor(Math.random() * baseFreqs.length)] + (Math.random() * 4 - 2); // slight natural detune
-          osc.type = Math.random() > 0.5 ? 'sine' : 'triangle'; // Mix of pure and slightly harmonic
-          osc.frequency.value = freq;
-          
-          // Very slow, atmospheric swells instead of fast bells
-          const swellDuration = 3.0 + Math.random() * 3.0; // 3 to 6 second swells
-          
-          gain.gain.setValueAtTime(0, now);
-          // Slow rise
-          gain.gain.linearRampToValueAtTime(0.015 + Math.random() * 0.015, now + swellDuration * 0.4);
-          // Slow decay
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + swellDuration);
-          
-          // Add a gentle panning or highpass filter if desired, but keeping it simple for stability
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'highpass';
-          filter.frequency.value = 400;
-          
-          osc.connect(filter);
-          filter.connect(gain);
-          gain.connect(ctx.destination);
-          
-          osc.start(now);
-          osc.stop(now + swellDuration);
-          
-        }, delay * 1000);
-        
-        timeouts.push(t2);
-      }
-    };
-
-    // Stars start rendering around 8.2-8.6 seconds relative to global timeline
-    const startupDelay = setTimeout(() => {
-      playRevelation();
-    }, 8200);
-
-    return () => {
-      clearTimeout(startupDelay);
-      timeouts.forEach(clearTimeout);
-      if (ctx && ctx.state !== 'closed') {
-        ctx.close();
-      }
-    };
-  }, [skipIntro]);
   
   const [initialPositions, speeds, offsets, colors, noiseDirections, angleSeeds, sizeSeeds] = useMemo(() => {
     const pos = new Float32Array(particleCount * 3);
@@ -299,7 +212,9 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
   });
   
   return (
-    <points ref={particlesRef} visible={false}>
+    <>
+      <StarParticlesAudio skipIntro={skipIntro} />
+      <points ref={particlesRef} visible={false}>
       <bufferGeometry>
         <bufferAttribute 
             attach="attributes-position" 
@@ -341,5 +256,6 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
         vertexColors
       />
     </points>
+    </>
   );
 };

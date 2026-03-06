@@ -1,6 +1,12 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { ImplosionRing } from './implosion/ImplosionRings';
+import { ImplosionHorizon, ImplosionVoid } from './implosion/ImplosionCore';
+import { ImplosionRipples } from './implosion/ImplosionRipples';
+import { ImplosionBlueDust, ImplosionParticleDust } from './implosion/ImplosionDust';
+import { ImplosionWormholes } from './implosion/ImplosionWormholes';
+
 
 export const Implosion = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const implosionDuration = 3.0; // The active duration of the collapse phase
@@ -645,104 +651,42 @@ export const Implosion = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   });
 
   if (isDone) return null;
-
   return (
     <group ref={groupRef}>
       {rings.map((ring, i) => (
-        <mesh key={i} ref={ring.ref} scale={0}>
-          {/* Low poly circle bands. 4 radial segments makes it a diamond cross-section, 
-              and 12-16 tubular segments gives it that jagged, PS1-era cyclic feel instead of a pure hexagon */}
-          {/* Reduced tube thickness from 0.015 -> 0.008 to make them even thinner wire-like bands */}
-          <torusGeometry args={[0.8, 0.008, 4, 16]} />
-          <meshBasicMaterial 
-            color={ring.color} 
-            transparent 
-            opacity={0} 
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </mesh>
+        <ImplosionRing key={i} ref={ring.ref} color={ring.color} />
       ))}
       
-      {/* Intense Glowing Event Horizon (behind the black hole, wireframe ico) */}
-      <mesh ref={horizonRef} scale={0}>
-        <icosahedronGeometry args={[0.6, 0]} />
-        <meshBasicMaterial color="#7c3aed" wireframe transparent opacity={0.6} blending={THREE.AdditiveBlending} depthWrite={false} />
-      </mesh>
+      <ImplosionHorizon ref={horizonRef} />
+      <ImplosionVoid ref={voidRef} />
+      
+      <ImplosionRipples ripples={rippleRefs} />
 
-      {/* Central Black Hole (The Void, solid ico) */}
-      <mesh ref={voidRef} scale={0}>
-        <icosahedronGeometry args={[0.58, 0]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
+      <ImplosionBlueDust
+        ref={blueDustRef}
+        positions={blueDustPositions}
+        uniforms={blueDustUniforms}
+        vertexShader={dustVertexShader}
+        fragmentShader={blueDustFragmentShader}
+      />
 
-      {/* Spatially distorted gravity ripples */}
-      {rippleRefs.map((ripple, i) => (
-        <mesh key={`ripple-${i}`} ref={ripple.ref} scale={0}>
-          {/* Made the rings thinner so they are less overwhelming */}
-          <ringGeometry args={[0.9, 0.905, 64]} />
-          <meshBasicMaterial 
-            transparent 
-            opacity={0} 
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ))}
+      <ImplosionWormholes
+        ref={wormholeRef}
+        positions={wormholePositions}
+        alphas={wormholeAlphas}
+        colors={wormholeColors}
+        uniforms={wormholeUniforms}
+        vertexShader={wormholeVertexShader}
+        fragmentShader={wormholeFragmentShader}
+      />
 
-      {/* Static blue dust cloud — anchor points that wormhole lasers originate from */}
-      <points ref={blueDustRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[blueDustPositions, 3]} count={blueDustPositions.length / 3} array={blueDustPositions} itemSize={3} />
-        </bufferGeometry>
-        <shaderMaterial
-          uniforms={blueDustUniforms}
-          vertexShader={dustVertexShader}
-          fragmentShader={blueDustFragmentShader}
-          transparent={true}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
-
-      {/* Wormhole laser lines — randomly fired beams that stretch from a dust point to the core then vanish */}
-      <lineSegments ref={wormholeRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[wormholePositions, 3]} count={wormholePositions.length / 3} array={wormholePositions} itemSize={3} />
-          <bufferAttribute attach="attributes-aAlpha"   args={[wormholeAlphas,    1]} count={wormholeAlphas.length}          array={wormholeAlphas}    itemSize={1} />
-          <bufferAttribute attach="attributes-aColor"   args={[wormholeColors,    3]} count={wormholeColors.length / 3}      array={wormholeColors}    itemSize={3} />
-        </bufferGeometry>
-        <shaderMaterial
-          uniforms={wormholeUniforms}
-          vertexShader={wormholeVertexShader}
-          fragmentShader={wormholeFragmentShader}
-          transparent={true}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </lineSegments>
-
-      {/* Sucked-in Particle Dust - Plasma Embers with custom radial glow shader */}
-      <points ref={dustRef} rotation={[0.5, 0.2, -0.3]}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[dustPositions, 3]}
-            count={dustPositions.length / 3}
-            array={dustPositions}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <shaderMaterial
-          uniforms={dustUniforms}
-          vertexShader={dustVertexShader}
-          fragmentShader={dustFragmentShader}
-          transparent={true}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </points>
+      <ImplosionParticleDust
+        ref={dustRef}
+        positions={dustPositions}
+        uniforms={dustUniforms}
+        vertexShader={dustVertexShader}
+        fragmentShader={dustFragmentShader}
+      />
     </group>
   );
 };
