@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { implosionEvents } from './ImplosionConfig';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 export const ImplosionRipples = () => {
-    const proxy = implosionEvents.getProxy("ripples");
+    const orchestrator = useOrchestrator();
+    const proxy = orchestrator.getProxy("ripples");
     
     const rippleRefs = useMemo(() => {
         return Array.from({ length: 6 }).map(() => ({

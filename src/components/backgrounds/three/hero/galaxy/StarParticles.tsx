@@ -1,18 +1,18 @@
-// @ts-nocheck
-import { useMemo, useRef, useEffect } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
-import { StarParticlesAudio } from './star-particles/StarParticlesAudio';
+export const StarParticles = () => {
+  const orchestrator = useOrchestrator();
+  const proxy = orchestrator.getProxy("stars");
 
-export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const particlesRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   
   // Dense particle count to engulf the 3 orbit tracks effectively
   const particleCount = 3500;
 
-  // Audio isolated to StarParticlesAudio component
 
   
   const [initialPositions, speeds, offsets, colors, noiseDirections, angleSeeds, sizeSeeds] = useMemo(() => {
@@ -164,33 +164,26 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
   `;
 
   useFrame(({ clock }) => {
-    // We deploy the starry void *before* the main explosion!
-    // The implosion finishes at 7.8s. We give it a brief tiny gap, 
-    // then spawn the stars at 8.2s out of the silence, 
-    // leading up to the main Big Bang explosion at 8.6s!
-    const t = Math.max(0, clock.elapsedTime - 8.6);
-    
-    // Update GPU uniform (we pass real clock time for the glimmer so they animate even while invisible)
     if (materialRef.current) {
-        // Continue to pass the un-delayed elapsed time to the shaders so their pulse maths stay consistent
         materialRef.current.uniforms.uTime.value = clock.elapsedTime;
     }
 
     if (!particlesRef.current) return;
     
-    // Stay hidden at scale 0 until t begins to tick upward
-    if (t === 0) {
+    if (proxy.progress === 0 && proxy.activeT === 0) {
       particlesRef.current.visible = false;
-      return; // Skip calculating CPU noise when totally invisible
+      return; 
     } else {
       particlesRef.current.visible = true;
     }
 
-    // Deploy very fast so they fill the screen just before the 8.6s bang!
-    const progress = Math.min(1, t / 1.5);
-    const ease = 1 - Math.pow(1 - progress, 5); // very snappy quintic ease out
+    // Deploy fast alongside the proxy progress
+    const ease = 1 - Math.pow(1 - proxy.progress, 5); 
     
     particlesRef.current.scale.set(ease * 1.0 + 0.01, ease * 1.0 + 0.01, ease * 1.0 + 0.01);
+    
+    // Once spawned, rotate infinitely
+    const t = proxy.activeT > 0 ? clock.elapsedTime : 0;
     particlesRef.current.rotation.y = t * 0.015; 
     
     const geom = particlesRef.current.geometry;
@@ -212,9 +205,7 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
   });
   
   return (
-    <>
-      <StarParticlesAudio skipIntro={skipIntro} />
-      <points ref={particlesRef} visible={false}>
+    <points ref={particlesRef} visible={false}>
       <bufferGeometry>
         <bufferAttribute 
             attach="attributes-position" 
@@ -256,6 +247,5 @@ export const StarParticles = ({ skipIntro = false }: { skipIntro?: boolean }) =>
         vertexColors
       />
     </points>
-    </>
   );
 };

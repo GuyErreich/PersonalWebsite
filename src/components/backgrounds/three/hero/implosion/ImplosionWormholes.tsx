@@ -1,10 +1,11 @@
 import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { implosionEvents } from './ImplosionConfig';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 export const ImplosionWormholes = () => {
-    const proxy = implosionEvents.getProxy("blueDust");
+    const orchestrator = useOrchestrator();
+    const proxy = orchestrator.getProxy("blueDust");
     
     const blueDustRef = useRef<THREE.Points>(null);
     const wormholeRef = useRef<THREE.LineSegments>(null);

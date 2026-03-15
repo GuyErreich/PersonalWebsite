@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { implosionEvents } from './ImplosionConfig';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 export const ImplosionRings = () => {
-    const proxy = implosionEvents.getProxy("rings");
-    const masterProxy = implosionEvents.getProxy("master");
+    const orchestrator = useOrchestrator();
+    const proxy = orchestrator.getProxy("rings");
+    const masterProxy = orchestrator.getProxy("master");
 
     const rings = useMemo(() => {
         const fixedRotations = [
