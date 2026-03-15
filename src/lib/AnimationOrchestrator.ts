@@ -1,5 +1,6 @@
 import gsap from 'gsap';
 
+
 export interface ProxyState {
   progress: number;
   activeT: number;
@@ -47,6 +48,19 @@ export class AnimationOrchestrator {
         }
         return this.proxies[name];
     }
+    
+    public playScenario(skipIntro: boolean, onComplete?: () => void) {
+        if (skipIntro) {
+            this.mainTimeline.progress(1.0);
+        } else {
+            this.mainTimeline.restart();
+        }
+        if (onComplete) {
+            this.mainTimeline.eventCallback('onComplete', onComplete);
+        }
+    }
+
+    // Removed createBlock as it was causing unnecessary HOC wrappings
     
     public play() {
         console.log("Playing main timeline");

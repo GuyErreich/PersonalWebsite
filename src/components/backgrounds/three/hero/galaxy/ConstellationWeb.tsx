@@ -1,13 +1,13 @@
 import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 // Orbital Constellations Web Component (Connects orbiting shapes within and across tracks)
-export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThreshold, delay = 0 }: { 
+export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThreshold }: { 
     orbitsInfo: { ref: React.RefObject<THREE.Group | null>, shapes: any[], opacity?: number }[],
     globalOpacityRef?: React.RefObject<number>,
-    connectionThreshold?: number,
-    delay?: number
+    connectionThreshold?: number
 }) => {
   const linesRef = useRef<THREE.LineSegments>(null);
   
@@ -19,9 +19,12 @@ export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThres
   const positions = useMemo(() => new Float32Array(MAX_CONNECTIONS * 2 * 3), []);
   const colors = useMemo(() => new Float32Array(MAX_CONNECTIONS * 2 * 3), []);
 
+  const orchestrator = useOrchestrator();
+  const proxy = orchestrator.getProxy("orbits");
+
   useFrame(({ clock }) => {
-    // If we're before our delay, output zero geometry
-    if (clock.elapsedTime < delay) {
+    // If we're before our entry animation, output zero geometry
+    if (proxy.progress === 0 && proxy.activeT === 0) {
         geomRef.current.setDrawRange(0, 0);
         return;
     }
@@ -29,7 +32,9 @@ export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThres
     // We don't necessarily need linesRef, we update the geometry directly, but checking for safety
     
     // Use an animated pulsing threshold so the web organically "breathes" 
-    const t = clock.elapsedTime - delay;
+    // Use activeT so syncs exactly when the proxy starts
+    const t = proxy.activeT > 0 ? clock.elapsedTime : 0;
+    
     // Increased base threshold enormously so lines almost ALWAYS cross-connect deep into other tracks
     const baseThreshold = connectionThreshold !== undefined ? connectionThreshold : 6.0;
     // Increased the breathing reach to make it sweep through the whole system

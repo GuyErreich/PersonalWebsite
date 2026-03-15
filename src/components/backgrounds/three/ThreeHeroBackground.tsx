@@ -2,12 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-import { SonarRipples } from './hero/SonarRipples';
-import { Shockwave } from './hero/Shockwave';
-import { IcosahedronSun } from './hero/IcosahedronSun';
-import { DysonSphere } from './hero/DysonSphere';
-import { OrbitingShapes } from './hero/OrbitingShapes';
-import { StarParticles } from './hero/StarParticles';
+import { GalaxyCreation } from './hero/GalaxyCreation';
 import { Implosion } from './hero/Implosion';
 import { FloatingThoughts } from './hero/FloatingThoughts';
 import { HyperspaceJump } from './hero/HyperspaceJump';
@@ -163,19 +158,6 @@ const ScreenFlash = () => {
 };
 
 export const ThreeHeroBackground = ({ skipIntro = false }: { skipIntro?: boolean }) => {
-  const systemRef = useRef<THREE.Group>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    
-    // Coordinate the Solar System Orbits
-    if (systemRef.current) {
-      // Tilt the entire solar system slightly forward for a cinematic 3D layered angle
-      systemRef.current.rotation.x = 0.4;
-      systemRef.current.rotation.z = -0.1;
-      systemRef.current.position.y = Math.sin(t * 0.5) * 0.5; // Make the entire system float gently
-    }
-  });
 
   return (
     <>
@@ -196,16 +178,7 @@ export const ThreeHeroBackground = ({ skipIntro = false }: { skipIntro?: boolean
 
       <HyperspaceJump skipIntro={skipIntro} />
 
-      <Shockwave skipIntro={skipIntro} />
-      
-      <StarParticles skipIntro={skipIntro} />
-
-      <group ref={systemRef} position={[0, -1, -5]}>
-        <IcosahedronSun />
-        <SonarRipples />
-        <OrbitingShapes />
-        <DysonSphere />
-      </group>
+      <GalaxyCreation skipIntro={skipIntro} />
     </>
   );
 };

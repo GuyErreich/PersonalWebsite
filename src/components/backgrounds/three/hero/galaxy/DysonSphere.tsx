@@ -3,24 +3,26 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Float } from '@react-three/drei';
 import { NetworkFlare } from './NetworkFlare';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 export const DysonSphere = () => {
+  const orchestrator = useOrchestrator();
+  const proxy = orchestrator.getProxy("dyson");
   const dysonSphereRef = useRef<THREE.Group>(null);
 
   useFrame(({ clock }) => {
-    // Delay creation until after implosion
-    const t = Math.max(0, clock.elapsedTime - 9.2);
-    
-    // The Dyson Sphere (Pulses inversely to the sun)
     if (dysonSphereRef.current) {
-        if (t === 0) {
+        if (proxy.progress === 0 && proxy.activeT === 0) {
             dysonSphereRef.current.visible = false;
+            return;
         } else {
             dysonSphereRef.current.visible = true;
         }
 
-        // Expand slowly as the shockwave clears
-        const dysonEase = Math.min(1, t / 3.0);
+        // Expand slowly as the proxy dictates
+        const dysonEase = proxy.progress;
+
+        const t = clock.elapsedTime;
         // Inverse breathe relative to the sun
         const inversePulse = 1 - Math.sin(t * 2) * 0.02;
         

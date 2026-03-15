@@ -1,13 +1,14 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { implosionEvents } from './ImplosionConfig';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 export const ImplosionCore = () => {
+    const orchestrator = useOrchestrator();
+    const proxy = orchestrator.getProxy("blackhole");
+
     const voidRef = useRef<THREE.Mesh>(null);
     const horizonRef = useRef<THREE.Mesh>(null);
-
-    const proxy = implosionEvents.getProxy("blackhole");
 
     useFrame(() => {
         if (!voidRef.current || !horizonRef.current) return;

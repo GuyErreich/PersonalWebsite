@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ConstellationWeb } from './ConstellationWeb';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 const makePoints = (count: number) => {
   return Array.from({ length: count }).map((_, i) => {
@@ -14,6 +15,8 @@ const makePoints = (count: number) => {
 };
 
 export const SonarRipples = () => {
+  const orchestrator = useOrchestrator();
+  const proxy = orchestrator.getProxy("ripples");
   // Define orbits info for ConstellationWeb just like OrbitingShapes had,
   // but now the shapes are invisible points scattered around the expanding ripple
   const orbitsInfo = useMemo(() => {
@@ -30,14 +33,12 @@ export const SonarRipples = () => {
   // Track an explicit global fade for the pulse web
   const webOpacityRef = React.useRef(1);
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     if (isDone) return;
 
-    // Delay the explosion shockwaves until after the silent gap finishes
-    const t = clock.elapsedTime - 9.2;
-    
-    // Start immediately with the initial shockwave (once we cross the t=0 threshold)
-    const rippleStartT = t; 
+    // Start immediately once the proxy activates
+    const t = proxy.activeT;
+    const rippleStartT = proxy.activeT; 
 
     let allDone = true;
 
@@ -135,7 +136,7 @@ export const SonarRipples = () => {
           </group>
         ))}
       </group>
-      <ConstellationWeb delay={9.2} orbitsInfo={orbitsInfo} globalOpacityRef={webOpacityRef} connectionThreshold={100} />
+      {/* <ConstellationWeb orbitsInfo={orbitsInfo} globalOpacityRef={webOpacityRef} connectionThreshold={100} /> */}
     </>
   );
 };

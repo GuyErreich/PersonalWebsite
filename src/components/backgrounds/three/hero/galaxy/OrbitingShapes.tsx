@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Float } from '@react-three/drei';
 import { ConstellationWeb } from './ConstellationWeb';
+import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 // Pre-calculate mathematically perfect spaced positions for our orbital shapes
 const makeOrbitShapes = (radius: number, count: number) => {
@@ -26,27 +27,36 @@ export const OrbitingShapes = () => {
   const orbit2Shapes = useMemo(() => makeOrbitShapes(7, 8), []);
   const orbit3Shapes = useMemo(() => makeOrbitShapes(10, 12), []);
 
+  const orchestrator = useOrchestrator();
+  const proxy = orchestrator.getProxy("orbits");
+
   useFrame(({ clock }) => {
-    // Delay creation until after implosion
-    const t = Math.max(0, clock.elapsedTime - 9.2);
+    if (proxy.progress === 0 && proxy.activeT === 0) {
+      if (orbit1Ref.current) orbit1Ref.current.visible = false;
+      if (orbit2Ref.current) orbit2Ref.current.visible = false;
+      if (orbit3Ref.current) orbit3Ref.current.visible = false;
+      return;
+    }
     
-    // Scale up the orbits from 0 to 1 just behind the sun's formation
-    const orbitProgress = Math.min(1, Math.max(0, (t - 0.2) / 2.0));
-    const orbitEase = 1 - Math.pow(1 - orbitProgress, 4);
+    // Scale up the orbits from 0 to 1 based on proxy
+    const orbitEase = 1 - Math.pow(1 - proxy.progress, 4);
+
+    // Spin infinitely using continuous clock time, active only when spawned
+    const t = clock.elapsedTime;
 
     // Spin individual discs at different speeds and direction, mapping the scale ease as well
     if (orbit1Ref.current) {
-       if (t === 0) { orbit1Ref.current.visible = false; } else { orbit1Ref.current.visible = true; }
+       orbit1Ref.current.visible = true;
        orbit1Ref.current.rotation.y = t * 0.15;
        orbit1Ref.current.scale.setScalar(orbitEase);
     }
     if (orbit2Ref.current) {
-       if (t === 0) { orbit2Ref.current.visible = false; } else { orbit2Ref.current.visible = true; }
+       orbit2Ref.current.visible = true;
        orbit2Ref.current.rotation.y = t * 0.1;
        orbit2Ref.current.scale.setScalar(orbitEase);
     }
     if (orbit3Ref.current) {
-       if (t === 0) { orbit3Ref.current.visible = false; } else { orbit3Ref.current.visible = true; }
+       orbit3Ref.current.visible = true;
        orbit3Ref.current.rotation.y = t * 0.08;
        orbit3Ref.current.scale.setScalar(orbitEase);
     }
@@ -111,7 +121,6 @@ export const OrbitingShapes = () => {
 
       {/* Constellation Web connecting the orbital rings globally */}
       <ConstellationWeb 
-        delay={9.2}
         orbitsInfo={[
           { ref: orbit1Ref, shapes: orbit1Shapes },
           { ref: orbit2Ref, shapes: orbit2Shapes },
