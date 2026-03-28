@@ -25,29 +25,38 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
   useThoughtsSound(skipIntro, orchestrator, thoughts.length);
 
   const textItems = useMemo(() => {
-    const basePositions = [
-      { x: -3.0, y:  3.2, z: -2.5 }, 
-      { x:  3.0, y:  1.6, z: -1.5 }, 
-      { x: -2.8, y:  0.0, z: -1.0 }, 
-      { x:  3.0, y: -1.6, z: -1.5 }, 
-      { x: -3.0, y: -3.2, z: -2.5 }, 
-    ];
-    const shuffledPositions = [...basePositions].sort(() => Math.random() - 0.5);
-    
-    return thoughts.map((text, i) => {
-      const { x, y, z } = shuffledPositions[i];
-      const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
-      return {
-        text,
-        x, y, z,
-        color: colors[i % colors.length],
-        ref: React.createRef<THREE.Group>(),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        textRef: React.createRef<any>(),
-        delay: i * 0.6 
-      };
-    });
-  }, [thoughts]);
+      // Clamp positions to fit within a visible bounding box for all screens
+      // These values are chosen to fit within a typical perspective camera view
+      const basePositions = [
+        { x: -2.2, y:  1.8, z: -2.5 }, 
+        { x:  2.2, y:  1.0, z: -1.5 }, 
+        { x: -2.0, y:  0.0, z: -1.0 }, 
+        { x:  2.2, y: -1.0, z: -1.5 }, 
+        { x: -2.2, y: -1.8, z: -2.5 }, 
+      ];
+      // Optionally, scale down for mobile screens
+      const isMobile = window.innerWidth < 640;
+      const scale = isMobile ? 0.7 : 1.0;
+      const shuffledPositions = [...basePositions].map(pos => ({
+        x: pos.x * scale,
+        y: pos.y * scale,
+        z: pos.z
+      })).sort(() => Math.random() - 0.5);
+
+      return thoughts.map((text, i) => {
+        const { x, y, z } = shuffledPositions[i];
+        const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
+        return {
+          text,
+          x, y, z,
+          color: colors[i % colors.length],
+          ref: React.createRef<THREE.Group>(),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          textRef: React.createRef<any>(),
+          delay: i * 0.6 
+        };
+      });
+    }, [thoughts]);
 
   useFrame(() => {
     // Rely exclusively on orchestrator proxy time

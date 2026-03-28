@@ -12,6 +12,86 @@ body {
   @apply bg-gray-900 text-gray-100 font-sans antialiased;
 }
 
+@layer components {
+  /* 
+    Responsive Hero Layout Section
+    Symmetrical py limits so `justify-center` keeps it vertically perfect inside the view
+  */
+  .section-hero {
+    @apply min-h-[100svh] flex flex-col items-center justify-center relative overflow-hidden bg-gray-900 py-20;
+  }
+  @media (max-height: 700px) {
+    .section-hero {
+      @apply py-16;
+    }
+  }
+
+  /* 
+    Adaptive Glass Card Layout
+    Handles the squashing behavior for wide-but-short screens
+  */
+  .card-responsive-wrapper {
+    @apply relative z-10 w-[92%] sm:w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 sm:mt-8 md:mt-0;
+  }
+  @media (max-height: 700px) {
+    .card-responsive-wrapper {
+      @apply max-w-5xl;
+    }
+  }
+
+  .glass-card-body {
+    @apply relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-inner text-center flex flex-col items-center overflow-hidden;
+    @apply p-4 sm:p-6 md:p-[4vh] lg:p-8;
+  }
+  @media (max-height: 700px) {
+    .glass-card-body {
+      @apply p-4;
+    }
+  }
+
+  /* Fluid typography for our Hero ensuring no wrapping overflow */
+  .hero-title {
+    @apply text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 md:mb-[2vh] relative flex justify-center;
+  }
+  @media (max-height: 700px) {
+    .hero-title {
+      @apply text-4xl;
+    }
+  }
+
+  .hero-subtitle {
+    @apply text-xl sm:text-3xl md:text-4xl text-gray-300 font-medium mb-3 md:mb-[3vh];
+  }
+  @media (max-height: 700px) {
+    .hero-subtitle {
+      @apply text-2xl;
+    }
+  }
+
+  .hero-paragraph-box {
+    @apply mt-2 md:mt-[1.5vh] max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-gray-300 font-medium mb-5 md:mb-[4vh] leading-tight flex flex-col items-center;
+  }
+  @media (max-height: 700px) {
+    .hero-paragraph-box {
+      @apply max-w-4xl text-base;
+    }
+  }
+
+  /* Explicit breakpoint control for the inline lever to avoid any Tailwind specificity conflicts */
+  .lever-inline-wrapper {
+    display: none;
+    position: absolute;
+    bottom: 1rem;
+    right: 1rem;
+    z-index: 50;
+  }
+  @media (min-width: 640px) and (max-width: 1299px) {
+    .lever-inline-wrapper {
+      display: block;
+    }
+  }
+}
+
 /* Shimmer sweep for gradient text */
 @keyframes shimmer {
   0%   { background-position: -200% center; }

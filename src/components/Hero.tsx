@@ -1,4 +1,4 @@
-import { Github, Linkedin, Mail, ChevronDown } from "lucide-react";
+import { Github, Linkedin, Mail, ChevronDown, Rocket } from "lucide-react";
 
 import { useState, useEffect } from 'react';
 
@@ -6,8 +6,38 @@ import Cookies from 'js-cookie';
 import { HyperspaceLever } from "./HyperspaceLever";
 import { ReverseHyperspace } from './backgrounds/three/hero/ReverseHyperspace';
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
 import { ThreeHeroBackground } from './backgrounds/three/ThreeHeroBackground';
+
+const ResponsiveCamera = () => {
+  const { camera, size } = useThree();
+  
+  useEffect(() => {
+    const aspect = size.width / size.height;
+    
+    // Always keep the natural FOV we built the scene with
+    (camera as THREE.PerspectiveCamera).fov = 60;
+    
+    // Default base distance
+    let targetZ = 5;
+    
+    // When the screen is narrow (portrait on mobile), the horizontal view frustum shrinks.
+    // Instead of warping the lens (FOV), we simply physically pull the camera backwards 
+    // down the Z-axis proportionally to how narrow the screen is.
+    if (aspect < 1) {
+      // Pull further back more drastically on mobile screens so the entire 
+      // width of the animation particles are caught in frame.
+      targetZ = 5 * (2.2 / aspect); 
+    }
+    
+    camera.position.z = targetZ;
+    camera.updateProjectionMatrix();
+
+  }, [size, camera]);
+  
+  return null;
+};
 
 const TypewriterText = ({ text, delay, duration, className = "" }: { text: string, delay: number, duration: number, className?: string }) => {
   const count = useMotionValue(0);
@@ -162,11 +192,11 @@ export const Hero = () => {
   const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay + UI_DELAY_OFFSET);
 
   return (
-    <section id="about" className="min-h-screen flex items-center justify-center pt-24 sm:pt-16 relative overflow-hidden flex-col bg-gray-900">
-      {/* Replay Background Animation Lever */}
+    <section id="about" className="section-hero">
+      {/* Replay Background Animation Lever - Desktop Only (Floating) */}
       <motion.div 
         id="lever-panel" 
-        className={`relative z-50 ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
+        className={`hidden min-[1300px]:block relative z-50 ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
         animate={{ opacity: isRewinding ? 0 : 1 }}
         transition={{ duration: 0.3 }}
       >
@@ -186,6 +216,7 @@ export const Hero = () => {
               className="absolute inset-0 h-full w-full"
             >
               <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+                <ResponsiveCamera />
                 <ReverseHyperspace />
               </Canvas>
               <motion.div 
@@ -204,6 +235,7 @@ export const Hero = () => {
               className="absolute inset-0 h-full w-full"
             >
               <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+                <ResponsiveCamera />
                 <ThreeHeroBackground skipIntro={skipIntro} />
               </Canvas>
             </motion.div>
@@ -220,7 +252,7 @@ export const Hero = () => {
             key={`content-${animationKey}`}
             exit={{ opacity: 0, scale: 0.8, filter: "blur(10px)" }}
             transition={{ duration: 0.5 }}
-            className="relative z-10 max-w-4xl w-full mx-auto px-2 sm:px-6 lg:px-8 mt-12 md:mt-0" style={{ perspective: '1200px' }}
+            className="card-responsive-wrapper" style={{ perspective: '1200px' }}
           >
       {/* Animated Gradient Border Wrapper */}
       <motion.div
@@ -248,13 +280,13 @@ export const Hero = () => {
           damping: 15,
           mass: 0.8
         }}
-        className="relative rounded-2xl overflow-hidden shadow-[0_0_80px_rgba(59,130,246,0.3)] transform-gpu"
+        className="relative rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(59,130,246,0.2)] md:shadow-[0_0_80px_rgba(59,130,246,0.3)] transform-gpu"
       >
         {/* Spinner is 200% size centered on card so rotation axis = card center, clipped by overflow-hidden */}
         <div
           className="absolute animate-spin-slow pointer-events-none"
           style={{
-            inset: '-50%',
+            inset: '-100%', // Increased negative inset so it extends much further past corners even on tall/narrow screens
             background: 'conic-gradient(from 0deg, #3b82f6, #7c3aed, #10b981, #f59e0b, #3b82f6)',
             opacity: 0.75,
           }}
@@ -263,13 +295,13 @@ export const Hero = () => {
         <div
           className="absolute animate-spin-slow pointer-events-none blur-lg"
           style={{
-            inset: '-50%',
+            inset: '-100%', // Increased negative inset
             background: 'conic-gradient(from 0deg, #3b82f6, #7c3aed, #10b981, #f59e0b, #3b82f6)',
             opacity: 0.2,
           }}
         />
 
-        {/* Card body — starts fully opaque so the card exists visually during warp-in. The text inside will spawn later. */}
+        {/* Card body — unified opacity mapping across breakpoints */}
         <motion.div
           initial={{ y: 0, scale: 1 }}
           animate={{
@@ -283,15 +315,38 @@ export const Hero = () => {
             ease: "easeInOut"
           }}
           style={{ transformOrigin: 'bottom center', width: 'calc(100% - 3px)', height: 'calc(100% - 3px)' }}
-          className="relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl p-4 sm:p-6 md:p-8 shadow-inner text-center"
+          className="glass-card-body"
         >
           
+          {/* Replay Background Animation Lever - Tablet/Medium screens (Inline, bottom right) */}
+          <motion.div 
+            id="lever-panel-mobile" 
+            className={`lever-inline-wrapper ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            animate={{ opacity: isRewinding ? 0 : 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <HyperspaceLever key={`lever-inline-${animationKey}`} onActivate={handleReplay} getDelay={getDelay} skipIntro={skipIntro} isInline={true} className="flex items-center gap-3 bg-[#0a0f1a]/80 backdrop-blur-xl border-[2px] border-cyan-900/40 rounded-2xl p-3 shadow-[0_0_15px_rgba(0,0,0,0.8)] scale-[0.45] origin-bottom-right" />
+          </motion.div>
+
+          {/* Simple Replay Button - Phones only (< 640px) to save space */}
+          <motion.button
+            id="replay-button-phone"
+            className={`sm:hidden absolute top-4 right-4 z-50 p-2.5 rounded-full bg-gray-800/80 backdrop-blur-md border border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)] hover:bg-cyan-950 transition-colors ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
+            onClick={handleReplay}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: isRewinding ? 0 : 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: getDelay(14.5) }}
+            title="Replay Animation"
+          >
+            <Rocket className="w-5 h-5" />
+          </motion.button>
+
           {/* Big Title Tagline - Stamps in first */}
           <motion.h1
             initial={{ opacity: 0, scale: 5, y: -180, filter: 'blur(10px)' }}
             animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
             transition={{ duration: 0.2, delay: getDelay(13.0), ease: 'easeIn' }}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 sm:mb-4 relative flex justify-center"
+            className="hero-title"
             style={{ transformOrigin: 'center center' }}
           >
             {/* Base static gradient text */}
@@ -328,16 +383,16 @@ export const Hero = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: getDelay(14.1) }}
-            className="text-3xl md:text-4xl text-gray-300 font-medium mb-6"
+            className="hero-subtitle"
           >
             Hello, I'm <span className="text-white font-bold">Guy Erreich</span>
           </motion.h2>
 
           {/* Paragraph — staggered typing style line by line, sharing a jumping cursor */}
-          <div className="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-gray-300 font-medium mb-8 leading-relaxed flex flex-col items-center">
-            <div className="w-full text-center">
-              <p className="mb-2 relative inline-flex items-center min-h-[30px]">
-                <TypewriterText text="DevOps engineer specializing in AWS, Kubernetes, Terraform, and CI/CD automation." delay={getDelay(14.7)} duration={1.8} />
+          <div className="hero-paragraph-box">
+            <div className="w-full text-center space-y-1.5 sm:space-y-2 md:space-y-[1.5vh]">
+              <p className="relative inline-flex items-center justify-center min-h-[28px] sm:min-h-[30px]">
+                <TypewriterText text="DevOps engineer specializing in AWS, Kubernetes, Terraform, & CI/CD." delay={getDelay(14.7)} duration={1.8} />
                 {/* Cursor jumps to line 1 */}
                 <motion.span 
                    initial={{ opacity: 0 }}
@@ -346,8 +401,8 @@ export const Hero = () => {
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
               </p>
-              <br />
-              <p className="mb-2 relative inline-flex items-center min-h-[30px]">
+              
+              <p className="relative inline-flex items-center justify-center min-h-[28px] sm:min-h-[30px]">
                 <TypewriterText text="Focused on reliability and clean architecture—by day." delay={getDelay(16.7)} duration={1.2} />
                 {/* Cursor jumps to line 2 */}
                 <motion.span 
@@ -357,9 +412,9 @@ export const Hero = () => {
                    className="absolute -right-3 w-[0.5em] h-[1em] bg-white align-middle"
                 />
               </p>
-              <br />
-              <p className="relative inline-flex items-center min-h-[30px]">
-                <TypewriterText text="Game developer passionate about game feel and player experience—by passion." delay={getDelay(18.1)} duration={1.6} />
+              
+              <p className="relative inline-flex items-center justify-center min-h-[28px] sm:min-h-[30px]">
+                <TypewriterText text="Game developer passionate about game feel & player experience." delay={getDelay(18.1)} duration={1.6} />
                 {/* Cursor jumps to line 3 and then disappears after typing */}
                 <motion.span 
                    initial={{ opacity: 0 }}
@@ -376,31 +431,31 @@ export const Hero = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: getDelay(19.8) }}
-            className="mb-8 space-y-3"
+            className="mb-4 md:mb-[2vh] space-y-2 md:space-y-[1.5vh]"
           >
             {/* DevOps badges — blue toned */}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
               {devOpsBadges.map((badge, i) => (
                 <motion.span
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: getDelay(19.8) + i * 0.07 }}
-                  className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors cursor-default"
+                  className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors cursor-default"
                 >
                   {badge}
                 </motion.span>
               ))}
             </div>
             {/* GameDev badges — emerald/purple toned */}
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
               {gameDevBadges.map((badge, i) => (
                 <motion.span
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: getDelay(20.3) + i * 0.07 }}
-                  className="px-3 py-1 text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-default"
+                  className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-default"
                 >
                   {badge}
                 </motion.span>

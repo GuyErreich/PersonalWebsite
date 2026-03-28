@@ -5,9 +5,11 @@ interface HyperspaceLeverProps {
   onActivate: () => void;
   getDelay: (base: number) => number;
   skipIntro: boolean;
+  className?: string;
+  isInline?: boolean;
 }
 
-export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, getDelay, skipIntro }) => {
+export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, getDelay, skipIntro, className, isInline = false }) => {
   const [energy, setEnergy] = useState(0);
   const dragY = useMotionValue(0);
   
@@ -143,39 +145,44 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, ge
   const handleRotateX = useTransform(dragY, [0, 70, 140], [35, 0, -35]);
   const handleScale = useTransform(dragY, [0, 70, 140], [0.93, 1.05, 0.93]); 
 
+  const defaultClassName = "fixed right-0 top-24 md:top-1/2 md:-translate-y-1/2 z-[50] items-center gap-4 md:gap-6 bg-[#0a0f1a]/80 backdrop-blur-xl border-l-[3px] border-y-[3px] border-cyan-900/40 rounded-l-3xl p-3 md:p-6 shadow-[-10px_0_30px_rgba(0,0,0,0.8)] origin-top-right md:origin-right scale-75 xl:scale-100 hidden min-[1300px]:flex";
+
   return (
     <motion.div
-      initial={skipIntro ? false : { opacity: 0, x: 100 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: getDelay(22.5), type: "spring", stiffness: 80 }}
-      className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex items-center gap-3 sm:gap-6 bg-[#0a0f1a]/80 backdrop-blur-xl border-l-[3px] border-y-[3px] border-cyan-900/40 rounded-l-3xl p-3 sm:p-6 shadow-[-10px_0_30px_rgba(0,0,0,0.8)] scale-75 origin-right sm:scale-100"
+      initial={skipIntro ? false : { opacity: 0, ...(isInline ? { y: 20 } : { x: 100 }) }}
+      animate={{ opacity: 1, x: 0, ...(isInline ? { y: 0 } : {}) }}
+      transition={{ delay: getDelay(isInline ? 14.5 : 22.5), type: "spring", stiffness: 80 }}
+      className={className || defaultClassName}
     >
-      <motion.div 
-        style={{ opacity: TextOpacity }}
-        className="absolute -left-36 top-1/2 -translate-y-1/2 px-4 py-2 bg-black/80 backdrop-blur border border-cyan-500/30 rounded-xl text-xs font-bold font-mono tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.2)] text-cyan-400 w-32 text-center pointer-events-none transition-transform group-hover:-translate-x-2 hidden md:block"
-      >
-        ENGAGE<br/>TIMESHIFT
-        <div className="absolute right-[-8px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-l-[8px] border-t-transparent border-b-transparent border-l-black/80"></div>
-      </motion.div>
+      {/* Hide the Engage Timeshift text bubble if it's the inline/small lever */}
+      {!isInline && (
+        <motion.div 
+          style={{ opacity: TextOpacity }}
+          className="absolute -top-16 left-1/2 -translate-x-1/2 px-4 py-2 bg-black/80 backdrop-blur border border-cyan-500/30 rounded-xl text-xs font-bold font-mono tracking-wider shadow-[0_0_15px_rgba(6,182,212,0.2)] text-cyan-400 w-32 text-center pointer-events-none transition-transform group-hover:-translate-y-1 hidden min-[1300px]:block"
+        >
+          ENGAGE<br/>TIMESHIFT
+          <div className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[8px] border-l-transparent border-r-transparent border-t-black/80"></div>
+        </motion.div>
+      )}
 
       <div className="flex gap-5 items-center">
           
           {/* Lever Mechanism Panel - Added perspective parameter */}
-          <div className="relative w-16 sm:w-24 h-56 flex justify-center py-4 bg-gray-800 rounded-xl shadow-[inset_0_4px_15px_rgba(0,0,0,0.9)] border border-gray-900" style={{ perspective: 500 }}>
+          <div className="relative w-24 h-56 flex justify-center py-4 bg-gray-800 rounded-xl shadow-[inset_0_4px_15px_rgba(0,0,0,0.9)] border border-gray-900" style={{ perspective: 500 }}>
             
             {/* 2 Cavities/Tracks */}
-            <div className="absolute left-[8px] sm:left-[16px] top-4 bottom-4 w-3 bg-black/95 rounded-full shadow-[inset_0_4px_10px_rgba(0,0,0,1)] border border-gray-950" />
-            <div className="absolute right-[8px] sm:right-[16px] top-4 bottom-4 w-3 bg-black/95 rounded-full shadow-[inset_0_4px_10px_rgba(0,0,0,1)] border border-gray-950" />
+            <div className="absolute left-[16px] top-4 bottom-4 w-3 bg-black/95 rounded-full shadow-[inset_0_4px_10px_rgba(0,0,0,1)] border border-gray-950" />
+            <div className="absolute right-[16px] top-4 bottom-4 w-3 bg-black/95 rounded-full shadow-[inset_0_4px_10px_rgba(0,0,0,1)] border border-gray-950" />
             
             {/* Left Dynamic 3D Rod connecting Handle to the Panel Pivot */}
             <motion.div 
-               className="absolute left-[9.5px] sm:left-[18.5px] w-[8px] bg-gradient-to-b from-gray-500 via-gray-300 to-gray-800 rounded z-0 shadow-[0_0_10px_rgba(0,0,0,0.8)]"
+               className="absolute left-[18.5px] w-[8px] bg-gradient-to-b from-gray-500 via-gray-300 to-gray-800 rounded z-0 shadow-[0_0_10px_rgba(0,0,0,0.8)]"
                style={{ top: rodTop, height: rodHeight }}
             />
 
             {/* Right Dynamic 3D Rod connecting Handle to the Panel Pivot */}
             <motion.div 
-               className="absolute right-[9.5px] sm:right-[18.5px] w-[8px] bg-gradient-to-b from-gray-500 via-gray-300 to-gray-800 rounded z-0 shadow-[0_0_10px_rgba(0,0,0,0.8)]"
+               className="absolute right-[18.5px] w-[8px] bg-gradient-to-b from-gray-500 via-gray-300 to-gray-800 rounded z-0 shadow-[0_0_10px_rgba(0,0,0,0.8)]"
                style={{ top: rodTop, height: rodHeight }}
             />
             
