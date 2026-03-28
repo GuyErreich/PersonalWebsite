@@ -2,7 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { AnimationOrchestrator } from './AnimationOrchestrator';
 
 // Create a Context that holds our Orchestrator instance
-const AnimationContext = createContext<AnimationOrchestrator | null>(null);
+export const AnimationContext = createContext<AnimationOrchestrator | null>(null);
 
 // Provider Component to wrap the scene
 export const AnimationProvider = ({ 

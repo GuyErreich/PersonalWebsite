@@ -11,7 +11,8 @@ export const useShockwaveSound = (skipIntro: boolean, orchestrator: AnimationOrc
     if (skipIntro || played.current || proxy.activeT === 0) return;
     played.current = true;
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = audioCtxRef.current || new AudioCtx();
       audioCtxRef.current = ctx;
       if (ctx.state === 'suspended') ctx.resume();
@@ -113,7 +114,7 @@ export const useShockwaveSound = (skipIntro: boolean, orchestrator: AnimationOrc
       subOsc2.stop(now + 8.1);
       tearOsc.stop(now + 5.1);
       noise.stop(now + 8.1);
-    } catch(e) {}
+    } catch { /* ignore */ }
   });
 
   useEffect(() => {

@@ -16,6 +16,7 @@ export const useImplosionSound = (skipIntro: boolean, orchestrator: AnimationOrc
     if (!played.current && proxy.activeT > 0) {
       played.current = true;
       try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
@@ -64,7 +65,7 @@ export const useImplosionSound = (skipIntro: boolean, orchestrator: AnimationOrc
 
         osc.stop(now + duration + 0.2);
         noise.stop(now + duration + 0.2);
-      } catch(e) {}
+      } catch { /* ignore */ }
     }
   });
 

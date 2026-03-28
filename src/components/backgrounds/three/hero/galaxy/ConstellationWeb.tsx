@@ -5,7 +5,7 @@ import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 // Orbital Constellations Web Component (Connects orbiting shapes within and across tracks)
 export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThreshold }: { 
-    orbitsInfo: { ref: React.RefObject<THREE.Group | null>, shapes: any[], opacity?: number }[],
+    orbitsInfo: { ref: React.RefObject<THREE.Group | null>, shapes: { x: number, z: number }[], opacity?: number }[],
     globalOpacityRef?: React.RefObject<number>,
     connectionThreshold?: number
 }) => {
@@ -54,7 +54,7 @@ export const ConstellationWeb = ({ orbitsInfo, globalOpacityRef, connectionThres
        else if (index === 1) trackColor = new THREE.Color("#10b981"); // Shard Track Emerald
        else if (index === 2) trackColor = new THREE.Color("#8b5cf6"); // Sphere Track Purple
 
-       orbit.shapes.forEach((pos: any) => {
+       orbit.shapes.forEach((pos: { x: number, z: number }) => {
          const v = new THREE.Vector3(pos.x, 0, pos.z);
          v.applyEuler(group.rotation);
          v.multiplyScalar(group.scale.x); 

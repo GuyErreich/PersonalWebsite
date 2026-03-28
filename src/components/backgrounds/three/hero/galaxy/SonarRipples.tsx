@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { ConstellationWeb } from './ConstellationWeb';
 import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
 const makePoints = (count: number) => {

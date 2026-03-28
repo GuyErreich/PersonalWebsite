@@ -11,7 +11,8 @@ export const useStarsSound = (skipIntro: boolean, orchestrator: AnimationOrchest
     if (skipIntro || played.current || proxy.activeT === 0) return;
     played.current = true;
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       const ctx = audioCtxRef.current || new AudioCtx();
       audioCtxRef.current = ctx;
       if (ctx.state === 'suspended') ctx.resume();
@@ -70,7 +71,7 @@ export const useStarsSound = (skipIntro: boolean, orchestrator: AnimationOrchest
           osc.start(playChimeT);
           osc.stop(playChimeT + swellDuration);
       }
-    } catch(e) {}
+    } catch { /* ignore */ }
   });
 
   useEffect(() => {

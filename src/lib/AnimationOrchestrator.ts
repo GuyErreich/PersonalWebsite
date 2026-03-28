@@ -1,5 +1,16 @@
 import gsap from 'gsap';
+import { useMemo } from 'react';
 
+/**
+ * Custom hook to securely build and maintain an AnimationOrchestrator.
+ * It strictly tracks the stringified content of the builder function.
+ * This GUARANTEES that Vite Hot Module Reloading (HMR) will instantly rebuild
+ * the orchestrator whenever you safely tweak numbers or durations inline.
+ */
+export function useBuildOrchestrator(builder: () => AnimationOrchestrator, deps: React.DependencyList = []) {
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return useMemo(builder, [builder.toString(), ...deps]);
+}
 
 export interface ProxyState {
   progress: number;
@@ -27,19 +38,22 @@ export class AnimationOrchestrator {
     public register(name: string, durationMultiplier: number, delayMultiplier: number = 0) {
         const actualDuration = this.globalDuration * durationMultiplier;
         const actualStartTime = this.globalDelay + (this.globalDuration * delayMultiplier);
+        this.registerAbsolute(name, actualDuration, actualStartTime);
+    }
 
+    public registerAbsolute(name: string, duration: number, startTime: number) {
         if (!this.proxies[name]) {
-            this.proxies[name] = { progress: 0, activeT: 0, duration: actualDuration };
+            this.proxies[name] = { progress: 0, activeT: 0, duration: duration };
         } else {
-            this.proxies[name].duration = actualDuration;
+            this.proxies[name].duration = duration;
         }
         
         this.mainTimeline.to(this.proxies[name], {
             progress: 1.0,
-            activeT: actualDuration,
-            duration: actualDuration,
+            activeT: duration,
+            duration: duration,
             ease: "none"
-        }, actualStartTime);
+        }, startTime);
     }
 
     public getProxy(name: string): ProxyState {

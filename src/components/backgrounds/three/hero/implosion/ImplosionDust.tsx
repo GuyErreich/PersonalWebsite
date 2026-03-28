@@ -1,15 +1,14 @@
-import React, { useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useOrchestrator } from '../../../../../lib/AnimationContext';
 
-export const ImplosionDust = () => {
+export const ImplosionDust = ({ count = 600 }: { count?: number }) => {
     const orchestrator = useOrchestrator();
     const proxy = orchestrator.getProxy("dust");
     const dustRef = useRef<THREE.Points>(null);
 
     const { dustPositions, dustSpeeds } = useMemo(() => {
-        const count = 600; 
         const positions = new Float32Array(count * 3);
         const speeds = new Float32Array(count);
         for(let i = 0; i < count; i++) {
@@ -21,7 +20,7 @@ export const ImplosionDust = () => {
             speeds[i] = 1.0 + Math.random() * 2.0; 
         }
         return { dustPositions: positions, dustSpeeds: speeds };
-    }, []);
+    }, [count]);
 
     const dustUniforms = useMemo(() => ({
         uOpacity:    { value: 0.0 },
@@ -74,8 +73,7 @@ export const ImplosionDust = () => {
         }
 
         const progress = proxy.progress;
-        const finalPinch = progress > 0.88 ? Math.max(0, 1 - (progress - 0.88) * (1 / 0.12)) : 1;
-
+        
         const positions = dustRef.current.geometry.attributes.position.array as Float32Array;
         for (let i = 0; i < dustPositions.length / 3; i++) {
             const x = positions[i * 3];
@@ -83,20 +81,22 @@ export const ImplosionDust = () => {
             const z = positions[i * 3 + 2];
             const dist = Math.sqrt(x * x + y * y + z * z);
 
-            if (dist < 0.05 || progress > 0.98) {
-                if (progress <= 0.92) {
+            if (dist < 0.05) {
+                if (progress <= 0.85) {
                     const r = 8 + Math.random() * 4;
                     const theta = Math.random() * Math.PI * 2;
                     positions[i * 3]     = r * Math.cos(theta);
                     positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
                     positions[i * 3 + 2] = r * Math.sin(theta);
                 } else {
+                    // Park to center
                     positions[i * 3] = 0; positions[i * 3 + 1] = 0; positions[i * 3 + 2] = 0;
                 }
             } else {
                 const condenseFactor = progress > 0.70
                     ? Math.min(2.2, 1.0 + Math.pow((progress - 0.70) / 0.30, 2.0) * 4.0)
                     : 1.0;
+                
                 const speed = dustSpeeds[i] * 4.0 * condenseFactor;
                 positions[i * 3]     -= (x / dist) * speed * 0.016;
                 positions[i * 3 + 1] -= (y / dist) * speed * 0.016;
@@ -112,19 +112,25 @@ export const ImplosionDust = () => {
         }
         dustRef.current.geometry.attributes.position.needsUpdate = true;
         
+        // Final strict mathematical bounds replacing old physics leaps and opacity hacks
+        const collapseScale = progress > 0.85 ? Math.max(0, 1.0 - ((progress - 0.85) / 0.15)) : 1.0;
+        dustRef.current.scale.set(collapseScale, collapseScale, collapseScale);
+
         const mat = dustRef.current.material as THREE.ShaderMaterial;
         
         const absorptionProgress = progress > 0.70
             ? Math.min(1.0, (progress - 0.70) / 0.15)
             : 0.0;
 
-        mat.uniforms.uOpacity.value    = Math.pow(Math.min(1.0, progress * 1.5), 2.0) * 0.7 * finalPinch;
+        mat.uniforms.uOpacity.value    = Math.min(1.0, progress * 4.0) * 0.7;
         const prePeakGlow = progress > 0.65 && progress < 0.75
             ? Math.sin(((progress - 0.65) / 0.10) * Math.PI) * 4.0  
             : 0.0;
         mat.uniforms.uIntensity.value  = 1.0 + prePeakGlow;
         mat.uniforms.uAbsorption.value = Math.pow(absorptionProgress, 1.5);
-        mat.uniforms.uSize.value       = 0.8;
+        
+        // Shrink particle core sizes precisely to zero so origin 0,0,0 coordinate blobs disappear structurally
+        mat.uniforms.uSize.value       = 0.8 * collapseScale;
     });
 
     return (

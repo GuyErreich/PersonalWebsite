@@ -60,7 +60,7 @@ export const GameDevGallery = ({ items, iconMap }: GameDevGalleryProps) => {
       {items.length > 0 && (
         <div className="flex flex-col items-start w-full">
           {items.map((item) => {
-            const ProjectIcon = (item.icon_name && (iconMap as any)[item.icon_name]) ? (iconMap as any)[item.icon_name] : Gamepad2;
+            const ProjectIcon = (item.icon_name && (iconMap as Record<string, React.FC<any>>)[item.icon_name]) ? (iconMap as Record<string, React.FC<any>>)[item.icon_name] : Gamepad2;
             return (
               <div key={item.id} className="mb-12 w-full bg-gray-800/30 p-6 rounded-lg border border-gray-700">
                 <div className="flex items-center space-x-3 mb-4">
