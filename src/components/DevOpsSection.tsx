@@ -42,7 +42,7 @@ export const DevOpsSection = () => {
   return (
     <SectionWrapper 
       id="devops" 
-      className="py-24 bg-gray-950"
+      className="py-12 md:py-16 bg-gray-950"
       background={
         <div className="absolute inset-0 pointer-events-none opacity-40">
           <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>

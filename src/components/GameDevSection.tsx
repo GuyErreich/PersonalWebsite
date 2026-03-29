@@ -3,7 +3,6 @@ import { Code, Gamepad2, Terminal, Shield, Rocket, Globe, Server, Database, Cpu,
 import { useEffect, useState, memo } from 'react';
 import { supabase } from '../lib/supabase';
 import { GamingIconsBackground } from './backgrounds/tsparticles/GamingIconsBackground';
-import { SectionWrapper } from './ui/SectionWrapper';
 import { SectionHeader } from './ui/SectionHeader';
 import { ShowreelVideo } from './ui/ShowreelVideo';
 import { GameDevGallery } from './ui/GameDevGallery';
@@ -64,20 +63,26 @@ export const GameDevSection = () => {
   }, []);
 
   return (
-    <SectionWrapper 
-      id="gamedev" 
-      className="py-24 bg-gray-800/50"
-      background={<MemoizedGamingIconsBackground id="gamedev-particles" />}
-    >
-      <SectionHeader 
-        title="Game Development & Design" 
-        description="Showcasing my journey in game development, from mechanics design to full-fledged prototypes." 
-      />
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        <ShowreelVideo url={showreelUrl} />
-        <GameDevGallery items={galleryItems} iconMap={iconMap} />
+    <div className="relative w-full bg-gray-800/50">
+      <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">
+        <MemoizedGamingIconsBackground id="gamedev-particles" />
       </div>
-    </SectionWrapper>
+
+      <section id="gamedev" className="section-hero relative z-10 !bg-transparent py-12 md:py-16">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-0 flex flex-col items-center justify-center h-full">
+          <SectionHeader 
+            title="Game Development & Design" 
+            description="Showcasing my journey in game development, from mechanics design to full-fledged prototypes." 
+          />
+          <ShowreelVideo url={showreelUrl} />
+        </div>
+      </section>
+
+      <section id="gamedev-gallery" className="relative z-10 py-12 md:py-16 lg:py-24">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <GameDevGallery items={galleryItems} iconMap={iconMap} />
+        </div>
+      </section>
+    </div>
   );
 };

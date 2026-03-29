@@ -26,13 +26,19 @@ export const GalaxyCreation = ({ skipIntro = false }: { skipIntro?: boolean }) =
     o.register("stars",          1.0, 0.0);
     o.register("starsSound",     1.0, 0.0);
 
-    o.register("shockwave",      0.5, 0.3); // Starts at ~30% in
-    o.register("shockwaveSound", 0.5, 0.3);
+    // Bang happens exactly at 8.6s absolute time.
+    // Master proxy starts at 8.0s and lasts 3.9s.
+    // 8.6 - 8.0 = 0.6s offset.
+    // 0.6 / 3.9 = ~0.154
+    const bangOffset = 0.154;
 
-    o.register("sun",            0.6, 0.3); 
-    o.register("dyson",          0.8, 0.3);
-    o.register("ripples",        1.0, 0.3);
-    o.register("orbits",         1.0, 0.3);
+    o.register("shockwave",      0.5, bangOffset); 
+    o.register("shockwaveSound", 0.5, bangOffset);
+
+    o.register("sun",            0.6, bangOffset); 
+    o.register("dyson",          0.8, bangOffset);
+    o.register("ripples",        1.0, bangOffset);
+    o.register("orbits",         1.0, bangOffset);
 
     return o;
   }, [masterProxy.duration]);

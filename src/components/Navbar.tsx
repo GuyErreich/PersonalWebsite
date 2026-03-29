@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Code2, Gamepad2, Terminal, User, Menu as MenuIcon, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { playHoverSound, playClickSound, playMenuOpenSound, playMenuCloseSound } from '../lib/sound/interactionSounds';
 
 export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -61,14 +62,26 @@ export const Navbar = () => {
             
             {/* Desktop nav */}
             <div className="hidden md:block">
-              <div className="flex items-baseline space-x-8">
+              <div className="flex items-center space-x-4">
                 {navLinks.map((link) => {
                   const Icon = link.icon;
                   return (
-                    <a key={link.href} href={link.href} className="flex items-center space-x-1 text-gray-400 hover:text-white transition-colors group">
-                      <Icon className="w-4 h-4 group-hover:text-cyan-400 transition-colors" />
-                      <span>{link.label}</span>
-                    </a>
+                    <motion.a 
+                      key={link.href} 
+                      href={link.href} 
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onMouseEnter={playHoverSound}
+                      onClick={playClickSound}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-xl group hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
+                    >
+                      <div className="flex-shrink-0 p-2 rounded-lg bg-gray-900 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-gray-800 group-hover:border-cyan-500/30 transition-all duration-300">
+                        <Icon className={`w-4 h-4 ${link.color} drop-shadow-[0_0_5px_currentColor] opacity-80 group-hover:opacity-100`} />
+                      </div>
+                      <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                        {link.label}
+                      </span>
+                    </motion.a>
                   );
                 })}
               </div>
@@ -76,13 +89,19 @@ export const Navbar = () => {
 
             {/* Mobile hamburger */}
             <div className="md:hidden">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 aria-label="Open menu"
                 className="p-2 rounded-xl text-gray-300 hover:text-white bg-gray-800/50 border border-gray-700 hover:border-cyan-500/50 shadow-[0_0_10px_rgba(0,0,0,0.5)] transition-all"
-                onClick={() => setMobileOpen(true)}
+                onMouseEnter={playHoverSound}
+                onClick={() => {
+                  playMenuOpenSound();
+                  setMobileOpen(true);
+                }}
               >
                 <MenuIcon className="w-6 h-6" />
-              </button>
+              </motion.button>
             </div>
           </div>
         </div>
@@ -122,12 +141,18 @@ export const Navbar = () => {
                     Menu
                   </span>
                 </div>
-                <button
-                  onClick={() => setMobileOpen(false)}
+                <motion.button
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={() => {
+                    playMenuCloseSound();
+                    setMobileOpen(false);
+                  }}
                   className="p-2 text-gray-400 hover:text-white rounded-full bg-gray-800/50 hover:bg-gray-700 border border-transparent hover:border-gray-600 transition-all shadow-[inset_0_2px_4px_rgba(255,255,255,0.1)]"
                 >
                   <CloseIcon className="w-5 h-5" />
-                </button>
+                </motion.button>
               </div>
 
               {/* Links */}
@@ -141,7 +166,11 @@ export const Navbar = () => {
                       variants={linkVariants}
                       whileHover={{ scale: 1.02, x: 8 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => setMobileOpen(false)}
+                      onMouseEnter={playHoverSound}
+                      onClick={() => {
+                        playClickSound();
+                        setMobileOpen(false);
+                      }}
                       className="flex items-center space-x-4 group p-3 rounded-xl hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
                     >
                       <div className="flex-shrink-0 p-3 rounded-lg bg-gray-900 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-gray-800 group-hover:border-cyan-500/30 transition-all duration-300">

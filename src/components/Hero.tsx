@@ -1,14 +1,16 @@
-import { Github, Linkedin, Mail, ChevronDown, Rocket } from "lucide-react";
+import { Github, Linkedin, Mail, ChevronDown } from "lucide-react";
 
 import { useState, useEffect } from 'react';
 
 import Cookies from 'js-cookie';
 import { HyperspaceLever } from "./HyperspaceLever";
+import { RocketReplayButton } from "./RocketReplayButton";
 import { ReverseHyperspace } from './backgrounds/three/hero/ReverseHyperspace';
 import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ThreeHeroBackground } from './backgrounds/three/ThreeHeroBackground';
+import { playTagHoverSound, playTagClickSound } from '../lib/sound/interactionSounds';
 
 const ResponsiveCamera = () => {
   const { camera, size } = useThree();
@@ -178,6 +180,27 @@ export const Hero = () => {
   }, [isRewinding, skipIntro, animationKey]);
 
   const handleReplay = () => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_e) {
+      // ignore
+    }
+
     setIsRewinding(true);
     setSkipIntro(false);
     
@@ -329,17 +352,14 @@ export const Hero = () => {
           </motion.div>
 
           {/* Simple Replay Button - Phones only (< 640px) to save space */}
-          <motion.button
-            id="replay-button-phone"
-            className={`sm:hidden absolute top-4 right-4 z-50 p-2.5 rounded-full bg-gray-800/80 backdrop-blur-md border border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.2)] hover:bg-cyan-950 transition-colors ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
-            onClick={handleReplay}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: isRewinding ? 0 : 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: getDelay(14.5) }}
-            title="Replay Animation"
-          >
-            <Rocket className="w-5 h-5" />
-          </motion.button>
+          <motion.div
+              className={`sm:hidden absolute top-4 right-4 z-50 flex ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={isRewinding ? { opacity: 0 } : { opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3, delay: getDelay(14.5) }}
+            >
+              <RocketReplayButton onReplay={handleReplay} />
+            </motion.div>
 
           {/* Big Title Tagline - Stamps in first */}
           <motion.h1
@@ -440,8 +460,12 @@ export const Hero = () => {
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={playTagHoverSound}
+                  onClick={playTagClickSound}
                   transition={{ duration: 0.3, delay: getDelay(19.8) + i * 0.07 }}
-                  className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors cursor-default"
+                  className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors cursor-pointer"
                 >
                   {badge}
                 </motion.span>
@@ -454,8 +478,12 @@ export const Hero = () => {
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={playTagHoverSound}
+                  onClick={playTagClickSound}
                   transition={{ duration: 0.3, delay: getDelay(20.3) + i * 0.07 }}
-                  className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-default"
+                  className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-pointer"
                 >
                   {badge}
                 </motion.span>
@@ -473,6 +501,8 @@ export const Hero = () => {
             <motion.a
               whileHover={{ scale: 1.2, rotate: 5 }}
               whileTap={{ scale: 0.9 }}
+              onMouseEnter={playTagHoverSound}
+              onClick={playTagClickSound}
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -489,8 +519,12 @@ export const Hero = () => {
               rel="noopener noreferrer"
               className="text-gray-400 transition-colors bg-gray-800 hover:bg-[#0077b5]/20 p-3 rounded-full"
               style={{ ['--hover-color' as string]: '#0077b5' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#0077b5')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = '#0077b5';
+                playTagHoverSound();
+              }}
               onMouseLeave={e => (e.currentTarget.style.color = '')}
+              onClick={playTagClickSound}
             >
               <span className="sr-only">LinkedIn</span>
               <Linkedin className="w-7 h-7" />
@@ -498,6 +532,8 @@ export const Hero = () => {
             <motion.a
               whileHover={{ scale: 1.2, rotate: 5 }}
               whileTap={{ scale: 0.9 }}
+              onMouseEnter={playTagHoverSound}
+              onClick={playTagClickSound}
               href="mailto:hello@example.com"
               className="text-gray-400 hover:text-emerald-400 transition-colors bg-gray-800 hover:bg-emerald-500/10 p-3 rounded-full"
             >
