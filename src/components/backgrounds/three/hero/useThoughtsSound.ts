@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AnimationOrchestrator } from '../../../../lib/AnimationOrchestrator';
 
@@ -15,8 +15,7 @@ export const useThoughtsSound = (skipIntro: boolean, orchestrator: AnimationOrch
         if (!playedFiles.current[i] && proxy.activeT >= delay && proxy.activeT > 0) {
             playedFiles.current[i] = true;
             try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
                 const ctx = audioCtxRef.current || new AudioCtx();
                 audioCtxRef.current = ctx;
                 if (ctx.state === 'suspended') ctx.resume();
@@ -44,4 +43,12 @@ export const useThoughtsSound = (skipIntro: boolean, orchestrator: AnimationOrch
         }
     }
   });
+
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
 };

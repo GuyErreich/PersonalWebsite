@@ -28,6 +28,9 @@ export const ImplosionRings = () => {
         });
     }, []);
 
+    const targetColor = useMemo(() => new THREE.Color(), []);
+    const whiteHot = useMemo(() => new THREE.Color(0xffffff), []);
+
     useFrame(() => {
         if (proxy.progress === 0 && proxy.activeT === 0) {
             rings.forEach(r => { if (r.ref.current) r.ref.current.scale.setScalar(0); });
@@ -88,9 +91,9 @@ export const ImplosionRings = () => {
                     whiteMix = Math.pow(burnProgress, 2.0); 
                 }
 
-                const targetColor = ring.color.clone().multiplyScalar(intensity);
+                targetColor.copy(ring.color).multiplyScalar(intensity);
                 if (whiteMix > 0) {
-                    const whiteHot = new THREE.Color(0xffffff).multiplyScalar(intensity);
+                    whiteHot.set(0xffffff).multiplyScalar(intensity);
                     targetColor.lerp(whiteHot, whiteMix);
                 }
                 

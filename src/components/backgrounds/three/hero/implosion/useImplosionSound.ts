@@ -16,8 +16,7 @@ export const useImplosionSound = (skipIntro: boolean, orchestrator: AnimationOrc
     if (!played.current && proxy.activeT > 0) {
       played.current = true;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === 'suspended') ctx.resume();

@@ -18,8 +18,7 @@ export const useScreenFlashSound = (skipIntro: boolean, orchestrator: AnimationO
             const proxy = orchestrator.getProxy(proxyName);
             if (proxy.progress > 0 && proxy.progress < 1 && !flashes.current[refKey]) {
                 flashes.current[refKey] = true;
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+                const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
                 const ctx = audioCtxRef.current || new AudioCtx();
                 audioCtxRef.current = ctx;
                 if (ctx.state === 'suspended') ctx.resume();

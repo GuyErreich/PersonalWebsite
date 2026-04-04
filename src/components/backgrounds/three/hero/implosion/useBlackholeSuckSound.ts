@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AnimationOrchestrator } from '../../../../../lib/AnimationOrchestrator';
 
@@ -12,7 +12,7 @@ import { AnimationOrchestrator } from '../../../../../lib/AnimationOrchestrator'
 // ============================================================================
 type SoundStyleType = "CINEMATIC" | "WARP" | "DIGITAL_DRAIN" | "VOID_CHOIR";
 // <-- CHANGE THE STRING BELOW TO TRY DIFFERENT SOUNDS
-const SOUND_STYLE = "VOID_CHOIR" as string as SoundStyleType;
+const SOUND_STYLE = 'VOID_CHOIR' as SoundStyleType;
 
 export const useBlackholeSuckSound = (skipIntro: boolean, orchestrator: AnimationOrchestrator) => {
   const proxy = orchestrator.getProxy("blackhole");
@@ -25,8 +25,7 @@ export const useBlackholeSuckSound = (skipIntro: boolean, orchestrator: Animatio
     if (!played.current && proxy.activeT > 0) {
       played.current = true;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === 'suspended') ctx.resume();
@@ -235,4 +234,12 @@ export const useBlackholeSuckSound = (skipIntro: boolean, orchestrator: Animatio
       }
     }
   });
+
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
 };

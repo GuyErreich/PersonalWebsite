@@ -18,8 +18,7 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
     if (proxy.progress > 0 && !played.current) {
         played.current = true;
         try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
             const ctx = audioCtxRef.current || new AudioCtx();
             audioCtxRef.current = ctx;
             if (ctx.state === 'suspended') ctx.resume();

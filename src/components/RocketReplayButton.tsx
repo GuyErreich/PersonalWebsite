@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Rocket } from 'lucide-react';
 
@@ -10,6 +10,18 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
   const [isMobileLaunching, setIsMobileLaunching] = useState(false);
   const [isMobileHovering, setIsMobileHovering] = useState(false);
   const hoverAudioRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
+  const launchCtxRef = useRef<AudioContext | null>(null);
+  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    const timeouts = timeoutRefs.current;
+    return () => {
+      timeouts.forEach(clearTimeout);
+      if (launchCtxRef.current && launchCtxRef.current.state !== 'closed') {
+        launchCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
 
   const handleLaunch = () => {
     try {
@@ -27,8 +39,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       }
 
       const ctx = new AudioCtx();
-      
-      // Bass Kick for Launch
+      launchCtxRef.current = ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
@@ -61,15 +72,17 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       noiseFilter.connect(noiseGain);
       noiseGain.connect(ctx.destination);
       noise.start(ctx.currentTime);
+      setTimeout(() => { ctx.close().catch(() => {}); launchCtxRef.current = null; }, 2000);
     } catch {}
     
     // Trigger local launch animation, delay the overall replay and reset
     setIsMobileLaunching(true);
-    setTimeout(() => {
+    const t1 = setTimeout(() => {
       onReplay();
-      // Let the UI unmount or handle rewinding, then reset local state
-      setTimeout(() => setIsMobileLaunching(false), 2000);
+      const t2 = setTimeout(() => setIsMobileLaunching(false), 2000);
+      timeoutRefs.current.push(t2);
     }, 600);
+    timeoutRefs.current.push(t1);
   };
 
   const handleMouseEnter = () => {
@@ -114,6 +127,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
             gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
             gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.3);
             osc.stop(ctx.currentTime + 0.3);
+            setTimeout(() => { ctx.close().catch(() => {}); }, 400);
         } catch {}
         hoverAudioRef.current = null;
     }

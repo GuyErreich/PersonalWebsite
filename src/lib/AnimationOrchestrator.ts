@@ -1,5 +1,5 @@
 import gsap from 'gsap';
-import { useMemo } from 'react';
+import { useMemo, type DependencyList } from 'react';
 
 /**
  * Custom hook to securely build and maintain an AnimationOrchestrator.
@@ -7,7 +7,7 @@ import { useMemo } from 'react';
  * This GUARANTEES that Vite Hot Module Reloading (HMR) will instantly rebuild
  * the orchestrator whenever you safely tweak numbers or durations inline.
  */
-export function useBuildOrchestrator(builder: () => AnimationOrchestrator, deps: React.DependencyList = []) {
+export function useBuildOrchestrator(builder: () => AnimationOrchestrator, deps: DependencyList = []) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     return useMemo(builder, [builder.toString(), ...deps]);
 }
@@ -77,7 +77,6 @@ export class AnimationOrchestrator {
     // Removed createBlock as it was causing unnecessary HOC wrappings
     
     public play() {
-        console.log("Playing main timeline");
         this.mainTimeline.play(0);
     }
     

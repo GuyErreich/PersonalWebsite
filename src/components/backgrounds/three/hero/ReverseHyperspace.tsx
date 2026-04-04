@@ -11,8 +11,7 @@ export const ReverseHyperspace = () => {
     // Generative Synth Time-Jump Sound Effect
     let ctx: AudioContext | null = null;
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       ctx = new AudioCtx();
       
       const now = ctx.currentTime;

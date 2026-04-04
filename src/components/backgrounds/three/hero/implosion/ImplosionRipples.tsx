@@ -19,6 +19,8 @@ export const ImplosionRipples = () => {
         }));
     }, []);
 
+    const glowColor = useMemo(() => new THREE.Color('#60a5fa'), []);
+
     useFrame(() => {
         if (proxy.progress === 0 && proxy.activeT === 0) {
             rippleRefs.forEach(r => { if (r.ref.current) r.ref.current.scale.setScalar(0); });
@@ -77,7 +79,7 @@ export const ImplosionRipples = () => {
                 
                 mat.opacity = startFade * endFade * dynamicOpacity * finalPinch;
                 
-                const glowColor = new THREE.Color("#60a5fa").multiplyScalar(intensity);
+                glowColor.set('#60a5fa').multiplyScalar(intensity);
                 mat.color.copy(glowColor);
             }
             

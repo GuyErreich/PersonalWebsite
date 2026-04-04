@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AnimationOrchestrator } from '../lib/AnimationOrchestrator';
 
@@ -14,8 +14,7 @@ export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrches
     if (thoughtsProxy.progress > 0.9 && thoughtsProxy.progress < 1) {
       played.current = true;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === 'suspended') ctx.resume();
@@ -51,4 +50,12 @@ export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrches
       }
     }
   });
+
+  useEffect(() => {
+    return () => {
+      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+        audioCtxRef.current.close().catch(() => {});
+      }
+    };
+  }, []);
 };

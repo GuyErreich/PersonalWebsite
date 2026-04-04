@@ -1,9 +1,22 @@
+type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+
+let sharedCtx: AudioContext | null = null;
+
+const getCtx = (): AudioContext | null => {
+  if (sharedCtx && sharedCtx.state !== 'closed') {
+    if (sharedCtx.state === 'suspended') sharedCtx.resume().catch(() => {});
+    return sharedCtx;
+  }
+  const AudioCtx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
+  if (!AudioCtx) return null;
+  sharedCtx = new AudioCtx();
+  return sharedCtx;
+};
+
 export const playHoverSound = () => {
   try {
-    // @ts-expect-error - webkitAudioContext is vendor specific
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -25,10 +38,8 @@ export const playHoverSound = () => {
 
 export const playClickSound = () => {
   try {
-    // @ts-expect-error - webkitAudioContext is vendor specific
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     // Switched to sine for softer tone
@@ -50,10 +61,8 @@ export const playClickSound = () => {
 
 export const playMenuOpenSound = () => {
   try {
-    // @ts-expect-error - webkitAudioContext is vendor specific
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -74,10 +83,8 @@ export const playMenuOpenSound = () => {
 
 export const playMenuCloseSound = () => {
   try {
-    // @ts-expect-error - webkitAudioContext is vendor specific
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'sine';
@@ -98,10 +105,8 @@ export const playMenuCloseSound = () => {
 
 export const playTagHoverSound = () => {
   try {
-    // @ts-expect-error - webkitAudioContext is vendor specific
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     // A much higher, glassy, ethereal ping
@@ -122,10 +127,8 @@ export const playTagHoverSound = () => {
 
 export const playTagClickSound = () => {
   try {
-    // @ts-expect-error - webkitAudioContext is vendor specific
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = getCtx();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     // A pleasant soft pop

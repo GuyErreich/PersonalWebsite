@@ -1,20 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Code2, Gamepad2, Terminal, User, Menu as MenuIcon, X as CloseIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playHoverSound, playClickSound, playMenuOpenSound, playMenuCloseSound } from '../lib/sound/interactionSounds';
 
 export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const previousOverflow = useRef('');
 
   // Lock body scroll when drawer is open
   useEffect(() => {
     if (mobileOpen) {
+      previousOverflow.current = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow.current;
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = previousOverflow.current;
     };
   }, [mobileOpen]);
 
@@ -144,6 +146,7 @@ export const Navbar = () => {
                 <motion.button
                   whileHover={{ scale: 1.1, rotate: 90 }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label="Close menu"
                   onMouseEnter={playHoverSound}
                   onClick={() => {
                     playMenuCloseSound();
