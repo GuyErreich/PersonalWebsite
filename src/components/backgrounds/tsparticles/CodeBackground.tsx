@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { ParticlesBase, commonParticlesOptions } from './ParticlesBase';
+import { ParticlesBase } from './ParticlesBase';
+import { commonParticlesOptions } from './particlesConfig';
 import type { ISourceOptions } from '@tsparticles/engine';
 
 interface CodeBackgroundProps {

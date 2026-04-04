@@ -453,7 +453,8 @@ export const Hero = () => {
             {/* DevOps badges — blue toned */}
             <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
               {devOpsBadges.map((badge, i) => (
-                <motion.span
+                <motion.button
+                  type="button"
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -465,13 +466,14 @@ export const Hero = () => {
                   className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 hover:bg-blue-500/25 transition-colors cursor-pointer"
                 >
                   {badge}
-                </motion.span>
+                </motion.button>
               ))}
             </div>
             {/* GameDev badges — emerald/purple toned */}
             <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
               {gameDevBadges.map((badge, i) => (
-                <motion.span
+                <motion.button
+                  type="button"
                   key={badge}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -483,7 +485,7 @@ export const Hero = () => {
                   className="px-2.5 sm:px-3 py-1 text-[11px] sm:text-xs font-semibold rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors cursor-pointer"
                 >
                   {badge}
-                </motion.span>
+                </motion.button>
               ))}
             </div>
           </motion.div>

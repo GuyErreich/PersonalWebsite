@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Rocket } from 'lucide-react';
+import { playHoverSound } from '../lib/sound/interactionSounds';
 
 interface RocketReplayButtonProps {
   onReplay: () => void;
@@ -9,7 +10,6 @@ interface RocketReplayButtonProps {
 export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
   const [isMobileLaunching, setIsMobileLaunching] = useState(false);
   const [isMobileHovering, setIsMobileHovering] = useState(false);
-  const hoverAudioRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
   const launchCtxRef = useRef<AudioContext | null>(null);
   const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -27,16 +27,6 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
     try {
       const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
-      
-      // Cleanup hover sound immediately
-      if (hoverAudioRef.current) {
-          try {
-              const { osc, gain, ctx } = hoverAudioRef.current;
-              gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
-              osc.stop(ctx.currentTime + 0.1);
-          } catch {}
-          hoverAudioRef.current = null;
-      }
 
       const ctx = new AudioCtx();
       launchCtxRef.current = ctx;
@@ -87,50 +77,11 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
 
   const handleMouseEnter = () => {
     setIsMobileHovering(true);
-    if (isMobileLaunching) return;
-
-    try {
-      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      
-      // Persistent warm humming rumble
-      const osc = ctx.createOscillator();
-      const filter = ctx.createBiquadFilter();
-      const gain = ctx.createGain();
-      
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(30, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(50, ctx.currentTime + 1.0);
-      
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(200, ctx.currentTime);
-
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.04, ctx.currentTime + 0.3);
-      
-      osc.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      
-      hoverAudioRef.current = { ctx, osc, gain };
-    } catch {}
+    if (!isMobileLaunching) playHoverSound();
   };
 
   const handleMouseLeave = () => {
     setIsMobileHovering(false);
-    if (hoverAudioRef.current) {
-        try {
-            const { ctx, osc, gain } = hoverAudioRef.current;
-            gain.gain.cancelScheduledValues(ctx.currentTime);
-            gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-            osc.stop(ctx.currentTime + 0.3);
-            setTimeout(() => { ctx.close().catch(() => {}); }, 400);
-        } catch {}
-        hoverAudioRef.current = null;
-    }
   };
 
   return (

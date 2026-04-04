@@ -2,7 +2,8 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { AnimationOrchestrator, useBuildOrchestrator } from '../../../../lib/AnimationOrchestrator';
-import { AnimationProvider, useOrchestrator } from '../../../../lib/AnimationContext';
+import { AnimationProvider } from '../../../../lib/AnimationProvider';
+import { useOrchestrator } from '../../../../lib/AnimationContext';
 
 import { DysonSphere } from './galaxy/DysonSphere';
 import { IcosahedronSun } from './galaxy/IcosahedronSun';

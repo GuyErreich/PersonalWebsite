@@ -118,7 +118,10 @@ export const Navbar = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
+              onClick={() => {
+                playMenuCloseSound();
+                setMobileOpen(false);
+              }}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
 
@@ -172,6 +175,7 @@ export const Navbar = () => {
                       onMouseEnter={playHoverSound}
                       onClick={() => {
                         playClickSound();
+                        playMenuCloseSound();
                         setMobileOpen(false);
                       }}
                       className="flex items-center space-x-4 group p-3 rounded-xl hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"

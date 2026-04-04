@@ -7,7 +7,8 @@ import { ImplosionDust } from './implosion/ImplosionDust';
 import { ImplosionWormholes } from './implosion/ImplosionWormholes';
 import { useImplosionSound } from './implosion/useImplosionSound';
 import { useBlackholeSuckSound } from './implosion/useBlackholeSuckSound';
-import { AnimationProvider, useOrchestrator } from '../../../../lib/AnimationContext';
+import { AnimationProvider } from '../../../../lib/AnimationProvider';
+import { useOrchestrator } from '../../../../lib/AnimationContext';
 import { AnimationOrchestrator, useBuildOrchestrator } from '../../../../lib/AnimationOrchestrator';
 
 export const Implosion = ({ 

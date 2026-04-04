@@ -41,13 +41,3 @@ export const ParticlesBase = ({ id, className = "absolute inset-0 z-0 h-full w-f
 
   return <Particles id={id} className={className} options={options} />;
 };
-
-// Reusable Base Options that all configurations share
-export const commonParticlesOptions: ISourceOptions = {
-  fullScreen: { enable: false },
-  background: {
-    color: { value: "transparent" },
-  },
-  fpsLimit: 120,
-  detectRetina: true,
-};

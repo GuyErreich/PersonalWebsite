@@ -9,7 +9,7 @@ import { Implosion } from './hero/Implosion';
 import { FloatingThoughts } from './hero/FloatingThoughts';
 import { HyperspaceJump } from './hero/HyperspaceJump';
 import { AnimationOrchestrator, useBuildOrchestrator } from '../../../lib/AnimationOrchestrator';
-import { AnimationProvider } from '../../../lib/AnimationContext';
+import { AnimationProvider } from '../../../lib/AnimationProvider';
 
 // Empty component to host hooks that require orchestrator context
 const CoreSoundFX = ({ skipIntro, orchestrator }: { skipIntro: boolean, orchestrator: AnimationOrchestrator }) => {
