@@ -1,6 +1,6 @@
 export const playHoverSound = () => {
   try {
-    // @ts-ignore
+    // @ts-expect-error - webkitAudioContext is vendor specific
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
@@ -18,14 +18,14 @@ export const playHoverSound = () => {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.1);
-  } catch (e) {
+  } catch {
     // ignore
   }
 };
 
 export const playClickSound = () => {
   try {
-    // @ts-ignore
+    // @ts-expect-error - webkitAudioContext is vendor specific
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
@@ -43,14 +43,14 @@ export const playClickSound = () => {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
-  } catch (e) {
+  } catch {
     // ignore
   }
 };
 
 export const playMenuOpenSound = () => {
   try {
-    // @ts-ignore
+    // @ts-expect-error - webkitAudioContext is vendor specific
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
@@ -67,14 +67,14 @@ export const playMenuOpenSound = () => {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.3);
-  } catch (e) {
+  } catch {
     // ignore
   }
 };
 
 export const playMenuCloseSound = () => {
   try {
-    // @ts-ignore
+    // @ts-expect-error - webkitAudioContext is vendor specific
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
@@ -91,14 +91,14 @@ export const playMenuCloseSound = () => {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.2);
-  } catch (e) {
+  } catch {
     // ignore
   }
 };
 
 export const playTagHoverSound = () => {
   try {
-    // @ts-ignore
+    // @ts-expect-error - webkitAudioContext is vendor specific
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
@@ -115,14 +115,14 @@ export const playTagHoverSound = () => {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.05);
-  } catch (e) {
+  } catch {
     // ignore
   }
 };
 
 export const playTagClickSound = () => {
   try {
-    // @ts-ignore
+    // @ts-expect-error - webkitAudioContext is vendor specific
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
     const ctx = new AudioCtx();
@@ -139,7 +139,7 @@ export const playTagClickSound = () => {
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.1);
-  } catch (e) {
+  } catch {
     // ignore
   }
 };

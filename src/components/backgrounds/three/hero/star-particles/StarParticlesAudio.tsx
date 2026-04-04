@@ -1,7 +1,4 @@
-// @ts-nocheck
-import { useEffect } from 'react';
-
-export const StarParticlesAudio = ({ skipIntro = false }: { skipIntro?: boolean }) => {
+export const StarParticlesAudio = ({ skipIntro: _skipIntro = false }: { skipIntro?: boolean }) => {
 
   return null;
 };

@@ -1,14 +1,8 @@
-// @ts-nocheck
-import React, { useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-
 const implosionDuration = 3.0; // The active duration of the collapse phase
 const entryDelay = 4.8; // Starts right near the end of the text collapse
-const totalPhaseTime = implosionDuration + entryDelay;
 
 // EXACT shared math extracted from the single file's useFrame
-export const getImplosionState = (t) => {
+export const getImplosionState = (t: number) => {
     const activeT = t - entryDelay;
     const activeDuration = implosionDuration;
     const progress = activeT / activeDuration;

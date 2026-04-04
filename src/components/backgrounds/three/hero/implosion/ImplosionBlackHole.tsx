@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -9,7 +8,7 @@ export const ImplosionBlackHole = () => {
   
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const { progress, entryDelay, activeT } = getImplosionState(t);
+    const { progress } = getImplosionState(t);
     
     if (meshRef.current) {
       if (progress > 0.45 && progress <= 0.88) {

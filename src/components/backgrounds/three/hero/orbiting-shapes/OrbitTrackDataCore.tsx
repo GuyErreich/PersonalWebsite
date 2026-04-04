@@ -1,9 +1,13 @@
-// @ts-nocheck
-import React, { forwardRef } from 'react';
+import { forwardRef } from 'react';
 import * as THREE from 'three';
 import { Float } from '@react-three/drei';
 
-export const OrbitTrackDataCore = forwardRef<THREE.Group, { shapes: any[], visible: boolean }>(({ shapes, visible }, ref) => {
+interface OrbitShape {
+  x: number;
+  z: number;
+}
+
+export const OrbitTrackDataCore = forwardRef<THREE.Group, { shapes: OrbitShape[], visible: boolean }>(({ shapes, visible }, ref) => {
   return (
       <group ref={ref} visible={visible}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -132,7 +131,7 @@ export const ImplosionPlasmaDust = () => {
       }
       dustRef.current.geometry.attributes.position.needsUpdate = true;
 
-      const mat = dustRef.current.material;
+      const mat = dustRef.current.material as THREE.ShaderMaterial;
       mat.uniforms.uOpacity.value = Math.min(1, activeT / 0.5) * (0.8 + Math.pow(progress, 2.0)) * finalPinch;
       mat.uniforms.uIntensity.value = 1.0 + Math.pow(progress, 2.0) * 5.0;
       mat.uniforms.uAbsorption.value = progress > 0.78 ? Math.min(1.0, (progress - 0.78) / 0.10) : 0.0;

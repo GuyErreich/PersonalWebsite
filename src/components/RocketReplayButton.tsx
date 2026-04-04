@@ -9,13 +9,11 @@ interface RocketReplayButtonProps {
 export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
   const [isMobileLaunching, setIsMobileLaunching] = useState(false);
   const [isMobileHovering, setIsMobileHovering] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hoverAudioRef = useRef<any>(null);
+  const hoverAudioRef = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
 
   const handleLaunch = () => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       
       // Cleanup hover sound immediately
@@ -24,7 +22,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
               const { osc, gain, ctx } = hoverAudioRef.current;
               gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
               osc.stop(ctx.currentTime + 0.1);
-          } catch(e) {}
+          } catch {}
           hoverAudioRef.current = null;
       }
 
@@ -63,8 +61,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       noiseFilter.connect(noiseGain);
       noiseGain.connect(ctx.destination);
       noise.start(ctx.currentTime);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (e) {}
+    } catch {}
     
     // Trigger local launch animation, delay the overall replay and reset
     setIsMobileLaunching(true);
@@ -80,8 +77,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
     if (isMobileLaunching) return;
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
       
@@ -106,8 +102,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       osc.start(ctx.currentTime);
       
       hoverAudioRef.current = { ctx, osc, gain };
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_e) { /* ignore */ }
+    } catch {}
   };
 
   const handleMouseLeave = () => {
@@ -119,7 +114,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
             gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
             gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.3);
             osc.stop(ctx.currentTime + 0.3);
-        } catch(e) {}
+        } catch {}
         hoverAudioRef.current = null;
     }
   };

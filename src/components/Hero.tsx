@@ -83,8 +83,7 @@ export const Hero = () => {
     const initAudio = () => {
       if (isCancelled) return;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         ctx = new AudioCtx();
         if (ctx.state === 'suspended') ctx.resume();
 
@@ -181,8 +180,7 @@ export const Hero = () => {
 
   const handleReplay = () => {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -196,7 +194,6 @@ export const Hero = () => {
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.2);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_e) {
       // ignore
     }

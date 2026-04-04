@@ -10,7 +10,7 @@ export const FloatingThoughtsAudio = ({ skipIntro = false, thoughtsLength }: { s
     const t = setTimeout(() => {
       if (isCancelled) return;
       try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         ctx = new AudioCtx();
         if (ctx.state === 'suspended') ctx.resume();
 
@@ -36,7 +36,7 @@ export const FloatingThoughtsAudio = ({ skipIntro = false, thoughtsLength }: { s
             osc.start(now + delay);
             osc.stop(now + delay + 2.0);
         }
-      } catch (e) {}
+      } catch {}
     }, 50);
 
     return () => {
@@ -44,6 +44,6 @@ export const FloatingThoughtsAudio = ({ skipIntro = false, thoughtsLength }: { s
       clearTimeout(t);
       if (ctx && ctx.state !== 'closed') ctx.close().catch(()=>{});
     }
-  }, [skipIntro]);
+  }, [skipIntro, thoughtsLength]);
   return null;
 };
