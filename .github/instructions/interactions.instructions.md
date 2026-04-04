@@ -33,5 +33,17 @@ Everything should feel interactive and tactile in this project. Every hover and 
      </motion.button>
      ```
 
-3. **Consistency:**
+3. **Accessibility — Semantic Elements:**
+   - Never put `onClick` on `<div>`, `<span>`, or `<motion.div>`/`<motion.span>`. They are invisible to keyboard and screen reader users.
+   - Use `<motion.button type="button">` for actions, `<motion.a>` / `<Link>` for navigation.
+   - All icon-only buttons (close, X, hamburger) MUST have an `aria-label`.
+
+4. **Sound Completeness — All Dismiss Paths:**
+   - Every way a user can close a menu, modal, or drawer must fire `playMenuCloseSound`:
+     - Close button onClick
+     - Backdrop/overlay onClick
+     - Nav link onClick (when it also closes the menu)
+   - Missing a dismiss path is a bug, not an omission.
+
+5. **Consistency:**
    - If a mild response is technically feasible, add it. Even a faint `sine` wave tick adds massive tactile quality.

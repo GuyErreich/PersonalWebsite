@@ -132,17 +132,60 @@ useEffect(() => {
 
 ---
 
-## 6. Fast Refresh Warnings (`react-refresh/only-export-components`)
+## 6. Fast Refresh — One Concern Per File
 
-These are **warnings**, not errors. They appear when a file exports both a React component and a non-component (e.g., a context or constant). The project intentionally accepts these in:
-- `src/lib/AnimationContext.tsx` (exports context + hook)
-- `src/components/backgrounds/tsparticles/ParticlesBase.tsx` (exports config constant + component)
+`react-refresh/only-export-components` warns when a file exports both a React component and a non-component (context object, constant, hook, utility). This prevents React Fast Refresh from doing a partial hot-reload and causes the full page to reload instead.
 
-Do **not** restructure these files unless explicitly asked. Do not suppress the warnings with `// eslint-disable`.
+**Rule: always split mixed-export files.**
+
+| File exports | Place it in |
+|---|---|
+| React component only | `.tsx` file |
+| Context + hook (no component) | `.ts` file, or a separate `.tsx` if JSX is needed |
+| Shared constants / config | `.ts` file |
+| Component provider wrapper | Its own `FooProvider.tsx` file |
+
+**Example — wrong:**
+```tsx
+// AnimationContext.tsx — mixes context, component, and hook
+export const AnimationContext = createContext(...);   // non-component
+export const AnimationProvider = (...) => <...>;     // component ⚠️
+export const useOrchestrator = () => { ... };        // non-component
+```
+
+**Example — correct:**
+```tsx
+// AnimationContext.tsx — context + hook only (no component, no warning)
+export const AnimationContext = createContext(...);
+export const useOrchestrator = () => { ... };
+
+// AnimationProvider.tsx — component only (no warning)
+export const AnimationProvider = (...) => <...>;
+```
+
+Do **not** suppress with `// eslint-disable`. Fix by splitting the file.
 
 ---
 
-## 7. Validation Checklist Before Committing
+## 7. Unused npm Dependencies
+
+Unused packages in `package.json` waste install time and inflate the bundle. Before adding a dependency — and before committing — verify it is actually imported somewhere in `src/`.
+
+```bash
+# Quick check — should return results if the package is used
+grep -r "from 'some-package'" src/
+```
+
+If a package appears in `package.json` but has no imports, remove it:
+```bash
+npm uninstall some-package
+```
+
+This applies to both `dependencies` and `devDependencies`.
+
+---
+
+## 8. Validation Checklist Before Committing
 
 Run these two commands and ensure both pass with zero errors:
 ```bash
@@ -155,7 +198,7 @@ npm run build  # tsc -b + vite build (full type-check)
 
 ---
 
-## 8. ESLint Config Conventions (eslint.config.js)
+## 9. ESLint Config Conventions (eslint.config.js)
 
 The project's ESLint config enforces:
 ```js

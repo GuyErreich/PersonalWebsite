@@ -18,8 +18,34 @@ Everything should feel interactive and tactile in this project. Apply this skill
 - Rely on our `window.AudioContext` utility file.
 - Location: `src/lib/sound/interactionSounds.ts`.
 - Exports: `playHoverSound`, `playClickSound`, `playMenuOpenSound`, `playMenuCloseSound`.
+- **Cover ALL dismiss paths** — every way a user can close a menu/modal must fire `playMenuCloseSound`:
+  - The close button
+  - Backdrop/overlay clicks
+  - Navigation link clicks that close the menu
+  - Any programmatic close triggered by user action
 
-### 3. Implementation Example
+### 3. Accessibility — Interactive Elements
+
+**Never attach `onClick` to non-interactive elements.** Screen readers and keyboard users cannot reach `<div>`, `<span>`, or `<motion.div>` with an `onClick`. Use the correct semantic element:
+
+```tsx
+// BAD — span with onClick is not keyboard-focusable
+<motion.span onClick={handleClick}>Open section</motion.span>
+
+// GOOD — button is focusable, activatable via Enter/Space
+<motion.button type="button" onClick={handleClick}>Open section</motion.button>
+```
+
+| Pattern | Correct element |
+|---|---|
+| Triggers navigation | `<motion.a href="...">` or `<Link>` |
+| Triggers an action | `<motion.button type="button">` |
+| Closes an overlay | `<motion.button type="button" aria-label="Close menu">` |
+| Backdrop / overlay dismiss | `<button type="button" aria-label="Close menu">` |
+
+Always add `aria-label` to icon-only buttons that have no visible text.
+
+### 4. Implementation Example
 ```tsx
 import { motion } from 'framer-motion';
 import { playHoverSound, playClickSound } from '../lib/sound/interactionSounds';
