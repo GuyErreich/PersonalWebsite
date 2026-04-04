@@ -8,7 +8,7 @@ applyTo: "src/components/**/*.tsx"
 Everything should feel interactive and tactile in this project. Every hover and click should be felt by the user.
 
 1. **Micro-interactions:**
-   - Always implement slight scale/brightness changes on hover and tap.
+   - Always replace plain `<button>` / `<a>` with Framer Motion equivalents (`<motion.button>`, `<motion.a>`).
    - Use `framer-motion` for smooth spring animations (e.g. `whileHover={{ scale: 1.05 }}`, `whileTap={{ scale: 0.95 }}`).
 
 2. **Sound Feedback:**
@@ -19,15 +19,18 @@ Everything should feel interactive and tactile in this project. Every hover and 
      - Utilize `playMenuOpenSound` / `playMenuCloseSound` for drawers, modals, toggles.
    - Example implementation:
      ```tsx
+     import { motion } from 'framer-motion';
      import { playHoverSound, playClickSound } from '../lib/sound/interactionSounds';
 
-     <button 
-       onMouseEnter={playHoverSound} 
+     <motion.button
+       whileHover={{ scale: 1.05 }}
+       whileTap={{ scale: 0.95 }}
+       onMouseEnter={playHoverSound}
        onClick={playClickSound}
        className="..."
      >
        Click me
-     </button>
+     </motion.button>
      ```
 
 3. **Consistency:**

@@ -1,6 +1,9 @@
 ---
 name: "default-agent"
 description: "Default agent with knowledge of the site's development standards, interaction guidelines, and UI patterns."
+skills:
+  - ui-interactions
+  - code-quality
 ---
 
 # Site Development Standards
@@ -21,4 +24,13 @@ Always adhere to the following development standards:
    - For 3D (React Three Fiber) do not instantiate continuous objects in `useFrame`.
    - For UI sounds, prefer our `AudioContext` synthesizer (which has zero network overhead) over external static audio files. 
 
+4. **TypeScript Strictness (zero tolerance):**
+   - Never use `any`. Use specific types or named interfaces. For browser vendor APIs: `(window as Window & { webkitAudioContext?: typeof AudioContext })`.
+   - Never use `@ts-nocheck`. Fix the underlying type — add parameter types, cast `material` to `THREE.ShaderMaterial`, etc.
+   - Never write `catch (e) {}`. Use `catch { }` (no binding) for intentional suppression.
+   - Prefix unused variables with `_` instead of adding `eslint-disable` comments.
+   - Always include all referenced variables in `useEffect`/`useCallback` dependency arrays.
+   - Validate with `npm run lint` (0 errors) and `npm run build` (must succeed) before finishing.
+
 Follow the `ui-interactions` skill for specific code implementation examples when building new UI elements.
+Follow the `code-quality` skill for TypeScript/ESLint patterns and the validation checklist.

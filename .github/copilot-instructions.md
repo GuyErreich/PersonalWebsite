@@ -29,3 +29,12 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - Ensure type safety with TypeScript; avoid `any` wherever possible.
 - Leverage the `AnimationOrchestrator` / `AnimationContext` in `src/lib/` for coordinating complex sequence animations across the site.
 - Separate complex visual components into their respective subdirectories (e.g., Three.js specific code lives in `components/backgrounds/three/`).
+
+## TypeScript & Lint Rules (enforced — zero tolerance)
+- **No `any`**: Use specific types or define a named `interface`/`type`. For vendor browser APIs use `(window as Window & { webkitAudioContext?: typeof AudioContext })` — never `(window as any)`.
+- **No `@ts-nocheck`**: Fix the underlying type issue instead. Add parameter types, cast materials to their concrete class (e.g., `THREE.ShaderMaterial`), and remove unused imports.
+- **No bare `catch (e) {}`**: Use `catch { }` (no binding) for intentional suppression, or log the error.
+- **Unused variables**: Prefix with `_` (e.g., `_skipIntro`) or remove entirely. Never suppress with `eslint-disable`.
+- **Hook deps**: Always include every referenced variable in `useEffect`/`useCallback` dependency arrays.
+- **Validation**: Run `npm run lint` (0 errors) and `npm run build` (must succeed) before committing.
+- See `.github/skills/code-quality/SKILL.md` for full patterns and examples.

@@ -22,3 +22,6 @@ When working with 3D components in this project, prioritize performance and rely
 
 4. **Typing:**
    - Always ensure refs are properly typed (e.g., `useRef<THREE.Group>(null)`).
+   - When accessing `mesh.material` uniforms, always cast to the concrete class first: `const mat = mesh.material as THREE.ShaderMaterial;`
+   - Never use `@ts-nocheck` in Three.js files. Type all `useFrame` callback parameters and shared utility functions explicitly (e.g., `(t: number) => { ... }`).
+   - When forwarding refs with typed props, define a named interface for the props instead of inlining `any`: `forwardRef<THREE.Group, OrbitTrackProps>(...)`.

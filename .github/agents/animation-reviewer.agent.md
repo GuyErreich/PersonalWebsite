@@ -1,6 +1,9 @@
 ---
 name: animation-reviewer
 description: "Expert agent for reviewing GSAP, Framer Motion, and Three.js code for performance, memory leaks, and rendering efficiency."
+skills:
+  - code-quality
+  - threejs
 ---
 
 # Animation & 3D Performance Expert
@@ -23,5 +26,12 @@ When tasked to review or optimize code in this workspace, strictly analyze the f
 
 4. **Orchestration:**
    - Analyze how the animation syncs with the project's `AnimationOrchestrator`. Ensure complex timelines aren't awkwardly fragmented.
+
+5. **TypeScript Correctness in Animation Files:**
+   - Flag any `@ts-nocheck` — it must be removed and replaced with proper types.
+   - Flag any `(window as any)` or `ref.current.material` accessed without a concrete cast (e.g., `as THREE.ShaderMaterial`).
+   - Flag any `catch (e) {}` — use `catch { }` (no binding) for intentional suppression.
+   - Flag unused destructured variables from shared helpers (e.g., `getImplosionState`) — only destructure what is actually used.
+   - Flag missing `useEffect` / `useCallback` dependency array entries that reference component-scope variables.
 
 Ignore unrelated logic, CSS styling, or accessibility unless it directly impacts the render thread performance. Provide specific, robust code block solutions for optimizations.
