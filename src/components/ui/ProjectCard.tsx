@@ -1,7 +1,8 @@
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { Github } from 'lucide-react';
 import type { ReactNode } from 'react';
-import Cookies from 'js-cookie';
+import { useContext, useRef } from 'react';
+import { SectionRevealContext } from './SectionEntranceOverlay';
 
 interface ProjectCardProps {
   title: string;
@@ -13,14 +14,16 @@ interface ProjectCardProps {
 }
 
 export const ProjectCard = ({ title, description, tags, link, icon, index }: ProjectCardProps) => {
-  const hasCookie = !!Cookies.get('hero_visited');
+  const isRevealed = useContext(SectionRevealContext);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-50px' });
 
   return (
-    <motion.div 
-      initial={hasCookie ? { opacity: 1, x: 0 } : { opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: hasCookie ? 0 : 0.6, delay: hasCookie ? 0 : index * 0.1 }}
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+      animate={(isRevealed && isInView) ? { opacity: 1, x: 0 } : { opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+      transition={{ duration: 0.6, delay: isRevealed ? 0.3 + index * 0.1 : 0 }}
       whileHover={{ y: -10 }}
       className="bg-gray-800 rounded-xl p-8 border border-gray-700 hover:border-blue-500 transition-colors group flex flex-col h-full shadow-lg hover:shadow-blue-500/20"
     >

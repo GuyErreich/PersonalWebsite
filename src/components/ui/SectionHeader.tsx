@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
-import Cookies from 'js-cookie';
+import { motion, useInView } from 'framer-motion';
+import { useContext, useRef } from 'react';
+import { SectionRevealContext } from './SectionEntranceOverlay';
 
 interface SectionHeaderProps {
   title: string;
@@ -7,14 +8,16 @@ interface SectionHeaderProps {
 }
 
 export const SectionHeader = ({ title, description }: SectionHeaderProps) => {
-  const hasCookie = !!Cookies.get('hero_visited');
+  const isRevealed = useContext(SectionRevealContext);
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
 
   return (
-    <motion.div 
-      initial={hasCookie ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-100px" }}
-      transition={{ duration: hasCookie ? 0 : 0.6 }}
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={(isRevealed && isInView) ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
+      transition={{ duration: 0.6, delay: 0.3 }}
       className="text-center mb-16"
     >
       <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">{title}</h2>

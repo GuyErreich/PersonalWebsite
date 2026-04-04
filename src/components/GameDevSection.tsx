@@ -6,6 +6,7 @@ import { ShowreelVideo } from './ui/ShowreelVideo';
 import { GameDevGallery } from './ui/GameDevGallery';
 import { HeroMediaSection } from './ui/HeroMediaSection';
 import { SectionHeader } from './ui/SectionHeader';
+import { SectionEntranceOverlay } from './ui/SectionEntranceOverlay';
 
 const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
 
@@ -68,15 +69,16 @@ export const GameDevSection = () => {
       </div>
 
       {/* ── Section 1: Full-screen hero with title + showreel ── */}
-      <HeroMediaSection
-        id="gamedev"
-        title="Game Development & Design"
-        description="Showcasing my journey in game development, from mechanics design to full-fledged prototypes."
-        sectionClassName="bg-gray-900/80"
-      >
-        <ShowreelVideo url={showreelUrl} />
-      </HeroMediaSection>
-
+        <SectionEntranceOverlay theme="gamedev">
+          <HeroMediaSection
+            id="gamedev"
+            title="Game Development & Design"
+            description="Showcasing my journey in game development, from mechanics design to full-fledged prototypes."
+            sectionClassName="bg-gray-900/80"
+          >
+            <ShowreelVideo url={showreelUrl} />
+          </HeroMediaSection>
+        </SectionEntranceOverlay>
       {/* ── Section 2: Full-screen gallery ── */}
       <section
         id="gamedev-gallery"

@@ -6,6 +6,7 @@ import { ThreeDevOpsGraphics } from './backgrounds/three/ThreeDevOpsGraphics';
 import { SectionWrapper } from './ui/SectionWrapper';
 import { SectionHeader } from './ui/SectionHeader';
 import { ProjectCard } from './ui/ProjectCard';
+import { SectionEntranceOverlay } from './ui/SectionEntranceOverlay';
 
 const projects = [
   {
@@ -40,6 +41,7 @@ const projects = [
 
 export const DevOpsSection = () => {
   return (
+    <SectionEntranceOverlay theme="devops">
     <SectionWrapper 
       id="devops" 
       className="py-12 md:py-16 bg-gray-950"
@@ -73,5 +75,6 @@ export const DevOpsSection = () => {
         ))}
       </div>
     </SectionWrapper>
+    </SectionEntranceOverlay>
   );
 };

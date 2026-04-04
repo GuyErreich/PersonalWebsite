@@ -1,12 +1,12 @@
 import { Github, Linkedin, Mail, ChevronDown } from "lucide-react";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import Cookies from 'js-cookie';
 import { HyperspaceLever } from "./HyperspaceLever";
 import { RocketReplayButton } from "./RocketReplayButton";
 import { ReverseHyperspace } from './backgrounds/three/hero/ReverseHyperspace';
-import { motion, useMotionValue, useTransform, animate, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, AnimatePresence, useInView } from 'framer-motion';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ThreeHeroBackground } from './backgrounds/three/ThreeHeroBackground';
@@ -211,13 +211,16 @@ export const Hero = () => {
   const UI_DELAY_OFFSET = 3.0;
   const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay + UI_DELAY_OFFSET);
 
+  const heroSectionRef = useRef<HTMLElement>(null);
+  const isHeroVisible = useInView(heroSectionRef, { amount: 0 });
+
   return (
-    <section id="about" className="section-hero">
+    <section id="about" className="section-hero" ref={heroSectionRef}>
       {/* Replay Background Animation Lever - Desktop Only (Floating) */}
       <motion.div 
         id="lever-panel" 
-        className={`hidden min-[1300px]:block relative z-50 ${isRewinding ? 'pointer-events-none' : 'pointer-events-auto'}`}
-        animate={{ opacity: isRewinding ? 0 : 1 }}
+        className={`hidden min-[1300px]:block relative z-50 ${(isRewinding || !isHeroVisible) ? 'pointer-events-none' : 'pointer-events-auto'}`}
+        animate={{ opacity: (isRewinding || !isHeroVisible) ? 0 : 1 }}
         transition={{ duration: 0.3 }}
       >
         <HyperspaceLever key={`lever-${animationKey}`} onActivate={handleReplay} getDelay={getDelay} skipIntro={skipIntro} />

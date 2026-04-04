@@ -12,6 +12,7 @@ interface HyperspaceLeverProps {
 export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, getDelay, skipIntro, className, isInline = false }) => {
   const [energy, setEnergy] = useState(0);
   const dragY = useMotionValue(0);
+
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
