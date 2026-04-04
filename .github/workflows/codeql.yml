@@ -12,6 +12,8 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     permissions:
       actions: read
       contents: read
@@ -30,6 +32,18 @@ jobs:
       uses: github/codeql-action/init@v3
       with:
         languages: ${{ matrix.language }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version-file: '.node-version'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
