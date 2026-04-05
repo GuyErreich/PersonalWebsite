@@ -1,5 +1,6 @@
 import { Code, Gamepad2, Terminal, Shield, Rocket, Globe, Server, Database, Cpu, Wrench, Smartphone, Monitor } from 'lucide-react';
 import { useEffect, useState, memo } from 'react';
+import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { GamingIconsBackground } from './backgrounds/tsparticles/GamingIconsBackground';
 import { ShowreelVideo } from './ui/ShowreelVideo';
@@ -7,6 +8,8 @@ import { GameDevGallery } from './ui/GameDevGallery';
 import { HeroMediaSection } from './ui/HeroMediaSection';
 import { SectionHeader } from './ui/SectionHeader';
 import { SectionEntranceOverlay } from './ui/SectionEntranceOverlay';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+import { SectionEdge } from './ui/SectionEdge';
 
 const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
 
@@ -39,6 +42,7 @@ export interface GameDevItem {
 export const GameDevSection = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
+  const { ref: galleryRef, motionStyle: galleryMotionStyle } = useScrollReveal();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -67,6 +71,12 @@ export const GameDevSection = () => {
       <div className="absolute inset-0 z-0 pointer-events-none">
         <MemoizedGamingIconsBackground id="gamedev-particles" />
       </div>
+      {/* Top fade — echoes Hero space blue bleeding into the gaming world */}
+      <div className="absolute inset-x-0 top-0 h-64 z-20 pointer-events-none" style={{
+        background: 'linear-gradient(to bottom, #111827 0%, rgba(17,24,39,0.85) 22%, rgba(56,189,248,0.06) 60%, rgba(99,102,241,0.04) 80%, transparent 100%)'
+      }} />
+      {/* GameDev → DevOps shaped edge — circuit board PCB trace silhouette */}
+      <SectionEdge variant="circuit" fillColor="#030712" className="z-20" />
 
       {/* ── Section 1: Full-screen hero with title + showreel ── */}
         <SectionEntranceOverlay theme="gamedev">
@@ -82,15 +92,19 @@ export const GameDevSection = () => {
       {/* ── Section 2: Full-screen gallery ── */}
       <section
         id="gamedev-gallery"
+        ref={galleryRef}
         className="min-h-[100svh] flex flex-col items-center justify-center relative z-10 py-20 bg-gray-900/80"
       >
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12">
+        <motion.div
+          style={galleryMotionStyle}
+          className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12"
+        >
           <SectionHeader
             title="Projects & Prototypes"
             description="A curated look at the games and interactive experiences I've built."
           />
           <GameDevGallery items={galleryItems} iconMap={iconMap} />
-        </div>
+        </motion.div>
       </section>
     </div>
   );

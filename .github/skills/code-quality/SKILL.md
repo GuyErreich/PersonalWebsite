@@ -198,6 +198,60 @@ npm run build  # tsc -b + vite build (full type-check)
 
 ---
 
+## 9. File Size & Component Splitting
+
+Keep component files under ~150 lines. When a file grows beyond that, split it:
+
+- Extract each logical sub-component into its own file (e.g. `GameDevOverlay.tsx`, `DevOpsOverlay.tsx`)
+- Extract shared utilities (audio helpers, math helpers) into `.ts` files under `src/lib/`
+- Never leave helper components defined in the same file as a parent if they are non-trivial
+
+**Before creating anything new:**
+1. Search `src/components/` for an existing component that does the same thing
+2. Search `src/lib/` for an existing utility/hook
+3. Check `src/index.css` `@layer components` for an existing CSS class
+
+Only create something new if nothing reusable already exists.
+
+---
+
+## 10. CSS Classes Over Inline Styles
+
+Prefer `@layer components` CSS classes in `src/index.css` over `style={{}}` props.
+
+**When to use a CSS class:**
+- Any `style` property that appears more than once in the codebase
+- Background gradients, repeating patterns (scanlines), complex shadows
+- Anything that could be reused across components
+
+**Bad:**
+```tsx
+<div style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px)' }} />
+<div style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.07) 0%, transparent 65%), #030712' }} />
+```
+
+**Good — define once in `index.css`, use everywhere:**
+```css
+@layer components {
+  .scanlines {
+    @apply absolute inset-0 pointer-events-none z-10;
+    background-image: repeating-linear-gradient(...);
+  }
+  .overlay-bg-devops {
+    background: radial-gradient(...), #030712;
+  }
+}
+```
+```tsx
+<div className="scanlines" aria-hidden />
+<motion.div className="overlay-backdrop overlay-bg-devops">
+```
+
+**Exceptions — keep `style={{}}` for:**
+- Values computed at runtime (e.g. `style={{ width: progress + '%' }}`)
+- Framer Motion `style` prop bound to `MotionValue`
+- One-off layout values with no reuse (e.g. `style={{ gap: 'clamp(2px, 0.4vw, 8px)' }}`)
+
 ## 9. ESLint Config Conventions (eslint.config.js)
 
 The project's ESLint config enforces:

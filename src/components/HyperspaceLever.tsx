@@ -7,9 +7,11 @@ interface HyperspaceLeverProps {
   skipIntro: boolean;
   className?: string;
   isInline?: boolean;
+  /** Controls quick show/hide independent of the entrance animation timeline */
+  isVisible?: boolean;
 }
 
-export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, getDelay, skipIntro, className, isInline = false }) => {
+export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, getDelay, skipIntro, className, isInline = false, isVisible = true }) => {
   const [energy, setEnergy] = useState(0);
   const dragY = useMotionValue(0);
 
@@ -146,9 +148,14 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, ge
   const handleRotateX = useTransform(dragY, [0, 70, 140], [35, 0, -35]);
   const handleScale = useTransform(dragY, [0, 70, 140], [0.93, 1.05, 0.93]); 
 
-  const defaultClassName = "fixed right-0 top-24 md:top-1/2 md:-translate-y-1/2 z-[50] items-center gap-4 md:gap-6 bg-[#0a0f1a]/80 backdrop-blur-xl border-l-[3px] border-y-[3px] border-cyan-900/40 rounded-l-3xl p-3 md:p-6 shadow-[-10px_0_30px_rgba(0,0,0,0.8)] origin-top-right md:origin-right scale-75 xl:scale-100 hidden min-[1300px]:flex";
+  const defaultClassName = "absolute right-0 top-1/2 -translate-y-1/2 pointer-events-auto items-center gap-4 md:gap-6 bg-[#0a0f1a]/80 backdrop-blur-xl border-l-[3px] border-y-[3px] border-cyan-900/40 rounded-l-3xl p-3 md:p-6 shadow-[-10px_0_30px_rgba(0,0,0,0.8)] origin-right scale-75 xl:scale-100 hidden min-[1300px]:flex";
 
   return (
+    // Visibility wrapper: fast 0.3s fade, no delay — separate from the 22s entrance animation
+    <motion.div
+      animate={{ opacity: isVisible ? 1 : 0, pointerEvents: isVisible ? 'auto' : 'none' }}
+      transition={{ duration: 0.3 }}
+    >
     <motion.div
       initial={skipIntro ? false : { opacity: 0, ...(isInline ? { y: 20 } : { x: 100 }) }}
       animate={{ opacity: 1, x: 0, ...(isInline ? { y: 0 } : {}) }}
@@ -247,6 +254,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, ge
           </div>
 
       </div>
+    </motion.div>
     </motion.div>
   );
 };

@@ -47,3 +47,11 @@ Everything should feel interactive and tactile in this project. Every hover and 
 
 5. **Consistency:**
    - If a mild response is technically feasible, add it. Even a faint `sine` wave tick adds massive tactile quality.
+
+6. **Reuse Before Creating:**
+   - Before adding a new component or hook, search `src/components/` and `src/lib/` for an existing one.
+   - Before adding `style={{}}` with a gradient or pattern, check `src/index.css` `@layer components` for an existing class.
+   - Prefer `className` with a CSS class over `style={{}}` for anything that could appear more than once.
+
+7. **File Size:**
+   - Keep component files under ~150 lines. Extract sub-components into their own files when exceeded.

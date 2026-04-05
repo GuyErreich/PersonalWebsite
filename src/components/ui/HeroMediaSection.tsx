@@ -1,5 +1,7 @@
+import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { SectionHeader } from './SectionHeader';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 interface HeroMediaSectionProps {
   id: string;
@@ -11,12 +13,17 @@ interface HeroMediaSectionProps {
 }
 
 export const HeroMediaSection = ({ id, title, description, sectionClassName = '', children }: HeroMediaSectionProps) => {
+  const { ref, motionStyle } = useScrollReveal();
+
   return (
-    <section id={id} className={`section-hero w-full relative z-10 ${sectionClassName}`}>
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-0 flex flex-col items-center justify-center h-full">
+    <section id={id} ref={ref} className={`section-hero w-full relative z-10 ${sectionClassName}`}>
+      <motion.div
+        style={motionStyle}
+        className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-0 flex flex-col items-center justify-center h-full"
+      >
         <SectionHeader title={title} description={description} />
         {children}
-      </div>
+      </motion.div>
     </section>
   );
 };
