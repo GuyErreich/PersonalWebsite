@@ -15,9 +15,9 @@ export const SectionHeader = ({ title, description }: SectionHeaderProps) => {
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 50 }}
-      animate={(isRevealed && isInView) ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-      transition={{ duration: 0.6, delay: 0.3 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={(isRevealed && isInView) ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      transition={{ duration: 0.35, delay: 0.05 }}
       className="text-center mb-16"
     >
       <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">{title}</h2>

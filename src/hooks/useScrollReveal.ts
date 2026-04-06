@@ -18,22 +18,23 @@ import type { MotionValue } from 'framer-motion';
 export const useScrollReveal = () => {
   const ref = useRef<HTMLElement>(null);
 
-  // 0→1 as section top travels through the bottom 20% of the viewport
+  // 0→1 as section top travels through the bottom 10% of the viewport
   const { scrollYProgress: enterProgress } = useScroll({
     target: ref,
-    offset: ['start end', 'start 0.8'],
+    offset: ['start end', 'start 0.9'],
   });
 
-  // 0→1 as section bottom travels through the top 20% of the viewport
+  // 0→1 as section bottom travels through the top 5% of the viewport
   const { scrollYProgress: exitProgress } = useScroll({
     target: ref,
-    offset: ['end 0.2', 'end start'],
+    offset: ['end 0.05', 'end start'],
   });
 
   // Full opacity when fully entered and not yet exiting
   const opacity = useTransform(
     [enterProgress, exitProgress] as MotionValue[],
-    ([enter, exit]: number[]) => Math.min(enter as number, 1 - (exit as number))
+    // Exit never goes below 0.5 so content never fully disappears while still in view
+    ([enter, exit]: number[]) => Math.min(enter as number, 1 - (exit as number) * 0.5)
   );
 
   return { ref, motionStyle: { opacity } };

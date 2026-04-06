@@ -95,6 +95,13 @@ body {
     }
   }
 
+  /* ── Iris transition layers ───────────────────────────────────────── */
+
+  /* Shared base for every IrisTransition layer div */
+  .iris-layer {
+    @apply absolute inset-0 pointer-events-none;
+  }
+
   /* ── Section entrance overlays ─────────────────────────────────────── */
 
   /* Base for all full-screen entrance overlay panels */

@@ -6,12 +6,13 @@ import Cookies from 'js-cookie';
 import { HyperspaceLever } from "./HyperspaceLever";
 import { RocketReplayButton } from "./RocketReplayButton";
 import { ReverseHyperspace } from './backgrounds/three/hero/ReverseHyperspace';
-import { motion, useMotionValue, useTransform, animate, AnimatePresence, useScroll, useMotionValueEvent, useMotionTemplate } from 'framer-motion';
+import { motion, useMotionValue, useTransform, animate, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ThreeHeroBackground } from './backgrounds/three/ThreeHeroBackground';
 import { playTagHoverSound, playTagClickSound } from '../lib/sound/interactionSounds';
 import { SectionEdge } from './ui/SectionEdge';
+import { IrisTransition, useIrisContentBlur } from './ui/IrisTransition';
 
 const ResponsiveCamera = () => {
   const { camera, size } = useThree();
@@ -226,35 +227,7 @@ export const Hero = () => {
     // 0 = hero fills viewport, 1 = hero bottom reaches viewport top
     offset: ['start start', 'end start'],
   });
-  // Iris aperture: transparent centre shrinks to a pinhole then seals
-  const irisRadius    = useTransform(heroExitProgress, [0.48, 0.97], [100, 0]);
-  // Content defocus: card blurs as the iris closes in
-  const contentBlur   = useTransform(heroExitProgress, [0.63, 0.93], [0, 10]);
-  // Final black fill once the iris is nearly closed
-  const finalBlack    = useTransform(heroExitProgress, [0.93, 0.99], [0, 1]);
-
-  // Aperture ring glow — cyan/violet halo that tracks the iris edge
-  const glowRadius    = useTransform(heroExitProgress, [0.48, 0.97], [104, 1]);
-  const glowOpacity   = useTransform(heroExitProgress, [0.48, 0.68, 0.93], [0, 1, 0]);
-  // Chromatic aberration — R channel slightly larger, B slightly smaller; splits as iris tightens
-  const chromaR       = useTransform(heroExitProgress, [0.48, 0.97], [102, 0.5]);
-  const chromaB       = useTransform(heroExitProgress, [0.48, 0.97], [98,  0]);
-  const chromaOpacity = useTransform(heroExitProgress, [0.48, 0.72, 0.93], [0, 0.7, 0]);
-  // Central bloom — brief wormhole-collapse light pulse
-  const bloomOpacity  = useTransform(heroExitProgress, [0.48, 0.63, 0.82], [0, 1, 0]);
-  const bloomRadius   = useTransform(heroExitProgress, [0.48, 0.82], [5, 26]);
-  // Aperture blades — 6-blade conic shutter that rotates as the iris closes
-  const bladeRotate   = useTransform(heroExitProgress, [0.48, 0.97], [0, 44]);
-  const bladeOpacity  = useTransform(heroExitProgress, [0.48, 0.62, 0.93], [0, 0.22, 0]);
-
-  const irisGradient      = useMotionTemplate`radial-gradient(${irisRadius}% ${irisRadius}% at 50% 42%, transparent 60%, rgba(17,24,39,0.98) 100%)`;
-  const glowGradient      = useMotionTemplate`radial-gradient(${glowRadius}% ${glowRadius}% at 50% 42%, transparent 55%, rgba(80,210,255,0.6) 61%, rgba(180,110,255,0.35) 67%, transparent 75%)`;
-  const chromaRGradient   = useMotionTemplate`radial-gradient(${chromaR}% ${chromaR}% at 50% 42%, transparent 60%, rgba(255,60,80,0.22) 100%)`;
-  const chromaBGradient   = useMotionTemplate`radial-gradient(${chromaB}% ${chromaB}% at 50% 42%, transparent 60%, rgba(60,120,255,0.22) 100%)`;
-  const bloomGradient     = useMotionTemplate`radial-gradient(${bloomRadius}% ${bloomRadius}% at 50% 42%, rgba(210,240,255,0.9) 0%, rgba(130,195,255,0.45) 50%, transparent 100%)`;
-  const contentBlurFilter = useMotionTemplate`blur(${contentBlur}px)`;
-  // Dark cover fades IN over the galaxy before the iris starts — no opacity on the WebGL canvas
-  const bgCoverOpacity = useTransform(heroExitProgress, [0.32, 0.50], [0, 1]);
+  const contentBlurFilter = useIrisContentBlur(heroExitProgress);
 
   return (
     <section id="about" className="section-hero" ref={heroSectionRef}>
@@ -305,57 +278,13 @@ export const Hero = () => {
           )}
         </AnimatePresence>
       </div>
-      {/* Dark cover — fades in before iris, hides the galaxy without touching WebGL compositor */}
-      <motion.div
-        className="absolute inset-0 z-[56] pointer-events-none"
-        style={{ opacity: bgCoverOpacity, background: '#111827' }}
-      />
       {/* Readability overlay */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-gray-900/40 via-transparent to-transparent pointer-events-none" />
       {/* Hero → GameDev shaped edge — jagged alien terrain silhouette */}
-      <SectionEdge variant="terrain" fillColor="#111827" height={72} waveAmp={2.0} waveFreq={1.7} stormAmp={1.5} stormFreq={6} className="z-[60]" />
+      <SectionEdge variant="terrain" fillColor="#111827" height={72} waveAmp={2.0} waveFreq={1.7} stormAmp={1.5} stormFreq={6} className="z-[65]" />
 
-      {/* ── Scroll-exit iris overlay stack ─────────────────────────────── */}
-      {/* Layer 1: 6-blade rotating aperture shutter — visible through the iris hole */}
-      <motion.div
-        className="absolute inset-0 z-[57] pointer-events-none"
-        style={{
-          background: 'conic-gradient(from 0deg at 50% 42%, rgba(140,200,255,0.07) 0deg, transparent 30deg, rgba(140,200,255,0.07) 60deg, transparent 90deg, rgba(140,200,255,0.07) 120deg, transparent 150deg, rgba(140,200,255,0.07) 180deg, transparent 210deg, rgba(140,200,255,0.07) 240deg, transparent 270deg, rgba(140,200,255,0.07) 300deg, transparent 330deg)',
-          rotate: bladeRotate,
-          transformOrigin: '50% 42%',
-          opacity: bladeOpacity,
-        }}
-      />
-      {/* Layer 2: Chromatic aberration — R channel outside, B channel inside */}
-      <motion.div
-        className="absolute inset-0 z-[58] pointer-events-none mix-blend-screen"
-        style={{ background: chromaRGradient, opacity: chromaOpacity }}
-      />
-      <motion.div
-        className="absolute inset-0 z-[58] pointer-events-none mix-blend-screen"
-        style={{ background: chromaBGradient, opacity: chromaOpacity }}
-      />
-      {/* Layer 3: Main iris vignette */}
-      <motion.div
-        className="absolute inset-0 z-[59] pointer-events-none"
-        style={{ background: irisGradient }}
-      />
-      {/* Layer 4: Aperture ring glow — cyan/violet halo tracks the iris edge */}
-      <motion.div
-        className="absolute inset-0 z-[60] pointer-events-none"
-        style={{ background: glowGradient, opacity: glowOpacity }}
-      />
-      {/* Layer 5: Central bloom — wormhole-collapse light burst */}
-      <motion.div
-        className="absolute inset-0 z-[61] pointer-events-none"
-        style={{ background: bloomGradient, opacity: bloomOpacity }}
-      />
-      {/* Layer 6: Final black seal */}
-      <motion.div
-        className="absolute inset-0 z-[62] pointer-events-none"
-        style={{ opacity: finalBlack, background: '#111827' }}
-      />
-      {/* ──────────────────────────────────────────────────────────────── */}
+      {/* Scroll-exit: galaxy dark cover + iris aperture animation */}
+      <IrisTransition scrollProgress={heroExitProgress} />
 
       {/* Padding wrapper — outside the border so padding doesn't affect border thickness */}
       <AnimatePresence>

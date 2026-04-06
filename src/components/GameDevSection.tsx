@@ -78,7 +78,7 @@ export const GameDevSection = () => {
         background: 'linear-gradient(to bottom, #111827 0%, rgba(17,24,39,0.85) 22%, rgba(56,189,248,0.06) 60%, rgba(99,102,241,0.04) 80%, transparent 100%)'
       }} />
       {/* GameDev → DevOps shaped edge — circuit board PCB trace silhouette */}
-      <SectionEdge variant="circuit" fillColor="#030712" className="z-20" />
+      <SectionEdge variant="circuit" fillColor="#030712" height={160} className="z-20" />
 
       {/* ── Section 1: Full-screen hero with title + showreel ── */}
         <SectionEntranceOverlay theme="gamedev">

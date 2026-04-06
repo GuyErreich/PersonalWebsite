@@ -4,13 +4,13 @@
  * Switches between animated edge components based on `variant`:
  *  - terrain  →  NebulaEdge   (reserved)          GLSL plasma horizon
  *  - meteor   →  MeteorEdge   (Hero → GameDev)     GLSL meteor shower
- *  - circuit  →  SkylineEdge  (GameDev → DevOps)   GLSL cyberpunk skyline
+ *  - circuit  →  SignalWaveEdge  (GameDev → DevOps)   GLSL signal waves
  *  - wave     →  CloudEdge    (DevOps → Footer)    SVG feTurbulence clouds
  */
 
 import { NebulaEdge }  from './edges/NebulaEdge';
 import { MeteorEdge }  from './edges/MeteorEdge';
-import { SkylineEdge } from './edges/SkylineEdge';
+import { SignalWaveEdge } from './edges/SignalWaveEdge';
 import { CloudEdge }   from './edges/CloudEdge';
 
 export interface SectionEdgeProps {
@@ -40,7 +40,7 @@ export const SectionEdge = ({ variant, fillColor, className = '', inverted = fal
     return <MeteorEdge  fillColor={fillColor} className={className} />;
   }
   if (variant === 'circuit') {
-    return <SkylineEdge fillColor={fillColor} className={className} />;
+    return <SignalWaveEdge fillColor={fillColor} className={className} inverted={inverted} height={height} />;
   }
   return <CloudEdge fillColor={fillColor} className={className} />;
 };
