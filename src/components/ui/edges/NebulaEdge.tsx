@@ -17,6 +17,18 @@ import { useEffect, useRef } from 'react';
 interface NebulaEdgeProps {
   fillColor: string;
   className?: string;
+  /** Flip vertically so the glow rises from below (top edge of next section) */
+  inverted?: boolean;
+  /** Strip height in px. Default 120. Reduce to narrow the divider. */
+  height?: number;
+  /** Multiplier on all wave amplitudes. >1 taller waves, <1 shallower. Default 1. */
+  waveAmp?: number;
+  /** Multiplier on all spatial wave frequencies. >1 more compact, <1 wider. Default 1. */
+  waveFreq?: number;
+  /** Multiplier on storm (disruption) injection amplitudes. Default 1. */
+  stormAmp?: number;
+  /** Multiplier on storm (disruption) spatial frequencies. Default 1. */
+  stormFreq?: number;
 }
 
 const VERT = /* glsl */ `
@@ -34,6 +46,10 @@ const FRAG = /* glsl */ `
   #endif
 
   uniform float uTime;
+  uniform float uWaveAmp;
+  uniform float uWaveFreq;
+  uniform float uStormAmp;
+  uniform float uStormFreq;
   uniform vec3  uFill;
   uniform vec2  uRes;
 
@@ -41,6 +57,9 @@ const FRAG = /* glsl */ `
     p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
     return -1.0 + 2.0 * fract(sin(p) * 43758.5453);
   }
+
+  // Scalar hash — used by the disruption slot system
+  float hash(float n) { return fract(sin(n) * 43758.5453); }
 
   float gradNoise(vec2 p) {
     vec2 i = floor(p);
@@ -68,110 +87,158 @@ const FRAG = /* glsl */ `
   void main() {
     vec2  uv = gl_FragCoord.xy / uRes;
     float t  = uTime * 0.75;
+    float rt = uTime;   // raw time, unscaled — used for disruption slots
 
-    // ── Shared cloud noise (sampled once, reused across all layers) ──────
-    // cA: slow-moving cloud density / shadow pockets
+    // ── Shared cloud noise fields ────────────────────────────────────────
     float cA = fbm(vec2(uv.x * 2.0 - t * 0.18, uv.y * 1.4 + t * 0.10));
-    // cB: secondary highlight / density variation
     float cB = fbm(vec2(uv.x * 1.5 + t * 0.12, uv.y * 1.9 - t * 0.07));
-    // cx: lateral colour drift used for hue mixing
-    float cx  = fbm(vec2(uv.x * 1.3 + t * 0.28, t * 0.14));
+    float cx = fbm(vec2(uv.x * 1.3 + t * 0.28, t * 0.14));
 
-    // ── Layer 0: Deep background nebula ───────────────────────────────────
-    // Slowest, lowest, widest glow — distant nebula atmospheric haze.
-    // Uses gradNoise (not fbm) to keep it cheap; it only needs low frequency.
+    // ════════════════════════════════════════════════════════════════════
+    // DISCRETE DISRUPTION SYSTEM — sweeping wavefront model
+    //
+    // All wavefronts travel at the same fixed speed (travelSpeed uv/s).
+    // Only frequency (compactness) and amplitude (height) differ per slot.
+    // Three slots are time-staggered by 1.5 s so they fire independently.
+    // The front is unclamped so it exits naturally — no static hold.
+    // ════════════════════════════════════════════════════════════════════
+    float travelSpeed = 0.38;  // uv/s for all slots — full crossing ~2.6 s
+
+    // ── Slot A: medium-freq waves (12..30 cyc/uv) ─────────────────────
+    // Window 4.5 s → front exits at ~2.6 s, trail clears at ~3.8 s.
+    float slotWA   = 4.5;
+    float slotA    = floor(rt / slotWA);
+    float slotTA   = fract(rt / slotWA);
+    float rA1      = hash(slotA * 127.3 + 41.7);  // fire decision
+    float rA2      = hash(slotA * 311.7 + 89.1);  // frequency
+    float rA3      = hash(slotA * 473.1 + 17.3);  // direction
+    float disruptA = step(0.70, rA1);             // fires ~30% of slots
+    float freqA    = uStormFreq * (12.0 + rA2 * 18.0);  // 12..30 cycles/uv
+    float ampA     = uStormAmp  * (0.07 + rA1 * 0.09);  // 0.07..0.16
+    // tA: unclamped travel distance — front exits screen naturally
+    float tA       = slotTA * slotWA * travelSpeed;
+    float frontA   = rA3 > 0.5 ? tA : (1.0 - tA);
+    float behindA  = rA3 > 0.5 ? (frontA - uv.x) : (uv.x - frontA);
+    float wEnvA    = smoothstep(-0.01, 0.03, behindA) * smoothstep(0.45, 0.08, behindA);
+    float injA     = disruptA * ampA * wEnvA * sin(uv.x * freqA - rt * 4.5);
+
+    // ── Slot B: compact waves (24..46 cyc/uv) — stagger +1.5 s ───────
+    float slotWB   = 4.5;
+    float slotB    = floor((rt + 1.5) / slotWB);
+    float slotTB   = fract((rt + 1.5) / slotWB);
+    float rB1      = hash(slotB * 223.1 + 157.9);
+    float rB2      = hash(slotB * 419.3 + 73.3);
+    float rB3      = hash(slotB * 631.7 + 29.1);
+    float disruptB = step(0.75, rB1);             // fires ~25% of slots
+    float freqB    = uStormFreq * (24.0 + rB2 * 22.0);  // 24..46 cycles/uv
+    float ampB     = uStormAmp  * (0.045 + rB1 * 0.055); // 0.045..0.10
+    float tB       = slotTB * slotWB * travelSpeed;
+    float frontB   = rB3 > 0.5 ? tB : (1.0 - tB);
+    float behindB  = rB3 > 0.5 ? (frontB - uv.x) : (uv.x - frontB);
+    float wEnvB    = smoothstep(-0.01, 0.03, behindB) * smoothstep(0.45, 0.08, behindB);
+    float injB     = disruptB * ampB * wEnvB * sin(uv.x * freqB + rt * 4.5);
+
+    // ── Slot C: fine jagged spikes (38..66 cyc/uv) — stagger +3.0 s ──
+    float slotWC   = 4.5;
+    float slotC    = floor((rt + 3.0) / slotWC);
+    float slotTC   = fract((rt + 3.0) / slotWC);
+    float rC1      = hash(slotC * 97.7 + 331.1);
+    float rC2      = hash(slotC * 503.3 + 211.7);
+    float rC3      = hash(slotC * 743.9 + 53.7);
+    float disruptC = step(0.80, rC1);             // fires ~20% of slots
+    float freqC    = uStormFreq * (38.0 + rC2 * 28.0);  // 38..66 cycles/uv
+    float ampC     = uStormAmp  * (0.04 + rC1 * 0.06);  // 0.04..0.10
+    float tC       = slotTC * slotWC * travelSpeed;
+    float frontC   = rC3 > 0.5 ? tC : (1.0 - tC);
+    float behindC  = rC3 > 0.5 ? (frontC - uv.x) : (uv.x - frontC);
+    float wEnvC    = smoothstep(-0.01, 0.03, behindC) * smoothstep(0.40, 0.08, behindC);
+    float injC     = disruptC * ampC * wEnvC * sin(uv.x * freqC - rt * 4.5);
+
+    // ── Combined disruption envelope (for emission line brightening) ─────
+    float disruption = clamp(disruptA * wEnvA + disruptB * wEnvB + disruptC * wEnvC, 0.0, 1.0);
+
+    // ── Layer 0: Deep background nebula ─────────────────────────────────
     float h0 = 0.35
-      + 0.025 * sin(uv.x * 1.43 + t * 0.62)
-      + 0.018 * sin(uv.x * 2.71 - t * 0.83)
-      + 0.018 * gradNoise(vec2(uv.x * 1.1 + t * 0.28, t * 0.21));
-    float d0  = uv.y - h0;
-    // Cubic falloff → very wide, soft atmospheric dome
-    float b0  = pow(clamp(1.0 - d0 / 0.55, 0.0, 1.0), 3.0);
-    // Deep indigo-purple; cB drives density so it clumps into cloud volumes
+      + uWaveAmp * 0.025 * sin(uv.x * uWaveFreq * 1.43 + t * 0.62)
+      + uWaveAmp * 0.018 * sin(uv.x * uWaveFreq * 2.71 - t * 0.83)
+      + uWaveAmp * 0.018 * gradNoise(vec2(uv.x * 1.1 + t * 0.28, t * 0.21));
+    float d0   = uv.y - h0;
+    float b0   = pow(clamp(1.0 - d0 / 0.55, 0.0, 1.0), 3.0);
     vec3  col0 = vec3(0.08, 0.02, 0.30) * b0 * (0.42 + 0.58 * (cB * 0.5 + 0.5));
     float a0   = b0 * 0.38;
-    // Faint emission ridge at its own horizon
     float e0   = exp(-abs(d0) * uRes.y * 1.5) * 0.40;
     col0 += vec3(0.32, 0.07, 0.72) * e0;
     a0   += e0 * 0.25;
 
-    // ── Layer 1: Mid-ground horizon ───────────────────────────────────────
-    // Medium speed; violet/amethyst palette; cA shadow pockets carve depth.
-    // Slope budget: 0.038×1.97 + 0.030×3.41 + 0.020×5.83 = 0.295 < 0.5 ✓
+    // ── Layer 1: Mid-ground horizon ──────────────────────────────────────
     float h1 = 0.44
-      + 0.038 * sin(uv.x * 1.97 + t * 1.05)
-      + 0.030 * sin(uv.x * 3.41 - t * 1.62)
-      + 0.020 * sin(uv.x * 5.83 + t * 0.97)
-      + 0.030 * fbm(vec2(uv.x * 1.2 - t * 0.55, t * 0.33));
+      + uWaveAmp * 0.038 * sin(uv.x * uWaveFreq * 1.97 + t * 1.05)
+      + uWaveAmp * 0.030 * sin(uv.x * uWaveFreq * 3.41 - t * 1.62)
+      + uWaveAmp * 0.020 * sin(uv.x * uWaveFreq * 5.83 + t * 0.97)
+      + uWaveAmp * 0.030 * fbm(vec2(uv.x * 1.2 - t * 0.55, t * 0.33));
     float d1   = uv.y - h1;
     float b1   = pow(clamp(1.0 - d1 / 0.26, 0.0, 1.0), 1.8);
-    // Shadow pockets: cA modulates density so cloud volumes emerge
     float den1 = b1 * (0.50 + 0.50 * (cA * 0.5 + 0.5));
     vec3  col1 = mix(vec3(0.28, 0.06, 0.60), vec3(0.54, 0.36, 0.97), b1) * den1;
-    // Apply shadow darkening a second time for richer contrast
     col1      *= (0.60 + 0.40 * (cA * 0.5 + 0.5));
     float a1   = den1 * 0.50;
-    // Sharper emission ridge on this layer
     float e1   = exp(-abs(d1) * uRes.y * 1.1) * 0.80;
     col1 += vec3(0.54, 0.36, 0.97) * 0.70 * e1;
     a1   += e1 * 0.28;
 
-    // ── Layer 2: Main (front) horizon — existing shape, enhanced ─────────
-    // All original incommensurate sine terms preserved; total slope ≈ 0.696 ✓
+    // ── Layer 2: Main (front) horizon — base calm + disruption injections ─
+    // Base terms are unchanged — calm nebula at normal amplitude.
+    // The three injection signals (injA/B/C) are summed on top: they are
+    // deliberately high-slope so the horizon shreds into chaotic fragments,
+    // exactly like a signal being jammed.
     float h2 = 0.50
-      + 0.050 * sin(uv.x * 2.31 + t * 1.70)
-      + 0.042 * sin(uv.x * 3.73 - t * 2.41)
-      + 0.030 * sin(uv.x * 5.17 + t * 1.53)
-      + 0.020 * sin(uv.x * 7.11 - t * 3.10)
-      + 0.014 * sin(uv.x * 8.97 + t * 2.07)
-      + 0.045 * fbm(vec2(uv.x * 1.6 + t * 0.70, t * 0.48));
+      + uWaveAmp * 0.050 * sin(uv.x * uWaveFreq * 2.31 + t * 1.70)
+      + uWaveAmp * 0.042 * sin(uv.x * uWaveFreq * 3.73 - t * 2.41)
+      + uWaveAmp * 0.030 * sin(uv.x * uWaveFreq * 5.17 + t * 1.53)
+      + uWaveAmp * 0.020 * sin(uv.x * uWaveFreq * 7.11 - t * 3.10)
+      + uWaveAmp * 0.014 * sin(uv.x * uWaveFreq * 8.97 + t * 2.07)
+      + uWaveAmp * 0.045 * fbm(vec2(uv.x * 1.6 + t * 0.70, t * 0.48))
+      + injA + injB + injC;
     float d2  = uv.y - h2;
 
-    // Fixed 1.5-pixel AA on main fill edge — NOT fwidth() (avoids segmented glow)
     float aaH  = 1.5 / uRes.y;
-    float fill  = smoothstep(-aaH, aaH, d2);
+    float fill = smoothstep(-aaH, aaH, d2);
 
     float b2   = clamp(1.0 - d2 / 0.20, 0.0, 1.0);
-    // cA carves shadow pockets into the main band
     float den2 = b2 * (0.60 + 0.40 * (cA * 0.45 + 0.55));
     vec3  col2 = mix(
       vec3(0.063, 0.725, 0.506),
       mix(vec3(0.024, 0.714, 0.831), vec3(0.54, 0.36, 0.97), cx + 0.4),
       b2 * 0.7 + 0.2
     );
-    // cB darkens some areas → shadow depth within the main band
     col2 *= (0.68 + 0.32 * (cB * 0.5 + 0.5));
 
-    // Specular hotspot: where cA and cx both peak → bright star-forming nucleus
     float hot = clamp((cA + 0.3) * (cx + 0.3) * 3.0, 0.0, 1.0) * b2;
     col2 += vec3(0.024, 0.714, 0.831) * hot * 0.55;
 
-    // Pixel-space emission line — same fixed half-life regardless of DPR / aspect
-    float e2  = exp(-abs(d2) * uRes.y * 0.7) * 1.8;
+    // Emission line: flares white instantly when any disruption fires
+    float e2  = exp(-abs(d2) * uRes.y * 0.7) * (1.8 + 3.2 * disruption);
     col2 += e2 * mix(vec3(0.024, 0.714, 0.831), vec3(1.0), 0.4);
 
     float pulse = 0.85 + 0.15 * sin(uTime * 1.2 + uv.x * 2.8);
-    float a2 = den2 * den2 * pulse * 0.72 + e2 * 0.60;
+    float a2    = den2 * den2 * pulse * 0.72 + e2 * 0.60;
 
-    // ── Sub-horizon scatter: warm emerald tint just below the ridge ─────────
-    // scatterFade kills the tint before it reaches the bottom edge so the seam
-    // with the next section stays clean. Fade out below 22% strip height.
+    // ── Sub-horizon scatter ────────────────────────────────────────────────
     float scatterFade = smoothstep(0.0, 0.22, uv.y);
     float below   = clamp(-d2 / 0.06, 0.0, 1.0) * scatterFade;
     vec3  subFill = uFill + vec3(0.063, 0.725, 0.506) * 0.28 * below * below;
 
-    // ── Composite — additive emission layers, gated by main horizon fill ──
-    // All layers are physical light emitters → additive summation is correct.
+    // ── Composite ─────────────────────────────────────────────────────────
     vec3  glow = col0 * a0 + col1 * a1 + col2 * a2;
     float gA   = clamp(a0 * 0.55 + a1 * 0.65 + a2, 0.0, 1.0);
 
     vec4 result = mix(
-      vec4(subFill, 1.0),   // solid fill zone (below main horizon)
-      vec4(glow, gA),        // layered glow zone (above main horizon, hero shows through)
+      vec4(subFill, 1.0),
+      vec4(glow, gA),
       fill
     );
 
-    // ── Bottom seal: gradient over the bottom 50% of the strip → clean seam ─
+    // ── Bottom seal: smooth 50% blend into next section colour ────────────
     float seal = smoothstep(0.0, 0.50, uv.y);
     gl_FragColor = mix(vec4(uFill, 1.0), result, seal);
   }
@@ -187,6 +254,9 @@ function createShader(gl: WebGLRenderingContext, type: number, src: string): Web
   const s = gl.createShader(type)!;
   gl.shaderSource(s, src);
   gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error('[NebulaEdge] GLSL compile error:', gl.getShaderInfoLog(s));
+  }
   return s;
 }
 
@@ -195,10 +265,13 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram {
   gl.attachShader(prog, createShader(gl, gl.VERTEX_SHADER, VERT));
   gl.attachShader(prog, createShader(gl, gl.FRAGMENT_SHADER, FRAG));
   gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error('[NebulaEdge] GLSL link error:', gl.getProgramInfoLog(prog));
+  }
   return prog;
 }
 
-export const NebulaEdge = ({ fillColor, className = '' }: NebulaEdgeProps) => {
+export const NebulaEdge = ({ fillColor, className = '', inverted = false, height = 120, waveAmp = 1.0, waveFreq = 1.0, stormAmp = 1.0, stormFreq = 1.0 }: NebulaEdgeProps) => {
   const canvasRef  = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef     = useRef<number>(0);
@@ -223,9 +296,13 @@ export const NebulaEdge = ({ fillColor, className = '' }: NebulaEdgeProps) => {
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-    const uTime = gl.getUniformLocation(prog, 'uTime');
-    const uFill = gl.getUniformLocation(prog, 'uFill');
-    const uRes  = gl.getUniformLocation(prog, 'uRes');
+    const uTime     = gl.getUniformLocation(prog, 'uTime');
+    const uWaveAmpL  = gl.getUniformLocation(prog, 'uWaveAmp');
+    const uWaveFreqL = gl.getUniformLocation(prog, 'uWaveFreq');
+    const uStormAmpL = gl.getUniformLocation(prog, 'uStormAmp');
+    const uStormFreqL = gl.getUniformLocation(prog, 'uStormFreq');
+    const uFill     = gl.getUniformLocation(prog, 'uFill');
+    const uRes      = gl.getUniformLocation(prog, 'uRes');
     const [r, g, b] = hexToVec3(fillColor);
 
     // Observe wrapper, not canvas — canvas has no intrinsic size before first paint
@@ -249,6 +326,10 @@ export const NebulaEdge = ({ fillColor, className = '' }: NebulaEdgeProps) => {
     const loop = () => {
       const elapsed = (performance.now() - start) / 1000;
       gl.uniform1f(uTime, elapsed);
+      gl.uniform1f(uWaveAmpL, waveAmp);
+      gl.uniform1f(uWaveFreqL, waveFreq);
+      gl.uniform1f(uStormAmpL, stormAmp);
+      gl.uniform1f(uStormFreqL, stormFreq);
       gl.uniform3f(uFill, r, g, b);
       gl.uniform2f(uRes, canvas.width, canvas.height);
       gl.clearColor(0, 0, 0, 0);
@@ -264,13 +345,15 @@ export const NebulaEdge = ({ fillColor, className = '' }: NebulaEdgeProps) => {
       gl.deleteBuffer(buf);
       gl.deleteProgram(prog);
     };
-  }, [fillColor]);
+  }, [fillColor, waveAmp, waveFreq, stormAmp, stormFreq]);
+
+  const posClass = inverted ? 'top-0 scale-y-[-1]' : 'bottom-0';
 
   return (
     <div
       ref={wrapperRef}
-      className={`absolute inset-x-0 bottom-0 pointer-events-none ${className}`}
-      style={{ height: 120 }}
+      className={`absolute inset-x-0 ${posClass} pointer-events-none ${className}`}
+      style={{ height }}
     >
       <canvas
         ref={canvasRef}

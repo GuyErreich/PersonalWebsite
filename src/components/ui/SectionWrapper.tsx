@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
-import { SectionEdge } from './SectionEdge';
 
 interface SectionWrapperProps {
   id: string;
@@ -29,8 +28,10 @@ export const SectionWrapper = ({
       <div className="absolute inset-x-0 top-0 h-64 z-10 pointer-events-none" style={{
         background: 'linear-gradient(to bottom, #030712 0%, rgba(3,7,18,0.85) 22%, rgba(16,185,129,0.06) 60%, rgba(6,182,212,0.05) 80%, transparent 100%)'
       }} />
-      {/* DevOps → Footer shaped edge — smooth sine wave data-flow silhouette */}
-      <SectionEdge variant="wave" fillColor="#111827" className="z-10" />
+      {/* DevOps → Footer: smooth gradient dissolve into footer bg */}
+      <div className="absolute inset-x-0 bottom-0 h-48 z-10 pointer-events-none" style={{
+        background: 'linear-gradient(to bottom, transparent 0%, #030712 100%)'
+      }} />
       <motion.div
         style={motionStyle}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full"

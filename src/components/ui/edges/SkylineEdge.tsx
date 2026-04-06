@@ -142,6 +142,9 @@ function createShader(gl: WebGLRenderingContext, type: number, src: string): Web
   const s = gl.createShader(type)!;
   gl.shaderSource(s, src);
   gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error('[SkylineEdge] GLSL compile error:', gl.getShaderInfoLog(s));
+  }
   return s;
 }
 
@@ -150,6 +153,9 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram {
   gl.attachShader(prog, createShader(gl, gl.VERTEX_SHADER, VERT));
   gl.attachShader(prog, createShader(gl, gl.FRAGMENT_SHADER, FRAG));
   gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error('[SkylineEdge] GLSL link error:', gl.getProgramInfoLog(prog));
+  }
   return prog;
 }
 

@@ -20,7 +20,7 @@ const ResponsiveCamera = () => {
     const aspect = size.width / size.height;
     
     // Always keep the natural FOV we built the scene with
-    (camera as THREE.PerspectiveCamera).fov = 60;
+    (camera as THREE.PerspectiveCamera).fov = 50;
     
     // Default base distance
     let targetZ = 5;
@@ -253,6 +253,8 @@ export const Hero = () => {
   const chromaBGradient   = useMotionTemplate`radial-gradient(${chromaB}% ${chromaB}% at 50% 42%, transparent 60%, rgba(60,120,255,0.22) 100%)`;
   const bloomGradient     = useMotionTemplate`radial-gradient(${bloomRadius}% ${bloomRadius}% at 50% 42%, rgba(210,240,255,0.9) 0%, rgba(130,195,255,0.45) 50%, transparent 100%)`;
   const contentBlurFilter = useMotionTemplate`blur(${contentBlur}px)`;
+  // Dark cover fades IN over the galaxy before the iris starts — no opacity on the WebGL canvas
+  const bgCoverOpacity = useTransform(heroExitProgress, [0.32, 0.50], [0, 1]);
 
   return (
     <section id="about" className="section-hero" ref={heroSectionRef}>
@@ -295,7 +297,7 @@ export const Hero = () => {
               transition={{ duration: 0 }}
               className="absolute inset-0 h-full w-full"
             >
-              <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+              <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
                 <ResponsiveCamera />
                 <ThreeHeroBackground skipIntro={skipIntro} />
               </Canvas>
@@ -303,10 +305,15 @@ export const Hero = () => {
           )}
         </AnimatePresence>
       </div>
+      {/* Dark cover — fades in before iris, hides the galaxy without touching WebGL compositor */}
+      <motion.div
+        className="absolute inset-0 z-[56] pointer-events-none"
+        style={{ opacity: bgCoverOpacity, background: '#111827' }}
+      />
       {/* Readability overlay */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-gray-900/40 via-transparent to-transparent pointer-events-none" />
       {/* Hero → GameDev shaped edge — jagged alien terrain silhouette */}
-      <SectionEdge variant="terrain" fillColor="#111827" className="z-[63]" />
+      <SectionEdge variant="terrain" fillColor="#111827" height={72} waveAmp={2.0} waveFreq={1.7} stormAmp={1.5} stormFreq={6} className="z-[60]" />
 
       {/* ── Scroll-exit iris overlay stack ─────────────────────────────── */}
       {/* Layer 1: 6-blade rotating aperture shutter — visible through the iris hole */}

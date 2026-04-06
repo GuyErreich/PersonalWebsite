@@ -6,9 +6,14 @@ import { AnimationContext } from '../../../../../lib/AnimationContext';
 export const CameraShake = () => {
   const orchestrator = useContext(AnimationContext);
 
-  useFrame(({ camera }) => {
+  useFrame(({ camera, size }) => {
     if (!orchestrator) return;
     
+    // Compute responsive base Z (mirror of ResponsiveCamera logic) — read from
+    // the R3F state object so it's always the latest canvas size, no stale closure.
+    const aspect = size.width / size.height;
+    const baseZ = aspect < 1 ? 5 * (2.2 / aspect) : 5;
+
     // We register multiple proxies in ThreeHeroBackground, let's fetch them
     const dolly = orchestrator.getProxy("camera-dolly"); // 0 to 4.8
     const suck = orchestrator.getProxy("camera-suck");   // 4.8 to 6.8
@@ -17,7 +22,7 @@ export const CameraShake = () => {
     const bang = orchestrator.getProxy("camera-bang"); // 8.6 to 10.0
     
     let targetFov = 50; 
-    let targetZ = 5;
+    let targetZ = baseZ;
     let power = 0;
 
     // Phase 0: Taglines
@@ -38,7 +43,7 @@ export const CameraShake = () => {
     }
     // Phase 3: The Eerie Silence
     else if (silence.progress > 0 && bang.progress === 0) {
-      targetZ = 5;
+      targetZ = baseZ;
       targetFov = 50;
       power = 0;
     }
@@ -46,10 +51,10 @@ export const CameraShake = () => {
     else if (bang.progress > 0 && bang.progress < 1) {
       const trauma = 1.0 - bang.progress;
       power = Math.pow(trauma, 3) * 0.25; // Massive hit
-      targetZ = 5; 
+      targetZ = baseZ; 
       targetFov = 50 - Math.pow(trauma, 3) * 10; // Slight FOV punch inward on impact
     } else {
-      targetZ = 5;
+      targetZ = baseZ;
       targetFov = 50;
     }
 

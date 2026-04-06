@@ -67,6 +67,8 @@ export const GameDevSection = () => {
 
   return (
     <div className="relative w-full">
+      {/* Hero → GameDev shaped edge — nebula horizon rising from above */}
+      {/* <SectionEdge variant="terrain" fillColor="#111827" inverted height={72} waveAmp={2.0} waveFreq={1.7} stormAmp={1.5} stormFreq={6} className="z-[55]" /> */}
       {/* Shared ambient background — spans the full height of both sub-sections */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <MemoizedGamingIconsBackground id="gamedev-particles" />

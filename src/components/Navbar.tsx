@@ -6,6 +6,22 @@ import { playHoverSound, playClickSound, playMenuOpenSound, playMenuCloseSound }
 export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const previousOverflow = useRef('');
+  const [scrolled, setScrolled] = useState(false);
+  const [mouseNearTop, setMouseNearTop] = useState(false);
+
+  // Auto-hide on scroll; reveal when mouse returns to top strip
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 80);
+    const onMouseMove = (e: MouseEvent) => setMouseNearTop(e.clientY < 48);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('mousemove', onMouseMove);
+    };
+  }, []);
+
+  const navVisible = !scrolled || mouseNearTop;
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -54,7 +70,11 @@ export const Navbar = () => {
 
   return (
     <>
-      <nav className="fixed top-0 w-full bg-gray-900/80 backdrop-blur-md z-[60] border-b border-gray-800">
+      <motion.nav
+        animate={{ y: navVisible ? 0 : '-100%' }}
+        transition={{ type: 'spring', stiffness: 300, damping: 32, mass: 0.8 }}
+        className="fixed top-0 w-full bg-gray-900/80 backdrop-blur-md z-[100] border-b border-gray-800"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-2">
@@ -107,12 +127,12 @@ export const Navbar = () => {
             </div>
           </div>
         </div>
-      </nav>
+      </motion.nav>
 
       {/* Advanced Mobile Menu Drawer */}
       <AnimatePresence>
         {mobileOpen && (
-          <div className="md:hidden fixed inset-0 z-[70] pointer-events-auto">
+          <div className="md:hidden fixed inset-0 z-[110] pointer-events-auto">
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
