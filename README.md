@@ -1,53 +1,84 @@
-# React + TypeScript + Vite
+# Guy Erreich — Personal Portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+My personal portfolio website — a highly interactive, visually rich single-page app built with React 19, TypeScript, and Three.js. Features immersive 3D WebGL backgrounds, GSAP-orchestrated animations, and a headless admin panel backed by Supabase and Cloudflare R2.
 
-Currently, two official plugins are available:
+## Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + TypeScript + Vite |
+| Styling | Tailwind CSS v4 |
+| 3D / WebGL | Three.js via React Three Fiber & Drei |
+| Animations | GSAP, Framer Motion |
+| Particles | tsparticles |
+| Backend / DB | Supabase (Postgres + Auth) |
+| Media Storage | Cloudflare R2 |
+| Routing | React Router v7 |
+| Deployment | Cloudflare Pages |
 
-## Expanding the ESLint configuration
+## Project Structure
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```
+src/
+├── components/
+│   ├── backgrounds/
+│   │   ├── three/        # Three.js / R3F 3D background scenes
+│   │   └── tsparticles/  # 2D particle effects
+│   ├── admin/            # Admin panel components
+│   └── ui/               # Reusable UI components
+├── pages/                # Route-level page components
+├── hooks/                # Custom React hooks
+└── lib/                  # Supabase client, animation orchestration, sound utils
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Getting Started
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Prerequisites
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
+- Node.js (version specified in `.node-version`)
+- npm
+
+### Environment Variables
+
+Create a `.env.local` file at the root with the following variables:
+
+```env
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+VITE_R2_ACCESS_KEY_ID=
+VITE_R2_SECRET_ACCESS_KEY=
+VITE_R2_BUCKET_NAME=
+VITE_R2_PUBLIC_URL=
+```
+
+### Install & Run
+
+```bash
+npm install
+npm run dev
+```
+
+### Other Commands
+
+```bash
+npm run build   # Type-check + production build
+npm run lint    # ESLint
+npm run preview # Serve the production build locally
+```
+
+## CI / CD
+
+| Workflow | Trigger | Description |
+|---|---|---|
+| `test.yml` | push / PR → `dev`, `master` | Lint + build validation |
+| `deploy.yml` | push → `dev` | Deploy to Cloudflare Pages |
+| `license-check.yml` | push / PR → `dev`, `master` | Verify MIT headers on all `src/` files |
+| `pr-labeler.yml` | PR opened / updated | Auto-apply labels from file paths and branch name |
+| `codeql.yml` | push / PR → `dev`, `master` | GitHub CodeQL security analysis |
+
+## License
+
+[MIT](LICENSE) © Guy Erreich
     ...reactDom.configs.recommended.rules,
   },
 })
