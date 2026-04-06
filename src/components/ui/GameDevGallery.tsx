@@ -4,6 +4,7 @@ import { useContext, useRef } from 'react';
 import { SectionRevealContext } from './SectionEntranceOverlay';
 import { MarkdownRenderer } from '../MarkdownRenderer';
 import type { GameDevItem } from '../GameDevSection';
+import { playHoverSound, playClickSound } from '../../lib/sound/interactionSounds';
 
 // ── Sub-components so hooks can be called per-item in mapped lists ──────────
 
@@ -38,8 +39,8 @@ const GalleryDetailItem = ({ item, index, iconMap }: { item: GameDevItem; index:
   const isRevealed = useContext(SectionRevealContext);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ProjectIcon = (item.icon_name && (iconMap as Record<string, React.FC<any>>)[item.icon_name]) ? (iconMap as Record<string, React.FC<any>>)[item.icon_name] : Gamepad2;
+  // Resolve icon — `iconMap` values are `React.ElementType`, cast to a concrete prop shape for JSX
+  const ProjectIcon = (item.icon_name ? (iconMap[item.icon_name] ?? Gamepad2) : Gamepad2) as React.ComponentType<{ className?: string }>;
   return (
     <motion.div
       ref={ref}
@@ -54,14 +55,28 @@ const GalleryDetailItem = ({ item, index, iconMap }: { item: GameDevItem; index:
         <h3 className="text-2xl font-bold text-white">{item.title}</h3>
         <div className="flex space-x-2 ml-auto">
           {item.github_url && (
-            <a href={item.github_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors" title="GitHub">
+            <motion.a
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
+              href={item.github_url} target="_blank" rel="noreferrer"
+              className="text-gray-400 hover:text-white transition-colors" title="GitHub"
+            >
               <Github className="w-5 h-5" />
-            </a>
+            </motion.a>
           )}
           {item.live_url && (
-            <a href={item.live_url} target="_blank" rel="noreferrer" className="text-gray-400 hover:text-white transition-colors" title="Live Preview">
+            <motion.a
+              whileHover={{ scale: 1.2 }}
+              whileTap={{ scale: 0.9 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
+              href={item.live_url} target="_blank" rel="noreferrer"
+              className="text-gray-400 hover:text-white transition-colors" title="Live Preview"
+            >
               <ExternalLink className="w-5 h-5" />
-            </a>
+            </motion.a>
           )}
         </div>
       </div>
@@ -75,9 +90,10 @@ const GalleryDetailItem = ({ item, index, iconMap }: { item: GameDevItem; index:
 interface GameDevGalleryProps {
   items: GameDevItem[];
   iconMap: Record<string, React.ElementType>;
+  isLoading?: boolean;
 }
 
-export const GameDevGallery = ({ items, iconMap }: GameDevGalleryProps) => {
+export const GameDevGallery = ({ items, iconMap, isLoading = false }: GameDevGalleryProps) => {
   const isRevealed = useContext(SectionRevealContext);
   const headerRef = useRef<HTMLDivElement>(null);
   const headerInView = useInView(headerRef, { once: true });
@@ -99,7 +115,13 @@ export const GameDevGallery = ({ items, iconMap }: GameDevGalleryProps) => {
           <h3 className="text-2xl font-bold text-white">Gallery</h3>
         </motion.div>
 
-        {items.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="aspect-square bg-gray-700/40 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        ) : items.length > 0 ? (
           <div className="grid grid-cols-2 gap-4">
             {items.map((item, index) => (
               <GalleryGridItem key={item.id} item={item} index={index} isVideo={isVideo} />

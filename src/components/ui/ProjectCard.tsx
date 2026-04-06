@@ -3,6 +3,7 @@ import { Github } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useContext, useRef } from 'react';
 import { SectionRevealContext } from './SectionEntranceOverlay';
+import { playHoverSound, playClickSound } from '../../lib/sound/interactionSounds';
 
 interface ProjectCardProps {
   title: string;
@@ -34,6 +35,8 @@ export const ProjectCard = ({ title, description, tags, link, icon, index }: Pro
         <motion.a 
           whileHover={{ scale: 1.2, rotate: 10 }}
           whileTap={{ scale: 0.9 }}
+          onMouseEnter={playHoverSound}
+          onClick={playClickSound}
           href={link} 
           target="_blank" 
           rel="noopener noreferrer"
@@ -55,7 +58,7 @@ export const ProjectCard = ({ title, description, tags, link, icon, index }: Pro
         {tags.map((tag, tagIndex) => (
           <span 
             key={tagIndex} 
-            className="px-3 py-1 text-sm font-medium bg-gray-900 text-gray-300 rounded-full border border-gray-700 hover:border-gray-500 transition-colors cursor-default"
+            className="px-3 py-1 text-sm font-medium bg-blue-500/10 text-blue-300 rounded-full border border-blue-500/20"
           >
             {tag}
           </span>

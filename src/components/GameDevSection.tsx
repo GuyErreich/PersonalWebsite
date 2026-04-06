@@ -42,6 +42,7 @@ export interface GameDevItem {
 export const GameDevSection = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { ref: galleryRef, motionStyle: galleryMotionStyle } = useScrollReveal();
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export const GameDevSection = () => {
         .order('created_at', { ascending: false });
 
       if (items) setGalleryItems(items);
+      setIsLoading(false);
     };
 
     fetchData();
@@ -105,7 +107,7 @@ export const GameDevSection = () => {
             title="Projects & Prototypes"
             description="A curated look at the games and interactive experiences I've built."
           />
-          <GameDevGallery items={galleryItems} iconMap={iconMap} />
+          <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
         </motion.div>
       </section>
     </div>

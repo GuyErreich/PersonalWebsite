@@ -1,0 +1,9 @@
+header:
+  license:
+    spdx-id: MIT
+    copyright-owner: Guy Erreich
+  paths:
+    - src
+  paths-ignore:
+    - src/vite-env.d.ts
+    - src/assets

@@ -22,8 +22,8 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({ onActivate, ge
 
   useEffect(() => {
     try {
-      const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
-      audioContextRef.current = new AudioContext();
+      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) audioContextRef.current = new AudioCtx();
     } catch (e) {
       console.warn("Web Audio API not supported", e);
     }

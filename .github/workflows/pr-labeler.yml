@@ -1,0 +1,47 @@
+name: PR Labeler
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  labeler:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Ensure all labels exist in the repo before applying them.
+      # --force creates the label if missing, or updates it if the color/description changed.
+      - name: Create repository labels
+        run: |
+          create_label() {
+            gh label create "$1" --color "$2" --description "$3" \
+              --repo "$GITHUB_REPOSITORY" --force
+          }
+          create_label "ui"             "0075ca" "UI component changes"
+          create_label "3d-graphics"    "5319e7" "Three.js / 3D graphics changes"
+          create_label "particles"      "a2eeef" "Particle system changes"
+          create_label "pages"          "0e8a16" "Page-level component changes"
+          create_label "infrastructure" "e4e669" "Library / infrastructure changes"
+          create_label "hooks"          "006b75" "React hooks changes"
+          create_label "admin"          "c5def5" "Admin panel changes"
+          create_label "ci/cd"          "8f8f8f" "CI/CD and workflow changes"
+          create_label "dependencies"   "0366d6" "Dependency updates"
+          create_label "build"          "fbca04" "Build configuration changes"
+          create_label "feature"        "84b6eb" "New feature"
+          create_label "bug"            "ee0701" "Bug fix"
+          create_label "maintenance"    "bfd4f2" "Maintenance / refactoring"
+          create_label "documentation"  "0052cc" "Documentation updates"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply labels
+        uses: actions/labeler@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true

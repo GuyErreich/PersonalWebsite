@@ -1,0 +1,66 @@
+# Labels applied based on changed files (any PR touching these paths)
+# and/or branch name prefixes.
+# Requires actions/labeler@v5 — see .github/workflows/pr-labeler.yml
+
+"ui":
+  - changed-files:
+    - any-glob-to-any-file: "src/components/**"
+
+"3d-graphics":
+  - changed-files:
+    - any-glob-to-any-file: "src/components/backgrounds/three/**"
+
+"particles":
+  - changed-files:
+    - any-glob-to-any-file: "src/components/backgrounds/tsparticles/**"
+
+"pages":
+  - changed-files:
+    - any-glob-to-any-file: "src/pages/**"
+
+"infrastructure":
+  - changed-files:
+    - any-glob-to-any-file: "src/lib/**"
+
+"hooks":
+  - changed-files:
+    - any-glob-to-any-file: "src/hooks/**"
+
+"admin":
+  - changed-files:
+    - any-glob-to-any-file: "src/components/admin/**"
+
+"ci/cd":
+  - changed-files:
+    - any-glob-to-any-file: ".github/**"
+  - head-branch: ["^ci/.*", "^workflow/.*"]
+
+"dependencies":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "package.json"
+      - "package-lock.json"
+
+"build":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "vite.config.ts"
+      - "tsconfig*.json"
+      - "index.html"
+      - "eslint.config.js"
+
+"feature":
+  - head-branch: ["^feat/.*", "^feature/.*"]
+
+"bug":
+  - head-branch: ["^fix/.*", "^bugfix/.*", "^hotfix/.*"]
+
+"maintenance":
+  - head-branch: ["^chore/.*", "^refactor/.*"]
+
+"documentation":
+  - head-branch: ["^docs/.*"]
+  - changed-files:
+    - any-glob-to-any-file:
+      - "**/*.md"
+      - "README*"

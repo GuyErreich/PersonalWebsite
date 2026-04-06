@@ -28,7 +28,7 @@ const projects = [
     description: 'Prometheus and Grafana setup with custom exporters to monitor application performance and alert on anomalies in real-time.',
     tags: ['Prometheus', 'Grafana', 'Go', 'Alertmanager'],
     link: 'https://github.com',
-    icon: <Database className="w-6 h-6 text-purple-400" />
+    icon: <Database className="w-6 h-6 text-violet-400" />
   },
   {
     title: 'CLI Automation Tool',
