@@ -28,7 +28,9 @@ export function buildGlShader(
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    console.error(`[${label}] GLSL compile error:`, gl.getShaderInfoLog(s));
+    const info = gl.getShaderInfoLog(s) ?? "unknown error";
+    console.error(`[${label}] GLSL compile error:`, info);
+    throw new Error(`[${label}] GLSL compile error: ${info}`);
   }
   return s;
 }
@@ -51,7 +53,9 @@ export function buildGlProgram(
   gl.attachShader(prog, buildGlShader(gl, gl.FRAGMENT_SHADER, frag, label));
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error(`[${label}] GLSL link error:`, gl.getProgramInfoLog(prog));
+    const info = gl.getProgramInfoLog(prog) ?? "unknown error";
+    console.error(`[${label}] GLSL link error:`, info);
+    throw new Error(`[${label}] GLSL link error: ${info}`);
   }
   // biome-ignore lint/correctness/useHookAtTopLevel: gl.useProgram is a WebGL API, not a React hook
   gl.useProgram(prog);

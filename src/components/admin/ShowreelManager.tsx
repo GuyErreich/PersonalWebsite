@@ -25,7 +25,10 @@ export const ShowreelManager = () => {
       .single();
 
     if (!error && data) {
-      setCurrentUrl(data.value);
+      const value: unknown = data.value;
+      if (typeof value === "string" && /^https:\/\//.test(value)) {
+        setCurrentUrl(value);
+      }
     }
   };
 

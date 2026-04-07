@@ -45,6 +45,7 @@ Create a `.env.local` file at the root with the following variables:
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
+VITE_CLOUDFLARE_ACCOUNT_ID=
 VITE_R2_ACCESS_KEY_ID=
 VITE_R2_SECRET_ACCESS_KEY=
 VITE_R2_BUCKET_NAME=
@@ -79,10 +80,3 @@ npm run preview # Serve the production build locally
 ## License
 
 [MIT](LICENSE) © Guy Erreich
-...reactDom.configs.recommended.rules,
-},
-})
-
-```
-
-```

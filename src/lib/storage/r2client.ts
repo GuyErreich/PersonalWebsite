@@ -31,8 +31,9 @@ export const uploadToR2 = async (file: File, folderPath: string = "media"): Prom
   }
 
   // Generate a unique filename
-  const fileExt = file.name.split(".").pop();
-  const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+  const rawExt = file.name.split(".").pop();
+  const fileExt = rawExt && rawExt.length > 0 ? `.${rawExt}` : "";
+  const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}${fileExt}`;
   const key = `${folderPath}/${fileName}`;
 
   const command = new PutObjectCommand({

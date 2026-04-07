@@ -48,7 +48,7 @@ export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrches
         osc.start(now);
         osc.stop(now + duration);
       } catch (e) {
-        console.error("Rewind sound error:", e);
+        console.error("Rewind sound error:", e instanceof Error ? e.message : String(e));
       }
     }
   });
