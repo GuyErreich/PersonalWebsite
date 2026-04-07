@@ -4,17 +4,17 @@ My personal portfolio website — a highly interactive, visually rich single-pag
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Framework | React 19 + TypeScript + Vite |
-| Styling | Tailwind CSS v4 |
-| 3D / WebGL | Three.js via React Three Fiber & Drei |
-| Animations | GSAP, Framer Motion |
-| Particles | tsparticles |
-| Backend / DB | Supabase (Postgres + Auth) |
-| Media Storage | Cloudflare R2 |
-| Routing | React Router v7 |
-| Deployment | Cloudflare Pages |
+| Layer         | Technology                            |
+| ------------- | ------------------------------------- |
+| Framework     | React 19 + TypeScript + Vite          |
+| Styling       | Tailwind CSS v4                       |
+| 3D / WebGL    | Three.js via React Three Fiber & Drei |
+| Animations    | GSAP, Framer Motion                   |
+| Particles     | tsparticles                           |
+| Backend / DB  | Supabase (Postgres + Auth)            |
+| Media Storage | Cloudflare R2                         |
+| Routing       | React Router v7                       |
+| Deployment    | Cloudflare Pages                      |
 
 ## Project Structure
 
@@ -68,18 +68,21 @@ npm run preview # Serve the production build locally
 
 ## CI / CD
 
-| Workflow | Trigger | Description |
-|---|---|---|
-| `test.yml` | push / PR → `dev`, `master` | Lint + build validation |
-| `deploy.yml` | push → `dev` | Deploy to Cloudflare Pages |
-| `license-check.yml` | push / PR → `dev`, `master` | Verify MIT headers on all `src/` files |
-| `pr-labeler.yml` | PR opened / updated | Auto-apply labels from file paths and branch name |
-| `codeql.yml` | push / PR → `dev`, `master` | GitHub CodeQL security analysis |
+| Workflow            | Trigger                     | Description                                       |
+| ------------------- | --------------------------- | ------------------------------------------------- |
+| `test.yml`          | push / PR → `dev`, `master` | Lint + build validation                           |
+| `deploy.yml`        | push → `dev`                | Deploy to Cloudflare Pages                        |
+| `license-check.yml` | push / PR → `dev`, `master` | Verify MIT headers on all `src/` files            |
+| `pr-labeler.yml`    | PR opened / updated         | Auto-apply labels from file paths and branch name |
+| `codeql.yml`        | push / PR → `dev`, `master` | GitHub CodeQL security analysis                   |
 
 ## License
 
 [MIT](LICENSE) © Guy Erreich
-    ...reactDom.configs.recommended.rules,
-  },
+...reactDom.configs.recommended.rules,
+},
 })
+
+```
+
 ```
