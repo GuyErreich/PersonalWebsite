@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion } from "framer-motion";
 import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect } from "react";

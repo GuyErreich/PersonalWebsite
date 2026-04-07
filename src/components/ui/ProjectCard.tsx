@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion, useInView } from "framer-motion";
 import { Github } from "lucide-react";
 import type { ReactNode } from "react";

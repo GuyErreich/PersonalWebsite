@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 /**
  * IrisTransition — scroll-driven camera-iris exit effect for the Hero section.
  *

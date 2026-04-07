@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";

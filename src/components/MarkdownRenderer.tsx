@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import mermaid from "mermaid";
 import { useEffect, useRef } from "react";
 import type { Components } from "react-markdown";

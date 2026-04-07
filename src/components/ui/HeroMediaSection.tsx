@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { useScrollReveal } from "../../hooks/useScrollReveal";

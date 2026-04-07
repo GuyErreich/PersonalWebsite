@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import Cookies from "js-cookie";
 import { Play } from "lucide-react";

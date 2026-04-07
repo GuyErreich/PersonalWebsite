@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { AnimatePresence, motion } from "framer-motion";
 import { X as CloseIcon, Code2, Gamepad2, Menu as MenuIcon, Terminal, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useEffect } from "react";
 import { AnimationOrchestrator, useBuildOrchestrator } from "../../../lib/AnimationOrchestrator";
 import { AnimationProvider } from "../../../lib/AnimationProvider";

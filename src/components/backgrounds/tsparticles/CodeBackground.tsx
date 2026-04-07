@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { ISourceOptions } from "@tsparticles/engine";
 import { useMemo } from "react";
 import { ParticlesBase } from "./ParticlesBase";

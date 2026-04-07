@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import type { MotionValue } from "framer-motion";
 import { useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";

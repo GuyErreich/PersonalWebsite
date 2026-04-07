@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { Admin } from "./pages/Admin";
 import { Home } from "./pages/Home";

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { createContext } from "react";
 
 export type EntranceTheme = "gamedev" | "devops";

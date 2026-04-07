@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
 
 let sharedEntranceCtx: AudioContext | null = null;

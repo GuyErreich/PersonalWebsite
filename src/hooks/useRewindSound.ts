@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import type { AnimationOrchestrator } from "../lib/AnimationOrchestrator";

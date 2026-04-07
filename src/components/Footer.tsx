@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion } from "framer-motion";
 import { Github, Linkedin, Mail, Terminal } from "lucide-react";
 import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";

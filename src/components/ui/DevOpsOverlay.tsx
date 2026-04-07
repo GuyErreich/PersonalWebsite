@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { playDevOpsBeeps } from "../../lib/sound/entranceSounds";

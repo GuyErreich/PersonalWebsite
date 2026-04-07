@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion, useInView } from "framer-motion";
 import { useContext, useRef } from "react";
 import { SectionRevealContext } from "./sectionRevealContext";

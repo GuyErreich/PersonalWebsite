@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Environment } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Cloud, Database, Server, Terminal } from "lucide-react";

@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 const implosionDuration = 3.0; // The active duration of the collapse phase
 const entryDelay = 4.8; // Starts right near the end of the text collapse
 

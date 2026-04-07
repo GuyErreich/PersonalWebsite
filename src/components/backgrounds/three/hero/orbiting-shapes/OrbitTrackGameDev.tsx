@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Float } from "@react-three/drei";
 import { forwardRef } from "react";
 import * as THREE from "three";

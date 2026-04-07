@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { uploadToR2 } from "../../lib/storage/r2client";

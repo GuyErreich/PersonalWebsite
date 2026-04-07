@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { DevOpsSection } from "../components/DevOpsSection";
 import { Footer } from "../components/Footer";
 import { GameDevSection } from "../components/GameDevSection";

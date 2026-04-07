@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { createContext, useContext } from "react";
 import type { AnimationOrchestrator } from "./AnimationOrchestrator";
 

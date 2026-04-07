@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import Cookies from "js-cookie";
 import type { ReactNode } from "react";

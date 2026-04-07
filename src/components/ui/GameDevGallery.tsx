@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 import { motion, useInView } from "framer-motion";
 import { ExternalLink, Gamepad2, Github, Image as ImageIcon } from "lucide-react";
 import { useContext, useRef } from "react";
