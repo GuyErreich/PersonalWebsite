@@ -16,14 +16,16 @@ import {
 } from "framer-motion";
 
 import Cookies from "js-cookie";
-import { ChevronDown, Github, Linkedin, Mail } from "lucide-react";
+import { ChevronDown, Mail } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type * as THREE from "three";
+import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
 import { ReverseHyperspace } from "./backgrounds/three/hero/ReverseHyperspace";
 import { ThreeHeroBackground } from "./backgrounds/three/ThreeHeroBackground";
 import { HyperspaceLever } from "./HyperspaceLever";
 import { RocketReplayButton } from "./RocketReplayButton";
+import { GitHubIcon, LinkedInIcon } from "./ui/BrandIcons";
 import { IrisTransition } from "./ui/IrisTransition";
 import { SectionEdge } from "./ui/SectionEdge";
 
@@ -107,9 +109,8 @@ export const Hero = () => {
     const initAudio = () => {
       if (isCancelled) return;
       try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         ctx = new AudioCtx();
         if (ctx.state === "suspended") ctx.resume();
 
@@ -234,9 +235,8 @@ export const Hero = () => {
 
   const handleReplay = () => {
     try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = getAudioContextClass();
+      if (!AudioCtx) return;
       const ctx = new AudioCtx();
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
@@ -660,7 +660,7 @@ export const Hero = () => {
                     className="text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 p-3 rounded-full"
                   >
                     <span className="sr-only">GitHub</span>
-                    <Github className="w-7 h-7" />
+                    <GitHubIcon className="w-7 h-7" />
                   </motion.a>
                   <motion.a
                     whileHover={{ scale: 1.2, rotate: -5 }}
@@ -678,7 +678,7 @@ export const Hero = () => {
                     onClick={playTagClickSound}
                   >
                     <span className="sr-only">LinkedIn</span>
-                    <Linkedin className="w-7 h-7" />
+                    <LinkedInIcon className="w-7 h-7" />
                   </motion.a>
                   <motion.a
                     whileHover={{ scale: 1.2, rotate: 5 }}

@@ -5,10 +5,11 @@
  */
 
 import { motion, useInView } from "framer-motion";
-import { Github } from "lucide-react";
+
 import type { ReactNode } from "react";
 import { useContext, useRef } from "react";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
+import { GitHubIcon } from "./BrandIcons";
 import { SectionRevealContext } from "./sectionRevealContext";
 
 interface ProjectCardProps {
@@ -51,7 +52,8 @@ export const ProjectCard = ({ title, description, tags, link, icon, index }: Pro
           aria-label={`View ${title} on GitHub`}
           className="text-gray-400 hover:text-white transition-colors"
         >
-          <Github className="w-6 h-6" />
+          {/* GitHub mark */}
+          <GitHubIcon className="w-6 h-6" />
         </motion.a>
       </div>
 

@@ -8,6 +8,7 @@ import { useFrame } from "@react-three/fiber";
 import { useContext, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { AnimationContext } from "../../../../lib/AnimationContext";
+import { getAudioContextClass } from "../../../../lib/sound/audioContext";
 
 export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const linesRef = useRef<THREE.LineSegments>(null);
@@ -24,9 +25,8 @@ export const HyperspaceJump = ({ skipIntro = false }: { skipIntro?: boolean }) =
     if (proxy.progress > 0 && !played.current) {
       played.current = true;
       try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === "suspended") ctx.resume();

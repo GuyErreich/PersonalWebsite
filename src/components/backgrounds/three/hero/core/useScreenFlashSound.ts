@@ -7,6 +7,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import type { AnimationOrchestrator } from "../../../../../lib/AnimationOrchestrator";
+import { getAudioContextClass } from "../../../../../lib/sound/audioContext";
 
 export const useScreenFlashSound = (
   skipIntro: boolean,
@@ -28,9 +29,8 @@ export const useScreenFlashSound = (
       const jumpProxy = orchestrator.getProxy("flash-jump");
       if (jumpProxy.progress > 0 && jumpProxy.progress < 1 && !flashes.current.jump) {
         flashes.current.jump = true;
-        const AudioCtx =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === "suspended") ctx.resume();

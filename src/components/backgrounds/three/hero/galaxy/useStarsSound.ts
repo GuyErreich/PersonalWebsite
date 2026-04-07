@@ -7,6 +7,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import type { AnimationOrchestrator } from "../../../../../lib/AnimationOrchestrator";
+import { getAudioContextClass } from "../../../../../lib/sound/audioContext";
 
 export const useStarsSound = (skipIntro: boolean, orchestrator: AnimationOrchestrator) => {
   const proxy = orchestrator.getProxy("starsSound");
@@ -17,9 +18,8 @@ export const useStarsSound = (skipIntro: boolean, orchestrator: AnimationOrchest
     if (skipIntro || played.current || proxy.activeT === 0) return;
     played.current = true;
     try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = getAudioContextClass();
+      if (!AudioCtx) return;
       const ctx = audioCtxRef.current || new AudioCtx();
       audioCtxRef.current = ctx;
       if (ctx.state === "suspended") ctx.resume();

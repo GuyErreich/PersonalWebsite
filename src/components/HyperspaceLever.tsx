@@ -7,6 +7,7 @@
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { getAudioContextClass } from "../lib/sound/audioContext";
 
 interface HyperspaceLeverProps {
   onActivate: () => void;
@@ -35,9 +36,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
 
   useEffect(() => {
     try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = getAudioContextClass();
       if (AudioCtx) audioContextRef.current = new AudioCtx();
     } catch (e) {
       console.warn("Web Audio API not supported", e);

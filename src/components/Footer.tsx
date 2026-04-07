@@ -5,8 +5,9 @@
  */
 
 import { motion } from "framer-motion";
-import { Github, Linkedin, Mail, Terminal } from "lucide-react";
+import { Mail, Terminal } from "lucide-react";
 import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";
+import { GitHubIcon, LinkedInIcon } from "./ui/BrandIcons";
 
 export const Footer = () => {
   return (
@@ -30,7 +31,7 @@ export const Footer = () => {
               className="text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 p-3 rounded-full"
             >
               <span className="sr-only">GitHub</span>
-              <Github className="w-6 h-6" />
+              <GitHubIcon className="w-6 h-6" />
             </motion.a>
             <motion.a
               whileHover={{ scale: 1.2, rotate: -5 }}
@@ -43,7 +44,7 @@ export const Footer = () => {
               className="text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-[#0077b5]/20 p-3 rounded-full"
             >
               <span className="sr-only">LinkedIn</span>
-              <Linkedin className="w-6 h-6" />
+              <LinkedInIcon className="w-6 h-6" />
             </motion.a>
             <motion.a
               whileHover={{ scale: 1.2, rotate: 5 }}

@@ -7,6 +7,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import type { AnimationOrchestrator } from "../../../../../lib/AnimationOrchestrator";
+import { getAudioContextClass } from "../../../../../lib/sound/audioContext";
 
 // ============================================================================
 // CHOOSE YOUR TRANSITION SOUND STYLE HERE
@@ -31,9 +32,8 @@ export const useBlackholeSuckSound = (skipIntro: boolean, orchestrator: Animatio
     if (!played.current && proxy.activeT > 0) {
       played.current = true;
       try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === "suspended") ctx.resume();

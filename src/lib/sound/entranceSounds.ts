@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
+import { getAudioContextClass } from "./audioContext";
 
 let sharedEntranceCtx: AudioContext | null = null;
 
@@ -14,7 +14,7 @@ const getCtx = (): AudioContext | null => {
     return sharedEntranceCtx;
   }
   try {
-    const AudioCtx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
+    const AudioCtx = getAudioContextClass();
     if (!AudioCtx) return null;
     sharedEntranceCtx = new AudioCtx();
     return sharedEntranceCtx;

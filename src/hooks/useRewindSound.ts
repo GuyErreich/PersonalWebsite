@@ -7,6 +7,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import type { AnimationOrchestrator } from "../lib/AnimationOrchestrator";
+import { getAudioContextClass } from "../lib/sound/audioContext";
 
 export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrchestrator | null) => {
   const played = useRef(false);
@@ -20,9 +21,8 @@ export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrches
     if (thoughtsProxy.progress > 0.9 && thoughtsProxy.progress < 1) {
       played.current = true;
       try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
         if (ctx.state === "suspended") ctx.resume();

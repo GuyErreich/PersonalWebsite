@@ -5,11 +5,12 @@
  */
 
 import { motion, useInView } from "framer-motion";
-import { ExternalLink, Gamepad2, Github, Image as ImageIcon } from "lucide-react";
+import { ExternalLink, Gamepad2, Image as ImageIcon } from "lucide-react";
 import { useContext, useRef } from "react";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import type { GameDevItem } from "../GameDevSection";
 import { MarkdownRenderer } from "../MarkdownRenderer";
+import { GitHubIcon } from "./BrandIcons";
 import { SectionRevealContext } from "./sectionRevealContext";
 
 // ── Sub-components so hooks can be called per-item in mapped lists ──────────
@@ -100,7 +101,8 @@ const GalleryDetailItem = ({
               className="text-gray-400 hover:text-white transition-colors"
               title="GitHub"
             >
-              <Github className="w-5 h-5" />
+              {/* GitHub mark */}
+              <GitHubIcon className="w-5 h-5" />
             </motion.a>
           )}
           {item.live_url && (

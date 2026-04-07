@@ -7,6 +7,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { getAudioContextClass } from "../../../../lib/sound/audioContext";
 
 export const ReverseHyperspace = () => {
   const linesRef = useRef<THREE.LineSegments>(null);
@@ -17,9 +18,8 @@ export const ReverseHyperspace = () => {
     // Generative Synth Time-Jump Sound Effect
     let ctx: AudioContext | null = null;
     try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = getAudioContextClass();
+      if (!AudioCtx) return;
       ctx = new AudioCtx();
 
       const now = ctx.currentTime;

@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { Rocket } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playHoverSound } from "../lib/sound/interactionSounds";
 
 interface RocketReplayButtonProps {
@@ -31,9 +32,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
 
   const handleLaunch = () => {
     try {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx = getAudioContextClass();
       if (!AudioCtx) return;
 
       const ctx = new AudioCtx();

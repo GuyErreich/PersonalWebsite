@@ -5,6 +5,7 @@
  */
 
 import { useEffect } from "react";
+import { getAudioContextClass } from "../../../../../lib/sound/audioContext";
 
 export const FloatingThoughtsAudio = ({
   skipIntro = false,
@@ -22,9 +23,8 @@ export const FloatingThoughtsAudio = ({
     const t = setTimeout(() => {
       if (isCancelled) return;
       try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         ctx = new AudioCtx();
         if (ctx.state === "suspended") ctx.resume();
 
