@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Rocket } from 'lucide-react';
-import { playHoverSound } from '../lib/sound/interactionSounds';
+import { motion } from "framer-motion";
+import { Rocket } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { playHoverSound } from "../lib/sound/interactionSounds";
 
 interface RocketReplayButtonProps {
   onReplay: () => void;
@@ -17,7 +17,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
     const timeouts = timeoutRefs.current;
     return () => {
       timeouts.forEach(clearTimeout);
-      if (launchCtxRef.current && launchCtxRef.current.state !== 'closed') {
+      if (launchCtxRef.current && launchCtxRef.current.state !== "closed") {
         launchCtxRef.current.close().catch(() => {});
       }
     };
@@ -25,14 +25,16 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
 
   const handleLaunch = () => {
     try {
-      const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return;
 
       const ctx = new AudioCtx();
       launchCtxRef.current = ctx;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
-      osc.type = 'sine';
+      osc.type = "sine";
       osc.frequency.setValueAtTime(150, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
       gain.gain.setValueAtTime(0, ctx.currentTime);
@@ -42,7 +44,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.8);
-      
+
       // Deep Exhaust Roar
       const bufferSize = ctx.sampleRate * 2.0;
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -51,7 +53,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
       const noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = 'lowpass';
+      noiseFilter.type = "lowpass";
       noiseFilter.frequency.setValueAtTime(3000, ctx.currentTime);
       noiseFilter.frequency.exponentialRampToValueAtTime(50, ctx.currentTime + 1.2);
       const noiseGain = ctx.createGain();
@@ -62,9 +64,14 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       noiseFilter.connect(noiseGain);
       noiseGain.connect(ctx.destination);
       noise.start(ctx.currentTime);
-      setTimeout(() => { ctx.close().catch(() => {}); launchCtxRef.current = null; }, 2000);
-    } catch {}
-    
+      setTimeout(() => {
+        ctx.close().catch(() => {});
+        launchCtxRef.current = null;
+      }, 2000);
+    } catch {
+      // intentional — AudioContext not supported in this environment
+    }
+
     // Trigger local launch animation, delay the overall replay and reset
     setIsMobileLaunching(true);
     const t1 = setTimeout(() => {
@@ -91,58 +98,77 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
       onClick={handleLaunch}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      aria-label="Engage Timeshift"
       title="Engage Timeshift"
-      animate={{ 
+      animate={{
         y: [0, -4, 0],
-        boxShadow: ["0px 10px 20px rgba(6,182,212,0.2)", "0px 15px 30px rgba(6,182,212,0.4)", "0px 10px 20px rgba(6,182,212,0.2)"]
+        boxShadow: [
+          "0px 10px 20px rgba(6,182,212,0.2)",
+          "0px 15px 30px rgba(6,182,212,0.4)",
+          "0px 10px 20px rgba(6,182,212,0.2)",
+        ],
       }}
       transition={{
         duration: 3,
         repeat: Infinity,
-        ease: "easeInOut"
+        ease: "easeInOut",
       }}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
       {/* Launch Animation Wrapper (Moves Diagonally Top-Right) */}
-      <motion.div 
+      <motion.div
         className="relative w-full h-full flex items-center justify-center z-10 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1"
-        animate={isMobileLaunching ? { x: 150, y: -150, scale: 0.5, opacity: 0 } : { x: 0, y: 0, scale: 1, opacity: 1 }}
+        animate={
+          isMobileLaunching
+            ? { x: 150, y: -150, scale: 0.5, opacity: 0 }
+            : { x: 0, y: 0, scale: 1, opacity: 1 }
+        }
         transition={isMobileLaunching ? { duration: 0.5, ease: "easeIn" } : { duration: 0.3 }}
       >
         {/* Rotational Frame for Rocket and Flame (rotated 45deg to align perfectly with lucide's icon angle constraint) */}
         <div className="relative flex flex-col items-center justify-center rotate-45">
-          
           {/* Rocket Icon (Unrotated visually so it points along the container's straight UP axis) */}
           <Rocket className="-rotate-45 w-5 h-5 shrink-0 relative z-10 text-cyan-50 drop-shadow-[0_0_8px_rgba(255,255,255,1)]" />
-          
+
           {/* Engine Flame (Points strictly DOWN along container's axis, scaling on hover/launch) */}
-          <motion.div 
+          <motion.div
             className="absolute top-[calc(50%+6px)] left-1/2 w-2 -translate-x-1/2 origin-top bg-gradient-to-b from-white via-amber-500 to-transparent blur-[1px] rounded-full z-0 pointer-events-none"
             style={{ height: "12px" }}
             initial={{ opacity: 0, scaleY: 0 }}
             animate={
-              isMobileLaunching ? {
-                scaleY: [2, 8],
-                opacity: [1, 0],
-                transition: { duration: 0.5, ease: "easeOut" }
-              } : isMobileHovering ? {
-                scaleY: [1, 2.5, 1],
-                opacity: [0.8, 1, 0.8],
-                transition: { duration: 0.15, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }
-              } : {
-                scaleY: 0,
-                opacity: 0,
-                transition: { duration: 0.2 }
-              }
+              isMobileLaunching
+                ? {
+                    scaleY: [2, 8],
+                    opacity: [1, 0],
+                    transition: { duration: 0.5, ease: "easeOut" },
+                  }
+                : isMobileHovering
+                  ? {
+                      scaleY: [1, 2.5, 1],
+                      opacity: [0.8, 1, 0.8],
+                      transition: {
+                        duration: 0.15,
+                        repeat: Infinity,
+                        repeatType: "reverse",
+                        ease: "easeInOut",
+                      },
+                    }
+                  : {
+                      scaleY: 0,
+                      opacity: 0,
+                      transition: { duration: 0.2 },
+                    }
             }
           />
         </div>
       </motion.div>
-      
+
       {/* Floating Tooltip */}
       <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-300 pointer-events-none">
-        <span className="font-mono text-xs font-bold text-cyan-100 tracking-wider bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.4)] block shadow-lg">REPLAY</span>
+        <span className="font-mono text-xs font-bold text-cyan-100 tracking-wider bg-cyan-950/80 px-2.5 py-1 rounded border border-cyan-400/50 shadow-[0_0_10px_rgba(6,182,212,0.4)] block shadow-lg">
+          REPLAY
+        </span>
       </div>
     </motion.button>
   );

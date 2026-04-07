@@ -1,14 +1,14 @@
-import { useRef } from 'react';
-import { useScroll, useTransform } from 'framer-motion';
-import type { MotionValue } from 'framer-motion';
+import type { MotionValue } from "framer-motion";
+import { useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 
 /**
  * Scroll-driven reveal with viewport-anchored fade zones.
  *
- * Enter: fades in as the section's top travels through the bottom 20% of the
+ * Enter: fades in as the section's top travels through the bottom 10% of the
  * viewport. Exit: fades out as the section's bottom travels through the top
- * 20% of the viewport. Both zones are a fixed ~20vh regardless of section
- * height, so the animation feels consistent on every screen size.
+ * 5% of the viewport. Both zones are fixed viewport-relative offsets regardless
+ * of section height, so the animation feels consistent on every screen size.
  *
  * No spring — scrub is 1:1 with scroll for crisp, immediate feedback.
  *
@@ -21,20 +21,20 @@ export const useScrollReveal = () => {
   // 0→1 as section top travels through the bottom 10% of the viewport
   const { scrollYProgress: enterProgress } = useScroll({
     target: ref,
-    offset: ['start end', 'start 0.9'],
+    offset: ["start end", "start 0.9"],
   });
 
   // 0→1 as section bottom travels through the top 5% of the viewport
   const { scrollYProgress: exitProgress } = useScroll({
     target: ref,
-    offset: ['end 0.05', 'end start'],
+    offset: ["end 0.05", "end start"],
   });
 
   // Full opacity when fully entered and not yet exiting
   const opacity = useTransform(
     [enterProgress, exitProgress] as MotionValue[],
     // Exit never goes below 0.5 so content never fully disappears while still in view
-    ([enter, exit]: number[]) => Math.min(enter as number, 1 - (exit as number) * 0.5)
+    ([enter, exit]: number[]) => Math.min(enter as number, 1 - (exit as number) * 0.5),
   );
 
   return { ref, motionStyle: { opacity } };

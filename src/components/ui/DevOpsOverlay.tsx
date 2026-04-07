@@ -1,16 +1,16 @@
-import { useEffect, useCallback, useState } from 'react';
-import { motion } from 'framer-motion';
-import { playDevOpsBeeps } from '../../lib/sound/entranceSounds';
-import { Scanlines } from './Scanlines';
+import { motion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
+import { playDevOpsBeeps } from "../../lib/sound/entranceSounds";
+import { Scanlines } from "./Scanlines";
 
 interface DevOpsOverlayProps {
   onDone: () => void;
 }
 
 const TERMINAL_LINES = [
-  '> INITIALIZING INFRASTRUCTURE...',
-  '> MOUNTING PROJECT CLUSTERS...',
-  '> SYSTEM ONLINE ■',
+  "> INITIALIZING INFRASTRUCTURE...",
+  "> MOUNTING PROJECT CLUSTERS...",
+  "> SYSTEM ONLINE ■",
 ];
 
 export const DevOpsOverlay = ({ onDone }: DevOpsOverlayProps) => {
@@ -44,8 +44,8 @@ export const DevOpsOverlay = ({ onDone }: DevOpsOverlayProps) => {
             transition={{ duration: 0.22 }}
             className={
               i === TERMINAL_LINES.length - 1 && visibleLines === TERMINAL_LINES.length
-                ? 'text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.55)]'
-                : 'text-cyan-400/90'
+                ? "text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.55)]"
+                : "text-cyan-400/90"
             }
           >
             {line}

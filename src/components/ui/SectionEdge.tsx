@@ -8,13 +8,13 @@
  *  - wave     →  CloudEdge    (DevOps → Footer)    SVG feTurbulence clouds
  */
 
-import { NebulaEdge }  from './edges/NebulaEdge';
-import { MeteorEdge }  from './edges/MeteorEdge';
-import { SignalWaveEdge } from './edges/SignalWaveEdge';
-import { CloudEdge }   from './edges/CloudEdge';
+import { CloudEdge } from "./edges/CloudEdge";
+import { MeteorEdge } from "./edges/MeteorEdge";
+import { NebulaEdge } from "./edges/NebulaEdge";
+import { SignalWaveEdge } from "./edges/SignalWaveEdge";
 
 export interface SectionEdgeProps {
-  variant: 'terrain' | 'meteor' | 'circuit' | 'wave';
+  variant: "terrain" | "meteor" | "circuit" | "wave";
   /** Exact bg colour of the section immediately below */
   fillColor: string;
   className?: string;
@@ -32,15 +32,43 @@ export interface SectionEdgeProps {
   stormFreq?: number;
 }
 
-export const SectionEdge = ({ variant, fillColor, className = '', inverted = false, height, waveAmp, waveFreq, stormAmp, stormFreq }: SectionEdgeProps) => {
-  if (variant === 'terrain') {
-    return <NebulaEdge fillColor={fillColor} className={className} inverted={inverted} height={height} waveAmp={waveAmp} waveFreq={waveFreq} stormAmp={stormAmp} stormFreq={stormFreq} />;
+export const SectionEdge = ({
+  variant,
+  fillColor,
+  className = "",
+  inverted = false,
+  height,
+  waveAmp,
+  waveFreq,
+  stormAmp,
+  stormFreq,
+}: SectionEdgeProps) => {
+  if (variant === "terrain") {
+    return (
+      <NebulaEdge
+        fillColor={fillColor}
+        className={className}
+        inverted={inverted}
+        height={height}
+        waveAmp={waveAmp}
+        waveFreq={waveFreq}
+        stormAmp={stormAmp}
+        stormFreq={stormFreq}
+      />
+    );
   }
-  if (variant === 'meteor') {
-    return <MeteorEdge  fillColor={fillColor} className={className} />;
+  if (variant === "meteor") {
+    return <MeteorEdge fillColor={fillColor} className={className} />;
   }
-  if (variant === 'circuit') {
-    return <SignalWaveEdge fillColor={fillColor} className={className} inverted={inverted} height={height} />;
+  if (variant === "circuit") {
+    return (
+      <SignalWaveEdge
+        fillColor={fillColor}
+        className={className}
+        inverted={inverted}
+        height={height}
+      />
+    );
   }
   return <CloudEdge fillColor={fillColor} className={className} />;
 };

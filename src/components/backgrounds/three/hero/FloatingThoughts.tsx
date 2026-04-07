@@ -1,9 +1,9 @@
-import React, { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
-import * as THREE from 'three';
-import { useOrchestrator } from '../../../../lib/AnimationContext';
-import { useThoughtsSound } from './useThoughtsSound';
+import { Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import React, { useMemo, useRef } from "react";
+import * as THREE from "three";
+import { useOrchestrator } from "../../../../lib/AnimationContext";
+import { useThoughtsSound } from "./useThoughtsSound";
 
 export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const groupRef = useRef<THREE.Group>(null);
@@ -14,55 +14,61 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
   // Removed useRewindSound because it was creating a "doinq" sound right before the implosion
   // useRewindSound(skipIntro, orchestrator);
 
-  const thoughts = useMemo(() => [
-    "Strong foundations create smooth experiences.",
-    "Building the foundation. Shaping the experience.",
-    "Turning complexity into smooth experiences.",
-    "From cloud platforms to player moments — built to feel right.",
-    "I build things that just work — and feel great."
-    ], []);
+  const thoughts = useMemo(
+    () => [
+      "Strong foundations create smooth experiences.",
+      "Building the foundation. Shaping the experience.",
+      "Turning complexity into smooth experiences.",
+      "From cloud platforms to player moments — built to feel right.",
+      "I build things that just work — and feel great.",
+    ],
+    [],
+  );
 
   useThoughtsSound(skipIntro, orchestrator, thoughts.length);
 
   const textItems = useMemo(() => {
-      // Clamp positions to fit within a visible bounding box for all screens
-      // These values are chosen to fit within a typical perspective camera view
-      const basePositions = [
-        { x: -2.2, y:  1.8, z: -2.5 }, 
-        { x:  2.2, y:  1.0, z: -1.5 }, 
-        { x: -2.0, y:  0.0, z: -1.0 }, 
-        { x:  2.2, y: -1.0, z: -1.5 }, 
-        { x: -2.2, y: -1.8, z: -2.5 }, 
-      ];
-      // Optionally, scale down for mobile screens
-      const isMobile = window.innerWidth < 640;
-      const scale = isMobile ? 0.7 : 1.0;
-      const shuffledPositions = [...basePositions].map(pos => ({
+    // Clamp positions to fit within a visible bounding box for all screens
+    // These values are chosen to fit within a typical perspective camera view
+    const basePositions = [
+      { x: -2.2, y: 1.8, z: -2.5 },
+      { x: 2.2, y: 1.0, z: -1.5 },
+      { x: -2.0, y: 0.0, z: -1.0 },
+      { x: 2.2, y: -1.0, z: -1.5 },
+      { x: -2.2, y: -1.8, z: -2.5 },
+    ];
+    // Optionally, scale down for mobile screens
+    const isMobile = window.innerWidth < 640;
+    const scale = isMobile ? 0.7 : 1.0;
+    const shuffledPositions = [...basePositions]
+      .map((pos) => ({
         x: pos.x * scale,
         y: pos.y * scale,
-        z: pos.z
-      })).sort(() => Math.random() - 0.5);
+        z: pos.z,
+      }))
+      .sort(() => Math.random() - 0.5);
 
-      return thoughts.map((text, i) => {
-        const { x, y, z } = shuffledPositions[i];
-        const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
-        return {
-          text,
-          x, y, z,
-          color: colors[i % colors.length],
-          ref: React.createRef<THREE.Group>(),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          textRef: React.createRef<any>(),
-          delay: i * 0.6 
-        };
-      });
-    }, [thoughts]);
+    return thoughts.map((text, i) => {
+      const { x, y, z } = shuffledPositions[i];
+      const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
+      return {
+        text,
+        x,
+        y,
+        z,
+        color: colors[i % colors.length],
+        ref: React.createRef<THREE.Group>(),
+        textRef: React.createRef<THREE.Mesh>(),
+        delay: i * 0.6,
+      };
+    });
+  }, [thoughts]);
 
   useFrame(() => {
     // Rely exclusively on orchestrator proxy time
     const activeT = thoughtsProxy.activeT;
     const collapseProgress = suckProxy.progress;
-    
+
     textItems.forEach((item, i) => {
       const group = item.ref.current;
       const textMesh = item.textRef.current;
@@ -75,49 +81,50 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
       group.visible = true;
 
       const elementT = Math.max(0, activeT - item.delay);
-      
+
       const floatX = Math.sin(elementT * 1.5 + i) * 0.05;
       const floatY = Math.cos(elementT * 1.0 + i) * 0.05;
-      
+
       let currentX = item.x + floatX;
       let currentY = item.y + floatY;
       let currentZ = item.z;
-      
+
       let introScale = 1.0;
       if (elementT < 0.8) {
-        const x = elementT / 0.8; 
+        const x = elementT / 0.8;
         const c1 = 1.70158;
         const c3 = c1 + 1;
-        introScale = Math.max(0, 1.0 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2));
+        introScale = Math.max(0, 1.0 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2);
       }
 
       let scale = introScale;
-      const targetOpacity = 0.85; 
-      let opacity = Math.min(targetOpacity, (elementT / 0.8) * targetOpacity); 
+      const targetOpacity = 0.85;
+      let opacity = Math.min(targetOpacity, (elementT / 0.8) * targetOpacity);
 
       // Suck into the black hole driven purely by the camera-suck proxy state!
       if (collapseProgress > 0) {
-        const suckEase = Math.pow(collapseProgress, 3);
-        
+        const suckEase = collapseProgress ** 3;
+
         currentX = THREE.MathUtils.lerp(currentX, 0, suckEase);
         currentY = THREE.MathUtils.lerp(currentY, 0, suckEase);
         currentZ = THREE.MathUtils.lerp(currentZ, -5, suckEase); // Add z depth back to match origin
-        
+
         scale = 1.0 - suckEase;
-        opacity *= (1.0 - collapseProgress * 0.5);
+        opacity *= 1.0 - collapseProgress * 0.5;
       }
 
       group.position.set(currentX, currentY, currentZ);
       group.scale.setScalar(scale);
-      
+
       if (textMesh.material) {
-        textMesh.material.transparent = true;
-        textMesh.material.opacity = opacity;
+        const mat = textMesh.material as THREE.MeshBasicMaterial;
+        mat.transparent = true;
+        mat.opacity = opacity;
       }
     });
 
     if (groupRef.current) {
-        groupRef.current.position.y = Math.sin(activeT) * 0.1;
+      groupRef.current.position.y = Math.sin(activeT) * 0.1;
     }
   });
 

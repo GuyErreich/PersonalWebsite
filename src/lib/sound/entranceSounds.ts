@@ -1,9 +1,17 @@
 type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
 
+let sharedEntranceCtx: AudioContext | null = null;
+
 const getCtx = (): AudioContext | null => {
+  if (sharedEntranceCtx && sharedEntranceCtx.state !== "closed") {
+    if (sharedEntranceCtx.state === "suspended") sharedEntranceCtx.resume().catch(() => {});
+    return sharedEntranceCtx;
+  }
   try {
     const AudioCtx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
-    return AudioCtx ? new AudioCtx() : null;
+    if (!AudioCtx) return null;
+    sharedEntranceCtx = new AudioCtx();
+    return sharedEntranceCtx;
   } catch {
     return null;
   }
@@ -16,7 +24,7 @@ export const playGameDevChime = () => {
   [523, 659, 784, 1047].forEach((freq, i) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'square';
+    osc.type = "square";
     const t = ctx.currentTime + i * 0.12;
     osc.frequency.setValueAtTime(freq, t);
     gain.gain.setValueAtTime(0, t);
@@ -37,7 +45,7 @@ export const playDevOpsBeeps = () => {
     const freq = i === 2 ? 880 : 440 + i * 80;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     const t = ctx.currentTime + offset;
     osc.frequency.setValueAtTime(freq, t);
     gain.gain.setValueAtTime(0, t);

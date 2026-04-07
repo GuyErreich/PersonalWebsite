@@ -1,9 +1,9 @@
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { Float } from '@react-three/drei';
-import { ConstellationWeb } from './ConstellationWeb';
-import { useOrchestrator } from '../../../../../lib/AnimationContext';
+import { Float } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import * as THREE from "three";
+import { useOrchestrator } from "../../../../../lib/AnimationContext";
+import { ConstellationWeb } from "./ConstellationWeb";
 
 // Pre-calculate mathematically perfect spaced positions for our orbital shapes
 const makeOrbitShapes = (radius: number, count: number) => {
@@ -12,7 +12,7 @@ const makeOrbitShapes = (radius: number, count: number) => {
     return {
       x: Math.cos(angle) * radius,
       z: Math.sin(angle) * radius,
-      angle
+      angle,
     };
   });
 };
@@ -37,28 +37,28 @@ export const OrbitingShapes = () => {
       if (orbit3Ref.current) orbit3Ref.current.visible = false;
       return;
     }
-    
+
     // Scale up the orbits from 0 to 1 based on proxy
-    const orbitEase = 1 - Math.pow(1 - proxy.progress, 4);
+    const orbitEase = 1 - (1 - proxy.progress) ** 4;
 
     // Spin infinitely using continuous clock time, active only when spawned
     const t = clock.elapsedTime;
 
     // Spin individual discs at different speeds and direction, mapping the scale ease as well
     if (orbit1Ref.current) {
-       orbit1Ref.current.visible = true;
-       orbit1Ref.current.rotation.y = t * 0.15;
-       orbit1Ref.current.scale.setScalar(orbitEase);
+      orbit1Ref.current.visible = true;
+      orbit1Ref.current.rotation.y = t * 0.15;
+      orbit1Ref.current.scale.setScalar(orbitEase);
     }
     if (orbit2Ref.current) {
-       orbit2Ref.current.visible = true;
-       orbit2Ref.current.rotation.y = t * 0.1;
-       orbit2Ref.current.scale.setScalar(orbitEase);
+      orbit2Ref.current.visible = true;
+      orbit2Ref.current.rotation.y = t * 0.1;
+      orbit2Ref.current.scale.setScalar(orbitEase);
     }
     if (orbit3Ref.current) {
-       orbit3Ref.current.visible = true;
-       orbit3Ref.current.rotation.y = t * 0.08;
-       orbit3Ref.current.scale.setScalar(orbitEase);
+      orbit3Ref.current.visible = true;
+      orbit3Ref.current.rotation.y = t * 0.08;
+      orbit3Ref.current.scale.setScalar(orbitEase);
     }
   });
 
@@ -76,7 +76,14 @@ export const OrbitingShapes = () => {
             <mesh position={[pos.x, 0, pos.z]}>
               {/* Dual-layered boxes looking highly technical */}
               <boxGeometry args={[0.4, 0.4, 0.4]} />
-              <meshStandardMaterial color="#60a5fa" emissive="#3b82f6" emissiveIntensity={1.5} wireframe transparent opacity={0.95} />
+              <meshStandardMaterial
+                color="#60a5fa"
+                emissive="#3b82f6"
+                emissiveIntensity={1.5}
+                wireframe
+                transparent
+                opacity={0.95}
+              />
               <mesh>
                 <boxGeometry args={[0.2, 0.2, 0.2]} />
                 <meshStandardMaterial color="#3b82f6" emissive="#2563eb" emissiveIntensity={2.0} />
@@ -94,10 +101,18 @@ export const OrbitingShapes = () => {
         </mesh>
         {orbit2Shapes.map((pos, i) => (
           <Float key={`cone-${i}`} speed={2} rotationIntensity={4} floatIntensity={2}>
-             {/* Tilting the cones so they face forward dynamically */}
+            {/* Tilting the cones so they face forward dynamically */}
             <mesh position={[pos.x, 0, pos.z]} rotation={[pos.angle, 0.5, 0.5]}>
               <coneGeometry args={[0.3, 0.8, 4]} />
-              <meshStandardMaterial color="#34d399" emissive="#10b981" emissiveIntensity={1.8} metalness={0.8} roughness={0.2} transparent opacity={0.95} />
+              <meshStandardMaterial
+                color="#34d399"
+                emissive="#10b981"
+                emissiveIntensity={1.8}
+                metalness={0.8}
+                roughness={0.2}
+                transparent
+                opacity={0.95}
+              />
             </mesh>
           </Float>
         ))}
@@ -113,19 +128,26 @@ export const OrbitingShapes = () => {
           <Float key={`sphere-${i}`} speed={3} rotationIntensity={1} floatIntensity={3}>
             <mesh position={[pos.x, 0, pos.z]}>
               <sphereGeometry args={[0.2, 16, 16]} />
-              <meshStandardMaterial color="#a78bfa" emissive="#8b5cf6" emissiveIntensity={2.0} transparent opacity={0.95} />
+              <meshStandardMaterial
+                color="#a78bfa"
+                emissive="#8b5cf6"
+                emissiveIntensity={2.0}
+                transparent
+                opacity={0.95}
+              />
             </mesh>
           </Float>
         ))}
       </group>
 
       {/* Constellation Web connecting the orbital rings globally */}
-      <ConstellationWeb 
+      <ConstellationWeb
         orbitsInfo={[
           { ref: orbit1Ref, shapes: orbit1Shapes },
           { ref: orbit2Ref, shapes: orbit2Shapes },
-          { ref: orbit3Ref, shapes: orbit3Shapes }
-      ]} />
+          { ref: orbit3Ref, shapes: orbit3Shapes },
+        ]}
+      />
     </>
   );
 };

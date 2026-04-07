@@ -1,15 +1,15 @@
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { getImplosionState } from './shared';
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import type * as THREE from "three";
+import { getImplosionState } from "./shared";
 
 export const ImplosionBlackHole = () => {
   const meshRef = useRef<THREE.Mesh>(null);
-  
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
     const { progress } = getImplosionState(t);
-    
+
     if (meshRef.current) {
       if (progress > 0.45 && progress <= 0.88) {
         meshRef.current.visible = true;

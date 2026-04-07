@@ -1,8 +1,8 @@
-import { Navbar } from '../components/Navbar';
-import { Hero } from '../components/Hero';
-import { GameDevSection } from '../components/GameDevSection';
-import { DevOpsSection } from '../components/DevOpsSection';
-import { Footer } from '../components/Footer';
+import { DevOpsSection } from "../components/DevOpsSection";
+import { Footer } from "../components/Footer";
+import { GameDevSection } from "../components/GameDevSection";
+import { Hero } from "../components/Hero";
+import { Navbar } from "../components/Navbar";
 
 export const Home = () => {
   return (

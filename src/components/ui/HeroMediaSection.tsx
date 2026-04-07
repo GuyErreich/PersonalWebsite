@@ -1,7 +1,7 @@
-import { motion } from 'framer-motion';
-import type { ReactNode } from 'react';
-import { SectionHeader } from './SectionHeader';
-import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+import { useScrollReveal } from "../../hooks/useScrollReveal";
+import { SectionHeader } from "./SectionHeader";
 
 interface HeroMediaSectionProps {
   id: string;
@@ -12,7 +12,13 @@ interface HeroMediaSectionProps {
   children: ReactNode;
 }
 
-export const HeroMediaSection = ({ id, title, description, sectionClassName = '', children }: HeroMediaSectionProps) => {
+export const HeroMediaSection = ({
+  id,
+  title,
+  description,
+  sectionClassName = "",
+  children,
+}: HeroMediaSectionProps) => {
   const { ref, motionStyle } = useScrollReveal();
 
   return (

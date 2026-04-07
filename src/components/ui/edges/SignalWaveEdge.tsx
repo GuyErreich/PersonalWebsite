@@ -11,7 +11,8 @@
  * ResizeObserver watches the wrapper div for correct DPR-aware sizing.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
+import { buildGlProgram, hexToVec3 } from "../../../lib/webgl";
 
 interface SignalWaveEdgeProps {
   fillColor: string;
@@ -131,69 +132,49 @@ const FRAG = /* glsl */ `
   }
 `;
 
-function hexToVec3(hex: string): [number, number, number] {
-  const h = hex.replace('#', '');
-  const n = parseInt(h, 16);
-  return [(n >> 16 & 0xff) / 255, (n >> 8 & 0xff) / 255, (n & 0xff) / 255];
-}
-
-function createShader(gl: WebGLRenderingContext, type: number, src: string): WebGLShader {
-  const s = gl.createShader(type)!;
-  gl.shaderSource(s, src);
-  gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    console.error('[SignalWaveEdge] GLSL compile error:', gl.getShaderInfoLog(s));
-  }
-  return s;
-}
-
-function createProgram(gl: WebGLRenderingContext): WebGLProgram {
-  const prog = gl.createProgram()!;
-  gl.attachShader(prog, createShader(gl, gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, createShader(gl, gl.FRAGMENT_SHADER, FRAG));
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    console.error('[SignalWaveEdge] GLSL link error:', gl.getProgramInfoLog(prog));
-  }
-  return prog;
-}
-
-export const SignalWaveEdge = ({ fillColor, className = '', inverted = false, height = 160 }: SignalWaveEdgeProps) => {
-  const canvasRef  = useRef<HTMLCanvasElement>(null);
+export const SignalWaveEdge = ({
+  fillColor,
+  className = "",
+  inverted = false,
+  height = 160,
+}: SignalWaveEdgeProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const rafRef     = useRef<number>(0);
+  const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    const canvas  = canvasRef.current;
+    const canvas = canvasRef.current;
     const wrapper = wrapperRef.current;
     if (!canvas || !wrapper) return;
 
-    const gl = canvas.getContext('webgl', { alpha: true, premultipliedAlpha: false });
+    const gl = canvas.getContext("webgl", {
+      alpha: true,
+      premultipliedAlpha: false,
+    });
     if (!gl) return;
 
-    const prog = createProgram(gl);
-    gl.useProgram(prog);
+    const prog = buildGlProgram(gl, VERT, FRAG, "SignalWaveEdge");
 
     const verts = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
-    const buf   = gl.createBuffer();
+    const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
     gl.bufferData(gl.ARRAY_BUFFER, verts, gl.STATIC_DRAW);
 
-    const aPos = gl.getAttribLocation(prog, 'a_position');
+    const aPos = gl.getAttribLocation(prog, "a_position");
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-    const uTime = gl.getUniformLocation(prog, 'uTime');
-    const uFill = gl.getUniformLocation(prog, 'uFill');
-    const uRes  = gl.getUniformLocation(prog, 'uRes');
+    const uTime = gl.getUniformLocation(prog, "uTime");
+    const uFill = gl.getUniformLocation(prog, "uFill");
+    const uRes = gl.getUniformLocation(prog, "uRes");
     const [r, g, b] = hexToVec3(fillColor);
 
     const resize = () => {
       const dpr = window.devicePixelRatio || 1;
-      const w   = wrapper.offsetWidth;
-      const h   = wrapper.offsetHeight;
+      const w = wrapper.offsetWidth;
+      const h = wrapper.offsetHeight;
       if (w === 0 || h === 0) return;
-      canvas.width  = Math.round(w * dpr);
+      canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
@@ -225,7 +206,7 @@ export const SignalWaveEdge = ({ fillColor, className = '', inverted = false, he
     };
   }, [fillColor]);
 
-  const posClass = inverted ? 'top-0 scale-y-[-1]' : 'bottom-0';
+  const posClass = inverted ? "top-0 scale-y-[-1]" : "bottom-0";
 
   return (
     <div
@@ -236,7 +217,7 @@ export const SignalWaveEdge = ({ fillColor, className = '', inverted = false, he
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
-        style={{ display: 'block' }}
+        style={{ display: "block" }}
       />
     </div>
   );

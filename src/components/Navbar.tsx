@@ -1,11 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
-import { Code2, Gamepad2, Terminal, User, Menu as MenuIcon, X as CloseIcon } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { playHoverSound, playClickSound, playMenuOpenSound, playMenuCloseSound } from '../lib/sound/interactionSounds';
+import { AnimatePresence, motion } from "framer-motion";
+import { X as CloseIcon, Code2, Gamepad2, Menu as MenuIcon, Terminal, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+  playMenuOpenSound,
+} from "../lib/sound/interactionSounds";
 
 export const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const previousOverflow = useRef('');
+  const previousOverflow = useRef("");
   const [scrolled, setScrolled] = useState(false);
   const [mouseNearTop, setMouseNearTop] = useState(false);
 
@@ -13,11 +18,11 @@ export const Navbar = () => {
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
     const onMouseMove = (e: MouseEvent) => setMouseNearTop(e.clientY < 48);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("mousemove", onMouseMove, { passive: true });
     return () => {
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("mousemove", onMouseMove);
     };
   }, []);
 
@@ -27,7 +32,7 @@ export const Navbar = () => {
   useEffect(() => {
     if (mobileOpen) {
       previousOverflow.current = document.body.style.overflow;
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = previousOverflow.current;
     }
@@ -37,42 +42,55 @@ export const Navbar = () => {
   }, [mobileOpen]);
 
   const navLinks = [
-    { href: '#about', label: 'About', icon: User, color: 'text-cyan-400' },
-    { href: '#gamedev', label: 'Game Dev', icon: Gamepad2, color: 'text-purple-400' },
-    { href: '#devops', label: 'DevOps & Automation', icon: Code2, color: 'text-green-400' },
+    { href: "#about", label: "About", icon: User, color: "text-cyan-400" },
+    {
+      href: "#gamedev",
+      label: "Game Dev",
+      icon: Gamepad2,
+      color: "text-purple-400",
+    },
+    {
+      href: "#devops",
+      label: "DevOps & Automation",
+      icon: Code2,
+      color: "text-green-400",
+    },
   ];
 
-  const drawerVariants: import('framer-motion').Variants = {
-    hidden: { 
-      x: '100%', 
-      opacity: 0, 
-      transition: { type: "spring" as const, stiffness: 300, damping: 30 } 
+  const drawerVariants: import("framer-motion").Variants = {
+    hidden: {
+      x: "100%",
+      opacity: 0,
+      transition: { type: "spring" as const, stiffness: 300, damping: 30 },
     },
-    visible: { 
-      x: 0, 
-      opacity: 1, 
-      transition: { 
-        type: "spring" as const, stiffness: 300, damping: 30,
-        staggerChildren: 0.1, delayChildren: 0.1
-      } 
-    }
+    visible: {
+      x: 0,
+      opacity: 1,
+      transition: {
+        type: "spring" as const,
+        stiffness: 300,
+        damping: 30,
+        staggerChildren: 0.1,
+        delayChildren: 0.1,
+      },
+    },
   };
 
-  const linkVariants: import('framer-motion').Variants = {
+  const linkVariants: import("framer-motion").Variants = {
     hidden: { x: 50, opacity: 0, rotateX: -30 },
-    visible: { 
-      x: 0, 
-      opacity: 1, 
-      rotateX: 0, 
-      transition: { type: "spring" as const, stiffness: 300, damping: 20 } 
-    }
+    visible: {
+      x: 0,
+      opacity: 1,
+      rotateX: 0,
+      transition: { type: "spring" as const, stiffness: 300, damping: 20 },
+    },
   };
 
   return (
     <>
       <motion.nav
-        animate={{ y: navVisible ? 0 : '-100%' }}
-        transition={{ type: 'spring', stiffness: 300, damping: 32, mass: 0.8 }}
+        animate={{ y: navVisible ? 0 : "-100%" }}
+        transition={{ type: "spring", stiffness: 300, damping: 32, mass: 0.8 }}
         className="fixed top-0 w-full bg-gray-900/80 backdrop-blur-md z-[100] border-b border-gray-800"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -81,16 +99,16 @@ export const Navbar = () => {
               <Terminal className="w-6 h-6 text-blue-500" />
               <span className="text-xl font-bold text-white">DevPortfolio</span>
             </div>
-            
+
             {/* Desktop nav */}
             <div className="hidden md:block">
               <div className="flex items-center space-x-4">
                 {navLinks.map((link) => {
                   const Icon = link.icon;
                   return (
-                    <motion.a 
-                      key={link.href} 
-                      href={link.href} 
+                    <motion.a
+                      key={link.href}
+                      href={link.href}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onMouseEnter={playHoverSound}
@@ -98,7 +116,9 @@ export const Navbar = () => {
                       className="flex items-center space-x-3 px-3 py-2 rounded-xl group hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
                     >
                       <div className="flex-shrink-0 p-2 rounded-lg bg-gray-900 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-gray-800 group-hover:border-cyan-500/30 transition-all duration-300">
-                        <Icon className={`w-4 h-4 ${link.color} drop-shadow-[0_0_5px_currentColor] opacity-80 group-hover:opacity-100`} />
+                        <Icon
+                          className={`w-4 h-4 ${link.color} drop-shadow-[0_0_5px_currentColor] opacity-80 group-hover:opacity-100`}
+                        />
                       </div>
                       <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
                         {link.label}
@@ -134,7 +154,9 @@ export const Navbar = () => {
         {mobileOpen && (
           <div className="md:hidden fixed inset-0 z-[110] pointer-events-auto">
             {/* Backdrop */}
-            <motion.div
+            <motion.button
+              type="button"
+              aria-label="Close menu"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -142,7 +164,7 @@ export const Navbar = () => {
                 playMenuCloseSound();
                 setMobileOpen(false);
               }}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm w-full h-full cursor-default"
             />
 
             {/* Side Drawer */}
@@ -201,7 +223,9 @@ export const Navbar = () => {
                       className="flex items-center space-x-4 group p-3 rounded-xl hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
                     >
                       <div className="flex-shrink-0 p-3 rounded-lg bg-gray-900 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-gray-800 group-hover:border-cyan-500/30 transition-all duration-300">
-                        <Icon className={`w-5 h-5 ${link.color} drop-shadow-[0_0_5px_currentColor] opacity-80 group-hover:opacity-100`} />
+                        <Icon
+                          className={`w-5 h-5 ${link.color} drop-shadow-[0_0_5px_currentColor] opacity-80 group-hover:opacity-100`}
+                        />
                       </div>
                       <span className="text-lg font-medium text-gray-300 group-hover:text-white transition-colors">
                         {link.label}
@@ -215,7 +239,9 @@ export const Navbar = () => {
               <div className="mt-auto relative z-10 border-t border-gray-800/50 pt-4 px-2">
                 <div className="flex items-center space-x-2">
                   <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]" />
-                  <span className="text-xs text-gray-400 font-mono tracking-widest">SYSTEM_ONLINE</span>
+                  <span className="text-xs text-gray-400 font-mono tracking-widest">
+                    SYSTEM_ONLINE
+                  </span>
                 </div>
               </div>
             </motion.div>

@@ -1,35 +1,37 @@
-import { useRef, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { AnimationOrchestrator } from '../../../../../lib/AnimationOrchestrator';
+import { useFrame } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
+import type { AnimationOrchestrator } from "../../../../../lib/AnimationOrchestrator";
 
 export const useDysonHumSound = (skipIntro: boolean, orchestrator: AnimationOrchestrator) => {
   // Tie the Dyson sphere hum to its dedicated proxy
   const proxy = orchestrator.getProxy("dyson");
-  
+
   const played = useRef(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   useFrame(() => {
     if (skipIntro) return;
-    
+
     // Check if the visual proxy has started
     if (!played.current && proxy.activeT > 0) {
       played.current = true;
       try {
-        const AudioCtx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx =
+          window.AudioContext ||
+          (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
-        if (ctx.state === 'suspended') ctx.resume();
+        if (ctx.state === "suspended") ctx.resume();
 
         const now = ctx.currentTime;
         const duration = proxy.duration;
 
         // Create a harmonious hum with harmonic overtones
         const fundamentalOsc = ctx.createOscillator();
-        fundamentalOsc.type = 'sine';
+        fundamentalOsc.type = "sine";
         fundamentalOsc.frequency.setValueAtTime(110, now); // A2 note
         fundamentalOsc.frequency.linearRampToValueAtTime(132, now + duration); // E3
-        
+
         const fundamentalGain = ctx.createGain();
         fundamentalGain.gain.setValueAtTime(0, now);
         fundamentalGain.gain.linearRampToValueAtTime(0.3, now + duration * 0.1);
@@ -37,10 +39,10 @@ export const useDysonHumSound = (skipIntro: boolean, orchestrator: AnimationOrch
 
         // Add an octave above for richness
         const overtoneOsc = ctx.createOscillator();
-        overtoneOsc.type = 'sine';
+        overtoneOsc.type = "sine";
         overtoneOsc.frequency.setValueAtTime(220, now);
         overtoneOsc.frequency.linearRampToValueAtTime(264, now + duration);
-        
+
         const overtoneGain = ctx.createGain();
         overtoneGain.gain.setValueAtTime(0, now);
         overtoneGain.gain.linearRampToValueAtTime(0.15, now + duration * 0.1);
@@ -54,20 +56,20 @@ export const useDysonHumSound = (skipIntro: boolean, orchestrator: AnimationOrch
         fundamentalGain.connect(masterGain);
         overtoneGain.connect(masterGain);
         masterGain.connect(ctx.destination);
-        
+
         fundamentalOsc.start(now);
         overtoneOsc.start(now);
         fundamentalOsc.stop(now + duration);
         overtoneOsc.stop(now + duration);
-      } catch { /* ignore */  /* ignore */ 
-        console.error("Dyson hum sound error:");
+      } catch {
+        /* ignore */
       }
     }
   });
 
   useEffect(() => {
     return () => {
-      if (audioCtxRef.current && audioCtxRef.current.state !== 'closed') {
+      if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
         audioCtxRef.current.close().catch(() => {});
       }
     };

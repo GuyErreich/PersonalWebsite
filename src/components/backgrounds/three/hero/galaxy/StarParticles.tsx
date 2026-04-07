@@ -1,7 +1,7 @@
-import { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { useOrchestrator } from '../../../../../lib/AnimationContext';
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import * as THREE from "three";
+import { useOrchestrator } from "../../../../../lib/AnimationContext";
 
 export const StarParticles = () => {
   const orchestrator = useOrchestrator();
@@ -9,59 +9,61 @@ export const StarParticles = () => {
 
   const particlesRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  
+
   // Dense particle count to engulf the 3 orbit tracks effectively
   const particleCount = 3500;
 
+  const [initialPositions, speeds, offsets, colors, noiseDirections, angleSeeds, sizeSeeds] =
+    useMemo(() => {
+      const pos = new Float32Array(particleCount * 3);
+      const spd = new Float32Array(particleCount);
+      const offs = new Float32Array(particleCount);
+      const cols = new Float32Array(particleCount * 3);
+      const noiseDir = new Float32Array(particleCount * 3);
+      const aSeeds = new Float32Array(particleCount);
+      const sSeeds = new Float32Array(particleCount);
 
-  
-  const [initialPositions, speeds, offsets, colors, noiseDirections, angleSeeds, sizeSeeds] = useMemo(() => {
-    const pos = new Float32Array(particleCount * 3);
-    const spd = new Float32Array(particleCount);
-    const offs = new Float32Array(particleCount);
-    const cols = new Float32Array(particleCount * 3);
-    const noiseDir = new Float32Array(particleCount * 3);
-    const aSeeds = new Float32Array(particleCount);
-    const sSeeds = new Float32Array(particleCount);
-    
-    for (let i = 0; i < particleCount; i++) {
+      for (let i = 0; i < particleCount; i++) {
         const r = 1.0 + Math.random() * 14.0;
         const theta = 2 * Math.PI * Math.random();
-        
+
         const x = r * Math.cos(theta);
         const z = r * Math.sin(theta);
-        const y = (Math.random() - 0.5) * 5.0 * Math.exp(-(r - 5) * (r - 5) / 50);
-        
+        const y = (Math.random() - 0.5) * 5.0 * Math.exp((-(r - 5) * (r - 5)) / 50);
+
         pos[i * 3] = x;
         pos[i * 3 + 1] = y;
         pos[i * 3 + 2] = z;
-        
-        spd[i] = Math.random() * 0.05 + 0.02; 
+
+        spd[i] = Math.random() * 0.05 + 0.02;
         offs[i] = Math.random() * Math.PI * 2;
-        
-        noiseDir[i * 3] = (Math.random() - 0.5) * 2;     
-        noiseDir[i * 3 + 1] = (Math.random() - 0.5) * 2; 
-        noiseDir[i * 3 + 2] = (Math.random() - 0.5) * 2; 
+
+        noiseDir[i * 3] = (Math.random() - 0.5) * 2;
+        noiseDir[i * 3 + 1] = (Math.random() - 0.5) * 2;
+        noiseDir[i * 3 + 2] = (Math.random() - 0.5) * 2;
 
         // Base star color/brightness
-        const brightness = Math.random() * 0.5 + 0.5; 
+        const brightness = Math.random() * 0.5 + 0.5;
         cols[i * 3] = brightness;
         cols[i * 3 + 1] = brightness;
         cols[i * 3 + 2] = brightness;
-        
+
         aSeeds[i] = Math.random(); // Used for angular flare animations
         sSeeds[i] = Math.random(); // Used for size variations & frequencies
-    }
-    
-    return [pos, spd, offs, cols, noiseDir, aSeeds, sSeeds];
-  }, [particleCount]);
+      }
+
+      return [pos, spd, offs, cols, noiseDir, aSeeds, sSeeds];
+    }, [particleCount]);
 
   const positions = useMemo(() => new Float32Array(initialPositions), [initialPositions]);
-  
+
   // Custom GPU Shader to mathematically calculate rotating light breakage & flickering spikes
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 }
-  }), []);
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+    }),
+    [],
+  );
 
   const vertexShader = `
     uniform float uTime;
@@ -165,78 +167,80 @@ export const StarParticles = () => {
 
   useFrame(({ clock }) => {
     if (materialRef.current) {
-        materialRef.current.uniforms.uTime.value = clock.elapsedTime;
+      materialRef.current.uniforms.uTime.value = clock.elapsedTime;
     }
 
     if (!particlesRef.current) return;
-    
+
     if (proxy.progress === 0 && proxy.activeT === 0) {
       particlesRef.current.visible = false;
-      return; 
+      return;
     } else {
       particlesRef.current.visible = true;
     }
 
     // Deploy fast alongside the proxy progress
-    const ease = 1 - Math.pow(1 - proxy.progress, 5); 
-    
+    const ease = 1 - (1 - proxy.progress) ** 5;
+
     particlesRef.current.scale.set(ease * 1.0 + 0.01, ease * 1.0 + 0.01, ease * 1.0 + 0.01);
-    
+
     // Once spawned, rotate infinitely
     const t = proxy.activeT > 0 ? clock.elapsedTime : 0;
-    particlesRef.current.rotation.y = t * 0.015; 
-    
+    particlesRef.current.rotation.y = t * 0.015;
+
     const geom = particlesRef.current.geometry;
     const positionAttr = geom.attributes.position;
-    
+
     // Only physical bobbing remains on CPU, calculating 3500 points
     // (Notice that Color-flickering has been fully offloaded to the GPU!)
     for (let i = 0; i < particleCount; i++) {
-        const i3 = i * 3;
-        const noiseAmt = Math.sin(t * speeds[i] + offsets[i]);
-        const floatRadius = 0.2; 
-        
-        positionAttr.array[i3] = initialPositions[i3] + (noiseDirections[i3] * noiseAmt * floatRadius);
-        positionAttr.array[i3 + 1] = initialPositions[i3 + 1] + (noiseDirections[i3 + 1] * noiseAmt * floatRadius);
-        positionAttr.array[i3 + 2] = initialPositions[i3 + 2] + (noiseDirections[i3 + 2] * noiseAmt * floatRadius);
+      const i3 = i * 3;
+      const noiseAmt = Math.sin(t * speeds[i] + offsets[i]);
+      const floatRadius = 0.2;
+
+      positionAttr.array[i3] = initialPositions[i3] + noiseDirections[i3] * noiseAmt * floatRadius;
+      positionAttr.array[i3 + 1] =
+        initialPositions[i3 + 1] + noiseDirections[i3 + 1] * noiseAmt * floatRadius;
+      positionAttr.array[i3 + 2] =
+        initialPositions[i3 + 2] + noiseDirections[i3 + 2] * noiseAmt * floatRadius;
     }
-    
+
     positionAttr.needsUpdate = true;
   });
-  
+
   return (
     <points ref={particlesRef} visible={false}>
       <bufferGeometry>
-        <bufferAttribute 
-            attach="attributes-position" 
-            count={particleCount} 
-            array={positions} 
-            itemSize={3}
-            args={[positions, 3]} 
+        <bufferAttribute
+          attach="attributes-position"
+          count={particleCount}
+          array={positions}
+          itemSize={3}
+          args={[positions, 3]}
         />
-        <bufferAttribute 
-            attach="attributes-color" 
-            count={particleCount} 
-            array={colors} 
-            itemSize={3}
-            args={[colors, 3]} 
+        <bufferAttribute
+          attach="attributes-color"
+          count={particleCount}
+          array={colors}
+          itemSize={3}
+          args={[colors, 3]}
         />
-        <bufferAttribute 
-            attach="attributes-angleSeed" 
-            count={particleCount} 
-            array={angleSeeds} 
-            itemSize={1}
-            args={[angleSeeds, 1]} 
+        <bufferAttribute
+          attach="attributes-angleSeed"
+          count={particleCount}
+          array={angleSeeds}
+          itemSize={1}
+          args={[angleSeeds, 1]}
         />
-        <bufferAttribute 
-            attach="attributes-sizeSeed" 
-            count={particleCount} 
-            array={sizeSeeds} 
-            itemSize={1}
-            args={[sizeSeeds, 1]} 
+        <bufferAttribute
+          attach="attributes-sizeSeed"
+          count={particleCount}
+          array={sizeSeeds}
+          itemSize={1}
+          args={[sizeSeeds, 1]}
         />
       </bufferGeometry>
-      <shaderMaterial 
+      <shaderMaterial
         ref={materialRef}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}

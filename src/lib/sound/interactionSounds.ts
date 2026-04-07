@@ -3,8 +3,8 @@ type WebkitWindow = Window & { webkitAudioContext?: typeof AudioContext };
 let sharedCtx: AudioContext | null = null;
 
 const getCtx = (): AudioContext | null => {
-  if (sharedCtx && sharedCtx.state !== 'closed') {
-    if (sharedCtx.state === 'suspended') sharedCtx.resume().catch(() => {});
+  if (sharedCtx && sharedCtx.state !== "closed") {
+    if (sharedCtx.state === "suspended") sharedCtx.resume().catch(() => {});
     return sharedCtx;
   }
   const AudioCtx = window.AudioContext || (window as WebkitWindow).webkitAudioContext;
@@ -19,7 +19,7 @@ export const playHoverSound = () => {
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     // Milder frequencies
     osc.frequency.setValueAtTime(300, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
@@ -43,7 +43,7 @@ export const playClickSound = () => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     // Switched to sine for softer tone
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(400, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.15);
     gain.gain.setValueAtTime(0, ctx.currentTime);
@@ -65,7 +65,7 @@ export const playMenuOpenSound = () => {
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(250, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(500, ctx.currentTime + 0.2);
     gain.gain.setValueAtTime(0, ctx.currentTime);
@@ -87,7 +87,7 @@ export const playMenuCloseSound = () => {
     if (!ctx) return;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(500, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(250, ctx.currentTime + 0.2);
     gain.gain.setValueAtTime(0, ctx.currentTime);
@@ -110,7 +110,7 @@ export const playTagHoverSound = () => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     // A much higher, glassy, ethereal ping
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(800, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.05);
     gain.gain.setValueAtTime(0, ctx.currentTime);
@@ -132,7 +132,7 @@ export const playTagClickSound = () => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     // A pleasant soft pop
-    osc.type = 'sine';
+    osc.type = "sine";
     osc.frequency.setValueAtTime(1200, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
     gain.gain.setValueAtTime(0, ctx.currentTime);

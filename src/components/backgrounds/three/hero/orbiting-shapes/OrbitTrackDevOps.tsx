@@ -1,14 +1,15 @@
-import { forwardRef } from 'react';
-import * as THREE from 'three';
-import { Float } from '@react-three/drei';
+import { Float } from "@react-three/drei";
+import { forwardRef } from "react";
+import * as THREE from "three";
 
 interface OrbitShape {
   x: number;
   z: number;
 }
 
-export const OrbitTrackDevOps = forwardRef<THREE.Group, { shapes: OrbitShape[], visible: boolean }>(({ shapes, visible }, ref) => {
-  return (
+export const OrbitTrackDevOps = forwardRef<THREE.Group, { shapes: OrbitShape[]; visible: boolean }>(
+  ({ shapes, visible }, ref) => {
+    return (
       <group ref={ref} visible={visible}>
         {/* Physical orbit line */}
         <mesh rotation={[Math.PI / 2, 0, 0]}>
@@ -20,7 +21,14 @@ export const OrbitTrackDevOps = forwardRef<THREE.Group, { shapes: OrbitShape[], 
             <mesh position={[pos.x, 0, pos.z]}>
               {/* Dual-layered boxes looking highly technical */}
               <boxGeometry args={[0.4, 0.4, 0.4]} />
-              <meshStandardMaterial color="#60a5fa" emissive="#3b82f6" emissiveIntensity={1.5} wireframe transparent opacity={0.95} />
+              <meshStandardMaterial
+                color="#60a5fa"
+                emissive="#3b82f6"
+                emissiveIntensity={1.5}
+                wireframe
+                transparent
+                opacity={0.95}
+              />
               <mesh>
                 <boxGeometry args={[0.2, 0.2, 0.2]} />
                 <meshStandardMaterial color="#3b82f6" emissive="#2563eb" emissiveIntensity={2.0} />
@@ -29,5 +37,6 @@ export const OrbitTrackDevOps = forwardRef<THREE.Group, { shapes: OrbitShape[], 
           </Float>
         ))}
       </group>
-  );
-});
+    );
+  },
+);
