@@ -18,9 +18,13 @@ Everything should feel interactive and tactile in this project. Every hover and 
      - `playClickSound` on `onClick`
      - Utilize `playMenuOpenSound` / `playMenuCloseSound` for drawers, modals, toggles.
    - Example implementation:
+
      ```tsx
-     import { motion } from 'framer-motion';
-     import { playHoverSound, playClickSound } from '../lib/sound/interactionSounds';
+     import { motion } from "framer-motion";
+     import {
+       playHoverSound,
+       playClickSound,
+     } from "../lib/sound/interactionSounds";
 
      <motion.button
        whileHover={{ scale: 1.05 }}
@@ -30,7 +34,7 @@ Everything should feel interactive and tactile in this project. Every hover and 
        className="..."
      >
        Click me
-     </motion.button>
+     </motion.button>;
      ```
 
 3. **Accessibility — Semantic Elements:**

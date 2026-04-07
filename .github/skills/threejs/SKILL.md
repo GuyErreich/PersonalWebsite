@@ -27,6 +27,7 @@ useFrame(() => {
 ```
 
 **Prefer `InstancedMesh` for many identical geometries** (stars, dust, particles):
+
 ```ts
 // Use THREE.InstancedMesh instead of mapping hundreds of <mesh> elements
 const mesh = useRef<THREE.InstancedMesh>(null);
@@ -34,6 +35,7 @@ const mesh = useRef<THREE.InstancedMesh>(null);
 ```
 
 **Prefer direct ref mutation over React state for per-frame values:**
+
 ```ts
 // BAD — triggers re-render every frame
 const [opacity, setOpacity] = useState(0);
@@ -49,14 +51,16 @@ mat.uniforms.uOpacity.value = t;
 ## 2. TypeScript — No `any`, No `@ts-nocheck`
 
 ### Typed refs
+
 ```ts
-const meshRef  = useRef<THREE.Mesh>(null);
+const meshRef = useRef<THREE.Mesh>(null);
 const groupRef = useRef<THREE.Group>(null);
 const pointsRef = useRef<THREE.Points>(null);
-const lineRef  = useRef<THREE.LineSegments>(null);
+const lineRef = useRef<THREE.LineSegments>(null);
 ```
 
 ### Material uniforms — always cast to the concrete class
+
 ```ts
 // BAD
 meshRef.current.material.uniforms.uOpacity.value = 1; // TS error: property 'uniforms' does not exist
@@ -67,6 +71,7 @@ mat.uniforms.uOpacity.value = 1;
 ```
 
 ### Typed `useFrame` shared utility functions
+
 ```ts
 // BAD — implicit `any` parameter
 export const getImplosionState = (t) => { ... }
@@ -76,6 +81,7 @@ export const getImplosionState = (t: number) => { ... }
 ```
 
 ### Typed `forwardRef` props — no `any[]`
+
 ```ts
 // BAD
 forwardRef<THREE.Group, { shapes: any[]; visible: boolean }>(...)
@@ -90,6 +96,7 @@ forwardRef<THREE.Group, { shapes: OrbitShape[]; visible: boolean }>(...)
 ```
 
 ### BufferGeometry attribute access — cast `array` after reading from R3F's `attributes`
+
 ```ts
 const posArr = mesh.geometry.attributes.position.array as Float32Array;
 const alphaArr = mesh.geometry.attributes.aAlpha.array as Float32Array;
@@ -101,13 +108,13 @@ const alphaArr = mesh.geometry.attributes.aAlpha.array as Float32Array;
 
 Prefer `drei` helpers over raw Three.js primitives:
 
-| Task | Use |
-|------|-----|
+| Task             | Use                                                          |
+| ---------------- | ------------------------------------------------------------ |
 | Floating/bobbing | `<Float speed={3} rotationIntensity={1} floatIntensity={2}>` |
-| Loading GLTF | `useGLTF` |
-| Particle clouds | `<Sparkles>` |
-| Stats/debug | `<Stats>` |
-| Camera controls | `<OrbitControls>` |
+| Loading GLTF     | `useGLTF`                                                    |
+| Particle clouds  | `<Sparkles>`                                                 |
+| Stats/debug      | `<Stats>`                                                    |
+| Camera controls  | `<OrbitControls>`                                            |
 
 Never use `requestAnimationFrame` directly — always use `useFrame` from `@react-three/fiber`.
 
@@ -118,14 +125,18 @@ Never use `requestAnimationFrame` directly — always use `useFrame` from `@reac
 Define uniforms with `useMemo` so the object reference is stable across renders:
 
 ```ts
-const uniforms = useMemo(() => ({
-  uOpacity:    { value: 0.0 },
-  uIntensity:  { value: 1.0 },
-  uSize:       { value: 3.0 },
-}), []);
+const uniforms = useMemo(
+  () => ({
+    uOpacity: { value: 0.0 },
+    uIntensity: { value: 1.0 },
+    uSize: { value: 3.0 },
+  }),
+  [],
+);
 ```
 
 Mutate inside `useFrame`:
+
 ```ts
 useFrame(({ clock }) => {
   const mat = meshRef.current.material as THREE.ShaderMaterial;
@@ -134,6 +145,7 @@ useFrame(({ clock }) => {
 ```
 
 Attach to a `<shaderMaterial>` in JSX:
+
 ```tsx
 <shaderMaterial
   uniforms={uniforms}
@@ -155,13 +167,14 @@ Audio components that live inside the canvas context (e.g. `FloatingThoughtsAudi
   ```ts
   const AudioCtx =
     window.AudioContext ||
-    (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    (window as Window & { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
   ```
 - Suppress unsupported-browser errors with `catch { }` (no binding), never `catch (e) {}`.
 - Close the context in the `useEffect` cleanup:
   ```ts
   return () => {
-    if (ctx && ctx.state !== 'closed') ctx.close().catch(() => {});
+    if (ctx && ctx.state !== "closed") ctx.close().catch(() => {});
   };
   ```
 
@@ -172,11 +185,11 @@ Audio components that live inside the canvas context (e.g. `FloatingThoughtsAudi
 When a 3D component needs to sync with UI stages (text reveals, section transitions):
 
 ```ts
-import { useOrchestrator } from '../../../../lib/AnimationContext';
+import { useOrchestrator } from "../../../../lib/AnimationContext";
 
 const orchestrator = useOrchestrator();
 useFrame(() => {
-  if (orchestrator.phase === 'galaxy') {
+  if (orchestrator.phase === "galaxy") {
     // activate galaxy visuals
   }
 });
@@ -189,6 +202,7 @@ Never drive this synchronization through React state updates from inside `useFra
 ## 7. Cleanup Checklist
 
 Before finishing any R3F component, verify:
+
 - [ ] No `new THREE.*` inside `useFrame`
 - [ ] No `@ts-nocheck`, no `any` (especially `material` access and `forwardRef` props)
 - [ ] All uniforms defined via `useMemo` and mutated (not replaced) in `useFrame`

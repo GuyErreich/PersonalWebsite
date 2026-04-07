@@ -14,6 +14,7 @@ This project enforces strict TypeScript and ESLint standards. Apply this skill w
 Always use specific types. If none exists, create a named interface or type alias.
 
 **Forbidden:**
+
 ```ts
 const ref = useRef<any>(null);
 (window as any).webkitAudioContext;
@@ -23,19 +24,27 @@ shapes: any[]
 **Correct patterns:**
 
 ### Refs — always provide the exact element/object type:
+
 ```ts
 const ref = useRef<THREE.Mesh>(null);
-const hoverAudio = useRef<{ ctx: AudioContext; osc: OscillatorNode; gain: GainNode } | null>(null);
+const hoverAudio = useRef<{
+  ctx: AudioContext;
+  osc: OscillatorNode;
+  gain: GainNode;
+} | null>(null);
 ```
 
 ### Browser-vendor API extensions — extend the `Window` interface inline:
+
 ```ts
 const AudioCtx =
   window.AudioContext ||
-  (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  (window as Window & { webkitAudioContext?: typeof AudioContext })
+    .webkitAudioContext;
 ```
 
 ### Component prop shapes — always define an interface:
+
 ```ts
 interface OrbitShape {
   x: number;
@@ -48,6 +57,7 @@ forwardRef<THREE.Group, { shapes: OrbitShape[]; visible: boolean }>(...)
 ```
 
 ### Three.js material access — always cast to the concrete material type:
+
 ```ts
 const mat = meshRef.current.material as THREE.ShaderMaterial;
 mat.uniforms.uOpacity.value = 0.5;
@@ -60,6 +70,7 @@ mat.uniforms.uOpacity.value = 0.5;
 `@ts-nocheck` silently disables all type checking. Fix the underlying type issues instead.
 
 Common fixes that replace the need for `@ts-nocheck`:
+
 - Type all function parameters explicitly (`t: number` not `t`)
 - Cast `material` to `THREE.ShaderMaterial` / `THREE.MeshStandardMaterial` before accessing uniforms
 - Remove unused imports that were suppressed by `@ts-nocheck`
@@ -80,7 +91,11 @@ const { progress, entryDelay, activeT } = getImplosionState(t); // entryDelay, a
 const { progress } = getImplosionState(t);
 
 // Or if you must destructure:
-const { progress, entryDelay: _entryDelay, activeT: _activeT } = getImplosionState(t);
+const {
+  progress,
+  entryDelay: _entryDelay,
+  activeT: _activeT,
+} = getImplosionState(t);
 ```
 
 ---
@@ -90,6 +105,7 @@ const { progress, entryDelay: _entryDelay, activeT: _activeT } = getImplosionSta
 ESLint forbids empty `catch(e) {}` by default. Two acceptable patterns:
 
 **Intentional suppression (e.g., audio API graceful degradation) — omit the binding:**
+
 ```ts
 try {
   // ...audio API code that may throw on unsupported browsers
@@ -99,15 +115,17 @@ try {
 ```
 
 **When you need to log/debug — use the error:**
+
 ```ts
 try {
   ctx.resume();
 } catch (err) {
-  console.warn('AudioContext resume failed:', err);
+  console.warn("AudioContext resume failed:", err);
 }
 ```
 
 **Never do this** (triggers both `no-empty` and `no-unused-vars`):
+
 ```ts
 } catch (e) {}
 ```
@@ -138,14 +156,15 @@ useEffect(() => {
 
 **Rule: always split mixed-export files.**
 
-| File exports | Place it in |
-|---|---|
-| React component only | `.tsx` file |
+| File exports                  | Place it in                                       |
+| ----------------------------- | ------------------------------------------------- |
+| React component only          | `.tsx` file                                       |
 | Context + hook (no component) | `.ts` file, or a separate `.tsx` if JSX is needed |
-| Shared constants / config | `.ts` file |
-| Component provider wrapper | Its own `FooProvider.tsx` file |
+| Shared constants / config     | `.ts` file                                        |
+| Component provider wrapper    | Its own `FooProvider.tsx` file                    |
 
 **Example — wrong:**
+
 ```tsx
 // AnimationContext.tsx — mixes context, component, and hook
 export const AnimationContext = createContext(...);   // non-component
@@ -154,6 +173,7 @@ export const useOrchestrator = () => { ... };        // non-component
 ```
 
 **Example — correct:**
+
 ```tsx
 // AnimationContext.tsx — context + hook only (no component, no warning)
 export const AnimationContext = createContext(...);
@@ -177,6 +197,7 @@ grep -r "from 'some-package'" src/
 ```
 
 If a package appears in `package.json` but has no imports, remove it:
+
 ```bash
 npm uninstall some-package
 ```
@@ -185,9 +206,74 @@ This applies to both `dependencies` and `devDependencies`.
 
 ---
 
+## 9. Fail-Fast & Proper Exception Handling
+
+**Rule: code that can fail MUST fail loudly at the point of failure, not silently downstream.**
+
+Three allowed patterns — pick based on context:
+
+### Pattern A — Optional browser-API (AudioContext, WebGL): silent suppression with annotation
+
+```ts
+try {
+  const ctx = new AudioContext();
+  // ... audio synthesis
+} catch {
+  // intentional — AudioContext not supported in this environment
+}
+```
+
+### Pattern B — System boundary (Supabase / fetch / data): always check the returned error field and surface it
+
+```ts
+// Supabase returns { data, error } — never throws. Always check `error`.
+const {
+  data: { session },
+  error,
+} = await supabase.auth.getSession();
+if (error || !session) {
+  navigate("/login");
+  return;
+}
+
+// For mutations surface the error to the user:
+const { error } = await supabase.from("items").insert(payload);
+if (error) {
+  setError(error.message);
+  return;
+}
+```
+
+### Pattern C — Re-throw after logging
+
+If you catch to log, always re-throw so callers still know it failed:
+
+```ts
+try {
+  await riskyOperation();
+} catch (err) {
+  console.error("riskyOperation failed:", err);
+  throw err; // or: throw new Error('riskyOperation failed', { cause: err });
+}
+```
+
+### What is NEVER acceptable:
+
+```ts
+} catch (e) {}                         // silent swallow — use catch { // intentional } instead
+} catch (err) { console.log(err); }   // log without propagating in system-critical code
+
+// Supabase without error check — unknown failures silently pass through:
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) navigate('/login');      // ← misses network / auth errors
+```
+
+---
+
 ## 8. Validation Checklist Before Committing
 
 Run these two commands and ensure both pass with zero errors:
+
 ```bash
 npm run lint   # ESLint + TypeScript-aware rules
 npm run build  # tsc -b + vite build (full type-check)
@@ -207,6 +293,7 @@ Keep component files under ~150 lines. When a file grows beyond that, split it:
 - Never leave helper components defined in the same file as a parent if they are non-trivial
 
 **Before creating anything new:**
+
 1. Search `src/components/` for an existing component that does the same thing
 2. Search `src/lib/` for an existing utility/hook
 3. Check `src/index.css` `@layer components` for an existing CSS class
@@ -220,17 +307,20 @@ Only create something new if nothing reusable already exists.
 Prefer `@layer components` CSS classes in `src/index.css` over `style={{}}` props.
 
 **When to use a CSS class:**
+
 - Any `style` property that appears more than once in the codebase
 - Background gradients, repeating patterns (scanlines), complex shadows
 - Anything that could be reused across components
 
 **Bad:**
+
 ```tsx
 <div style={{ backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.07) 3px, rgba(0,0,0,0.07) 4px)' }} />
 <div style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(6,182,212,0.07) 0%, transparent 65%), #030712' }} />
 ```
 
 **Good — define once in `index.css`, use everywhere:**
+
 ```css
 @layer components {
   .scanlines {
@@ -242,19 +332,119 @@ Prefer `@layer components` CSS classes in `src/index.css` over `style={{}}` prop
   }
 }
 ```
+
 ```tsx
 <div className="scanlines" aria-hidden />
 <motion.div className="overlay-backdrop overlay-bg-devops">
 ```
 
 **Exceptions — keep `style={{}}` for:**
+
 - Values computed at runtime (e.g. `style={{ width: progress + '%' }}`)
 - Framer Motion `style` prop bound to `MotionValue`
 - One-off layout values with no reuse (e.g. `style={{ gap: 'clamp(2px, 0.4vw, 8px)' }}`)
 
+## 11. Console Logging in Production
+
+**Biome config:** `noConsole` is enabled with `allow: ["error", "warn"]`. Any `console.log`, `console.debug`, `console.info`, etc. is a lint error.
+
+### What is allowed and why
+
+| Call | When allowed |
+|---|---|
+| `console.error(...)` | Unrecoverable browser API failures (GLSL shader errors, WebGL link errors) |
+| `console.warn(...)` | Expected browser API degradation (AudioContext, WebGL not supported) |
+
+Everything else (`console.log`, `console.debug`, `console.info`, `console.table`, etc.) is **forbidden** — it leaks internal state and clutters DevTools in production.
+
+### Safe error logging — log message only, not the raw error object
+
+Raw error objects can embed user input or sensitive content in their stack trace.
+
+**Bad — dumps entire Error object (may include markdown source, request body, etc.):**
+```ts
+.catch((e) => console.error(e));
+```
+
+**Good — extract only the safe `.message` string:**
+```ts
+.catch((e: unknown) =>
+  console.error(
+    "[ComponentName] Operation failed:",
+    e instanceof Error ? e.message : String(e),
+  ),
+);
+```
+
+### Where console.error/warn already live (audit baseline)
+
+- `SignalWaveEdge`, `NebulaEdge`, `MeteorEdge` — GLSL shader compile/link errors (safe: no user data)
+- `ReverseHyperspace`, `HyperspaceLever`, `Hero` — Web Audio API not supported (safe: generic DOMException)
+- `useCameraRumbleSound`, `useRewindSound` — audio synthesis failures (safe: fixed strings)
+- `MarkdownRenderer` — Mermaid render failure — logs `e.message` only (fixed to be safe)
+
+If you add a new `console.error/warn`, ensure it logs only a fixed string or `e.message`, never the raw Error object or any value derived from user input or network responses.
+
+---
+
+## 12. DRY — No Duplication Across Files
+
+Any logic copy-pasted across two or more files MUST be extracted into a shared utility in `src/lib/`.
+
+**Rule: one implementation, imported everywhere.**
+
+### Identifying duplication
+
+- Identical or near-identical functions (same signature, same body, only a string label differs)
+- Shared WebGL boilerplate, audio helpers, math utilities, type guards
+
+### Where to put it
+
+| What it is | Where it goes |
+|---|---|
+| WebGL shader/program helpers | `src/lib/webgl.ts` |
+| Audio synthesis helpers | `src/lib/sound/` |
+| Math / colour utilities | `src/lib/` (descriptive name) |
+| Shared React hooks | `src/hooks/` |
+
+### Parameterise instead of copy
+
+When functions differ only by a label string or a constant, add a parameter:
+
+**Bad — three files each with their own copy:**
+```ts
+// MeteorEdge.tsx
+function createProgram(gl) { ... console.error("[MeteorEdge] ...") ... }
+
+// SignalWaveEdge.tsx
+function createProgram(gl) { ... console.error("[SignalWaveEdge] ...") ... }
+
+// NebulaEdge.tsx
+function createProgram(gl) { ... console.error("[NebulaEdge] ...") ... }
+```
+
+**Good — one function, parameterised label, imported everywhere:**
+```ts
+// src/lib/webgl.ts
+export function buildGlProgram(gl, vert, frag, label) { ... console.error(`[${label}] ...`) ... }
+
+// MeteorEdge.tsx
+import { buildGlProgram } from "../../../lib/webgl";
+const prog = buildGlProgram(gl, VERT, FRAG, "MeteorEdge");
+```
+
+### Before creating any new helper
+
+1. Search `src/lib/` — does a similar utility already exist?
+2. Search `src/components/` — is the same logic already in another component?
+3. If found in >1 place: extract to `src/lib/` immediately, do not leave the duplication.
+
+---
+
 ## 9. ESLint Config Conventions (eslint.config.js)
 
 The project's ESLint config enforces:
+
 ```js
 'no-empty': ['error', { allowEmptyCatch: true }],
 '@typescript-eslint/no-unused-vars': [
