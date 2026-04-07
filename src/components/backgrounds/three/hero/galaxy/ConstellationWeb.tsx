@@ -6,9 +6,19 @@
 
 import { useFrame } from "@react-three/fiber";
 import type React from "react";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useOrchestrator } from "../../../../../lib/AnimationContext";
+
+// Module-level constants — never allocated inside the frame loop
+const TRACK_COLORS = [
+  new THREE.Color("#3b82f6"), // index 0 — Cube Track Blue
+  new THREE.Color("#10b981"), // index 1 — Shard Track Emerald
+  new THREE.Color("#8b5cf6"), // index 2 — Sphere Track Purple
+  new THREE.Color("#ffffff"), // fallback
+] as const;
+const _scratchColor = new THREE.Color();
+const _scratchVec = new THREE.Vector3();
 
 // Orbital Constellations Web Component (Connects orbiting shapes within and across tracks)
 export const ConstellationWeb = ({
@@ -33,6 +43,15 @@ export const ConstellationWeb = ({
   const MAX_CONNECTIONS = 2000;
   const positions = useMemo(() => new Float32Array(MAX_CONNECTIONS * 2 * 3), []);
   const colors = useMemo(() => new Float32Array(MAX_CONNECTIONS * 2 * 3), []);
+
+  // BufferAttributes created once — only needsUpdate toggled in the frame loop
+  const posAttr = useMemo(() => new THREE.BufferAttribute(positions, 3), [positions]);
+  const colAttr = useMemo(() => new THREE.BufferAttribute(colors, 3), [colors]);
+
+  useEffect(() => {
+    geomRef.current.setAttribute("position", posAttr);
+    geomRef.current.setAttribute("color", colAttr);
+  }, [posAttr, colAttr]);
 
   const orchestrator = useOrchestrator();
   const proxy = orchestrator.getProxy("orbits");
@@ -59,7 +78,9 @@ export const ConstellationWeb = ({
         : baseThreshold + Math.sin(t * 0.5) * 1.5;
 
     const allPoints: {
-      pos: THREE.Vector3;
+      x: number;
+      y: number;
+      z: number;
       color: THREE.Color;
       opacity: number;
     }[] = [];
@@ -70,20 +91,18 @@ export const ConstellationWeb = ({
       const group = orbit.ref.current;
       if (!group?.visible) return;
 
-      // Map orbit index colors identically across the tracks
-      let trackColor = new THREE.Color("#ffffff");
-      if (index === 0)
-        trackColor = new THREE.Color("#3b82f6"); // Cube Track Blue
-      else if (index === 1)
-        trackColor = new THREE.Color("#10b981"); // Shard Track Emerald
-      else if (index === 2) trackColor = new THREE.Color("#8b5cf6"); // Sphere Track Purple
+      // Reuse preallocated module-level color constant for this track
+      const trackColor = TRACK_COLORS[index] ?? TRACK_COLORS[TRACK_COLORS.length - 1];
 
       orbit.shapes.forEach((pos: { x: number; z: number }) => {
-        const v = new THREE.Vector3(pos.x, 0, pos.z);
-        v.applyEuler(group.rotation);
-        v.multiplyScalar(group.scale.x);
+        // Reuse scratch vec — store result as plain numbers to avoid per-shape Vector3
+        _scratchVec.set(pos.x, 0, pos.z);
+        _scratchVec.applyEuler(group.rotation);
+        _scratchVec.multiplyScalar(group.scale.x);
         allPoints.push({
-          pos: v,
+          x: _scratchVec.x,
+          y: _scratchVec.y,
+          z: _scratchVec.z,
           color: trackColor,
           opacity: orbit.opacity !== undefined ? orbit.opacity : 1,
         });
@@ -97,10 +116,13 @@ export const ConstellationWeb = ({
       for (let j = i + 1; j < allPoints.length; j++) {
         if (lineIdx >= MAX_CONNECTIONS) break;
 
-        const p1 = allPoints[i].pos;
-        const p2 = allPoints[j].pos;
+        const p1 = allPoints[i];
+        const p2 = allPoints[j];
 
-        const dist = p1.distanceTo(p2);
+        const dx = p1.x - p2.x;
+        const dy = p1.y - p2.y;
+        const dz = p1.z - p2.z;
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
         if (dist < pulsingThreshold) {
           // Smoother, slightly more gracious alpha falloff to allow the dense web to look atmospheric
@@ -115,15 +137,15 @@ export const ConstellationWeb = ({
           positions[lineIdx * 6 + 5] = p2.z;
 
           // Color lines by dynamically blending the color of shape A and shape B based on distance
-          const mixedOpacity = Math.min(allPoints[i].opacity, allPoints[j].opacity);
+          const mixedOpacity = Math.min(p1.opacity, p2.opacity);
           const brightness = alpha * 0.8 * mixedOpacity * globalFade; // Boost the brightness so colors show, scaling by point opacity and global fade
 
-          // Blend the color of node i with node j
-          const mixedColor = allPoints[i].color.clone().lerp(allPoints[j].color, 0.5);
+          // Blend the color of node i with node j — reuse scratch to avoid clone()
+          _scratchColor.copy(p1.color).lerp(p2.color, 0.5);
 
-          const r = mixedColor.r * brightness;
-          const g = mixedColor.g * brightness;
-          const b = mixedColor.b * brightness;
+          const r = _scratchColor.r * brightness;
+          const g = _scratchColor.g * brightness;
+          const b = _scratchColor.b * brightness;
 
           colors[lineIdx * 6] = r;
           colors[lineIdx * 6 + 1] = g;
@@ -137,12 +159,9 @@ export const ConstellationWeb = ({
       }
     }
 
-    geomRef.current.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geomRef.current.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     geomRef.current.setDrawRange(0, lineIdx * 2);
-
-    geomRef.current.attributes.position.needsUpdate = true;
-    geomRef.current.attributes.color.needsUpdate = true;
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
   });
 
   return (

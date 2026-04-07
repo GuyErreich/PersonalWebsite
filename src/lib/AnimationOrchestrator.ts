@@ -5,7 +5,7 @@
  */
 
 import gsap from "gsap";
-import { type DependencyList, useMemo } from "react";
+import { type DependencyList, useMemo, useRef } from "react";
 
 /**
  * Custom hook to securely build and maintain an AnimationOrchestrator.
@@ -17,8 +17,12 @@ export function useBuildOrchestrator(
   builder: () => AnimationOrchestrator,
   deps: DependencyList = [],
 ) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return useMemo(builder, [builder.toString(), ...deps]);
+  // Always hold the latest builder in a ref so the memo closure never captures a stale version.
+  // Using builderRef (a ref) satisfies react-hooks/exhaustive-deps without needing eslint-disable,
+  // while builder.toString() as a dep key preserves HMR-triggered rebuilds.
+  const builderRef = useRef(builder);
+  builderRef.current = builder;
+  return useMemo(() => builderRef.current(), [builderRef.current.toString(), ...deps]);
 }
 
 export interface ProxyState {

@@ -48,6 +48,7 @@ export const ProjectCard = ({ title, description, tags, link, icon, index }: Pro
           href={link}
           target="_blank"
           rel="noopener noreferrer"
+          aria-label={`View ${title} on GitHub`}
           className="text-gray-400 hover:text-white transition-colors"
         >
           <Github className="w-6 h-6" />

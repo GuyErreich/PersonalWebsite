@@ -9,6 +9,11 @@ import { useRef } from "react";
 import * as THREE from "three";
 import { useOrchestrator } from "../../../../../lib/AnimationContext";
 
+// Preallocated — never constructed inside useFrame
+const _white = new THREE.Color("#ffffff");
+const _yellow = new THREE.Color("#fbbf24");
+const _orange = new THREE.Color("#ea580c");
+
 export const Shockwave = () => {
   const orchestrator = useOrchestrator();
   const proxy = orchestrator.getProxy("shockwave");
@@ -31,14 +36,11 @@ export const Shockwave = () => {
 
         // Color transition: White -> Bright Yellow -> Deep Orange
         const mat = explosionRef.current.material as THREE.MeshBasicMaterial;
-        const white = new THREE.Color("#ffffff");
-        const yellow = new THREE.Color("#fbbf24");
-        const orange = new THREE.Color("#ea580c");
 
         if (progress < 0.2) {
-          mat.color.lerpColors(white, yellow, progress / 0.2);
+          mat.color.lerpColors(_white, _yellow, progress / 0.2);
         } else {
-          mat.color.lerpColors(yellow, orange, (progress - 0.2) / 0.8);
+          mat.color.lerpColors(_yellow, _orange, (progress - 0.2) / 0.8);
         }
 
         // Fade from 1 down to 0
