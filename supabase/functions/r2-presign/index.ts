@@ -19,6 +19,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 Deno.serve(async (req: Request) => {
@@ -38,11 +40,15 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Missing Authorization header" }, 401);
     }
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } },
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return json({ error: "Supabase configuration missing on server" }, 500);
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
 
     const {
       data: { user },
@@ -68,8 +74,15 @@ Deno.serve(async (req: Request) => {
       folderPath?: string;
     };
 
-    const folder = folderPath ?? "media";
-    const ext = fileExt && fileExt.length > 0 ? `.${fileExt}` : "";
+    // Whitelist allowed folder prefixes to prevent path traversal
+    const ALLOWED_FOLDERS = ["media", "showreel", "thumbnails"];
+    const rawFolder = folderPath ?? "media";
+    const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "media";
+
+    // Normalise fileExt: strip leading dots, allow only alphanumeric chars
+    const rawExt = fileExt ?? "";
+    const safeExt = rawExt.replace(/^\.+/, "").replace(/[^a-zA-Z0-9]/g, "");
+    const ext = safeExt.length > 0 ? `.${safeExt}` : "";
     const key = `${folder}/${crypto.randomUUID()}${ext}`;
 
     // --- Build presigned URL using server-side R2 credentials ---

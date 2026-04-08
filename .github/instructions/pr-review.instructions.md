@@ -74,9 +74,25 @@ If either fails, fix the error before proceeding.
 
 ---
 
-## Step 5 — Verify completeness
+## Step 5 — Commit and push
 
-Re-fetch the thread list and repeat the Python filter. If any unresolved threads remain, address them. Repeat Steps 3–5 until the unresolved list is empty.
+**This is mandatory.** GitHub PR threads stay open until the fixed code is pushed — local changes are invisible to reviewers and CI.
+
+```bash
+git add -A
+git commit -m "fix: address PR review comments"
+git push
+```
+
+After pushing, CI will re-run (CodeQL, lint, build). Wait for checks to complete before declaring threads resolved.
+
+---
+
+## Step 6 — Verify completeness
+
+Re-fetch the thread list and repeat the Python filter. If any unresolved threads remain, address them. Repeat Steps 3–6 until the unresolved list is empty.
+
+> **Note:** Threads flagged by GitHub Advanced Security (CodeQL) do not auto-resolve from a push alone — they require CodeQL to re-scan and no longer detect the vulnerability. If a thread persists after a re-scan, dismiss it on the Security tab with a rationale.
 
 ---
 
@@ -86,3 +102,4 @@ Re-fetch the thread list and repeat the Python filter. If any unresolved threads
 - Some Copilot review comments are posted as a batch; fetch the latest review's comments separately if the main thread list appears incomplete.
 - Do not rely on a PR's "resolved" badge in the UI — fetch programmatically and filter `is_resolved: false`.
 - Use `includeIgnoredFiles: true` in grep searches when looking inside `.github/` or other gitignore-adjacent paths.
+- **Local changes do not resolve threads.** GitHub evaluates the pushed branch, not your working tree. Always commit and push before claiming a thread is fixed.

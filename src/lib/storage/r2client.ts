@@ -11,7 +11,14 @@
 
 import { supabase } from "../supabase";
 
-const PRESIGN_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/r2-presign`;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+if (!supabaseUrl) {
+  throw new Error("VITE_SUPABASE_URL is not set. Check your .env configuration.");
+}
+const PRESIGN_FUNCTION_URL = new URL(
+  "/functions/v1/r2-presign",
+  supabaseUrl.replace(/\/$/, ""),
+).toString();
 
 interface PresignResponse {
   signedUrl: string;

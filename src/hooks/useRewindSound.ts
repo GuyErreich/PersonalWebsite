@@ -25,7 +25,7 @@ export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrches
         if (!AudioCtx) return;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
-        if (ctx.state === "suspended") ctx.resume();
+        if (ctx.state === "suspended") void ctx.resume().catch(() => {}); // intentional
 
         const now = ctx.currentTime;
         const duration = 0.6; // Short rewind effect

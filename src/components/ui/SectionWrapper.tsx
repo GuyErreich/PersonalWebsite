@@ -29,20 +29,9 @@ export const SectionWrapper = ({
         <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">{background}</div>
       )}
       {/* Top fade — echoes GameDev emerald trailing into the DevOps world */}
-      <div
-        className="absolute inset-x-0 top-0 h-64 z-10 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to bottom, #030712 0%, rgba(3,7,18,0.85) 22%, rgba(16,185,129,0.06) 60%, rgba(6,182,212,0.05) 80%, transparent 100%)",
-        }}
-      />
+      <div className="section-top-fade" />
       {/* DevOps → Footer: smooth gradient dissolve into footer bg */}
-      <div
-        className="absolute inset-x-0 bottom-0 h-48 z-10 pointer-events-none"
-        style={{
-          background: "linear-gradient(to bottom, transparent 0%, #030712 100%)",
-        }}
-      />
+      <div className="section-bottom-fade" />
       <motion.div
         style={motionStyle}
         className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full"

@@ -28,7 +28,7 @@ export const useCameraRumbleSound = (
         if (!AudioCtx) return;
         const ctx = audioCtxRef.current || new AudioCtx();
         audioCtxRef.current = ctx;
-        if (ctx.state === "suspended") ctx.resume();
+        if (ctx.state === "suspended") void ctx.resume().catch(() => {}); // intentional
 
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();

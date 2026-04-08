@@ -38,9 +38,9 @@ export const useScrollReveal = () => {
 
   // Full opacity when fully entered and not yet exiting
   const opacity = useTransform(
-    [enterProgress, exitProgress] as MotionValue[],
+    [enterProgress, exitProgress] as MotionValue<number>[],
     // Exit never goes below 0.5 so content never fully disappears while still in view
-    ([enter, exit]: number[]) => Math.min(enter as number, 1 - (exit as number) * 0.5),
+    ([enter, exit]: number[]) => Math.min(enter, 1 - exit * 0.5),
   );
 
   return { ref, motionStyle: { opacity } };
