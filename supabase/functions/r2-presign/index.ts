@@ -12,9 +12,9 @@
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
 //   R2_BUCKET_NAME, R2_PUBLIC_URL
 
-import { PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3";
-import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3";
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
+import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1026.0";
+import { createClient } from "npm:@supabase/supabase-js@2.102.1";
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -75,9 +75,12 @@ Deno.serve(async (req: Request) => {
     };
 
     // Whitelist allowed folder prefixes to prevent path traversal
-    const ALLOWED_FOLDERS = ["media", "showreel", "thumbnails"];
+    const ALLOWED_FOLDERS = ["media", "hero-showreel", "gamedev-assets", "gamedev-thumbnails"];
     const rawFolder = folderPath ?? "media";
-    const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "media";
+    if (!ALLOWED_FOLDERS.includes(rawFolder)) {
+      return json({ error: `Folder "${rawFolder}" is not allowed` }, 400);
+    }
+    const folder = rawFolder;
 
     // Normalise fileExt: strip leading dots, allow only alphanumeric chars
     const rawExt = fileExt ?? "";

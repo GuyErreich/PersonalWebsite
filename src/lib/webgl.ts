@@ -58,15 +58,25 @@ export function buildGlProgram(
 ): WebGLProgram {
   const prog = gl.createProgram();
   if (!prog) throw new Error(`[${label}] Failed to create WebGL program (context lost or OOM)`);
-  gl.attachShader(prog, buildGlShader(gl, gl.VERTEX_SHADER, vert, label));
-  gl.attachShader(prog, buildGlShader(gl, gl.FRAGMENT_SHADER, frag, label));
+  const vs = buildGlShader(gl, gl.VERTEX_SHADER, vert, label);
+  const fs = buildGlShader(gl, gl.FRAGMENT_SHADER, frag, label);
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
     const info = gl.getProgramInfoLog(prog) ?? "unknown error";
     gl.deleteProgram(prog);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
     console.error(`[${label}] GLSL link error:`, info);
     throw new Error(`[${label}] GLSL link error: ${info}`);
   }
+  // Detach and delete shaders after a successful link — they are no longer needed
+  // and retaining them wastes GPU memory (especially on rebuild/HMR).
+  gl.detachShader(prog, vs);
+  gl.detachShader(prog, fs);
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
   // biome-ignore lint/correctness/useHookAtTopLevel: gl.useProgram is a WebGL API, not a React hook
   gl.useProgram(prog);
   return prog;

@@ -37,8 +37,10 @@ export const useScrollReveal = () => {
   });
 
   // Full opacity when fully entered and not yet exiting
+  // Typed explicitly to avoid runtime casts — tuple is assignable to MotionValue<number>[]
+  const inputs: MotionValue<number>[] = [enterProgress, exitProgress];
   const opacity = useTransform(
-    [enterProgress, exitProgress] as MotionValue<number>[],
+    inputs,
     // Exit never goes below 0.5 so content never fully disappears while still in view
     ([enter, exit]: number[]) => Math.min(enter, 1 - exit * 0.5),
   );

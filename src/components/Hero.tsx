@@ -112,7 +112,7 @@ export const Hero = () => {
         const AudioCtx = getAudioContextClass();
         if (!AudioCtx) return;
         ctx = new AudioCtx();
-        if (ctx.state === "suspended") ctx.resume();
+        if (ctx.state === "suspended") void ctx.resume().catch(() => {}); // intentional
 
         const now = ctx.currentTime;
 
