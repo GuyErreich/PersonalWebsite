@@ -45,11 +45,22 @@ Create a `.env.local` file at the root with the following variables:
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
-VITE_CLOUDFLARE_ACCOUNT_ID=
-VITE_R2_ACCESS_KEY_ID=
-VITE_R2_SECRET_ACCESS_KEY=
-VITE_R2_BUCKET_NAME=
-VITE_R2_PUBLIC_URL=
+```
+
+R2 credentials are **not** stored in the browser bundle. They live as Supabase secrets and are used exclusively inside the `r2-presign` edge function. Set them once via the Supabase CLI:
+
+```bash
+supabase secrets set R2_ACCOUNT_ID=<your-cloudflare-account-id>
+supabase secrets set R2_ACCESS_KEY_ID=<your-r2-access-key>
+supabase secrets set R2_SECRET_ACCESS_KEY=<your-r2-secret-key>
+supabase secrets set R2_BUCKET_NAME=<your-bucket-name>
+supabase secrets set R2_PUBLIC_URL=<your-r2-public-url>
+```
+
+Deploy the edge function after setting secrets:
+
+```bash
+supabase functions deploy r2-presign
 ```
 
 ### Install & Run
