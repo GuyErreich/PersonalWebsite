@@ -8,44 +8,30 @@ import gsap from "gsap";
 import { type DependencyList, useRef } from "react";
 
 /**
- * Custom hook to securely build and maintain an AnimationOrchestrator.
- * It strictly tracks the stringified content of the builder function.
- * This GUARANTEES that Vite Hot Module Reloading (HMR) will instantly rebuild
- * the orchestrator whenever you safely tweak numbers or durations inline.
+ * Custom hook to build and maintain an AnimationOrchestrator.
+ * Uses reference identity for both `builder` and `deps` — the same semantics
+ * as `useMemo`. Vite HMR replaces the `builder` function reference whenever
+ * the source module is edited, so rebuilds happen automatically on HMR.
  */
 export function useBuildOrchestrator(
   builder: () => AnimationOrchestrator,
   deps: DependencyList = [],
 ) {
-  // Ref-based manual cache — avoids useMemo's dependency-array lint restrictions while
-  // preserving HMR-triggered rebuilds: builderKey changes whenever the function body
-  // is edited, and depsKey changes when the caller's extra deps change.
-  const builderKey = builder.toString();
-  // JSON.stringify with a function replacer so function deps serialise correctly
-  // (JSON.stringify alone collapses them to `null`). Wrap in try/catch so circular
-  // structures don't throw — fall back to String coercion which is safe for the
-  // primitive/boolean deps this hook receives in practice.
-  let depsKey: string;
-  try {
-    depsKey = JSON.stringify(deps, (_k, v: unknown) =>
-      typeof v === "function" ? (v as () => unknown).toString() : v,
-    );
-  } catch {
-    // intentional — circular or non-serialisable deps: stable fallback
-    depsKey = deps.map(String).join("\0");
-  }
   const cacheRef = useRef<{
-    builderKey: string;
-    depsKey: string;
+    builder: () => AnimationOrchestrator;
+    deps: DependencyList;
     result: AnimationOrchestrator;
   } | null>(null);
-  if (
+
+  const depsChanged =
     cacheRef.current === null ||
-    cacheRef.current.builderKey !== builderKey ||
-    cacheRef.current.depsKey !== depsKey
-  ) {
-    cacheRef.current = { builderKey, depsKey, result: builder() };
+    cacheRef.current.deps.length !== deps.length ||
+    cacheRef.current.deps.some((d, i) => !Object.is(d, deps[i]));
+
+  if (cacheRef.current === null || cacheRef.current.builder !== builder || depsChanged) {
+    cacheRef.current = { builder, deps, result: builder() };
   }
+
   return cacheRef.current.result;
 }
 
