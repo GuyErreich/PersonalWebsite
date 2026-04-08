@@ -10,26 +10,36 @@
 //
 // Required Supabase secrets (set via `supabase secrets set`):
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-//   R2_BUCKET_NAME, R2_PUBLIC_URL, SITE_URL
+//   R2_BUCKET_NAME, R2_PUBLIC_URL
+//   ALLOWED_ORIGINS  — comma-separated list of allowed frontend origins
+//                      e.g. "https://abc.pages.dev,https://yourdomain.com"
 
 import { PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1026.0";
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
 
-const allowedOrigin = Deno.env.get("SITE_URL") ?? "";
+// Allowed origins for CORS — configured per environment via the ALLOWED_ORIGINS secret.
+// Set it to a comma-separated list, e.g.:
+//   supabase secrets set ALLOWED_ORIGINS="https://abc.pages.dev,https://yourdomain.com"
+const rawOrigins = Deno.env.get("ALLOWED_ORIGINS") ?? "";
+if (!rawOrigins) {
+  throw new Error("ALLOWED_ORIGINS secret is not set");
+}
+const ALLOWED_ORIGINS = new Set(rawOrigins.split(",").map((o) => o.trim()).filter(Boolean));
 
-if (!allowedOrigin) {
-  throw new Error("SITE_URL secret is not set — cannot configure CORS");
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get("Origin") ?? "";
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+  };
 }
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": allowedOrigin,
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Max-Age": "86400",
-};
-
 Deno.serve(async (req: Request) => {
+  const CORS_HEADERS = corsHeaders(req);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
