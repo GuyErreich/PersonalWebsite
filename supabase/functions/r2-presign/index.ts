@@ -25,7 +25,12 @@ const rawOrigins = Deno.env.get("ALLOWED_ORIGINS") ?? "";
 if (!rawOrigins) {
   throw new Error("ALLOWED_ORIGINS secret is not set");
 }
-const ALLOWED_ORIGINS = new Set(rawOrigins.split(",").map((o) => o.trim()).filter(Boolean));
+const ALLOWED_ORIGINS = new Set(
+  rawOrigins
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean),
+);
 
 function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("Origin") ?? "";
