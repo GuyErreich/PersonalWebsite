@@ -9,16 +9,16 @@ import { type DependencyList, useRef } from "react";
 
 /**
  * Custom hook to build and maintain an AnimationOrchestrator.
- * Uses reference identity for both `builder` and `deps` — the same semantics
- * as `useMemo`. Vite HMR replaces the `builder` function reference whenever
- * the source module is edited, so rebuilds happen automatically on HMR.
+ * Keys the cache only on `deps` identity (same semantics as `useMemo`).
+ * The `builder` arrow is intentionally excluded from the cache key — call
+ * sites pass inline arrows that are new references on every render, so
+ * using `builder` as a cache key would rebuild the orchestrator every render.
  */
 export function useBuildOrchestrator(
   builder: () => AnimationOrchestrator,
   deps: DependencyList = [],
 ) {
   const cacheRef = useRef<{
-    builder: () => AnimationOrchestrator;
     deps: DependencyList;
     result: AnimationOrchestrator;
   } | null>(null);
@@ -28,11 +28,13 @@ export function useBuildOrchestrator(
     cacheRef.current.deps.length !== deps.length ||
     cacheRef.current.deps.some((d, i) => !Object.is(d, deps[i]));
 
-  if (cacheRef.current === null || cacheRef.current.builder !== builder || depsChanged) {
-    cacheRef.current = { builder, deps, result: builder() };
+  if (depsChanged) {
+    cacheRef.current = { deps, result: builder() };
   }
 
-  return cacheRef.current.result;
+  // Non-null assertion safe: depsChanged is true when current is null,
+  // so the block above always runs before this line when current was null.
+  return cacheRef.current!.result;
 }
 
 export interface ProxyState {

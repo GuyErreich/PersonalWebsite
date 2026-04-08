@@ -10,14 +10,20 @@
 //
 // Required Supabase secrets (set via `supabase secrets set`):
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-//   R2_BUCKET_NAME, R2_PUBLIC_URL
+//   R2_BUCKET_NAME, R2_PUBLIC_URL, SITE_URL
 
 import { PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1026.0";
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
 
+const allowedOrigin = Deno.env.get("SITE_URL") ?? "";
+
+if (!allowedOrigin) {
+  throw new Error("SITE_URL secret is not set — cannot configure CORS");
+}
+
 const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": allowedOrigin,
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Max-Age": "86400",
