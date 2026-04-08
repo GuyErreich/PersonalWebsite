@@ -10,7 +10,6 @@ import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
-import rehypeRaw from "rehype-raw";
 import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
 
@@ -18,7 +17,7 @@ import remarkGfm from "remark-gfm";
 mermaid.initialize({
   startOnLoad: true,
   theme: "dark",
-  securityLevel: "loose",
+  securityLevel: "strict",
 });
 
 // Component to render Mermaid diagrams
@@ -31,7 +30,12 @@ const MermaidDiagram = ({ chart }: { chart: string }) => {
         .render(`mermaid-${Math.random().toString(36).substring(7)}`, chart)
         .then(({ svg }) => {
           if (containerRef.current) {
-            containerRef.current.innerHTML = svg;
+            // Parse as SVG XML (not HTML) so embedded scripts cannot execute,
+            // then import the node — safer than setting innerHTML directly.
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svg, "image/svg+xml");
+            const svgEl = document.importNode(svgDoc.documentElement, true);
+            containerRef.current.replaceChildren(svgEl);
           }
         })
         .catch((e: unknown) =>
@@ -63,7 +67,6 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
     <div className="prose prose-invert prose-sm md:prose-base max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkEmoji]}
-        rehypePlugins={[rehypeRaw]}
         components={
           {
             code(props: {
