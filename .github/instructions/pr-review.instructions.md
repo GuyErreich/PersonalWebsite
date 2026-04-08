@@ -9,42 +9,47 @@ Follow this exact sequence whenever resolving Copilot or human review comments o
 
 ---
 
-## Step 1 — Fetch ALL threads
+## Step 1 — Fetch ALL threads (mandatory, every session)
 
-Use the GitHub MCP tool to fetch every review thread in one call. Always request `perPage: 100` so nothing is silently truncated.
+**Always** call the MCP tool at the start of every PR session — never rely on previously cached data. New threads can appear at any time.
 
 ```
-mcp_io_github_git_pull_request_read  owner=... repo=... pullNumber=...
+mcp_io_github_git_pull_request_read  method=get_review_comments  owner=...  repo=...  pullNumber=...  perPage=100
 ```
 
-If a separate "list review comments" endpoint is available, prefer it. Store the full response for filtering.
-
----
-
-## Step 2 — Identify unresolved threads
-
-Filter the response in Python to avoid false positives from text-based grep:
+The result is written to a file. Immediately filter it with Python to get a definitive list:
 
 ```python
-import json, sys
-data = json.load(sys.stdin)
-unresolved = [t for t in data if not t.get('is_resolved', True)]
+import json
+
+with open("<path from tool output>") as f:
+    data = json.load(f)
+
+threads = data.get("review_threads", [])
+unresolved = [t for t in threads if not t.get("is_resolved", True)]
+
+print(f"Total: {len(threads)}  Unresolved: {len(unresolved)}")
 for t in unresolved:
-    print(t['id'], t.get('path'), t.get('line'), t.get('body', '')[:120])
+    c = t["comments"][0]
+    print("---")
+    print(f"URL : {c.get('html_url')}")
+    print(f"File: {c.get('path')} line {c.get('line', '?')}")
+    print(f"Body: {c.get('body', '')[:200]}")
+    # node_id needed later to resolve the thread in GitHub UI:
+    print(f"node_id: {t.get('id', '')}")
 ```
 
 Work through **every** item in `unresolved`. Do not skip threads that seem minor — resolve them all.
 
 ---
 
-## Step 3 — Fix each thread
+## Step 2 — Fix each thread
 
 For every unresolved thread:
 
 1. Read the flagged file at the reported line (± 10 lines of context).
 2. Understand what the reviewer flagged — semantic issue, style, missing guard, etc.
 3. Apply the minimal fix that addresses the root cause. Do not refactor beyond what was asked.
-4. Move on — do not mark threads as resolved manually; a passing build is the proof.
 
 Common category → fix mapping:
 
@@ -57,11 +62,12 @@ Common category → fix mapping:
 | `React.createRef<any>()`                                        | Replace with `React.createRef<ConcreteType>()`                       |
 | Unhandled `.play()` Promise                                     | `void videoRef.current.play().catch(() => {})`                       |
 | Supabase call missing error check                               | Check `error` field; surface with `setError(error.message); return;` |
+| Hook declared after useFrame / useEffect that references it     | Move the `useRef`/`useState` declaration above the hook that uses it |
 | docstring / comment inaccurate                                  | Fix the description to match the actual values                       |
 
 ---
 
-## Step 4 — Validate
+## Step 3 — Validate
 
 After all fixes are applied, always run both commands and confirm zero errors:
 
@@ -74,7 +80,7 @@ If either fails, fix the error before proceeding.
 
 ---
 
-## Step 5 — Commit and push
+## Step 4 — Commit and push
 
 **This is mandatory.** GitHub PR threads stay open until the fixed code is pushed — local changes are invisible to reviewers and CI.
 
@@ -84,22 +90,67 @@ git commit -m "fix: address PR review comments"
 git push
 ```
 
-After pushing, CI will re-run (CodeQL, lint, build). Wait for checks to complete before declaring threads resolved.
+---
+
+## Step 5 — Resolve threads in GitHub UI via GraphQL
+
+After pushing, resolve every fixed thread programmatically so the PR dashboard reflects reality immediately. Do **not** wait for GitHub to auto-detect — it often doesn't for Copilot-posted threads.
+
+### Get the GraphQL node ID for each thread
+
+The Python filter above prints `node_id` for each thread. If you need to re-fetch them:
+
+```bash
+gh api graphql -f query='
+  query($owner: String!, $repo: String!, $pr: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $pr) {
+        reviewThreads(first: 100) {
+          nodes { id isResolved path line }
+        }
+      }
+    }
+  }
+' -f owner=OWNER -f repo=REPO -F pr=PR_NUMBER
+```
+
+### Resolve each thread
+
+```bash
+gh api graphql -f query='
+  mutation($threadId: ID!) {
+    resolveReviewThread(input: {threadId: $threadId}) {
+      thread { id isResolved }
+    }
+  }
+' -f threadId="THREAD_NODE_ID"
+```
+
+Repeat for every thread that has been fixed. Threads whose code fix is already pushed should be resolved immediately.
+
+### Batch-resolve multiple threads (shell loop)
+
+```bash
+for id in "THREAD_ID_1" "THREAD_ID_2" "THREAD_ID_3"; do
+  gh api graphql -f query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' -f t="$id"
+done
+```
 
 ---
 
 ## Step 6 — Verify completeness
 
-Re-fetch the thread list and repeat the Python filter. If any unresolved threads remain, address them. Repeat Steps 3–6 until the unresolved list is empty.
+Re-run the MCP fetch + Python filter from Step 1. The unresolved count must be 0. If any remain, fix and resolve them before declaring done.
 
-> **Note:** Threads flagged by GitHub Advanced Security (CodeQL) do not auto-resolve from a push alone — they require CodeQL to re-scan and no longer detect the vulnerability. If a thread persists after a re-scan, dismiss it on the Security tab with a rationale.
+> **Note:** Threads flagged by GitHub Advanced Security (CodeQL) do not resolve via the GraphQL mutation — they require CodeQL to re-scan. If a thread persists after a re-scan, dismiss it on the Security tab with a written rationale.
 
 ---
 
 ## Notes
 
+- **Always re-fetch at session start** — threads accumulate between sessions; never assume the list is the same as last time.
 - Always use `perPage: 100` — the default is often 30 and you will miss threads.
-- Some Copilot review comments are posted as a batch; fetch the latest review's comments separately if the main thread list appears incomplete.
+- The Python filter is the only reliable way to enumerate unresolved threads. Text grep on `html_url` misses threads added after the last fetch.
 - Do not rely on a PR's "resolved" badge in the UI — fetch programmatically and filter `is_resolved: false`.
 - Use `includeIgnoredFiles: true` in grep searches when looking inside `.github/` or other gitignore-adjacent paths.
-- **Local changes do not resolve threads.** GitHub evaluates the pushed branch, not your working tree. Always commit and push before claiming a thread is fixed.
+- **Local changes do not resolve threads.** GitHub evaluates the pushed branch. Always commit and push before resolving.

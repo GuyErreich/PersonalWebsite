@@ -50,6 +50,8 @@ export const GalaxyCreation = ({ skipIntro = false }: { skipIntro?: boolean }) =
     return o;
   }, [masterProxy.duration]);
 
+  const systemRef = useRef<THREE.Group>(null);
+
   useFrame(({ clock }) => {
     if (masterProxy.activeT >= 0) {
       orchestrator.mainTimeline.time(masterProxy.activeT);
@@ -66,8 +68,6 @@ export const GalaxyCreation = ({ skipIntro = false }: { skipIntro?: boolean }) =
   useShockwaveSound(skipIntro, orchestrator);
   useStarsSound(skipIntro, orchestrator);
   useDysonHumSound(skipIntro, orchestrator);
-
-  const systemRef = useRef<THREE.Group>(null);
 
   return (
     <AnimationProvider orchestrator={orchestrator}>
