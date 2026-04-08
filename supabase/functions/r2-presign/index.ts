@@ -32,10 +32,10 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean),
 );
 
-function corsHeaders(req: Request): Record<string, string> {
-  const origin = req.headers.get("Origin") ?? "";
+function corsHeaders(origin: string): Record<string, string> | null {
+  if (!ALLOWED_ORIGINS.has(origin)) return null;
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(origin) ? origin : "",
+    "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Max-Age": "86400",
@@ -43,11 +43,27 @@ function corsHeaders(req: Request): Record<string, string> {
 }
 
 Deno.serve(async (req: Request) => {
-  const CORS_HEADERS = corsHeaders(req);
+  const origin = req.headers.get("Origin") ?? "";
+  const CORS = corsHeaders(origin);
+
+  // Reject requests from origins not in the allowlist.
+  // Return 403 with no ACAO header — the browser will block the response.
+  if (!CORS) {
+    return new Response(null, { status: 403 });
+  }
+
+  // json() is defined here so it closes over CORS and always includes the
+  // correct per-request Access-Control-Allow-Origin header.
+  function json(body: unknown, status = 200): Response {
+    return new Response(JSON.stringify(body), {
+      status,
+      headers: { ...CORS, "Content-Type": "application/json" },
+    });
+  }
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: CORS_HEADERS });
+    return new Response("ok", { headers: CORS });
   }
 
   if (req.method !== "POST") {
@@ -143,10 +159,3 @@ Deno.serve(async (req: Request) => {
     return json({ error: err instanceof Error ? err.message : "Internal server error" }, 500);
   }
 });
-
-function json(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
-  });
-}
