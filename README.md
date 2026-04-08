@@ -74,7 +74,7 @@ npm run dev
 
 ```bash
 npm run build   # Type-check + production build
-npm run lint    # ESLint
+npm run lint    # ESLint + Biome checks
 npm run preview # Serve the production build locally
 ```
 
@@ -84,7 +84,7 @@ npm run preview # Serve the production build locally
 | ------------------- | --------------------------- | ------------------------------------------------- |
 | `test.yml`          | push / PR → `dev`, `master` | Lint + build validation                           |
 | `deploy.yml`        | push → `dev`                | Deploy to Cloudflare Pages                        |
-| `license-check.yml` | push / PR → `dev`, `master` | Verify MIT headers on all `src/` files            |
+| `license-check.yml` | push → `dev`                | Verify MIT headers on all `src/` files            |
 | `pr-labeler.yml`    | PR opened / updated         | Auto-apply labels from file paths and branch name |
 | `codeql.yml`        | push / PR → `dev`, `master` | GitHub CodeQL security analysis                   |
 

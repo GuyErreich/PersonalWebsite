@@ -30,11 +30,13 @@ export function buildGlShader(
   src: string,
   label: string,
 ): WebGLShader {
-  const s = gl.createShader(type)!;
+  const s = gl.createShader(type);
+  if (!s) throw new Error(`[${label}] Failed to create shader (context lost or OOM)`);
   gl.shaderSource(s, src);
   gl.compileShader(s);
   if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
     const info = gl.getShaderInfoLog(s) ?? "unknown error";
+    gl.deleteShader(s);
     console.error(`[${label}] GLSL compile error:`, info);
     throw new Error(`[${label}] GLSL compile error: ${info}`);
   }
@@ -54,12 +56,14 @@ export function buildGlProgram(
   frag: string,
   label: string,
 ): WebGLProgram {
-  const prog = gl.createProgram()!;
+  const prog = gl.createProgram();
+  if (!prog) throw new Error(`[${label}] Failed to create WebGL program (context lost or OOM)`);
   gl.attachShader(prog, buildGlShader(gl, gl.VERTEX_SHADER, vert, label));
   gl.attachShader(prog, buildGlShader(gl, gl.FRAGMENT_SHADER, frag, label));
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
     const info = gl.getProgramInfoLog(prog) ?? "unknown error";
+    gl.deleteProgram(prog);
     console.error(`[${label}] GLSL link error:`, info);
     throw new Error(`[${label}] GLSL link error: ${info}`);
   }

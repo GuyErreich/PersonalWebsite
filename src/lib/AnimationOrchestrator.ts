@@ -21,7 +21,19 @@ export function useBuildOrchestrator(
   // preserving HMR-triggered rebuilds: builderKey changes whenever the function body
   // is edited, and depsKey changes when the caller's extra deps change.
   const builderKey = builder.toString();
-  const depsKey = JSON.stringify(deps);
+  // JSON.stringify with a function replacer so function deps serialise correctly
+  // (JSON.stringify alone collapses them to `null`). Wrap in try/catch so circular
+  // structures don't throw — fall back to String coercion which is safe for the
+  // primitive/boolean deps this hook receives in practice.
+  let depsKey: string;
+  try {
+    depsKey = JSON.stringify(deps, (_k, v: unknown) =>
+      typeof v === "function" ? (v as () => unknown).toString() : v,
+    );
+  } catch {
+    // intentional — circular or non-serialisable deps: stable fallback
+    depsKey = deps.map(String).join("\0");
+  }
   const cacheRef = useRef<{
     builderKey: string;
     depsKey: string;
