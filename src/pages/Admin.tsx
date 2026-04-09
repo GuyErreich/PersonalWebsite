@@ -33,7 +33,11 @@ export const Admin = () => {
   }, [navigate]);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error(error instanceof Error ? error.message : String(error));
+      return;
+    }
     navigate("/");
   };
 

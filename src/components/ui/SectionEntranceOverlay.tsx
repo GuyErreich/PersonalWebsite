@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { AnimatePresence, motion, useInView } from "framer-motion";
+import { AnimatePresence, useInView } from "framer-motion";
 import Cookies from "js-cookie";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -57,13 +57,9 @@ export const SectionEntranceOverlay = ({ theme, children }: SectionEntranceOverl
         {(ENTRANCE_MODE === "overlay" || ENTRANCE_MODE === "both") &&
           state === "playing" &&
           (theme === "gamedev" ? (
-            <motion.div key="gd-overlay">
-              <GameDevOverlay onDone={() => handleDone(COOKIE_MAP.gamedev)} />
-            </motion.div>
+            <GameDevOverlay key="gd-overlay" onDone={() => handleDone(COOKIE_MAP.gamedev)} />
           ) : (
-            <motion.div key="do-overlay">
-              <DevOpsOverlay onDone={() => handleDone(COOKIE_MAP.devops)} />
-            </motion.div>
+            <DevOpsOverlay key="do-overlay" onDone={() => handleDone(COOKIE_MAP.devops)} />
           ))}
       </AnimatePresence>
     </div>

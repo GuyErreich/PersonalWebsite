@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!dist", "!node_modules", "!public", "!**/*.css"]
+    "includes": ["**", "!dist", "!node_modules", "!public", "!**/*.css", "!supabase"]
   },
   "formatter": {
     "enabled": true,
