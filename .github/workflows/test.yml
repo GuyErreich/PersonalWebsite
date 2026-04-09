@@ -28,4 +28,7 @@ jobs:
         run: npm run lint
 
       - name: Build Project
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_ANON_KEY: ci-placeholder-anon-key
         run: npm run build
