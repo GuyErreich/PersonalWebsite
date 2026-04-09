@@ -11,32 +11,53 @@ Follow this exact sequence whenever resolving Copilot or human review comments o
 
 ## Step 1 — Fetch ALL threads (mandatory, every session)
 
-**Always** call the MCP tool at the start of every PR session — never rely on previously cached data. New threads can appear at any time.
+**Always** use the GraphQL API directly — the MCP REST tool uses cursor-based pagination and its `page` parameter **does not advance the cursor**, so you will silently miss threads beyond page 1.
 
-```
-mcp_io_github_git_pull_request_read  method=get_review_comments  owner=...  repo=...  pullNumber=...  perPage=100
+> **Critical:** The MCP tool `mcp_io_github_git_pull_request_read` returns at most 100 threads and its `totalCount` field reveals whether more exist. If `totalCount > 100`, you **must** paginate via GraphQL as shown below.
+
+### Fetch page 1 (always)
+
+```bash
+GH_PAGER=cat gh api graphql -f query='
+query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $pr) {
+      reviewThreads(first: 100, after: $after) {
+        totalCount
+        pageInfo { hasNextPage endCursor }
+        nodes {
+          id isResolved path line
+          comments(first: 10) {
+            nodes { body author { login } url }
+          }
+        }
+      }
+    }
+  }
+}' -f owner=OWNER -f repo=REPO -F pr=PR_NUMBER
 ```
 
-The result is written to a file. Immediately filter it with Python to get a definitive list:
+Inspect `totalCount` and `pageInfo.hasNextPage`. If `hasNextPage` is `true`, repeat with `-f after=<endCursor>` until `hasNextPage` is `false`.
+
+### Filter for unresolved threads (run after collecting all pages)
 
 ```python
 import json
 
-with open("<path from tool output>") as f:
-    data = json.load(f)
+# Replace with your actual response data (list of `nodes` arrays from each page)
+all_nodes = []  # accumulate nodes from all GraphQL pages here
 
-threads = data.get("review_threads", [])
-unresolved = [t for t in threads if not t.get("is_resolved", True)]
+unresolved = [n for n in all_nodes if not n["isResolved"]]
 
-print(f"Total: {len(threads)}  Unresolved: {len(unresolved)}")
-for t in unresolved:
-    c = t["comments"][0]
+print(f"Total nodes seen: {len(all_nodes)}  Unresolved: {len(unresolved)}")
+for n in unresolved:
     print("---")
-    print(f"URL : {c.get('html_url')}")
-    print(f"File: {c.get('path')} line {c.get('line', '?')}")
-    print(f"Body: {c.get('body', '')[:200]}")
-    # node_id needed later to resolve the thread in GitHub UI:
-    print(f"node_id: {t.get('id', '')}")
+    print(f"ID  : {n['id']}")
+    print(f"File: {n['path']} line {n['line']}")
+    for c in n["comments"]["nodes"]:
+        print(f"Author: {c['author']['login']}")
+        print(f"URL   : {c['url']}")
+        print(f"Body  : {c['body'][:300]}")
 ```
 
 Work through **every** item in `unresolved`. Do not skip threads that seem minor — resolve them all.
@@ -98,32 +119,14 @@ After pushing, resolve every fixed thread programmatically so the PR dashboard r
 
 ### Get the GraphQL node ID for each thread
 
-The Python filter above prints `node_id` for each thread. If you need to re-fetch them:
-
-```bash
-gh api graphql -f query='
-  query($owner: String!, $repo: String!, $pr: Int!) {
-    repository(owner: $owner, name: $repo) {
-      pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
-          nodes { id isResolved path line }
-        }
-      }
-    }
-  }
-' -f owner=OWNER -f repo=REPO -F pr=PR_NUMBER
-```
+The filter above prints the `id` for each thread directly from the GraphQL response. If you need to re-fetch, use the paginated query from Step 1.
 
 ### Resolve each thread
 
+> **Always prefix `gh api graphql` calls with `GH_PAGER=cat`** to prevent the pager from opening an alternate buffer and hanging the terminal.
+
 ```bash
-gh api graphql -f query='
-  mutation($threadId: ID!) {
-    resolveReviewThread(input: {threadId: $threadId}) {
-      thread { id isResolved }
-    }
-  }
-' -f threadId="THREAD_NODE_ID"
+GH_PAGER=cat gh api graphql --raw-field query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{id isResolved}}}' --raw-field t="THREAD_NODE_ID"
 ```
 
 Repeat for every thread that has been fixed. Threads whose code fix is already pushed should be resolved immediately.
@@ -132,7 +135,7 @@ Repeat for every thread that has been fixed. Threads whose code fix is already p
 
 ```bash
 for id in "THREAD_ID_1" "THREAD_ID_2" "THREAD_ID_3"; do
-  gh api graphql -f query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' -f t="$id"
+  GH_PAGER=cat gh api graphql --raw-field query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' --raw-field t="$id"
 done
 ```
 
@@ -149,8 +152,10 @@ Re-run the MCP fetch + Python filter from Step 1. The unresolved count must be 0
 ## Notes
 
 - **Always re-fetch at session start** — threads accumulate between sessions; never assume the list is the same as last time.
-- Always use `perPage: 100` — the default is often 30 and you will miss threads.
-- The Python filter is the only reliable way to enumerate unresolved threads. Text grep on `html_url` misses threads added after the last fetch.
-- Do not rely on a PR's "resolved" badge in the UI — fetch programmatically and filter `is_resolved: false`.
+- **Use GraphQL, not the MCP REST tool, for full pagination.** The MCP tool returns at most 100 threads, and its `page` parameter does not advance the cursor — calling it with `page=2` returns the same first 100 threads. Always check `totalCount`; if it exceeds 100, paginate via GraphQL using `after: <endCursor>`.
+- **Always set `GH_PAGER=cat`** before any `gh api graphql` call — without it, `gh` opens a pager (less/bat) in an alternate buffer that hangs the terminal and requires manual exit.
+- The Python/GraphQL filter is the only reliable way to enumerate unresolved threads. Text grep on `html_url` misses threads added after the last fetch.
+- Do not rely on a PR's "resolved" badge in the UI — fetch programmatically and filter `isResolved: false`.
 - Use `includeIgnoredFiles: true` in grep searches when looking inside `.github/` or other gitignore-adjacent paths.
 - **Local changes do not resolve threads.** GitHub evaluates the pushed branch. Always commit and push before resolving.
+- **CI env vars:** If a build step requires env vars that are set as repo secrets, reference them as `${{ secrets.VAR_NAME }}` — the same pattern used in `deploy.yml`. Never use hardcoded placeholder values when the real secrets are already available.
