@@ -46,7 +46,11 @@ export const SectionEntranceOverlay = ({ theme, children }: SectionEntranceOverl
   const isRevealed = hasCookie || ENTRANCE_MODE === "elements" || state !== "playing";
 
   const handleDone = (cookieKey: string) => {
-    Cookies.set(cookieKey, "1", { expires: 365, sameSite: "strict", secure: true });
+    Cookies.set(cookieKey, "1", {
+      expires: 365,
+      sameSite: "strict",
+      secure: window.location.protocol === "https:",
+    });
     setState("done");
   };
 

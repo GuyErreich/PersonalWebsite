@@ -33,16 +33,20 @@ export const ParticlesBase = ({
     }
 
     void (async () => {
-      await initParticlesEngine(async (engine: Engine) => {
-        // Load the slim version which includes exactly what we need for lines and circles
-        await loadSlim(engine);
-        // Load text shape specifically for the code/tagline variants
-        await loadTextShape(engine);
-        // Load image shape for the icons variants
-        await loadImageShape(engine);
-      });
-      engineInitialized = true;
-      setInit(true);
+      try {
+        await initParticlesEngine(async (engine: Engine) => {
+          // Load the slim version which includes exactly what we need for lines and circles
+          await loadSlim(engine);
+          // Load text shape specifically for the code/tagline variants
+          await loadTextShape(engine);
+          // Load image shape for the icons variants
+          await loadImageShape(engine);
+        });
+        engineInitialized = true;
+        setInit(true);
+      } catch {
+        // intentional — particles unavailable; fallback static bg remains
+      }
     })();
   }, []);
 
