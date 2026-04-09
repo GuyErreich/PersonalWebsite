@@ -19,6 +19,7 @@ export const ShowreelManager = () => {
   } | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     const loadShowreel = async () => {
       // We store the showreel in a generic settings table
       const { data, error } = await supabase
@@ -26,6 +27,8 @@ export const ShowreelManager = () => {
         .select("value")
         .eq("key", "showreel_url")
         .single();
+
+      if (!isMounted) return;
 
       if (!error && data) {
         const value: unknown = data.value;
@@ -42,6 +45,9 @@ export const ShowreelManager = () => {
       }
     };
     void loadShowreel();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleUpload = async (e: React.FormEvent) => {
