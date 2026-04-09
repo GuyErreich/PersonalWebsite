@@ -19,31 +19,30 @@ export const ShowreelManager = () => {
   } | null>(null);
 
   useEffect(() => {
-    fetchShowreel();
-  }, []);
+    const loadShowreel = async () => {
+      // We store the showreel in a generic settings table
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "showreel_url")
+        .single();
 
-  const fetchShowreel = async () => {
-    // We store the showreel in a generic settings table
-    const { data, error } = await supabase
-      .from("site_settings")
-      .select("value")
-      .eq("key", "showreel_url")
-      .single();
-
-    if (!error && data) {
-      const value: unknown = data.value;
-      if (typeof value === "string") {
-        try {
-          const parsed = new URL(value);
-          if (parsed.protocol === "https:") {
-            setCurrentUrl(parsed.href);
+      if (!error && data) {
+        const value: unknown = data.value;
+        if (typeof value === "string") {
+          try {
+            const parsed = new URL(value);
+            if (parsed.protocol === "https:") {
+              setCurrentUrl(parsed.href);
+            }
+          } catch {
+            // intentional — discard invalid or non-HTTPS URLs
           }
-        } catch {
-          // intentional — discard invalid or non-HTTPS URLs
         }
       }
-    }
-  };
+    };
+    void loadShowreel();
+  }, []);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();

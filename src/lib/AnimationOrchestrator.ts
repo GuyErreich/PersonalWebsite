@@ -29,6 +29,7 @@ export function useBuildOrchestrator(
     cacheRef.current.deps.some((d, i) => !Object.is(d, deps[i]));
 
   if (depsChanged) {
+    cacheRef.current?.result.mainTimeline.kill();
     cacheRef.current = { deps, result: builder() };
   }
 
