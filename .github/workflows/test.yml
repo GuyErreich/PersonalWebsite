@@ -30,7 +30,7 @@ jobs:
         run: npm run lint
 
       - name: Format check (Biome)
-        run: npx biome format .
+        run: npx biome format --check .
 
       - name: Build Project
         env:
