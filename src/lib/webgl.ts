@@ -13,10 +13,31 @@
  * gl.useProgram call inside buildGlProgram.
  */
 
-/** Convert a CSS hex colour string to a normalised [r, g, b] triple. */
+/** Convert a CSS hex colour string to a normalised [r, g, b] triple.
+ * Accepts both 3-digit shorthand (#rgb) and 6-digit (#rrggbb) formats.
+ * Throws a descriptive error for any other input so callers learn about
+ * misconfigured colour constants at development time rather than silently
+ * rendering NaN uniforms.
+ */
 export function hexToVec3(hex: string): [number, number, number] {
-  const h = hex.replace("#", "");
-  const n = parseInt(h, 16);
+  const raw = hex.startsWith("#") ? hex.slice(1) : hex;
+  if (raw.length === 3) {
+    // Expand shorthand #rgb → #rrggbb
+    const r = parseInt(raw[0] + raw[0], 16);
+    const g = parseInt(raw[1] + raw[1], 16);
+    const b = parseInt(raw[2] + raw[2], 16);
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) {
+      throw new Error(`hexToVec3: invalid 3-digit hex colour "${hex}"`);
+    }
+    return [r / 255, g / 255, b / 255];
+  }
+  if (raw.length !== 6) {
+    throw new Error(`hexToVec3: expected a 3- or 6-digit hex colour, got "${hex}"`);
+  }
+  const n = parseInt(raw, 16);
+  if (Number.isNaN(n)) {
+    throw new Error(`hexToVec3: invalid hex colour "${hex}"`);
+  }
   return [((n >> 16) & 0xff) / 255, ((n >> 8) & 0xff) / 255, (n & 0xff) / 255];
 }
 

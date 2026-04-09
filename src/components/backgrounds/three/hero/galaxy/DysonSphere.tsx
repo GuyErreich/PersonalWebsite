@@ -70,10 +70,8 @@ export const DysonSphere = () => {
         </mesh>
       </Float>
 
-      {/* Network Solar Flares (moved from Sun to the surface of the sphere map) */}
+      {/* Network Solar Flares (moved from Sun to the surface of the sphere map) — scaled 1.5x so flares arc outside the sphere bounds */}
       <group scale={1.5}>
-        {" "}
-        {/* Scaling it slightly to ensure it arcs cleanly outside the sphere's bounds */}
         <NetworkFlare offsetTime={0} />
         <NetworkFlare offsetTime={2.5} />
         <NetworkFlare offsetTime={5.0} />
