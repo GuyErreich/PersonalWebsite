@@ -79,18 +79,24 @@ export function buildGlProgram(
 ): WebGLProgram {
   const prog = gl.createProgram();
   if (!prog) throw new Error(`[${label}] Failed to create WebGL program (context lost or OOM)`);
-  const vs = buildGlShader(gl, gl.VERTEX_SHADER, vert, label);
-  const fs = buildGlShader(gl, gl.FRAGMENT_SHADER, frag, label);
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-    const info = gl.getProgramInfoLog(prog) ?? "unknown error";
+  let vs: WebGLShader | null = null;
+  let fs: WebGLShader | null = null;
+  try {
+    vs = buildGlShader(gl, gl.VERTEX_SHADER, vert, label);
+    fs = buildGlShader(gl, gl.FRAGMENT_SHADER, frag, label);
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      const info = gl.getProgramInfoLog(prog) ?? "unknown error";
+      console.error(`[${label}] GLSL link error:`, info);
+      throw new Error(`[${label}] GLSL link error: ${info}`);
+    }
+  } catch (err) {
     gl.deleteProgram(prog);
-    gl.deleteShader(vs);
-    gl.deleteShader(fs);
-    console.error(`[${label}] GLSL link error:`, info);
-    throw new Error(`[${label}] GLSL link error: ${info}`);
+    if (vs) gl.deleteShader(vs);
+    if (fs) gl.deleteShader(fs);
+    throw err;
   }
   // Detach and delete shaders after a successful link — they are no longer needed
   // and retaining them wastes GPU memory (especially on rebuild/HMR).
