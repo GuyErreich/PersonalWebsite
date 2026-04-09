@@ -44,5 +44,6 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - **No `console.log/debug/info`**: These are lint errors (`noConsole` is enforced). Only `console.error` and `console.warn` are allowed, and only for unrecoverable browser-API failures (GLSL errors, AudioContext not supported). When logging a caught error always use `e instanceof Error ? e.message : String(e)` — never dump the raw error object. See `.github/skills/code-quality/SKILL.md` §11.
 - **Unused variables**: Prefix with `_` (e.g., `_skipIntro`) or remove entirely. Never suppress with `eslint-disable`.
 - **Hook deps**: Always include every referenced variable in `useEffect`/`useCallback` dependency arrays.
+- **Async/await only**: Never use `.then()/.catch()` chains. Use `async/await` with `try/catch` everywhere. Inside `useEffect`, wrap async work in `void (async () => { ... })()`. For fire-and-forget browser APIs (AudioContext resume/close) use `void promise.catch(() => {}) // intentional`. See `.github/skills/code-quality/SKILL.md` §13.
 - **Validation**: Run `npm run lint` (0 errors) and `npm run build` (must succeed) before committing.
 - See `.github/skills/code-quality/SKILL.md` for full patterns and examples.

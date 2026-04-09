@@ -16,16 +16,18 @@ export const Login = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
+    void (async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session) {
           navigate("/management");
         }
-      })
-      .catch(() => {
+      } catch {
         // intentional — network failure on session check; user stays on login page
-      });
+      }
+    })();
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {

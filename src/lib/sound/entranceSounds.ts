@@ -10,7 +10,7 @@ let sharedEntranceCtx: AudioContext | null = null;
 
 const getCtx = (): AudioContext | null => {
   if (sharedEntranceCtx && sharedEntranceCtx.state !== "closed") {
-    if (sharedEntranceCtx.state === "suspended") sharedEntranceCtx.resume().catch(() => {});
+    if (sharedEntranceCtx.state === "suspended") void sharedEntranceCtx.resume().catch(() => {}); // intentional
     return sharedEntranceCtx;
   }
   try {

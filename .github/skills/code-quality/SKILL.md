@@ -459,3 +459,103 @@ The project's ESLint config enforces:
 ```
 
 Do **not** add `// eslint-disable` suppression comments as a fix. Fix the actual issue instead.
+
+---
+
+## 13. Async / Await Over Promise Chains
+
+**Rule: always use `async/await` — never `.then()/.catch()` chains.**
+
+Promise chains hide control flow and make error handling easy to get wrong. Every place a `.then()` or `.catch()` appears must be converted to an `async` function with `try/catch`.
+
+### In plain async functions
+
+**Bad:**
+```ts
+supabase.auth.getSession()
+  .then(({ data: { session } }) => {
+    if (session) navigate("/management");
+  })
+  .catch(() => { /* ignore */ });
+```
+
+**Good:**
+```ts
+try {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session) navigate("/management");
+} catch {
+  // intentional — network failure; user stays on current page
+}
+```
+
+### Inside `useEffect` (cannot be async directly)
+
+Wrap in an async IIFE and prefix with `void` to tell the linter the returned Promise is intentionally not awaited:
+
+**Bad:**
+```ts
+useEffect(() => {
+  fetchData()
+    .then((result) => setState(result))
+    .catch((e) => console.error(e));
+}, []);
+```
+
+**Good:**
+```ts
+useEffect(() => {
+  void (async () => {
+    try {
+      const result = await fetchData();
+      setState(result);
+    } catch (e: unknown) {
+      console.error("fetchData failed:", e instanceof Error ? e.message : String(e));
+    }
+  })();
+}, []);
+```
+
+### Mixing async callback + chained `.then()` (e.g. library APIs)
+
+If a library takes an async callback and returns a Promise, await the whole call — do not chain `.then()` on the outside:
+
+**Bad:**
+```ts
+initParticlesEngine(async (engine) => {
+  await loadSlim(engine);
+}).then(() => {
+  setInit(true);
+});
+```
+
+**Good:**
+```ts
+void (async () => {
+  await initParticlesEngine(async (engine) => {
+    await loadSlim(engine);
+  });
+  setInit(true);
+})();
+```
+
+### One-liner optional browser-API calls (AudioContext resume/close)
+
+For fire-and-forget calls where the Promise rejection is intentionally suppressed, use `void` + `.catch(() => {})` — do **not** chain `.then()`:
+
+```ts
+// resume — fire and forget
+void ctx.resume().catch(() => {}); // intentional
+
+// close in cleanup — fire and forget
+void ctx.close().catch(() => {}); // intentional
+```
+
+### Summary table
+
+| Situation | Pattern |
+|---|---|
+| Regular async function | `async function + await + try/catch` |
+| `useEffect` with async work | `void (async () => { ... })()` |
+| Library API with async callback + post-step | `await` the whole call, then next line |
+| Fire-and-forget browser API (audio resume/close) | `void promise.catch(() => {}) // intentional` |

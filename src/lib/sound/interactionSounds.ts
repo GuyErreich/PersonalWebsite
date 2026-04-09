@@ -10,7 +10,7 @@ let sharedCtx: AudioContext | null = null;
 
 const getCtx = (): AudioContext | null => {
   if (sharedCtx && sharedCtx.state !== "closed") {
-    if (sharedCtx.state === "suspended") sharedCtx.resume().catch(() => {});
+    if (sharedCtx.state === "suspended") void sharedCtx.resume().catch(() => {}); // intentional
     return sharedCtx;
   }
   const AudioCtx = getAudioContextClass();

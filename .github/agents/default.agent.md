@@ -30,6 +30,7 @@ Always adhere to the following development standards:
    - Never write `catch (e) {}`. Use `catch { }` (no binding) for intentional suppression.
    - Prefix unused variables with `_` instead of adding `eslint-disable` comments.
    - Always include all referenced variables in `useEffect`/`useCallback` dependency arrays.
+   - **Async/await only**: never use `.then()/.catch()` chains. Inside `useEffect`, wrap async work in `void (async () => { ... })()`. For fire-and-forget browser APIs use `void promise.catch(() => {}) // intentional`. See §13 in the `code-quality` skill.
    - Validate with `npm run lint` (0 errors) and `npm run build` (must succeed) before finishing.
 
 5. **Console Logging (production-ready):**

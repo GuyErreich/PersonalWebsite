@@ -45,7 +45,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
     return () => {
       stopSound();
       if (audioContextRef.current) {
-        audioContextRef.current.close().catch(console.error);
+        audioContextRef.current.close().catch(() => {}); // intentional
       }
     };
   }, []);
@@ -53,7 +53,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
   const playChargeSound = (pitchMultiplier: number) => {
     if (!audioContextRef.current) return;
     if (audioContextRef.current.state === "suspended") {
-      audioContextRef.current.resume();
+      void audioContextRef.current.resume().catch(() => {}); // intentional
     }
 
     if (!oscillatorRef.current) {

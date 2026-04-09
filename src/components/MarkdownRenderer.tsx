@@ -25,26 +25,27 @@ const MermaidDiagram = ({ chart }: { chart: string }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (containerRef.current) {
-      mermaid
-        .render(`mermaid-${Math.random().toString(36).substring(7)}`, chart)
-        .then(({ svg }) => {
-          if (containerRef.current) {
-            // Parse as SVG XML (not HTML) so embedded scripts cannot execute,
-            // then import the node — safer than setting innerHTML directly.
-            const parser = new DOMParser();
-            const svgDoc = parser.parseFromString(svg, "image/svg+xml");
-            const svgEl = document.importNode(svgDoc.documentElement, true);
-            containerRef.current.replaceChildren(svgEl);
-          }
-        })
-        .catch((e: unknown) =>
-          console.error(
-            "[MarkdownRenderer] Mermaid render failed:",
-            e instanceof Error ? e.message : String(e),
-          ),
+    if (!containerRef.current) return;
+    const container = containerRef.current;
+    void (async () => {
+      try {
+        const { svg } = await mermaid.render(
+          `mermaid-${Math.random().toString(36).substring(7)}`,
+          chart,
         );
-    }
+        // Parse as SVG XML (not HTML) so embedded scripts cannot execute,
+        // then import the node — safer than setting innerHTML directly.
+        const parser = new DOMParser();
+        const svgDoc = parser.parseFromString(svg, "image/svg+xml");
+        const svgEl = document.importNode(svgDoc.documentElement, true);
+        container.replaceChildren(svgEl);
+      } catch (e: unknown) {
+        console.error(
+          "[MarkdownRenderer] Mermaid render failed:",
+          e instanceof Error ? e.message : String(e),
+        );
+      }
+    })();
   }, [chart]);
 
   return (
