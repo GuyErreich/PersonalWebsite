@@ -2,15 +2,16 @@ name: Deploy to Cloudflare Pages
 
 on:
   push:
-    branches: ["dev"] # Triggers on dev branch
+    branches: ["dev", "master"] # dev = preview, master = production
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      CLOUDFLARE_PAGES_PROJECT_NAME: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
     environment:
-      name: dev
+      name: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
       url: ${{ steps.cloudflare.outputs.url }}
     permissions:
       contents: read
@@ -34,13 +35,23 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
+      - name: Validate Cloudflare Pages config
+        env:
+          CF_PAGES_PROJECT_NAME: ${{ env.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          if [ -z "$CF_PAGES_PROJECT_NAME" ]; then
+            echo "Missing Cloudflare Pages project name."
+            echo "Set CLOUDFLARE_PAGES_PROJECT_NAME in repository Variables (preferred) or Secrets."
+            exit 1
+          fi
+
       - name: Deploy to Cloudflare Pages
         id: cloudflare
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: "personal-website" # Update with your CF Pages project name
+          projectName: ${{ env.CLOUDFLARE_PAGES_PROJECT_NAME }}
           directory: "dist"
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref || github.ref_name }} # Deploys using branch name for preview URLs in CF
+          branch: ${{ github.head_ref || github.ref_name }} # master should match the Pages production branch setting
