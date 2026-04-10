@@ -24,7 +24,7 @@ jobs:
           mode: fix
 
       - name: Commit fixed license headers
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "chore: add missing license headers"
           commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
