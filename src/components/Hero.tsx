@@ -90,11 +90,11 @@ const gameDevBadges = ["Unity", "C#", "Game Feel", "Shaders", "Godot"];
 
 export const Hero = () => {
   const [hasCookie] = useState(() => {
-    if (import.meta.env.DEV) return false;
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("intro") === "1") return false;
     }
+    if (import.meta.env.DEV) return false;
     return !!Cookies.get("hero_visited");
   });
   const [skipIntro, setSkipIntro] = useState(hasCookie);
