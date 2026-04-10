@@ -1,158 +1,158 @@
-// @ts-nocheck
-import React, { useRef, useMemo, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
-import * as THREE from 'three';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
-import { FloatingThoughtsAudio } from './floating-thoughts/FloatingThoughtsAudio';
+import { Text } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import React, { useMemo, useRef } from "react";
+import * as THREE from "three";
+import { useOrchestrator } from "../../../../lib/AnimationContext";
+import { useThoughtsSound } from "./useThoughtsSound";
 
 export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const groupRef = useRef<THREE.Group>(null);
-  
-  const thoughts = [
-    "Strong foundations create smooth experiences.",
-    "Building the foundation. Shaping the experience.",
-    "Turning complexity into smooth experiences.",
-    "From cloud platforms to player moments — built to feel right.",
-    "I build things that just work — and feel great."
-  ];
+  const orchestrator = useOrchestrator();
+  const thoughtsProxy = orchestrator.getProxy("thoughts");
+  const suckProxy = orchestrator.getProxy("camera-suck");
 
-  // Audio isolated to FloatingThoughtsAudio component
+  // Removed useRewindSound because it was creating a "doinq" sound right before the implosion
+  // useRewindSound(skipIntro, orchestrator);
 
-  
-  // Five known, spread-out positions
+  const thoughts = useMemo(
+    () => [
+      "Strong foundations create smooth experiences.",
+      "Building the foundation. Shaping the experience.",
+      "Turning complexity into smooth experiences.",
+      "From cloud platforms to player moments — built to feel right.",
+      "I build things that just work — and feel great.",
+    ],
+    [],
+  );
+
+  useThoughtsSound(skipIntro, orchestrator, thoughts.length);
+
   const textItems = useMemo(() => {
-    // Pushed Y coordinates significantly further apart, utilizing the full vertical space
-    // Increased X widths heavily so they span the left and right edges 
+    // Clamp positions to fit within a visible bounding box for all screens
+    // These values are chosen to fit within a typical perspective camera view
     const basePositions = [
-      { x: -3.0, y:  3.2, z: -2.5 }, // Top-Left
-      { x:  3.0, y:  1.6, z: -1.5 }, // Mid-Right
-      { x: -2.8, y:  0.0, z: -1.0 }, // Center-Left
-      { x:  3.0, y: -1.6, z: -1.5 }, // Lower-Right
-      { x: -3.0, y: -3.2, z: -2.5 }, // Bottom-Left
+      { x: -2.2, y: 1.8, z: -2.5 },
+      { x: 2.2, y: 1.0, z: -1.5 },
+      { x: -2.0, y: 0.0, z: -1.0 },
+      { x: 2.2, y: -1.0, z: -1.5 },
+      { x: -2.2, y: -1.8, z: -2.5 },
     ];
-    // Shuffle the array of positions so the text to position mapping is random
-    const shuffledPositions = [...basePositions].sort(() => Math.random() - 0.5);
+    // Optionally, scale down for mobile screens
+    const isMobile = window.innerWidth < 640;
+    const scale = isMobile ? 0.7 : 1.0;
+    const shuffledPositions = [...basePositions]
+      .map((pos) => ({
+        x: pos.x * scale,
+        y: pos.y * scale,
+        z: pos.z,
+      }))
+      .sort(() => Math.random() - 0.5);
 
     return thoughts.map((text, i) => {
       const { x, y, z } = shuffledPositions[i];
-
-      // Use the blue-to-emerald gradient colors to match the hero text
       const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
-
       return {
         text,
-        x, y, z,
+        x,
+        y,
+        z,
         color: colors[i % colors.length],
         ref: React.createRef<THREE.Group>(),
-        textRef: React.createRef<any>(),
-        delay: i * 0.6 // Increased stagger spacing to give readers more time per sentence
+        textRef: React.createRef<THREE.Mesh>(),
+        delay: i * 0.6,
       };
     });
-  }, []);
+  }, [thoughts]);
 
-  useFrame(({ clock }) => {
-    const t = clock.elapsedTime;
-    
-    // The delay between the thoughts appearing, to when they get sucked in. 
-    // We added 1.0s to the old timing mapping. So the collapse triggers at 4.0s now.
-    
+  useFrame(() => {
+    // Rely exclusively on orchestrator proxy time
+    const activeT = thoughtsProxy.activeT;
+    const collapseProgress = suckProxy.progress;
+
     textItems.forEach((item, i) => {
       const group = item.ref.current;
       const textMesh = item.textRef.current;
       if (!group || !textMesh) return;
 
-      // 1. Appearance Phase (0 - 4.0s)
-      if (t < item.delay) {
+      if (activeT < item.delay && collapseProgress === 0) {
         group.visible = false;
         return;
       }
       group.visible = true;
 
-      const activeT = t - item.delay;
-      
-      // Gentle floating animation based on active time
-      // Reduced movement scale dramatically from 0.2 down to 0.05 so they are easy to read
-      const floatX = Math.sin(activeT * 1.5 + i) * 0.05;
-      const floatY = Math.cos(activeT * 1.0 + i) * 0.05;
-      
+      const elementT = Math.max(0, activeT - item.delay);
+
+      const floatX = Math.sin(elementT * 1.5 + i) * 0.05;
+      const floatY = Math.cos(elementT * 1.0 + i) * 0.05;
+
       let currentX = item.x + floatX;
       let currentY = item.y + floatY;
       let currentZ = item.z;
-      
-      // Calculate a bouncy "pop in" scale when they first appear
+
       let introScale = 1.0;
-      if (activeT < 0.8) {
-        const x = activeT / 0.8; 
+      if (elementT < 0.8) {
+        const x = elementT / 0.8;
         const c1 = 1.70158;
         const c3 = c1 + 1;
-        // Standard easeOutBack math for a bouncy overshoot
-        introScale = Math.max(0, 1.0 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2));
+        introScale = Math.max(0, 1.0 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2);
       }
 
       let scale = introScale;
+      const targetOpacity = 0.85;
+      let opacity = Math.min(targetOpacity, (elementT / 0.8) * targetOpacity);
 
-      // Fade in linearly starting only at its specific delay, up to a max of 0.8
-      // Then hold it at that target opacity so it doesn't wash out instantly to blinding white
-      const targetOpacity = 0.85; 
-      let opacity = Math.min(targetOpacity, (activeT / 0.8) * targetOpacity); 
+      // Suck into the black hole driven purely by the camera-suck proxy state!
+      if (collapseProgress > 0) {
+        const suckEase = collapseProgress ** 3;
 
-      // 2. Collapse Phase (5.2s - 6.0s) Suck into the already created black hole
-      if (t > 5.2) {
-        const collapseProgress = Math.min(1, (t - 5.2) / 0.8);
-        // Exponential ease-in for the suck-in effect
-        const suckEase = Math.pow(collapseProgress, 3);
-        
-        // Lerp towards 0,0,0
         currentX = THREE.MathUtils.lerp(currentX, 0, suckEase);
         currentY = THREE.MathUtils.lerp(currentY, 0, suckEase);
-        currentZ = THREE.MathUtils.lerp(currentZ, 0, suckEase);
-        
-        // Scale down to 0 at the very end
+        currentZ = THREE.MathUtils.lerp(currentZ, -5, suckEase); // Add z depth back to match origin
+
         scale = 1.0 - suckEase;
-        
-        // Fade out slightly at the collision point
-        opacity *= (1.0 - collapseProgress * 0.5);
+        opacity *= 1.0 - collapseProgress * 0.5;
       }
 
       group.position.set(currentX, currentY, currentZ);
       group.scale.setScalar(scale);
-      
-      // Update text material opacity natively
+
       if (textMesh.material) {
-        textMesh.material.transparent = true;
-        textMesh.material.opacity = opacity;
+        const mat = textMesh.material as THREE.MeshBasicMaterial;
+        mat.transparent = true;
+        mat.opacity = opacity;
       }
     });
 
-    // Make the entire group slightly drift
     if (groupRef.current) {
-        groupRef.current.position.y = Math.sin(t) * 0.1;
+      groupRef.current.position.y = Math.sin(activeT) * 0.1;
     }
   });
 
   return (
-    <>
-      <FloatingThoughtsAudio skipIntro={skipIntro} thoughtsLength={thoughts.length} />
-      <group ref={groupRef}>
+    <group ref={groupRef}>
       {textItems.map((item, i) => (
         <group key={i} ref={item.ref} visible={false}>
           <Text
             ref={item.textRef}
-            fontSize={0.25} // Punchier font size to match hero subtitle feel
-            maxWidth={3.5}  // Widened so text comfortably spans 1-2 lines instead of stacking
+            fontSize={0.25}
+            maxWidth={3.5}
             textAlign="center"
             anchorX="center"
             anchorY="middle"
             color={item.color}
             fontWeight="bold"
-            letterSpacing={-0.05} // Matches "tracking-tight"
+            letterSpacing={-0.05}
           >
             {item.text}
           </Text>
         </group>
       ))}
     </group>
-    </>
   );
 };

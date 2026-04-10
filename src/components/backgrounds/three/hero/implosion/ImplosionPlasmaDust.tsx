@@ -1,7 +1,12 @@
-// @ts-nocheck
-import { useMemo, useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef, useState } from "react";
+import * as THREE from "three";
 
 const implosionDuration = 3.0;
 const entryDelay = 4.8;
@@ -15,23 +20,26 @@ export const ImplosionPlasmaDust = () => {
     const count = 600; // Drastically reduced so they don't overpower the scene
     const positions = new Float32Array(count * 3);
     const speeds = new Float32Array(count);
-    for(let i = 0; i < count; i++) {
-        const r = 4 + Math.random() * 8; // Start closer
-        const theta = Math.random() * Math.PI * 2;
-        // Form a flat accretion disk instead of a blinding complete sphere
-        positions[i*3] = r * Math.cos(theta);
-        positions[i*3+1] = (Math.random() - 0.5) * 0.8; // mostly flat on the Y axis
-        positions[i*3+2] = r * Math.sin(theta);
-        speeds[i] = 1.0 + Math.random() * 2.0; // Slower, more elegant pull
+    for (let i = 0; i < count; i++) {
+      const r = 4 + Math.random() * 8; // Start closer
+      const theta = Math.random() * Math.PI * 2;
+      // Form a flat accretion disk instead of a blinding complete sphere
+      positions[i * 3] = r * Math.cos(theta);
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8; // mostly flat on the Y axis
+      positions[i * 3 + 2] = r * Math.sin(theta);
+      speeds[i] = 1.0 + Math.random() * 2.0; // Slower, more elegant pull
     }
     return { dustPositions: positions, dustSpeeds: speeds };
   }, []);
-  const dustUniforms = useMemo(() => ({
-    uOpacity:    { value: 0.0 },
-    uIntensity:  { value: 1.0 },
-    uSize:       { value: 3.0 },
-    uAbsorption: { value: 0.0 }, // 0 = glowing plasma, 1 = light-consuming void
-  }), []);
+  const dustUniforms = useMemo(
+    () => ({
+      uOpacity: { value: 0.0 },
+      uIntensity: { value: 1.0 },
+      uSize: { value: 3.0 },
+      uAbsorption: { value: 0.0 }, // 0 = glowing plasma, 1 = light-consuming void
+    }),
+    [],
+  );
   const dustVertexShader = `
     uniform float uSize;
     void main() {
@@ -71,7 +79,7 @@ export const ImplosionPlasmaDust = () => {
   useFrame(({ clock }) => {
     if (isDone) return;
     const t = clock.elapsedTime;
-    
+
     if (t > totalPhaseTime) {
       setIsDone(true);
       return;
@@ -88,7 +96,7 @@ export const ImplosionPlasmaDust = () => {
     const activeDuration = implosionDuration;
     const progress = activeT / activeDuration;
     const finalPinch = progress > 0.88 ? Math.max(0, 1 - (progress - 0.88) * (1 / 0.12)) : 1;
-    
+
     if (dustRef.current) {
       const positions = dustRef.current.geometry.attributes.position.array;
       for (let i = 0; i < dustPositions.length / 3; i++) {
@@ -102,20 +110,21 @@ export const ImplosionPlasmaDust = () => {
             // Respawn at full radius
             const r = 8 + Math.random() * 4;
             const theta = Math.random() * Math.PI * 2;
-            positions[i * 3]     = r * Math.cos(theta);
+            positions[i * 3] = r * Math.cos(theta);
             positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
             positions[i * 3 + 2] = r * Math.sin(theta);
           } else {
             // Past 0.92: accumulate at origin, finalPinch fades opacity
-            positions[i * 3] = 0; positions[i * 3 + 1] = 0; positions[i * 3 + 2] = 0;
+            positions[i * 3] = 0;
+            positions[i * 3 + 1] = 0;
+            positions[i * 3 + 2] = 0;
           }
         } else {
           // Gravity pull
-          const condenseFactor = progress > 0.70 
-            ? Math.min(2.2, 1.0 + Math.pow((progress - 0.70) / 0.30, 2.0) * 4.0)
-            : 1.0;
+          const condenseFactor =
+            progress > 0.7 ? Math.min(2.2, 1.0 + ((progress - 0.7) / 0.3) ** 2.0 * 4.0) : 1.0;
           const speed = dustSpeeds[i] * 4.0 * condenseFactor;
-          positions[i * 3]     -= (x / dist) * speed * 0.016;
+          positions[i * 3] -= (x / dist) * speed * 0.016;
           positions[i * 3 + 1] -= (y / dist) * speed * 0.016;
           positions[i * 3 + 2] -= (z / dist) * speed * 0.016;
 
@@ -132,10 +141,12 @@ export const ImplosionPlasmaDust = () => {
       }
       dustRef.current.geometry.attributes.position.needsUpdate = true;
 
-      const mat = dustRef.current.material;
-      mat.uniforms.uOpacity.value = Math.min(1, activeT / 0.5) * (0.8 + Math.pow(progress, 2.0)) * finalPinch;
-      mat.uniforms.uIntensity.value = 1.0 + Math.pow(progress, 2.0) * 5.0;
-      mat.uniforms.uAbsorption.value = progress > 0.78 ? Math.min(1.0, (progress - 0.78) / 0.10) : 0.0;
+      const mat = dustRef.current.material as THREE.ShaderMaterial;
+      mat.uniforms.uOpacity.value =
+        Math.min(1, activeT / 0.5) * (0.8 + progress ** 2.0) * finalPinch;
+      mat.uniforms.uIntensity.value = 1.0 + progress ** 2.0 * 5.0;
+      mat.uniforms.uAbsorption.value =
+        progress > 0.78 ? Math.min(1.0, (progress - 0.78) / 0.1) : 0.0;
     }
   });
 

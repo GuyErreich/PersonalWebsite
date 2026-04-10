@@ -1,16 +1,21 @@
-// @ts-nocheck
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { getImplosionState } from './shared';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import type * as THREE from "three";
+import { getImplosionState } from "./shared";
 
 export const ImplosionBlackHole = () => {
   const meshRef = useRef<THREE.Mesh>(null);
-  
+
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const { progress, entryDelay, activeT } = getImplosionState(t);
-    
+    const { progress } = getImplosionState(t);
+
     if (meshRef.current) {
       if (progress > 0.45 && progress <= 0.88) {
         meshRef.current.visible = true;

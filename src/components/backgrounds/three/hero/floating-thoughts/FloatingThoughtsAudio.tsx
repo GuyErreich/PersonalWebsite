@@ -1,6 +1,19 @@
-import { useEffect } from 'react';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
 
-export const FloatingThoughtsAudio = ({ skipIntro = false, thoughtsLength }: { skipIntro?: boolean; thoughtsLength: number }) => {
+import { useEffect } from "react";
+import { getAudioContextClass } from "../../../../../lib/sound/audioContext";
+
+export const FloatingThoughtsAudio = ({
+  skipIntro = false,
+  thoughtsLength,
+}: {
+  skipIntro?: boolean;
+  thoughtsLength: number;
+}) => {
   useEffect(() => {
     if (skipIntro) return;
 
@@ -10,40 +23,41 @@ export const FloatingThoughtsAudio = ({ skipIntro = false, thoughtsLength }: { s
     const t = setTimeout(() => {
       if (isCancelled) return;
       try {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        const AudioCtx = getAudioContextClass();
+        if (!AudioCtx) return;
         ctx = new AudioCtx();
-        if (ctx.state === 'suspended') ctx.resume();
+        if (ctx.state === "suspended") void ctx.resume().catch(() => {}); // intentional
 
         const now = ctx.currentTime;
-        
+
         // Ethereal subtle chimes mapping to the floating texts spawning
         for (let i = 0; i < thoughtsLength; i++) {
-            const delay = i * 0.6; // Matches the stagger from useMemo
-            const osc = ctx.createOscillator();
-            const gain = ctx.createGain();
-            
-            osc.type = 'sine';
-            // Increase pitch for each subsequent thought that appears
-            osc.frequency.setValueAtTime(300 + (i * 150), now + delay);
-            
-            gain.gain.setValueAtTime(0, now + delay);
-            gain.gain.linearRampToValueAtTime(0.04, now + delay + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 2.0);
-            
-            osc.connect(gain);
-            gain.connect(ctx.destination);
-            
-            osc.start(now + delay);
-            osc.stop(now + delay + 2.0);
+          const delay = i * 0.6; // Matches the stagger from useMemo
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          // Increase pitch for each subsequent thought that appears
+          osc.frequency.setValueAtTime(300 + i * 150, now + delay);
+
+          gain.gain.setValueAtTime(0, now + delay);
+          gain.gain.linearRampToValueAtTime(0.04, now + delay + 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 2.0);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+
+          osc.start(now + delay);
+          osc.stop(now + delay + 2.0);
         }
-      } catch (e) {}
+      } catch {}
     }, 50);
 
     return () => {
       isCancelled = true;
       clearTimeout(t);
-      if (ctx && ctx.state !== 'closed') ctx.close().catch(()=>{});
-    }
-  }, [skipIntro]);
+      if (ctx && ctx.state !== "closed") ctx.close().catch(() => {});
+    };
+  }, [skipIntro, thoughtsLength]);
   return null;
 };
