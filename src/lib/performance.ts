@@ -19,21 +19,13 @@ export const isLowEndDevice = (): boolean => {
     return true;
   }
 
-  // Check for Chromebook, low-end Android, or embedded devices
-  const userAgent = navigator.userAgent.toLowerCase();
-  const lowEndPatterns = [
-    /cros[;i]/, // Chromebook
-    /android.*(sm|gt)-[a-z]/i, // Low-end Samsung/GT
-    /iphone.*(5|6)[\s;]/i, // Old iPhones
-  ];
-
-  if (lowEndPatterns.some((pattern) => pattern.test(userAgent))) {
-    return true;
-  }
-
-  // Check viewport size as proxy for device power (very small screens often = low-end phones)
-  if (typeof window !== "undefined" && window.innerWidth < 375) {
-    return true;
+  // For browsers that do not expose deviceMemory, use a conservative fallback.
+  // Keep this very strict to avoid misclassifying capable modern phones in emulation.
+  const hardwareConcurrency = navigator.hardwareConcurrency;
+  if (deviceMemory === undefined && hardwareConcurrency > 0 && hardwareConcurrency <= 4) {
+    if (window.innerWidth <= 320) {
+      return true;
+    }
   }
 
   return false;
@@ -70,8 +62,14 @@ export const getCanvasDPR = (): number => {
 export const shouldRenderHeavyEffects = (): boolean => {
   if (typeof window === "undefined") return true;
 
-  // Respect explicit user preference — always honour this
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const params = new URLSearchParams(window.location.search);
+  const fx = params.get("fx");
+  if (fx === "1") return true;
+  if (fx === "0") return false;
+
+  // Respect explicit user preference in production.
+  // In local dev, device emulation can inherit host settings and cause false negatives.
+  if (!import.meta.env.DEV && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return false;
   }
 
