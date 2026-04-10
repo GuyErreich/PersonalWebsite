@@ -65,25 +65,36 @@ export const GameDevSection = () => {
   const { ref: galleryRef, motionStyle: galleryMotionStyle } = useScrollReveal();
 
   useEffect(() => {
-    const fetchData = async () => {
-      const { data: showreelData } = await supabase
-        .from("site_settings")
-        .select("value")
-        .eq("key", "showreel_url")
-        .single();
+    void (async () => {
+      try {
+        const { data: showreelData, error: showreelError } = await supabase
+          .from("site_settings")
+          .select("value")
+          .eq("key", "showreel_url")
+          .single();
 
-      if (showreelData) setShowreelUrl(showreelData.value);
+        if (showreelError) {
+          console.warn(showreelError.message);
+        } else if (showreelData) {
+          setShowreelUrl(showreelData.value);
+        }
 
-      const { data: items } = await supabase
-        .from("gamedev_items")
-        .select("*")
-        .order("created_at", { ascending: false });
+        const { data: items, error: itemsError } = await supabase
+          .from("gamedev_items")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      if (items) setGalleryItems(items as GameDevItem[]);
-      setIsLoading(false);
-    };
-
-    fetchData();
+        if (itemsError) {
+          console.warn(itemsError.message);
+        } else if (items) {
+          setGalleryItems(items as GameDevItem[]);
+        }
+      } catch (e) {
+        console.warn(e instanceof Error ? e.message : String(e));
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, []);
 
   return (

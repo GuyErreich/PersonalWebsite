@@ -62,15 +62,17 @@ export const getCanvasDPR = (): number => {
 export const shouldRenderHeavyEffects = (): boolean => {
   if (typeof window === "undefined") return true;
 
-  const params = new URLSearchParams(window.location.search);
-  const fx = params.get("fx");
-  if (fx === "1") return true;
-  if (fx === "0") return false;
-
-  // Respect explicit user preference in production.
-  // In local dev, device emulation can inherit host settings and cause false negatives.
-  if (!import.meta.env.DEV && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  // Respect explicit user preference first.
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return false;
+  }
+
+  // Debug override is development-only.
+  if (import.meta.env.DEV) {
+    const params = new URLSearchParams(window.location.search);
+    const fx = params.get("fx");
+    if (fx === "1") return true;
+    if (fx === "0") return false;
   }
 
   // Only skip on genuinely incapable hardware (<=2GB RAM)
