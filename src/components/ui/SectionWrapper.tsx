@@ -1,4 +1,12 @@
-import type { ReactNode } from 'react';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+import { useScrollReveal } from "../../hooks/useScrollReveal";
 
 interface SectionWrapperProps {
   id: string;
@@ -7,22 +15,29 @@ interface SectionWrapperProps {
   background?: ReactNode;
 }
 
-export const SectionWrapper = ({ 
-  id, 
-  className = "py-24 bg-gray-900", 
-  children, 
-  background 
+export const SectionWrapper = ({
+  id,
+  className = "py-12 md:py-16 bg-gray-900",
+  children,
+  background,
 }: SectionWrapperProps) => {
+  const { ref, motionStyle } = useScrollReveal();
+
   return (
-    <section id={id} className={`overflow-hidden relative ${className}`}>
+    <section id={id} ref={ref} className={`overflow-hidden relative ${className}`}>
       {background && (
-        <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">
-          {background}
-        </div>
+        <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">{background}</div>
       )}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+      {/* Top fade — echoes GameDev emerald trailing into the DevOps world */}
+      <div className="section-top-fade" />
+      {/* DevOps → Footer: smooth gradient dissolve into footer bg */}
+      <div className="section-bottom-fade" />
+      <motion.div
+        style={motionStyle}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full"
+      >
         {children}
-      </div>
+      </motion.div>
     </section>
   );
 };

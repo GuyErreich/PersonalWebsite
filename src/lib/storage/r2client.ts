@@ -1,63 +1,79 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 // src/lib/storage/r2client.ts
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+// R2 credentials are NOT held here — they live in Supabase secrets and are
+// used exclusively inside the `r2-presign` edge function. The browser only
+// ever receives a short-lived presigned PUT URL, never the actual keys.
 
-// Usually, in a production setup, generating the presigned URL should happen on a backend server
-// so you don't expose your Cloudflare keys to the browser.
-// However, since this is a private admin dashboard meant only for you,
-// and it's behind a Supabase Auth login, setting it up client-side is acceptable for a personal site as long as the env variables are kept secure.
+import { supabase } from "../supabase";
 
-const accountId = import.meta.env.VITE_CLOUDFLARE_ACCOUNT_ID || '';
-const accessKeyId = import.meta.env.VITE_R2_ACCESS_KEY_ID || '';
-const secretAccessKey = import.meta.env.VITE_R2_SECRET_ACCESS_KEY || '';
-export const r2Bucket = import.meta.env.VITE_R2_BUCKET_NAME || 'portfolio-media';
-export const r2PublicUrl = import.meta.env.VITE_R2_PUBLIC_URL || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+if (!supabaseUrl) {
+  throw new Error("VITE_SUPABASE_URL is not set. Check your .env configuration.");
+}
+const PRESIGN_FUNCTION_URL = new URL(
+  "/functions/v1/r2-presign",
+  supabaseUrl.replace(/\/$/, ""),
+).toString();
 
-export const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId,
-    secretAccessKey,
-  },
-});
+interface PresignResponse {
+  signedUrl: string;
+  publicUrl: string;
+}
 
 /**
- * Uploads a file directly to Cloudflare R2 from the browser using a presigned URL.
+ * Uploads a file to Cloudflare R2 via a server-side presigned URL.
+ * Credentials never leave the Supabase edge function — only a short-lived
+ * signed URL is returned to the browser.
  */
-export const uploadToR2 = async (file: File, folderPath: string = 'media'): Promise<string> => {
-  if (!accountId || !accessKeyId || !secretAccessKey) {
-    throw new Error('Cloudflare R2 environment variables are missing.');
+export const uploadToR2 = async (file: File, folderPath: string = "media"): Promise<string> => {
+  // Get the caller's current session token to authenticate with the edge function
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+  if (sessionError || !session) {
+    throw new Error("You must be logged in to upload files.");
   }
 
-  // Generate a unique filename
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-  const key = `${folderPath}/${fileName}`;
+  const rawExt = file.name.split(".").pop();
+  const fileExt = rawExt && rawExt.length > 0 ? rawExt : "";
 
-  const command = new PutObjectCommand({
-    Bucket: r2Bucket,
-    Key: key,
-    ContentType: file.type,
-  });
-
-  // Generate a presigned URL valid for 1 hour to directly upload from the browser
-  const signedUrl = await getSignedUrl(r2, command, { expiresIn: 3600 });
-
-  // Execute the actual upload to the presigned URL
-  const uploadResponse = await fetch(signedUrl, {
-    method: 'PUT',
-    body: file,
+  // Ask the edge function to generate a presigned URL (credentials stay server-side)
+  const presignRes = await fetch(PRESIGN_FUNCTION_URL, {
+    method: "POST",
     headers: {
-      'Content-Type': file.type,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.access_token}`,
     },
+    body: JSON.stringify({ contentType: file.type, fileExt, folderPath }),
   });
 
-  if (!uploadResponse.ok) {
-    throw new Error(`Failed to upload to R2: ${uploadResponse.statusText}`);
+  if (!presignRes.ok) {
+    const body: unknown = await presignRes.json().catch(() => ({}));
+    const msg =
+      typeof body === "object" && body !== null && "error" in body
+        ? String((body as Record<string, unknown>).error)
+        : presignRes.statusText;
+    throw new Error(`Failed to get presigned URL: ${msg}`);
   }
 
-  // Return the public URL to access the file
-  // Requires you to have a Custom Domain or public R2.dev URL mapped to this bucket
-  return `${r2PublicUrl}/${key}`;
+  const { signedUrl, publicUrl } = (await presignRes.json()) as PresignResponse;
+
+  // Upload the file directly to R2 using the short-lived presigned URL
+  const uploadRes = await fetch(signedUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type },
+  });
+
+  if (!uploadRes.ok) {
+    throw new Error(`Failed to upload to R2: ${uploadRes.statusText}`);
+  }
+
+  return publicUrl;
 };

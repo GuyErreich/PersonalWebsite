@@ -1,0 +1,31 @@
+name: License Header Check
+
+on:
+  push:
+    branches: ["dev"]
+
+jobs:
+  license-fix:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Fix license headers
+        uses: apache/skywalking-eyes@v0.6.0
+        with:
+          config: .licenserc.yaml
+          mode: fix
+
+      - name: Commit fixed license headers
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: add missing license headers"
+          commit_author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+

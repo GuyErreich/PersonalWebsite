@@ -1,31 +1,47 @@
-import { useState } from 'react';
-import { supabase } from '../../lib/supabase';
-import { uploadToR2 } from '../../lib/storage/r2client';
-import { 
-  Gamepad2, Code2, Server, Globe, Cpu, Database, 
-  Rocket, Shield, Terminal, Wrench, Smartphone, Monitor
-} from 'lucide-react';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+import {
+  Code2,
+  Cpu,
+  Database,
+  Gamepad2,
+  Globe,
+  Monitor,
+  Rocket,
+  Server,
+  Shield,
+  Smartphone,
+  Terminal,
+  Wrench,
+} from "lucide-react";
+import { useState } from "react";
+import { uploadToR2 } from "../../lib/storage/r2client";
+import { supabase } from "../../lib/supabase";
 
 interface ItemFormModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'gamedev' | 'devops';
+  type: "gamedev" | "devops";
   onSuccess: () => void;
 }
 
 const AVAILABLE_ICONS = [
-  { id: 'gamepad', icon: Gamepad2, label: 'Game' },
-  { id: 'code', icon: Code2, label: 'Code' },
-  { id: 'server', icon: Server, label: 'Server' },
-  { id: 'globe', icon: Globe, label: 'Web' },
-  { id: 'cpu', icon: Cpu, label: 'Hardware' },
-  { id: 'database', icon: Database, label: 'Database' },
-  { id: 'rocket', icon: Rocket, label: 'Rocket' },
-  { id: 'shield', icon: Shield, label: 'Security' },
-  { id: 'terminal', icon: Terminal, label: 'Terminal' },
-  { id: 'wrench', icon: Wrench, label: 'Tool' },
-  { id: 'smartphone', icon: Smartphone, label: 'Mobile' },
-  { id: 'monitor', icon: Monitor, label: 'Desktop' },
+  { id: "gamepad", icon: Gamepad2, label: "Game" },
+  { id: "code", icon: Code2, label: "Code" },
+  { id: "server", icon: Server, label: "Server" },
+  { id: "globe", icon: Globe, label: "Web" },
+  { id: "cpu", icon: Cpu, label: "Hardware" },
+  { id: "database", icon: Database, label: "Database" },
+  { id: "rocket", icon: Rocket, label: "Rocket" },
+  { id: "shield", icon: Shield, label: "Security" },
+  { id: "terminal", icon: Terminal, label: "Terminal" },
+  { id: "wrench", icon: Wrench, label: "Tool" },
+  { id: "smartphone", icon: Smartphone, label: "Mobile" },
+  { id: "monitor", icon: Monitor, label: "Desktop" },
 ];
 
 export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModalProps) => {
@@ -33,15 +49,15 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
   const [error, setError] = useState<string | null>(null);
 
   // Form State
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedIcon, setSelectedIcon] = useState('gamepad');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [selectedIcon, setSelectedIcon] = useState("gamepad");
   // For GameDev (Image/Video File), for DevOps (Tech Stack as comma separated string)
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [techStack, setTechStack] = useState('');
-  const [githubUrl, setGithubUrl] = useState('');
-  const [liveUrl, setLiveUrl] = useState('');
+  const [techStack, setTechStack] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [liveUrl, setLiveUrl] = useState("");
 
   if (!isOpen) return null;
 
@@ -51,22 +67,22 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
     setError(null);
 
     try {
-      let finalMediaUrl = '';
+      let finalMediaUrl = "";
       let finalThumbnailUrl = null;
 
       // Handle File Upload for Game Dev Items using Cloudflare R2
-      if (type === 'gamedev' && mediaFile) {
+      if (type === "gamedev" && mediaFile) {
         // We organize folders by project type
-        finalMediaUrl = await uploadToR2(mediaFile, 'gamedev-assets');
+        finalMediaUrl = await uploadToR2(mediaFile, "gamedev-assets");
       }
 
       // Handle optional Custom Thumbnail Upload
-      if (type === 'gamedev' && thumbnailFile) {
-        finalThumbnailUrl = await uploadToR2(thumbnailFile, 'gamedev-thumbnails');
+      if (type === "gamedev" && thumbnailFile) {
+        finalThumbnailUrl = await uploadToR2(thumbnailFile, "gamedev-thumbnails");
       }
 
-      const tableName = type === 'gamedev' ? 'gamedev_items' : 'devops_projects';
-      
+      const tableName = type === "gamedev" ? "gamedev_items" : "devops_projects";
+
       const payload: Record<string, unknown> = {
         title,
         description,
@@ -75,37 +91,38 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
         live_url: liveUrl || null,
       };
 
-      if (type === 'gamedev') {
+      if (type === "gamedev") {
         if (!finalMediaUrl) throw new Error("Media file is required for Game Dev projects.");
         payload.media_url = finalMediaUrl;
         payload.thumbnail_url = finalThumbnailUrl;
       } else {
-        payload.tech_stack = techStack.split(',').map(s => s.trim()).filter(Boolean);
+        payload.tech_stack = techStack
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
 
-      const { error: dbError } = await supabase
-        .from(tableName)
-        .insert([payload]);
+      const { error: dbError } = await supabase.from(tableName).insert([payload]);
 
       if (dbError) throw dbError;
 
       // Reset form on success
-      setTitle('');
-      setDescription('');
-      setSelectedIcon('gamepad');
+      setTitle("");
+      setDescription("");
+      setSelectedIcon("gamepad");
       setMediaFile(null);
       setThumbnailFile(null);
-      setTechStack('');
-      setGithubUrl('');
-      setLiveUrl('');
-      
+      setTechStack("");
+      setGithubUrl("");
+      setLiveUrl("");
+
       onSuccess();
       onClose();
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('An error occurred while saving.');
+        setError("An error occurred while saving.");
       }
     } finally {
       setLoading(false);
@@ -113,22 +130,32 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 overflow-y-auto"
+      aria-labelledby="modal-title"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        
         {/* Background overlay */}
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
+        <div
+          className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
+          aria-hidden="true"
+          onClick={onClose}
+        ></div>
 
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+          &#8203;
+        </span>
 
         {/* Modal panel */}
         <div className="relative inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-700">
           <form onSubmit={handleSubmit}>
             <div className="bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-medium text-white mb-4" id="modal-title">
-                Add New {type === 'gamedev' ? 'Game Dev Project' : 'DevOps Project'}
+                Add New {type === "gamedev" ? "Game Dev Project" : "DevOps Project"}
               </h3>
-              
+
               {error && (
                 <div className="mb-4 bg-red-500/10 border border-red-500 text-red-500 p-3 rounded text-sm">
                   {error}
@@ -137,7 +164,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Project Icon</label>
+                  <p className="block text-sm font-medium text-gray-300 mb-1">Project Icon</p>
                   <div className="grid grid-cols-6 gap-2">
                     {AVAILABLE_ICONS.map((iconOpt) => (
                       <button
@@ -145,22 +172,27 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         type="button"
                         onClick={() => setSelectedIcon(iconOpt.id)}
                         className={`p-2 rounded-lg flex flex-col items-center justify-center transition-colors ${
-                          selectedIcon === iconOpt.id 
-                            ? 'bg-blue-600 text-white' 
-                            : 'bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white'
+                          selectedIcon === iconOpt.id
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white"
                         }`}
                         title={iconOpt.label}
                       >
                         <iconOpt.icon className="w-5 h-5 mb-1" />
-                        <span className="text-[10px] truncate w-full flex justify-center">{iconOpt.label}</span>
+                        <span className="text-[10px] truncate w-full flex justify-center">
+                          {iconOpt.label}
+                        </span>
                       </button>
                     ))}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Title</label>
+                  <label htmlFor="item-title" className="block text-sm font-medium text-gray-300">
+                    Title
+                  </label>
                   <input
+                    id="item-title"
                     type="text"
                     required
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
@@ -170,8 +202,14 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Description</label>
+                  <label
+                    htmlFor="item-description"
+                    className="block text-sm font-medium text-gray-300"
+                  >
+                    Description
+                  </label>
                   <textarea
+                    id="item-description"
                     required
                     rows={3}
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
@@ -180,13 +218,18 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                   />
                 </div>
 
-                {type === 'gamedev' ? (
+                {type === "gamedev" ? (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300">Upload Media (Image or Video)</label>
+                      <label
+                        htmlFor="item-media"
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Upload Media (Image or Video)
+                      </label>
                       <input
+                        id="item-media"
                         type="file"
-                        accept="image/*,video/*"
                         required
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                         onChange={(e) => {
@@ -197,9 +240,17 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300">Custom Thumbnail (Optional)</label>
-                      <p className="text-xs text-gray-500 mb-1">If your media is a video, upload an image here to show before it plays.</p>
+                      <label
+                        htmlFor="item-thumbnail"
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Custom Thumbnail (Optional)
+                      </label>
+                      <p className="text-xs text-gray-500 mb-1">
+                        If your media is a video, upload an image here to show before it plays.
+                      </p>
                       <input
+                        id="item-thumbnail"
                         type="file"
                         accept="image/*"
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500"
@@ -213,8 +264,14 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                   </>
                 ) : (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300">Tech Stack (comma separated)</label>
+                    <label
+                      htmlFor="item-tech-stack"
+                      className="block text-sm font-medium text-gray-300"
+                    >
+                      Tech Stack (comma separated)
+                    </label>
                     <input
+                      id="item-tech-stack"
                       type="text"
                       required
                       placeholder="e.g. Docker, AWS, Terraform"
@@ -226,8 +283,14 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">GitHub URL (Optional)</label>
+                  <label
+                    htmlFor="item-github-url"
+                    className="block text-sm font-medium text-gray-300"
+                  >
+                    GitHub URL (Optional)
+                  </label>
                   <input
+                    id="item-github-url"
                     type="url"
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                     value={githubUrl}
@@ -236,8 +299,14 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300">Live URL (Optional)</label>
+                  <label
+                    htmlFor="item-live-url"
+                    className="block text-sm font-medium text-gray-300"
+                  >
+                    Live URL (Optional)
+                  </label>
                   <input
+                    id="item-live-url"
                     type="url"
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                     value={liveUrl}
@@ -252,7 +321,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                 disabled={loading}
                 className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
               >
-                {loading ? 'Saving...' : 'Save Item'}
+                {loading ? "Saving..." : "Save Item"}
               </button>
               <button
                 type="button"

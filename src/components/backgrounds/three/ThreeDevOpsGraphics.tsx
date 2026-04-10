@@ -1,7 +1,13 @@
-import { useRef, useMemo } from 'react';
-import { useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { Float, Wireframe } from '@react-three/drei';
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+import { Float, Wireframe } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import * as THREE from "three";
 
 export const ThreeDevOpsGraphics = () => {
   const group = useRef<THREE.Group>(null);
@@ -23,8 +29,8 @@ export const ThreeDevOpsGraphics = () => {
         new THREE.Vector3(
           (Math.random() - 0.5) * 10,
           (Math.random() - 0.5) * 10,
-          (Math.random() - 0.5) * 5
-        )
+          (Math.random() - 0.5) * 5,
+        ),
       );
     }
     return points;
@@ -48,11 +54,11 @@ export const ThreeDevOpsGraphics = () => {
       {/* Orbiting Satellites (representing containers/nodes) */}
       {[...Array(5)].map((_, i) => (
         <Float key={i} speed={3 + i} rotationIntensity={2} floatIntensity={3}>
-          <mesh 
+          <mesh
             position={[
               Math.cos((i / 5) * Math.PI * 2) * 4,
               Math.sin(i) * 2,
-              Math.sin((i / 5) * Math.PI * 2) * 4
+              Math.sin((i / 5) * Math.PI * 2) * 4,
             ]}
           >
             <boxGeometry args={[0.5, 0.5, 0.5]} />
