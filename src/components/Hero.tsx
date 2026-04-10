@@ -14,11 +14,11 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
-
 import Cookies from "js-cookie";
 import { ChevronDown, Mail } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type * as THREE from "three";
+import { getCanvasDPR, shouldRenderHeavyEffects } from "../lib/performance";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
 import { ReverseHyperspace } from "./backgrounds/three/hero/ReverseHyperspace";
@@ -267,6 +267,14 @@ export const Hero = () => {
   const UI_DELAY_OFFSET = 3.0;
   const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay + UI_DELAY_OFFSET);
 
+  const [showHeavyEffects, setShowHeavyEffects] = useState(true);
+  const [canvasDPR, setCanvasDPR] = useState(1);
+
+  useEffect(() => {
+    setShowHeavyEffects(shouldRenderHeavyEffects());
+    setCanvasDPR(getCanvasDPR());
+  }, []);
+
   const heroSectionRef = useRef<HTMLElement>(null);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
   const { scrollY } = useScroll();
@@ -309,7 +317,7 @@ export const Hero = () => {
               transition={{ duration: 0.2 }}
               className="absolute inset-0 h-full w-full"
             >
-              <Canvas camera={{ position: [0, 0, 5], fov: 60 }}>
+              <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={canvasDPR}>
                 <ResponsiveCamera />
                 <ReverseHyperspace />
               </Canvas>
@@ -320,7 +328,7 @@ export const Hero = () => {
                 transition={{ duration: 2, times: [0, 0.9, 1] }}
               />
             </motion.div>
-          ) : (
+          ) : showHeavyEffects ? (
             <motion.div
               key={`bg-${animationKey}`}
               initial={{ opacity: 0 }}
@@ -328,11 +336,13 @@ export const Hero = () => {
               transition={{ duration: 0 }}
               className="absolute inset-0 h-full w-full"
             >
-              <Canvas camera={{ position: [0, 0, 5], fov: 50 }}>
+              <Canvas camera={{ position: [0, 0, 5], fov: 50 }} dpr={canvasDPR}>
                 <ResponsiveCamera />
                 <ThreeHeroBackground skipIntro={skipIntro} />
               </Canvas>
             </motion.div>
+          ) : (
+            <div className="absolute inset-0 h-full w-full bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950" />
           )}
         </AnimatePresence>
       </div>
