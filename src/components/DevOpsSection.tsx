@@ -7,6 +7,8 @@
 import { Environment } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
 import { Cloud, Database, Server, Terminal } from "lucide-react";
+import { useMemo } from "react";
+import { getCanvasDPR } from "../lib/performance";
 import { ThreeDevOpsGraphics } from "./backgrounds/three/ThreeDevOpsGraphics";
 import { ProjectCard } from "./ui/ProjectCard";
 import { SectionEntranceOverlay } from "./ui/SectionEntranceOverlay";
@@ -49,6 +51,8 @@ const projects = [
 ];
 
 export const DevOpsSection = () => {
+  const canvasDPR = useMemo(() => getCanvasDPR(), []);
+
   return (
     <SectionEntranceOverlay theme="devops">
       <SectionWrapper
@@ -56,7 +60,7 @@ export const DevOpsSection = () => {
         className="py-12 md:py-16 bg-gray-950"
         background={
           <div className="absolute inset-0 pointer-events-none opacity-40">
-            <Canvas camera={{ position: [0, 0, 8], fov: 50 }}>
+            <Canvas camera={{ position: [0, 0, 8], fov: 50 }} dpr={canvasDPR}>
               <ambientLight intensity={0.5} />
               <pointLight position={[10, 10, 10]} intensity={1} />
               <ThreeDevOpsGraphics />
