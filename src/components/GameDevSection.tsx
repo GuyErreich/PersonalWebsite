@@ -79,7 +79,7 @@ export const GameDevSection = () => {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (items) setGalleryItems(items);
+      if (items) setGalleryItems(items as GameDevItem[]);
       setIsLoading(false);
     };
 

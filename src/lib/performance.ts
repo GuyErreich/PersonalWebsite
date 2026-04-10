@@ -12,8 +12,10 @@ export const isLowEndDevice = (): boolean => {
   if (typeof window === "undefined") return false;
 
   // Check device memory (if available)
+  // Threshold of 2GB targets truly ancient/embedded devices (budget Android from 2019 or earlier).
+  // 4GB is mainstream mid-range in 2026 — do NOT flag those as low-end.
   const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
-  if (deviceMemory !== undefined && deviceMemory <= 4) {
+  if (deviceMemory !== undefined && deviceMemory <= 2) {
     return true;
   }
 
@@ -45,33 +47,36 @@ export const getCanvasDPR = (): number => {
   if (typeof window === "undefined") return 1;
 
   const devicePixelRatio = window.devicePixelRatio || 1;
-  const low = isLowEndDevice();
 
-  // Low-end: cap at 1.0 (native pixels, no upscaling)
-  // Mid-range: cap at min(2.0, actual DPR)
-  // High-end: cap at min(3.0, actual DPR)
-  if (low) {
+  // Truly low-end (<=2GB RAM): cap at 1.0 to save GPU bandwidth
+  if (isLowEndDevice()) {
     return Math.min(1.0, devicePixelRatio);
   }
 
+  // Mobile: cap at 1.5 — retina quality without 4x pixel cost of 3x DPR screens
+  if (window.innerWidth < 768) {
+    return Math.min(1.5, devicePixelRatio);
+  }
+
+  // Desktop/tablet: cap at 2.0 — covers retina, avoids 3x overkill
   return Math.min(2.0, devicePixelRatio);
 };
 
 /**
  * Determine if heavy hero effects should be rendered.
- * Disable on mobile, low-end, or when user prefers reduced motion.
+ * Only disables for explicit user preference or truly ancient hardware.
+ * Mobile devices with capable GPUs should still get the full experience.
  */
 export const shouldRenderHeavyEffects = (): boolean => {
   if (typeof window === "undefined") return true;
 
-  // Respect prefers-reduced-motion
+  // Respect explicit user preference — always honour this
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
     return false;
   }
 
-  // Disable on low-end and mobile
-  const isMobile = window.innerWidth < 768;
-  if (isMobile || isLowEndDevice()) {
+  // Only skip on genuinely incapable hardware (<=2GB RAM)
+  if (isLowEndDevice()) {
     return false;
   }
 
