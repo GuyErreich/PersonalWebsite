@@ -9,8 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      CLOUDFLARE_PAGES_PROJECT_NAME: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
     environment:
-      name: dev
+      name: ${{ github.ref_name == 'master' && 'production' || 'dev' }}
       url: ${{ steps.cloudflare.outputs.url }}
     permissions:
       contents: read
@@ -36,7 +37,7 @@ jobs:
 
       - name: Validate Cloudflare Pages config
         env:
-          CF_PAGES_PROJECT_NAME: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+          CF_PAGES_PROJECT_NAME: ${{ env.CLOUDFLARE_PAGES_PROJECT_NAME }}
         run: |
           if [ -z "$CF_PAGES_PROJECT_NAME" ]; then
             echo "Missing Cloudflare Pages project name."
@@ -50,7 +51,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+          projectName: ${{ env.CLOUDFLARE_PAGES_PROJECT_NAME }}
           directory: "dist"
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref || github.ref_name }} # master deploys production if set as Pages production branch
+          branch: ${{ github.head_ref || github.ref_name }} # master should match the Pages production branch setting
