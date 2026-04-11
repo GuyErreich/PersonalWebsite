@@ -34,7 +34,7 @@ export const SectionEntranceOverlay = ({ theme, children }: SectionEntranceOverl
   const isInView = useInView(ref, {
     once: true,
     amount: 0.3,
-    root: container?.current ?? undefined,
+    root: container ?? undefined,
   });
 
   useEffect(() => {

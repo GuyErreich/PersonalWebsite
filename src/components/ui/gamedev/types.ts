@@ -1,0 +1,20 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
+import type { ElementType } from "react";
+
+export interface GameDevItem {
+  id: string;
+  title: string;
+  description: string;
+  media_url: string;
+  thumbnail_url?: string;
+  icon_name?: string;
+  github_url?: string;
+  live_url?: string;
+}
+
+export type GameDevIconMap = Record<string, ElementType>;
