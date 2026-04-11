@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useOrchestrator } from "../../../../lib/AnimationContext";
 import { AnimationOrchestrator, useBuildOrchestrator } from "../../../../lib/AnimationOrchestrator";
 import { AnimationProvider } from "../../../../lib/AnimationProvider";
@@ -25,6 +25,8 @@ export const Implosion = ({
   blueDustParticleCount?: number;
   dustParticleCount?: number;
 }) => {
+  const { size } = useThree();
+  const isMobile = size.width / size.height < 1;
   const masterOrchestrator = useOrchestrator();
   const masterProxy = masterOrchestrator.getProxy("implosion_scene");
 
@@ -55,7 +57,7 @@ export const Implosion = ({
 
   return (
     <AnimationProvider orchestrator={orchestrator}>
-      <group>
+      <group scale={isMobile ? 0.6 : 1}>
         <ImplosionRings />
         <ImplosionCore />
         <ImplosionRipples />

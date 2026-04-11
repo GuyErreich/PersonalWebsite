@@ -42,12 +42,11 @@ const ResponsiveCamera = () => {
     let targetZ = 5;
 
     // When the screen is narrow (portrait on mobile), the horizontal view frustum shrinks.
-    // Instead of warping the lens (FOV), we simply physically pull the camera backwards
-    // down the Z-axis proportionally to how narrow the screen is.
+    // Pull the camera back just enough so the full scene width (±2.2 units) stays in frame.
+    // Formula: targetZ = sceneHalfWidth / (aspect * tan(FOV/2))
+    // = 2.2 / (aspect * tan(25°)) ≈ 4.72 / aspect, clamped to minimum 5 (desktop default).
     if (aspect < 1) {
-      // Pull further back more drastically on mobile screens so the entire
-      // width of the animation particles are caught in frame.
-      targetZ = 5 * (2.2 / aspect);
+      targetZ = Math.max(5, 4.72 / aspect);
     }
 
     camera.position.z = targetZ;
