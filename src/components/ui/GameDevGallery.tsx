@@ -10,7 +10,7 @@ import { useContext, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { GitHubIcon } from "./BrandIcons";
-import type { GameDevItem } from "./gamedev/types";
+import type { GameDevItem } from "./gamedev/common/types";
 import { SectionRevealContext } from "./sectionRevealContext";
 
 // ── Sub-components so hooks can be called per-item in mapped lists ──────────
