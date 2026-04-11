@@ -18,3 +18,18 @@ export interface GameDevItem {
 }
 
 export type GameDevIconMap = Record<string, ElementType>;
+
+export interface GameDevGalleryPanelProps {
+  galleryItems: GameDevItem[];
+  isLoading: boolean;
+  iconMap: GameDevIconMap;
+}
+
+export interface GameDevOverviewLayoutProps extends GameDevGalleryPanelProps {
+  showreelUrl: string | null;
+  onViewAll: () => void;
+}
+
+export interface GameDevAllProjectsLayoutProps extends GameDevGalleryPanelProps {
+  onBack: () => void;
+}
