@@ -19,6 +19,7 @@ import { ChevronDown, Mail } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type * as THREE from "three";
 import { getCanvasDPR, shouldRenderHeavyEffects } from "../lib/performance";
+import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
 import { ReverseHyperspace } from "./backgrounds/three/hero/ReverseHyperspace";
@@ -283,20 +284,23 @@ export const Hero = () => {
 
   const heroSectionRef = useRef<HTMLElement>(null);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
-  const { scrollY } = useScroll();
+  const scrollContainer = useScrollContainer();
+  const { scrollY } = useScroll({ container: scrollContainer ?? undefined });
   useMotionValueEvent(scrollY, "change", () => {
     if (!heroSectionRef.current) return;
-    setIsHeroVisible(heroSectionRef.current.getBoundingClientRect().bottom > 0);
+    const containerTop = scrollContainer?.current?.getBoundingClientRect().top ?? 0;
+    setIsHeroVisible(heroSectionRef.current.getBoundingClientRect().bottom > containerTop);
   });
 
   // Scroll-driven exit animations
   const { scrollYProgress: heroExitProgress } = useScroll({
+    container: scrollContainer ?? undefined,
     target: heroSectionRef,
     // 0 = hero fills viewport, 1 = hero bottom reaches viewport top
     offset: ["start start", "end start"],
   });
   return (
-    <section id="about" className="section-hero" ref={heroSectionRef}>
+    <section id="about" className="section-hero snap-section" ref={heroSectionRef}>
       {/* Replay Background Animation Lever - Desktop Only (Floating) */}
       <div
         id="lever-panel"

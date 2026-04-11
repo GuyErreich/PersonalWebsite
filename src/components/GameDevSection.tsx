@@ -24,10 +24,8 @@ import { useScrollReveal } from "../hooks/useScrollReveal";
 import { supabase } from "../lib/supabase";
 import { GamingIconsBackground } from "./backgrounds/tsparticles/GamingIconsBackground";
 import { GameDevGallery } from "./ui/GameDevGallery";
-import { HeroMediaSection } from "./ui/HeroMediaSection";
 import { SectionEdge } from "./ui/SectionEdge";
 import { SectionEntranceOverlay } from "./ui/SectionEntranceOverlay";
-import { SectionHeader } from "./ui/SectionHeader";
 import { ShowreelVideo } from "./ui/ShowreelVideo";
 
 const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
@@ -62,7 +60,7 @@ export const GameDevSection = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { ref: galleryRef, motionStyle: galleryMotionStyle } = useScrollReveal();
+  const { ref: sectionRef, motionStyle } = useScrollReveal();
 
   useEffect(() => {
     void (async () => {
@@ -98,52 +96,73 @@ export const GameDevSection = () => {
   }, []);
 
   return (
-    <div className="relative w-full">
-      {/* Hero → GameDev shaped edge — nebula horizon rising from above */}
-      {/* <SectionEdge variant="terrain" fillColor="#111827" inverted height={72} waveAmp={2.0} waveFreq={1.7} stormAmp={1.5} stormFreq={6} className="z-[55]" /> */}
-      {/* Shared ambient background — spans the full height of both sub-sections */}
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <MemoizedGamingIconsBackground id="gamedev-particles" />
-      </div>
-      {/* Top fade — echoes Hero space blue bleeding into the gaming world */}
-      <div
-        className="absolute inset-x-0 top-0 h-64 z-20 pointer-events-none"
-        style={{
-          background:
-            "linear-gradient(to bottom, #111827 0%, rgba(17,24,39,0.85) 22%, rgba(56,189,248,0.06) 60%, rgba(99,102,241,0.04) 80%, transparent 100%)",
-        }}
-      />
-      {/* GameDev → DevOps shaped edge — circuit board PCB trace silhouette */}
-      <SectionEdge variant="circuit" fillColor="#030712" height={160} className="z-20" />
-
-      {/* ── Section 1: Full-screen hero with title + showreel ── */}
-      <SectionEntranceOverlay theme="gamedev">
-        <HeroMediaSection
-          id="gamedev"
-          title="Game Development & Design"
-          description="Showcasing my journey in game development, from mechanics design to full-fledged prototypes."
-          sectionClassName="bg-gray-900/80"
-        >
-          <ShowreelVideo url={showreelUrl} />
-        </HeroMediaSection>
-      </SectionEntranceOverlay>
-      {/* ── Section 2: Full-screen gallery ── */}
+    <SectionEntranceOverlay theme="gamedev">
       <section
-        id="gamedev-gallery"
-        ref={galleryRef}
-        className="min-h-[100svh] flex flex-col items-center justify-center relative z-10 py-20 bg-gray-900/80"
+        id="gamedev"
+        ref={sectionRef}
+        className="snap-section section-screen w-full bg-gray-900/80"
       >
+        <div className="absolute inset-0 z-0 pointer-events-none">
+          <MemoizedGamingIconsBackground id="gamedev-particles" />
+        </div>
+        <div
+          className="absolute inset-x-0 top-0 h-64 z-20 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(to bottom, #111827 0%, rgba(17,24,39,0.85) 22%, rgba(56,189,248,0.06) 60%, rgba(99,102,241,0.04) 80%, transparent 100%)",
+          }}
+        />
+        <div className="section-bottom-fade" />
         <motion.div
-          style={galleryMotionStyle}
-          className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center gap-12"
+          style={motionStyle}
+          className="relative z-10 mx-auto flex h-full w-full max-w-7xl items-center px-4 sm:px-6 lg:px-8"
         >
-          <SectionHeader
-            title="Projects & Prototypes"
-            description="A curated look at the games and interactive experiences I've built."
-          />
-          <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
+          <div className="grid h-full w-full grid-cols-1 items-center gap-6 py-20 md:gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] lg:gap-10 lg:py-24">
+            <div className="flex min-h-0 flex-col justify-center gap-6 lg:gap-8">
+              <div className="max-w-2xl text-center lg:text-left">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.28em] text-cyan-300/80">
+                  Game Development
+                </p>
+                <h2 className="mb-4 text-3xl font-extrabold text-white md:text-4xl lg:text-5xl">
+                  Showreel And Prototypes In One View
+                </h2>
+                <p className="text-base text-gray-300 md:text-lg lg:text-xl">
+                  A tighter cinematic view of the work: the reel on one side, featured prototypes on
+                  the other, without forcing an extra pager stop.
+                </p>
+              </div>
+              <ShowreelVideo url={showreelUrl} className="max-w-none" />
+            </div>
+
+            <div className="flex min-h-0 flex-col justify-center rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/72 p-4 shadow-[0_20px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl sm:p-5 lg:h-auto lg:p-6">
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300/80">
+                    Featured Gallery
+                  </p>
+                  <h3 className="text-xl font-bold text-white sm:text-2xl">
+                    Projects & Prototypes
+                  </h3>
+                </div>
+                <p className="hidden text-right text-xs uppercase tracking-[0.18em] text-gray-400 sm:block">
+                  {galleryItems.length || 0} items
+                </p>
+              </div>
+              <p className="mb-5 max-w-xl text-sm text-gray-400 sm:text-base">
+                On mobile this becomes a compact swipe rail. On larger screens it locks into a
+                two-column preview grid beside the reel.
+              </p>
+              <GameDevGallery
+                items={galleryItems}
+                iconMap={iconMap}
+                isLoading={isLoading}
+                compact
+              />
+            </div>
+          </div>
         </motion.div>
+        <SectionEdge variant="circuit" fillColor="#030712" height={160} className="z-20" />
       </section>
-    </div>
+    </SectionEntranceOverlay>
   );
 };

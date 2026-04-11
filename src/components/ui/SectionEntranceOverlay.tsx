@@ -8,6 +8,7 @@ import { AnimatePresence, useInView } from "framer-motion";
 import Cookies from "js-cookie";
 import type { ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
+import { useScrollContainer } from "../../lib/ScrollContainerContext";
 import { DevOpsOverlay } from "./DevOpsOverlay";
 import { GameDevOverlay } from "./GameDevOverlay";
 import type { EntranceTheme } from "./sectionRevealContext";
@@ -29,7 +30,12 @@ export const SectionEntranceOverlay = ({ theme, children }: SectionEntranceOverl
   const [hasCookie] = useState(() => !!Cookies.get(COOKIE_MAP[theme]));
   const [state, setState] = useState<"idle" | "playing" | "done">("idle");
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, amount: 0.3 });
+  const container = useScrollContainer();
+  const isInView = useInView(ref, {
+    once: true,
+    amount: 0.3,
+    root: container?.current ?? undefined,
+  });
 
   useEffect(() => {
     if (

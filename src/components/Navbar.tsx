@@ -7,6 +7,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X as CloseIcon, Code2, Gamepad2, Menu as MenuIcon, Terminal, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useScrollContainer } from "../lib/ScrollContainerContext";
 import {
   playClickSound,
   playHoverSound,
@@ -19,18 +20,35 @@ export const Navbar = () => {
   const previousOverflow = useRef("");
   const [scrolled, setScrolled] = useState(false);
   const [mouseNearTop, setMouseNearTop] = useState(false);
+  const scrollContainer = useScrollContainer();
+
+  const navigateToSection = (href: string) => {
+    const id = href.replace("#", "");
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // Auto-hide on scroll; reveal when mouse returns to top strip
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
+    const container = scrollContainer?.current;
+    const onScroll = () => setScrolled((container?.scrollTop ?? window.scrollY) > 80);
     const onMouseMove = (e: MouseEvent) => setMouseNearTop(e.clientY < 48);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    if (container) {
+      container.addEventListener("scroll", onScroll, { passive: true });
+    } else {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    }
     window.addEventListener("mousemove", onMouseMove, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      if (container) {
+        container.removeEventListener("scroll", onScroll);
+      } else {
+        window.removeEventListener("scroll", onScroll);
+      }
       window.removeEventListener("mousemove", onMouseMove);
     };
-  }, []);
+  }, [scrollContainer]);
 
   const navVisible = !scrolled || mouseNearTop;
 
@@ -118,7 +136,11 @@ export const Navbar = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onMouseEnter={playHoverSound}
-                      onClick={playClickSound}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        playClickSound();
+                        navigateToSection(link.href);
+                      }}
                       className="flex items-center space-x-3 px-3 py-2 rounded-xl group hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
                     >
                       <div className="flex-shrink-0 p-2 rounded-lg bg-gray-900 shadow-[inset_0_2px_10px_rgba(0,0,0,0.8)] group-hover:shadow-[0_0_15px_rgba(6,182,212,0.2)] border border-gray-800 group-hover:border-cyan-500/30 transition-all duration-300">
@@ -221,9 +243,11 @@ export const Navbar = () => {
                       whileHover={{ scale: 1.02, x: 8 }}
                       whileTap={{ scale: 0.98 }}
                       onMouseEnter={playHoverSound}
-                      onClick={() => {
+                      onClick={(event) => {
+                        event.preventDefault();
                         playClickSound();
                         playMenuCloseSound();
+                        navigateToSection(link.href);
                         setMobileOpen(false);
                       }}
                       className="flex items-center space-x-4 group p-3 rounded-xl hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"

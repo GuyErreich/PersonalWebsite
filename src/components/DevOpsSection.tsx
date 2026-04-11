@@ -57,7 +57,8 @@ export const DevOpsSection = () => {
     <SectionEntranceOverlay theme="devops">
       <SectionWrapper
         id="devops"
-        className="py-12 md:py-16 bg-gray-950"
+        className="section-screen bg-gray-950"
+        bottomFadeClassName="h-28 md:h-200"
         background={
           <div className="absolute inset-0 pointer-events-none opacity-40">
             <Canvas camera={{ position: [0, 0, 8], fov: 50 }} dpr={canvasDPR}>
