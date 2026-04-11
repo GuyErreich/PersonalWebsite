@@ -9,7 +9,7 @@ import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useOrchestrator } from "../../../../../lib/AnimationContext";
 
-export const StarParticles = () => {
+export const StarParticles = ({ minRadius = 1.0 }: { minRadius?: number }) => {
   const orchestrator = useOrchestrator();
   const proxy = orchestrator.getProxy("stars");
 
@@ -30,7 +30,7 @@ export const StarParticles = () => {
       const sSeeds = new Float32Array(particleCount);
 
       for (let i = 0; i < particleCount; i++) {
-        const r = 1.0 + Math.random() * 14.0;
+        const r = minRadius + Math.random() * (15.0 - minRadius);
         const theta = 2 * Math.PI * Math.random();
 
         const x = r * Math.cos(theta);
@@ -59,7 +59,7 @@ export const StarParticles = () => {
       }
 
       return [pos, spd, offs, cols, noiseDir, aSeeds, sSeeds];
-    }, [particleCount]);
+    }, [particleCount, minRadius]);
 
   const positions = useMemo(() => new Float32Array(initialPositions), [initialPositions]);
 
@@ -78,27 +78,27 @@ export const StarParticles = () => {
     varying vec3 vColor;
     varying float vAngleSeed;
     varying float vSizeSeed;
-    
+
     void main() {
       vColor = color;
       vAngleSeed = angleSeed;
       vSizeSeed = sizeSeed;
-      
+
       vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
       gl_Position = projectionMatrix * mvPosition;
-      
+
       // Size distribution logic perfectly mapped to a 1 - 10 conceptual scale:
       // 95% of the stars map to sizes between 1.0 and 6.5
       // The top 5% of stars map to sizes between 7.5 and 10.0
-      float conceptualSize = (vSizeSeed < 0.95) 
-          ? (1.0 + (vSizeSeed / 0.95) * 5.5) 
+      float conceptualSize = (vSizeSeed < 0.95)
+          ? (1.0 + (vSizeSeed / 0.95) * 5.5)
           : (7.5 + ((vSizeSeed - 0.95) / 0.05) * 2.5);
-          
+
       // Convert the 1-10 size into a multiplier that fits the 3D screen rendering
       float randomScale = conceptualSize * 0.15;
-      
+
       float twinkle = randomScale * (0.8 + 0.2 * sin(uTime * 3.0 + vAngleSeed * 10.0));
-      
+
       // Re-enable camera depth attenuation so 3D panning works, but multiply by our massive random scale variance
       gl_PointSize = 150.0 * (1.0 / -mvPosition.z) * twinkle;
     }
@@ -114,34 +114,34 @@ export const StarParticles = () => {
       // Standardize coordinates so center of the billboard is 0,0
       vec2 uv = gl_PointCoord.xy - vec2(0.5);
       float dist = length(uv);
-      
+
       // Cut off edges mathematically
       if (dist > 0.5) discard;
 
       // 1. Core Glowing Body
-      float core = exp(-dist * 12.0) * 0.8; 
+      float core = exp(-dist * 12.0) * 0.8;
       core += exp(-dist * 25.0) * 1.5; // Burning hot center point
 
       // 2. Animated Radiating Spikes (Light Breakage)
       float angle = atan(uv.y, uv.x);
-      
+
       // Give them a massive continuous variety of base prongs (from 2 to 14!)
       // By using two distinct integer prongs, they will mathematically destruct and form infinite new shapes
-      float prongs1 = floor(vAngleSeed * 12.0) + 2.0; 
-      float prongs2 = floor(vSizeSeed * 8.0) + 2.0; 
-      
+      float prongs1 = floor(vAngleSeed * 12.0) + 2.0;
+      float prongs2 = floor(vSizeSeed * 8.0) + 2.0;
+
       // Give each star a totally unique, continuous rotation speed and direction
       float rot1 = angle + uTime * (0.1 + vAngleSeed * 0.4);
       float rot2 = angle - uTime * (0.1 + vSizeSeed * 0.4);
-      
+
       // Calculate overlapping wrap-safe sine waves
       float wave1 = sin(rot1 * prongs1);
       float wave2 = sin(rot2 * prongs2);
-      
+
       // The flares ONLY appear where wave 1 and wave 2 collide (Constructive Interference)
       // This makes flares appear and disappear organically around the star
       float breakage = max(0.0, wave1 * wave2);
-      
+
       // Randomly scale each individual ray independently to create a rapid micro-flicker on the spikes
       // By locking the phase index to the ROTATING wave (rot1 * prongs1) instead of the static screen angle,
       // the ray doesn't "cross" static boundaries which was causing chaotic stuttering.
@@ -150,22 +150,22 @@ export const StarParticles = () => {
       float randomPhase = fract(sin(rayIndex * 12.9898 + vSizeSeed * 78.233) * 43758.5453);
       float rayFlicker = 0.7 + 0.3 * sin(uTime * 3.0 + randomPhase * 10.0);
       breakage *= rayFlicker;
-      
+
       // Continuously randomize the thickness/sharpness of the beams per star
       // Some will have fat glowing streaks, others will have razor-thin laser needles
       float sharpness = 2.0 + (vAngleSeed * 8.0);
       breakage = pow(breakage, sharpness);
-      
+
       // Continuously vary the length of the spikes so they aren't bound in a uniform circle
-      float lengthFalloff = 4.0 + (vSizeSeed * 12.0); 
+      float lengthFalloff = 4.0 + (vSizeSeed * 12.0);
       float spikeFlare = breakage * exp(-dist * lengthFalloff) * (4.0 + vAngleSeed * 8.0);
-      
+
       // Blend everything cleanly into an alpha channel
       float finalAlpha = core + spikeFlare;
-      
+
       // Give a smooth boundary to eliminate rough cuts at the absolute edges
       finalAlpha *= smoothstep(0.5, 0.4, dist);
-      
+
       // Multiply color by an emissive factor (2.5) to make the stars "glow" via HDR tone mapping over-saturation.
       gl_FragColor = vec4(vColor * 2.5, finalAlpha);
     }
@@ -215,7 +215,7 @@ export const StarParticles = () => {
   });
 
   return (
-    <points ref={particlesRef} visible={false}>
+    <points ref={particlesRef} visible={false} renderOrder={-1}>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"

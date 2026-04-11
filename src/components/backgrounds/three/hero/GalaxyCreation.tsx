@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import type * as THREE from "three";
 import { useOrchestrator } from "../../../../lib/AnimationContext";
@@ -22,6 +22,8 @@ import { useShockwaveSound } from "./galaxy/useShockwaveSound";
 import { useStarsSound } from "./galaxy/useStarsSound";
 
 export const GalaxyCreation = ({ skipIntro = false }: { skipIntro?: boolean }) => {
+  const { size } = useThree();
+  const isMobile = size.width / size.height < 1;
   const masterOrchestrator = useOrchestrator();
   const masterProxy = masterOrchestrator.getProxy("galaxy_scene");
 
@@ -72,14 +74,16 @@ export const GalaxyCreation = ({ skipIntro = false }: { skipIntro?: boolean }) =
   return (
     <AnimationProvider orchestrator={orchestrator}>
       <group>
-        <group ref={systemRef} position={[0, -1, -5]}>
-          <IcosahedronSun />
-          <SonarRipples />
+        <group scale={isMobile ? 1.6 : 1}>
+          <StarParticles minRadius={isMobile ? 3 : 1} />
+        </group>
+        <group ref={systemRef} position={[0, -1, isMobile ? -2.2 : -5]}>
           <OrbitingShapes />
           <DysonSphere />
+          <IcosahedronSun />
+          <SonarRipples />
         </group>
         <Shockwave />
-        <StarParticles />
       </group>
     </AnimationProvider>
   );

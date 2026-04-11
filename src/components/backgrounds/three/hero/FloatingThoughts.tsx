@@ -5,7 +5,7 @@
  */
 
 import { Text } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useOrchestrator } from "../../../../lib/AnimationContext";
@@ -13,6 +13,10 @@ import { useThoughtsSound } from "./useThoughtsSound";
 
 export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const { size } = useThree();
+  const isMobile = size.width / size.height < 1;
+  const fontSize = isMobile ? 0.165 : 0.25;
+  const maxWidth = isMobile ? 1.85 : 3.5;
   const orchestrator = useOrchestrator();
   const thoughtsProxy = orchestrator.getProxy("thoughts");
   const suckProxy = orchestrator.getProxy("camera-suck");
@@ -43,19 +47,25 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
       { x: 2.2, y: -1.0, z: -1.5 },
       { x: -2.2, y: -1.8, z: -2.5 },
     ];
-    // Optionally, scale down for mobile screens
-    const isMobile = window.innerWidth < 640;
-    const scale = isMobile ? 0.7 : 1.0;
-    const shuffledPositions = [...basePositions]
-      .map((pos) => ({
-        x: pos.x * scale,
-        y: pos.y * scale,
-        z: pos.z,
-      }))
-      .sort(() => Math.random() - 0.5);
+    const mobilePositions = [
+      { x: -0.42, y: 1.55, z: -3.8 },
+      { x: 0.42, y: 0.72, z: -3.7 },
+      { x: 0.0, y: -0.08, z: -3.6 },
+      { x: -0.42, y: -0.88, z: -3.7 },
+      { x: 0.42, y: -1.72, z: -3.8 },
+    ];
+    const positions = isMobile
+      ? mobilePositions
+      : [...basePositions]
+          .map((pos) => ({
+            x: pos.x,
+            y: pos.y,
+            z: pos.z,
+          }))
+          .sort(() => Math.random() - 0.5);
 
     return thoughts.map((text, i) => {
-      const { x, y, z } = shuffledPositions[i];
+      const { x, y, z } = positions[i];
       const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
       return {
         text,
@@ -68,7 +78,7 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
         delay: i * 0.6,
       };
     });
-  }, [thoughts]);
+  }, [thoughts, isMobile]);
 
   useFrame(() => {
     // Rely exclusively on orchestrator proxy time
@@ -88,8 +98,9 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
 
       const elementT = Math.max(0, activeT - item.delay);
 
-      const floatX = Math.sin(elementT * 1.5 + i) * 0.05;
-      const floatY = Math.cos(elementT * 1.0 + i) * 0.05;
+      const floatAmp = isMobile ? 0.02 : 0.05;
+      const floatX = Math.sin(elementT * 1.5 + i) * floatAmp;
+      const floatY = Math.cos(elementT * 1.0 + i) * floatAmp;
 
       let currentX = item.x + floatX;
       let currentY = item.y + floatY;
@@ -140,8 +151,8 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
         <group key={i} ref={item.ref} visible={false}>
           <Text
             ref={item.textRef}
-            fontSize={0.25}
-            maxWidth={3.5}
+            fontSize={fontSize}
+            maxWidth={maxWidth}
             textAlign="center"
             anchorX="center"
             anchorY="middle"
