@@ -64,7 +64,6 @@ export const ThreeHeroBackground = ({ skipIntro = false }: { skipIntro?: boolean
 
   return (
     <>
-      <fog attach="fog" args={["#111827", 20, 60]} />
       <ambientLight intensity={0.2} />
 
       {/* 3 Point Lighting System */}
