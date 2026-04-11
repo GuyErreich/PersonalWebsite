@@ -77,6 +77,14 @@ const FRAG = /* glsl */ `
       + 0.06 * sin(x * 9.1  + uTime * 0.72 - 0.8 )
       + 0.03 * sin(x * 20.8 - uTime * 1.75 + 3.7 );
 
+    // Lift the signal band slightly so it does not clip against the bottom border.
+    float yOffset = -0.24;
+    w0 += yOffset;
+    w1 += yOffset;
+    w2 += yOffset;
+    w3 += yOffset;
+    w4 += yOffset;
+
     // ── Pixel-space distances for DPR-independent glow widths ─────────────
     float py = y * uRes.y;
     float d0 = abs(py - w0 * uRes.y);
@@ -106,7 +114,8 @@ const FRAG = /* glsl */ `
     float g3 = exp(-d3 * 1.2) * 1.3 + exp(-d3 * 0.15) * 0.45 + exp(-d3 * 0.04) * 0.10;
     float g4 = exp(-d4 * 1.2) * 1.3 + exp(-d4 * 0.15) * 0.45 + exp(-d4 * 0.04) * 0.10;
 
-    vec3 col = vec3(0.010, 0.015, 0.038);   // near-black bg tint
+    // Solid base so the edge is not transparent inside the band.
+    vec3 col = uFill;
     col += c0 * g0 * p0;
     col += c1 * g1 * p1;
     col += c2 * g2 * p2;
@@ -116,23 +125,40 @@ const FRAG = /* glsl */ `
     // ── Faint sweeping scan line — slow horizontal band drifting upward ───
     float scanY  = fract(uTime * 0.27) * 0.55 + 0.28;
     float scanDy = abs(y - scanY) * uRes.y;
-    col += vec3(0.30, 0.55, 0.85) * exp(-scanDy * 0.16) * 0.18;
+    col += vec3(0.30, 0.55, 0.85) * exp(-scanDy * 0.16) * 0.09;
 
-    // ── Fill zone: bottom strip blends to uFill ────────────────────────────
-    float wMin     = min(min(w0, w1), min(w2, min(w3, w4)));
-    float fillY    = wMin - 0.15;
-    float aboveFill = smoothstep(fillY - 0.04, fillY + 0.04, y);
-    col = mix(uFill, col, aboveFill);
-    // Bottom seal — also blends fill over bottom 38%
-    float seal = smoothstep(0.0, 0.38, y);
-    col = mix(uFill, col, seal);
+    // Slightly softer gain so section seam colours remain visible.
+    col *= 1.08;
 
-    // ── Alpha: opaque in wave zone, fade to transparent at canvas top ──────
-    float wMax = max(max(w0, w1), max(w2, max(w3, w4))) + 0.08;
-    float alpha = mix(1.0, 0.0, smoothstep(wMax - 0.04, wMax + 0.14, y));
-    // Ensure fill zone and seal zone are always fully opaque
-    alpha = max(alpha, 1.0 - aboveFill);
-    alpha = max(alpha, 1.0 - seal);
+    // ── Fixed straight borders for signal band ─────────────────────────────
+    // Bottom border is a perfectly straight line filled with section color.
+    float bandBottom = 0.09;
+    // Top border pulled down so wave-to-border gap matches the bottom spacing.
+    float bandTop = 0.56;
+
+    // Smudged straight borders: keep lines straight but feather their transition.
+    float borderNoise = (fract(sin(dot(floor(gl_FragCoord.xy), vec2(12.9898, 78.233))) * 43758.5453) - 0.5) * 0.0032;
+    float bottomFeather = 0.042;
+    float topFeather = 0.078;
+
+    // 0 below bottom border, 1 inside the signal band (with feather + dither).
+    float bottomMask = smoothstep(
+      bandBottom - bottomFeather,
+      bandBottom + bottomFeather,
+      y + borderNoise
+    );
+    // Keep fill-colour sealing only on the seam, not across the full lower band.
+    float fillBlend = smoothstep(bandBottom - 0.010, bandBottom + 0.012, y + borderNoise);
+    col = mix(uFill, col, fillBlend);
+
+    // 1 inside signal band, 0 above top border (with feather + dither).
+    float topMask = 1.0 - smoothstep(
+      bandTop - topFeather,
+      bandTop + topFeather,
+      y + borderNoise
+    );
+    // Mostly opaque within the band, but let seam colour read through a touch.
+    float alpha = clamp(bottomMask * topMask * 0.88, 0.0, 1.0);
 
     gl_FragColor = vec4(col, clamp(alpha, 0.0, 1.0));
   }

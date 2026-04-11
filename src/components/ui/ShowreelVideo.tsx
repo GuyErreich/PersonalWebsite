@@ -73,7 +73,23 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       transition={{ duration: hasCookie ? 0 : 0.7 }}
       className={`w-full max-w-5xl mx-auto ${className}`}
     >
-      <div className="relative w-full aspect-video overflow-hidden rounded-xl shadow-2xl border border-gray-700/50 bg-black">
+      <div className="relative w-full aspect-video overflow-hidden rounded-xl border border-cyan-300/20 bg-black shadow-[0_0_0_1px_rgba(56,189,248,0.18),0_28px_80px_rgba(2,6,23,0.75)]">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-xl"
+          style={{
+            boxShadow:
+              "inset 0 0 0 1px rgba(34,211,238,0.25), inset 0 0 42px rgba(34,211,238,0.12), 0 0 58px rgba(16,185,129,0.12)",
+          }}
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-[1] rounded-xl"
+          style={{
+            background:
+              "radial-gradient(120% 80% at 0% 0%, rgba(56,189,248,0.24) 0%, rgba(56,189,248,0) 42%), radial-gradient(120% 80% at 100% 100%, rgba(16,185,129,0.22) 0%, rgba(16,185,129,0) 42%)",
+          }}
+        />
         {url ? (
           <>
             {/* Looping preview — blurred and dimmed until play */}
@@ -108,7 +124,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                 <motion.div
                   initial={{ opacity: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.5 } }}
-                  className="absolute inset-0 flex flex-col items-center justify-center z-10"
+                  className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 py-6 md:py-8"
                 >
                   {/* Animated per-letter SHOWREEL title */}
                   <motion.div
@@ -124,7 +140,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                         variants={letterVariants}
                         className={`inline-block font-extrabold leading-none text-transparent bg-clip-text bg-gradient-to-br ${LETTER_GRADIENTS[i]} select-none`}
                         style={{
-                          fontSize: "clamp(2rem, 7.5vw, 5.5rem)",
+                          fontSize: "clamp(1.8rem, 6.8vw, 4.9rem)",
                           letterSpacing: "0.04em",
                           filter: "drop-shadow(0 0 18px rgba(34,211,238,0.35))",
                         }}
