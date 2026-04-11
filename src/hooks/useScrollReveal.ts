@@ -7,6 +7,7 @@
 import type { MotionValue } from "framer-motion";
 import { useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
+import { useScrollContainer } from "../lib/ScrollContainerContext";
 
 /**
  * Scroll-driven reveal with viewport-anchored fade zones.
@@ -23,15 +24,18 @@ import { useRef } from "react";
  */
 export const useScrollReveal = () => {
   const ref = useRef<HTMLElement>(null);
+  const container = useScrollContainer();
 
   // 0→1 as section top travels through the bottom 10% of the viewport
   const { scrollYProgress: enterProgress } = useScroll({
+    container: container ?? undefined,
     target: ref,
     offset: ["start end", "start 0.9"],
   });
 
   // 0→1 as section bottom travels through the top 5% of the viewport
   const { scrollYProgress: exitProgress } = useScroll({
+    container: container ?? undefined,
     target: ref,
     offset: ["end 0.05", "end start"],
   });

@@ -13,6 +13,7 @@ interface SectionWrapperProps {
   className?: string;
   children: ReactNode;
   background?: ReactNode;
+  bottomFadeClassName?: string;
 }
 
 export const SectionWrapper = ({
@@ -20,21 +21,22 @@ export const SectionWrapper = ({
   className = "py-12 md:py-16 bg-gray-900",
   children,
   background,
+  bottomFadeClassName = "",
 }: SectionWrapperProps) => {
   const { ref, motionStyle } = useScrollReveal();
 
   return (
-    <section id={id} ref={ref} className={`overflow-hidden relative ${className}`}>
+    <section id={id} ref={ref} className={`snap-section overflow-hidden relative ${className}`}>
       {background && (
         <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">{background}</div>
       )}
       {/* Top fade — echoes GameDev emerald trailing into the DevOps world */}
       <div className="section-top-fade" />
       {/* DevOps → Footer: smooth gradient dissolve into footer bg */}
-      <div className="section-bottom-fade" />
+      <div className={`section-bottom-fade ${bottomFadeClassName}`.trim()} />
       <motion.div
         style={motionStyle}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full h-full flex flex-col justify-center"
       >
         {children}
       </motion.div>

@@ -12,6 +12,7 @@ import { playClickSound, playHoverSound } from "../../lib/sound/interactionSound
 
 interface ShowreelVideoProps {
   url: string | null;
+  className?: string;
 }
 
 const TITLE_LETTERS = "SHOWREEL".split("");
@@ -27,7 +28,7 @@ const LETTER_GRADIENTS = [
   "from-emerald-400 to-cyan-300",
 ];
 
-export const ShowreelVideo = ({ url }: ShowreelVideoProps) => {
+export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const hasCookie = !!Cookies.get("hero_visited");
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -70,7 +71,7 @@ export const ShowreelVideo = ({ url }: ShowreelVideoProps) => {
       whileInView={{ opacity: 1, scale: 1 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: hasCookie ? 0 : 0.7 }}
-      className="w-full max-w-5xl mx-auto"
+      className={`w-full max-w-5xl mx-auto ${className}`}
     >
       <div className="relative w-full aspect-video overflow-hidden rounded-xl shadow-2xl border border-gray-700/50 bg-black">
         {url ? (

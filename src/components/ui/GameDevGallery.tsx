@@ -133,14 +133,87 @@ interface GameDevGalleryProps {
   items: GameDevItem[];
   iconMap: Record<string, React.ElementType>;
   isLoading?: boolean;
+  compact?: boolean;
 }
 
-export const GameDevGallery = ({ items, iconMap, isLoading = false }: GameDevGalleryProps) => {
+export const GameDevGallery = ({
+  items,
+  iconMap,
+  isLoading = false,
+  compact = false,
+}: GameDevGalleryProps) => {
   const isRevealed = useContext(SectionRevealContext);
   const headerRef = useRef<HTMLDivElement>(null);
   const headerInView = useInView(headerRef, { once: true });
 
   const isVideo = (url: string) => url.match(/\.(mp4|webm|ogg)$/i) != null;
+
+  if (compact) {
+    const featuredItems = items.slice(0, 4);
+
+    return (
+      <div className="w-full">
+        {isLoading ? (
+          <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="min-w-[220px] sm:min-w-0 aspect-[4/5] bg-gray-700/40 rounded-2xl animate-pulse"
+              />
+            ))}
+          </div>
+        ) : featuredItems.length > 0 ? (
+          <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible">
+            {featuredItems.map((item, index) => (
+              <motion.a
+                key={item.id}
+                href={item.live_url ?? item.github_url ?? item.media_url}
+                target="_blank"
+                rel="noreferrer"
+                whileHover={{ scale: 1.02, y: -3 }}
+                whileTap={{ scale: 0.98 }}
+                onMouseEnter={playHoverSound}
+                onClick={playClickSound}
+                initial={{ opacity: 0, y: 24 }}
+                animate={isRevealed && headerInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+                transition={{ duration: 0.35, delay: isRevealed ? 0.15 + index * 0.08 : 0 }}
+                className="group relative min-w-[220px] sm:min-w-0 aspect-[4/5] overflow-hidden rounded-2xl border border-white/10 bg-gray-800/55"
+              >
+                {isVideo(item.media_url) ? (
+                  <video
+                    src={item.media_url}
+                    poster={item.thumbnail_url}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    className="h-full w-full object-cover opacity-75 transition-all duration-300 group-hover:scale-105 group-hover:opacity-100"
+                  />
+                ) : (
+                  <img
+                    src={item.thumbnail_url ?? item.media_url}
+                    alt={item.title}
+                    className="h-full w-full object-cover opacity-75 transition-all duration-300 group-hover:scale-105 group-hover:opacity-100"
+                  />
+                )}
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-gray-950 via-gray-950/85 to-transparent p-4">
+                  <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-cyan-300/80">
+                    <Gamepad2 className="h-3.5 w-3.5" />
+                    Featured
+                  </div>
+                  <p className="line-clamp-2 text-sm font-semibold text-white">{item.title}</p>
+                </div>
+              </motion.a>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-gray-700 p-8 text-gray-500">
+            No projects added yet.
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">

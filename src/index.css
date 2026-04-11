@@ -22,6 +22,25 @@ body {
   @apply bg-gray-900 text-gray-100 font-sans antialiased;
 }
 
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.viewport-pager {
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
+}
+
+.viewport-scroll-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.viewport-scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+
 @layer components {
   /*
     Section overlay fades — shared across SectionWrapper instances.
@@ -45,12 +64,21 @@ body {
     background: linear-gradient(to bottom, transparent 0%, #030712 100%);
   }
 
-  /* 
+  /*
     Responsive Hero Layout Section
     Symmetrical py limits so `justify-center` keeps it vertically perfect inside the view
   */
+  .section-screen {
+    @apply h-[100svh] min-h-[100svh] flex flex-col items-center justify-center relative overflow-hidden py-20;
+  }
+  @media (max-height: 700px) {
+    .section-screen {
+      @apply py-16;
+    }
+  }
+
   .section-hero {
-    @apply min-h-[100svh] flex flex-col items-center justify-center relative overflow-hidden bg-gray-900 py-20;
+    @apply h-[100svh] min-h-[100svh] flex flex-col items-center justify-center relative overflow-hidden bg-gray-900 py-20;
   }
   @media (max-height: 700px) {
     .section-hero {
@@ -58,7 +86,7 @@ body {
     }
   }
 
-  /* 
+  /*
     Adaptive Glass Card Layout
     Handles the squashing behavior for wide-but-short screens
   */

@@ -28,7 +28,11 @@ export const HeroMediaSection = ({
   const { ref, motionStyle } = useScrollReveal();
 
   return (
-    <section id={id} ref={ref} className={`section-hero w-full relative z-10 ${sectionClassName}`}>
+    <section
+      id={id}
+      ref={ref}
+      className={`section-hero snap-section w-full relative z-10 ${sectionClassName}`}
+    >
       <motion.div
         style={motionStyle}
         className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-0 flex flex-col items-center justify-center h-full"
