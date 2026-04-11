@@ -7,6 +7,13 @@ description: "Use when: adding, editing, or refactoring UI components that need 
 
 Everything should feel interactive and tactile in this project. Apply this skill whenever you are making UI components, buttons, menus, or interactive cards.
 
+### 0. Reuse Before Creating
+
+- Before creating a new interactive component, search for an existing shared button, panel shell, layout wrapper, hook, or CSS class that can be reused or extended.
+- Before adding new inline utility chains, check `src/styles/` for an existing named class and extend that file if the pattern is likely to repeat.
+- If the same interaction logic appears in two or more places, extract it immediately into a shared component or hook instead of duplicating it.
+- For feature folders with multiple responsive variants, keep shared pieces in `common/` and split layout-specific code into `desktop/` and `mobile/` files.
+
 ### 1. Motion & Micro-interactions
 
 - Replace standard HTML interactive tags (`<button>`, `<a>`) with Framer Motion equivalents (`<motion.button>`, `<motion.a>`).
@@ -67,3 +74,10 @@ export const InteractiveButton = () => {
   );
 };
 ```
+
+### 5. Extraction Triggers
+
+- Extract a shared component when two or more files repeat the same JSX structure with different labels or icons.
+- Extract a shared hook when two or more files repeat the same state or effect orchestration.
+- Extract a shared CSS class when two or more files repeat the same long utility-class chain.
+- Keep selector components thin: choose desktop/mobile/common composition in one place, but keep the actual layout implementations in dedicated files.
