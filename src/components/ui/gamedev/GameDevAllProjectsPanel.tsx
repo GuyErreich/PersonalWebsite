@@ -25,7 +25,7 @@ export const GameDevAllProjectsPanel = ({
 }: GameDevAllProjectsPanelProps) => {
   return (
     <div className="h-full w-full pt-2 pb-4 md:pt-3 md:pb-5 lg:pt-4 lg:pb-6">
-      <div className="flex h-full min-h-0 flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/76 p-4 shadow-[0_20px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl sm:p-5 lg:p-6">
+      <div className="flex min-h-0 self-start flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/80 p-4 md:max-h-[70svh] sm:p-5 lg:p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-cyan-300/80">
@@ -48,7 +48,7 @@ export const GameDevAllProjectsPanel = ({
             Back
           </motion.button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+        <div className="viewport-scroll-hidden min-h-0 flex-1 overflow-y-auto pr-1">
           <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
         </div>
       </div>
