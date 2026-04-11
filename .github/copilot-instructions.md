@@ -20,6 +20,8 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - **`src/components/`**: Reusable UI components. Subdivided into functional areas like `backgrounds/` (for 3D and particle effects), `ui/`, and `admin/`.
 - **`src/pages/`**: Main route components (`Home.tsx`, `Admin.tsx`, `Login.tsx`).
 - **`src/lib/`**: Utilities, contexts (`AnimationContext.tsx`, `AnimationOrchestrator.ts`), and Supabase configuration/storage clients.
+- **`src/hooks/`**: Reusable hooks organized by responsibility (for example `hooks/gamedev/`, `hooks/responsive/`). Do not place reusable hooks inside component folders.
+- **`src/styles/`**: Shared styles organized by responsibility. Put defaults in base files and shared reusable block classes in component-specific CSS files.
 
 ## Build and Test
 
@@ -33,10 +35,16 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - Ensure type safety with TypeScript; avoid `any` wherever possible.
 - Leverage the `AnimationOrchestrator` / `AnimationContext` in `src/lib/` for coordinating complex sequence animations across the site.
 - Separate complex visual components into their respective subdirectories (e.g., Three.js specific code lives in `components/backgrounds/three/`).
+- Reuse before creating: always search for an existing component, hook, or CSS class before adding a new one. Extend shared primitives when possible instead of creating near-duplicates.
+- For responsive UI, split shared building blocks from layout variants. Prefer `common/`, `desktop/`, and `mobile/` folders with thin selector components at the feature root.
+- Keep JSX focused on composition. Move repeated layout shells, interactive button logic, and long class chains into reusable components or named CSS classes.
+- Prefer a small number of meaningful container/wrapper layers. Do not add nested wrappers unless they provide a clear layout, semantics, or state boundary.
+- Use `.github/skills/ui-architecture/SKILL.md` when planning or reviewing feature-level UI structure and reuse boundaries.
 
 ## TypeScript & Lint Rules (enforced — zero tolerance)
 
 - **No duplication**: Any function copy-pasted across two or more files MUST be extracted to `src/lib/`. Parameterise the differing parts (e.g., a label string) instead of copying. See `.github/skills/code-quality/SKILL.md` §12.
+- **No UI duplication**: If layout structure, interaction wiring, or long utility-class chains are repeated across two or more UI files, extract them into a shared component, hook, or CSS class before continuing feature work.
 - **No `any`**: Use specific types or define a named `interface`/`type`. For vendor browser APIs use `(window as Window & { webkitAudioContext?: typeof AudioContext })` — never `(window as any)`.
 - **No `@ts-nocheck`**: Fix the underlying type issue instead. Add parameter types, cast materials to their concrete class (e.g., `THREE.ShaderMaterial`), and remove unused imports.
 - **No bare `catch (e) {}`**: Use `catch { }` (no binding) for intentional suppression, or log the error.
