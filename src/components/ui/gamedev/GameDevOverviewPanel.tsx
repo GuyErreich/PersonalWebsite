@@ -30,7 +30,7 @@ export const GameDevOverviewPanel = ({
     <div className="grid h-full w-full grid-cols-1 items-start gap-4 pt-2 pb-4 md:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] md:items-stretch md:gap-5 md:pt-3 md:pb-5 lg:gap-7 lg:pt-4 lg:pb-6">
       <GameDevShowreelPanel showreelUrl={showreelUrl} />
 
-      <div className="flex min-h-0 self-stretch flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/72 p-4 shadow-[0_20px_80px_rgba(0,0,0,0.32)] backdrop-blur-xl md:max-h-[70svh] sm:p-5 lg:p-6">
+      <div className="flex min-h-0 self-start flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/80 p-4 md:max-h-[70svh] sm:p-5 lg:p-6">
         <div className="mb-2 flex items-end justify-between gap-4">
           <div>
             <p className="mb-2 text-[11px] uppercase tracking-[0.24em] text-emerald-300/80">

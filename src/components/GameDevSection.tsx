@@ -91,19 +91,11 @@ export const GameDevSection = () => {
       <section
         id="gamedev"
         ref={sectionRef}
-        className="snap-section section-screen w-full !h-[104svh] !min-h-[104svh] !pt-10 !pb-8 md:!pt-8 md:!pb-6 bg-gray-900/80"
+        className="snap-section section-screen w-full !h-[104svh] !min-h-[104svh] !pt-10 !pb-8 md:!pt-8 md:!pb-6 bg-gray-900"
       >
         <div className="absolute inset-0 z-0 pointer-events-none">
           <MemoizedGamingIconsBackground id="gamedev-particles" />
         </div>
-        <div
-          className="absolute inset-x-0 top-0 h-64 z-[5] pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to bottom, #111827 0%, rgba(17,24,39,0.85) 22%, rgba(56,189,248,0.06) 60%, rgba(99,102,241,0.04) 80%, transparent 100%)",
-          }}
-        />
-        <div className="section-bottom-fade !z-[6]" />
         <motion.div
           style={motionStyle}
           className="relative z-20 mx-auto flex h-full w-full max-w-7xl items-start px-4 sm:px-6 lg:px-8"
@@ -135,7 +127,7 @@ export const GameDevSection = () => {
             </motion.div>
           </div>
         </motion.div>
-        <SectionEdge variant="circuit" fillColor="#111827" height={130} className="z-[8]" />
+        <SectionEdge variant="circuit" fillColor="#111827" height={100} className="z-[4]" />
       </section>
     </SectionEntranceOverlay>
   );
