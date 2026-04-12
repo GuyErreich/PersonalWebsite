@@ -11,6 +11,7 @@ import { useScrollReveal } from "../../hooks/useScrollReveal";
 interface SectionWrapperProps {
   id: string;
   className?: string;
+  innerClassName?: string;
   children: ReactNode;
   background?: ReactNode;
   bottomFadeClassName?: string;
@@ -19,6 +20,7 @@ interface SectionWrapperProps {
 export const SectionWrapper = ({
   id,
   className = "py-12 md:py-16 bg-gray-900",
+  innerClassName = "justify-center",
   children,
   background,
   bottomFadeClassName = "",
@@ -36,7 +38,7 @@ export const SectionWrapper = ({
       <div className={`section-bottom-fade ${bottomFadeClassName}`.trim()} />
       <motion.div
         style={motionStyle}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full h-full flex flex-col justify-center"
+        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full h-full flex flex-col ${innerClassName}`}
       >
         {children}
       </motion.div>

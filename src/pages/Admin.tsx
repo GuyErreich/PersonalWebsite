@@ -7,6 +7,7 @@
 import { LogOut, Plus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { DevOpsTechStackManager } from "../components/admin/DevOpsTechStackManager";
 import { ItemFormModal } from "../components/admin/ItemFormModal";
 import { ShowreelManager } from "../components/admin/ShowreelManager";
 import { supabase } from "../lib/supabase";
@@ -143,6 +144,8 @@ export const Admin = () => {
               first)
             </p>
           </div>
+
+          {activeTab === "devops" && <DevOpsTechStackManager />}
         </div>
 
         <ItemFormModal

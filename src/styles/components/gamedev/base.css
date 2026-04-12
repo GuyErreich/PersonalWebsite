@@ -2,6 +2,8 @@
  * Copyright (c) 2026 Guy Erreich
  *
  * SPDX-License-Identifier: MIT
+ *
+ * Shared / common GameDev styles — section shell, slider, showreel, and panel primitives.
  */
 
 @layer components {
@@ -14,6 +16,13 @@
   @media (max-height: 700px) {
     .gamedev-section-shell {
       @apply py-16;
+    }
+  }
+
+  /* Mobile phones: clear the fixed h-16 navbar with breathing room; shrink bottom to compensate */
+  @media (max-width: 767px) {
+    .gamedev-section-shell {
+      @apply !pt-20 !pb-2;
     }
   }
 
@@ -37,48 +46,7 @@
     @apply h-full w-1/2;
   }
 
-  .gamedev-overview-grid {
-    @apply grid h-full w-full grid-cols-1 items-start gap-4 pt-2 pb-4 md:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] md:items-stretch md:gap-5 md:pt-3 md:pb-5 lg:gap-7 lg:pt-4 lg:pb-6;
-  }
-
-  .gamedev-overview-mobile-stack {
-    @apply flex h-full w-full flex-col gap-4 pt-2 pb-4;
-  }
-
-  .gamedev-mobile-panel-frame {
-    @apply w-full pt-2 pb-4;
-  }
-
-  /* Short-height phone layout — tab-based so showreel and gallery don't compete */
-  .gamedev-overview-mobile-short-stack {
-    @apply flex h-full w-full flex-col gap-2 pt-1 pb-2;
-  }
-
-  .gamedev-mobile-short-tabs {
-    @apply flex shrink-0 gap-2 rounded-xl border border-white/10 bg-white/5 p-1;
-  }
-
-  .gamedev-mobile-short-tab-btn {
-    @apply flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-gray-400 transition-colors;
-  }
-
-  .gamedev-mobile-short-tab-btn--active {
-    @apply bg-cyan-500/20 text-cyan-200 shadow-sm;
-  }
-
-  .gamedev-mobile-short-content {
-    @apply min-h-0 flex-1 overflow-hidden;
-  }
-
-  .gamedev-mobile-short-panel {
-    @apply h-full w-full overflow-y-auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .gamedev-mobile-short-panel::-webkit-scrollbar {
-    display: none;
-  }
+  /* Showreel */
 
   .gamedev-showreel-stack {
     @apply flex min-h-0 flex-col justify-start gap-4 lg:gap-5;
@@ -103,6 +71,8 @@
   .gamedev-showreel-video {
     @apply max-w-[min(100%,760px)];
   }
+
+  /* Panel primitives */
 
   .gamedev-panel-frame {
     @apply h-full w-full pt-2 pb-4 md:pt-3 md:pb-5 lg:pt-4 lg:pb-6;

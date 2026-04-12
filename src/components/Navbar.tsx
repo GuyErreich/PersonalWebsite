@@ -7,6 +7,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { X as CloseIcon, Code2, Gamepad2, Menu as MenuIcon, Terminal, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useMediaQuery } from "../hooks/responsive/useMediaQuery";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
 import {
   playClickSound,
@@ -50,7 +51,8 @@ export const Navbar = () => {
     };
   }, [scrollContainer]);
 
-  const navVisible = !scrolled || mouseNearTop;
+  const isMobile = useMediaQuery("(max-width: 767px)");
+  const navVisible = isMobile || !scrolled || mouseNearTop;
 
   // Lock body scroll when drawer is open
   useEffect(() => {

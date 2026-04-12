@@ -10,7 +10,7 @@ Use this folder for GameDev-specific UI composition.
 - Put mobile-only layout composition in `mobile/`.
 - Keep `GameDevOverviewPanel.tsx` and `GameDevAllProjectsPanel.tsx` as thin selector components.
 - If logic duplication appears across variants, extract it into a shared hook under `src/hooks/<responsibility>/`.
-- If long class chains repeat, move them into `src/styles/components/gamedev.css`.
+- If long class chains repeat, move them into `src/styles/components/gamedev/` (shared in `base.css`, desktop-only in `desktop.css`, mobile-only in `mobile.css`).
 - Do not add extra wrappers unless they provide layout, semantics, scroll boundaries, or state boundaries.
 
 ## Skill Usage
