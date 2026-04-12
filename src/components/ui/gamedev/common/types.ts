@@ -15,6 +15,7 @@ export interface GameDevItem {
   icon_name?: string;
   github_url?: string;
   live_url?: string;
+  tags?: string[];
 }
 
 export type GameDevIconMap = Record<string, ElementType>;

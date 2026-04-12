@@ -36,6 +36,11 @@ export const DevOpsProjectsDesktop = ({ projects }: DevOpsProjectsDesktopProps) 
     setCurrentPage((p) => p + 1);
   };
 
+  const goToPage = (page: number) => {
+    directionRef.current = page > currentPage ? 1 : -1;
+    setCurrentPage(page);
+  };
+
   return (
     <div className="devops-paginated-shell">
       <div className="devops-paginated-scroll">
@@ -60,6 +65,7 @@ export const DevOpsProjectsDesktop = ({ projects }: DevOpsProjectsDesktopProps) 
         totalPages={totalPages}
         onPrev={goToPrev}
         onNext={goToNext}
+        onGoTo={goToPage}
       />
     </div>
   );

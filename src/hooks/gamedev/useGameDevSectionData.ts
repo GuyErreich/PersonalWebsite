@@ -5,8 +5,11 @@
  */
 
 import { useEffect, useState } from "react";
+import { fallbackGameDevItems } from "../../components/ui/gamedev/common/items";
 import type { GameDevItem } from "../../components/ui/gamedev/common/types";
 import { supabase } from "../../lib/supabase";
+
+const MIN_REAL_ITEMS = fallbackGameDevItems.length;
 
 export const useGameDevSectionData = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
@@ -35,8 +38,11 @@ export const useGameDevSectionData = () => {
 
         if (itemsError) {
           console.warn(itemsError.message);
-        } else if (items) {
+          setGalleryItems(fallbackGameDevItems);
+        } else if (items && items.length >= MIN_REAL_ITEMS) {
           setGalleryItems(items as GameDevItem[]);
+        } else {
+          setGalleryItems(fallbackGameDevItems);
         }
       } catch (e) {
         console.warn(e instanceof Error ? e.message : String(e));

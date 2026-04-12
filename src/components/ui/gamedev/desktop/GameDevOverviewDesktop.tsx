@@ -42,13 +42,7 @@ export const GameDevOverviewDesktop = ({
           </GameDevPanelButton>
         }
       >
-        <GameDevGallery
-          items={galleryItems}
-          iconMap={iconMap}
-          isLoading={isLoading}
-          compact
-          showCompactToggle={false}
-        />
+        <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} compact />
       </GameDevPanelShell>
     </div>
   );
