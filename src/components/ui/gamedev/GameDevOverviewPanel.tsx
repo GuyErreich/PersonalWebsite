@@ -7,7 +7,7 @@
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
 import type { GameDevOverviewLayoutProps } from "./common/types";
 import { GameDevOverviewDesktop } from "./desktop/GameDevOverviewDesktop";
-import { GameDevOverviewMobile } from "./mobile/GameDevOverviewMobile";
+import { GameDevOverviewMobileShort } from "./mobile/GameDevOverviewMobileShort";
 
 export const GameDevOverviewPanel = ({
   showreelUrl,
@@ -30,8 +30,10 @@ export const GameDevOverviewPanel = ({
     );
   }
 
+  // All mobile phones use the tabbed layout so both showreel and projects
+  // are accessible without vertical overflow
   return (
-    <GameDevOverviewMobile
+    <GameDevOverviewMobileShort
       showreelUrl={showreelUrl}
       galleryItems={galleryItems}
       isLoading={isLoading}

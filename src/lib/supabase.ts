@@ -12,21 +12,78 @@ interface Database {
   public: {
     Tables: {
       site_settings: {
-        Row: { key: string; value: string };
-        Insert: { key: string; value: string };
-        Update: { key?: string; value?: string };
+        Row: { key: string; value: string; updated_at: string };
+        Insert: { key: string; value: string; updated_at?: string };
+        Update: { key?: string; value?: string; updated_at?: string };
         Relationships: [];
       };
       gamedev_items: {
-        Row: Record<string, unknown>;
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          media_url: string;
+          thumbnail_url: string | null;
+          icon_name: string | null;
+          github_url: string | null;
+          live_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          media_url: string;
+          thumbnail_url?: string | null;
+          icon_name?: string | null;
+          github_url?: string | null;
+          live_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          media_url?: string;
+          thumbnail_url?: string | null;
+          icon_name?: string | null;
+          github_url?: string | null;
+          live_url?: string | null;
+          created_at?: string;
+        };
         Relationships: [];
       };
       devops_projects: {
-        Row: Record<string, unknown>;
-        Insert: Record<string, unknown>;
-        Update: Record<string, unknown>;
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          tech_stack: string[];
+          github_url: string | null;
+          live_url: string | null;
+          icon_name: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          description: string;
+          tech_stack: string[];
+          github_url?: string | null;
+          live_url?: string | null;
+          icon_name?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          tech_stack?: string[];
+          github_url?: string | null;
+          live_url?: string | null;
+          icon_name?: string | null;
+          created_at?: string;
+        };
         Relationships: [];
       };
     };

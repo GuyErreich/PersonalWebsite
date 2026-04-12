@@ -1,0 +1,11 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * GameDev styles barrel — imports base, desktop, and mobile partials.
+ */
+
+@import "./base.css";
+@import "./desktop.css";
+@import "./mobile.css";

@@ -27,11 +27,16 @@ export const Home = () => {
       const sections = getSections();
       if (sections.length === 0) return -1;
 
+      // Use getBoundingClientRect so the distance is correct for sections nested
+      // inside positioned ancestors (e.g. SectionEntranceOverlay's <div class="relative">).
+      // offsetTop would be relative to the nearest positioned ancestor, not to main.
+      const mainTop = main.getBoundingClientRect().top;
+
       let closestIndex = 0;
       let closestDistance = Number.POSITIVE_INFINITY;
 
       sections.forEach((section, index) => {
-        const distance = Math.abs(section.offsetTop - main.scrollTop);
+        const distance = Math.abs(section.getBoundingClientRect().top - mainTop);
         if (distance < closestDistance) {
           closestDistance = distance;
           closestIndex = index;

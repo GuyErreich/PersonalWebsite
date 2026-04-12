@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: MIT
  */
 
-import type { ReactNode } from "react";
-
 export interface DevOpsProject {
+  id: string;
   title: string;
   description: string;
-  tags: string[];
-  link: string;
-  icon: ReactNode;
+  tech_stack: string[];
+  github_url?: string | null;
+  live_url?: string | null;
+  icon_name?: string | null;
+  created_at?: string;
 }

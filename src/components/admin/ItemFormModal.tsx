@@ -19,6 +19,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useState } from "react";
+import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { uploadToR2 } from "../../lib/storage/r2client";
 import { supabase } from "../../lib/supabase";
 
@@ -48,14 +49,17 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { stacks: availableTechStacks } = useDevOpsTechStacks();
+
   // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
-  // For GameDev (Image/Video File), for DevOps (Tech Stack as comma separated string)
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [techStack, setTechStack] = useState("");
+  // DevOps tech stack — chip multi-select + optional custom one-off input
+  const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
+  const [customStackInput, setCustomStackInput] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [liveUrl, setLiveUrl] = useState("");
 
@@ -83,26 +87,36 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
 
       const tableName = type === "gamedev" ? "gamedev_items" : "devops_projects";
 
-      const payload: Record<string, unknown> = {
-        title,
-        description,
-        icon_name: selectedIcon,
-        github_url: githubUrl || null,
-        live_url: liveUrl || null,
-      };
+      let dbError: { message: string } | null = null;
 
       if (type === "gamedev") {
         if (!finalMediaUrl) throw new Error("Media file is required for Game Dev projects.");
-        payload.media_url = finalMediaUrl;
-        payload.thumbnail_url = finalThumbnailUrl;
+        ({ error: dbError } = await supabase.from("gamedev_items").insert([
+          {
+            title,
+            description,
+            media_url: finalMediaUrl,
+            thumbnail_url: finalThumbnailUrl,
+            icon_name: selectedIcon,
+            github_url: githubUrl || null,
+            live_url: liveUrl || null,
+          },
+        ]));
       } else {
-        payload.tech_stack = techStack
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        ({ error: dbError } = await supabase.from("devops_projects").insert([
+          {
+            title,
+            description,
+            tech_stack: selectedStacks,
+            icon_name: selectedIcon,
+            github_url: githubUrl || null,
+            live_url: liveUrl || null,
+          },
+        ]));
       }
 
-      const { error: dbError } = await supabase.from(tableName).insert([payload]);
+      // Keep the variable used so TS doesn't complain about tableName being unused
+      void tableName;
 
       if (dbError) throw dbError;
 
@@ -112,7 +126,8 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
       setSelectedIcon("gamepad");
       setMediaFile(null);
       setThumbnailFile(null);
-      setTechStack("");
+      setSelectedStacks([]);
+      setCustomStackInput("");
       setGithubUrl("");
       setLiveUrl("");
 
@@ -263,22 +278,81 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                     </div>
                   </>
                 ) : (
-                  <div>
-                    <label
-                      htmlFor="item-tech-stack"
-                      className="block text-sm font-medium text-gray-300"
-                    >
-                      Tech Stack (comma separated)
-                    </label>
-                    <input
-                      id="item-tech-stack"
-                      type="text"
-                      required
-                      placeholder="e.g. Docker, AWS, Terraform"
-                      className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                      value={techStack}
-                      onChange={(e) => setTechStack(e.target.value)}
-                    />
+                  <div className="space-y-3">
+                    <p className="block text-sm font-medium text-gray-300">Tech Stack</p>
+
+                    {/* Available stack chips */}
+                    {availableTechStacks.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {availableTechStacks.map((stack) => (
+                          <button
+                            key={stack}
+                            type="button"
+                            onClick={() =>
+                              setSelectedStacks((prev) =>
+                                prev.includes(stack)
+                                  ? prev.filter((s) => s !== stack)
+                                  : [...prev, stack],
+                              )
+                            }
+                            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                              selectedStacks.includes(stack)
+                                ? "border-blue-500/60 bg-blue-600/40 text-blue-200"
+                                : "border-gray-600 bg-gray-700 text-gray-400 hover:border-gray-500 hover:text-gray-200"
+                            }`}
+                          >
+                            {stack}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500">
+                        No tech stacks defined yet. Add them in the &ldquo;Available Tech
+                        Stacks&rdquo; section below the project list.
+                      </p>
+                    )}
+
+                    {/* Custom one-off stack */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Custom tag (one-off)…"
+                        value={customStackInput}
+                        onChange={(e) => setCustomStackInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            const trimmed = customStackInput.trim();
+                            if (trimmed && !selectedStacks.includes(trimmed)) {
+                              setSelectedStacks((prev) => [...prev, trimmed]);
+                            }
+                            setCustomStackInput("");
+                          }
+                        }}
+                        className="flex-1 rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trimmed = customStackInput.trim();
+                          if (trimmed && !selectedStacks.includes(trimmed)) {
+                            setSelectedStacks((prev) => [...prev, trimmed]);
+                          }
+                          setCustomStackInput("");
+                        }}
+                        disabled={!customStackInput.trim()}
+                        className="rounded-md bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-500 disabled:opacity-40"
+                      >
+                        Add
+                      </button>
+                    </div>
+
+                    {/* Selected stack summary */}
+                    {selectedStacks.length > 0 && (
+                      <p className="text-xs text-gray-400">
+                        Selected: <span className="text-blue-300">{selectedStacks.join(", ")}</span>
+                      </p>
+                    )}
                   </div>
                 )}
 
