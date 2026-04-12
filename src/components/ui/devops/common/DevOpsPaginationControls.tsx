@@ -13,6 +13,7 @@ interface DevOpsPaginationControlsProps {
   totalPages: number;
   onPrev: () => void;
   onNext: () => void;
+  onGoTo: (page: number) => void;
 }
 
 export const DevOpsPaginationControls = ({
@@ -20,6 +21,7 @@ export const DevOpsPaginationControls = ({
   totalPages,
   onPrev,
   onNext,
+  onGoTo,
 }: DevOpsPaginationControlsProps) => {
   if (totalPages <= 1) return null;
 
@@ -50,8 +52,17 @@ export const DevOpsPaginationControls = ({
 
       <div className="flex items-center gap-2">
         {Array.from({ length: totalPages }).map((_, i) => (
-          <span
+          <motion.button
             key={i}
+            type="button"
+            aria-label={`Go to page ${i + 1}`}
+            whileHover={{ scale: 1.3 }}
+            whileTap={{ scale: 0.85 }}
+            onMouseEnter={playHoverSound}
+            onClick={() => {
+              playClickSound();
+              onGoTo(i);
+            }}
             className={`block rounded-full transition-all duration-300 ${
               i === currentPage
                 ? "h-2.5 w-2.5 bg-blue-400"

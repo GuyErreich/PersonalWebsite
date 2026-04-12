@@ -7,6 +7,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useRef, useState } from "react";
 import { useMediaQuery } from "../../../../hooks/responsive/useMediaQuery";
+import { useSwipeNavigation } from "../../../../hooks/useSwipeNavigation";
+import { playClickSound } from "../../../../lib/sound/interactionSounds";
 import { DevOpsPaginationControls } from "../common/DevOpsPaginationControls";
 import { DevOpsProjectsGrid } from "../common/DevOpsProjectsGrid";
 import type { DevOpsProject } from "../common/types";
@@ -39,8 +41,28 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
     setCurrentPage((p) => p + 1);
   };
 
+  const goToPage = (page: number) => {
+    directionRef.current = page > safePage ? 1 : -1;
+    setCurrentPage(page);
+  };
+
+  const { onTouchStart, onTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      if (safePage < totalPages - 1) {
+        playClickSound();
+        goToNext();
+      }
+    },
+    onSwipeRight: () => {
+      if (safePage > 0) {
+        playClickSound();
+        goToPrev();
+      }
+    },
+  });
+
   return (
-    <div className="devops-paginated-shell">
+    <div className="devops-paginated-shell" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="devops-paginated-scroll">
         <AnimatePresence mode="wait">
           <motion.div
@@ -63,6 +85,7 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
         totalPages={totalPages}
         onPrev={goToPrev}
         onNext={goToNext}
+        onGoTo={goToPage}
       />
     </div>
   );

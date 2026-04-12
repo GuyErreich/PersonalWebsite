@@ -9,6 +9,11 @@ import { devOpsProjects as fallbackProjects } from "../../components/ui/devops/c
 import type { DevOpsProject } from "../../components/ui/devops/common/types";
 import { supabase } from "../../lib/supabase";
 
+// Only switch to real DB data once there are at least as many rows as the
+// fallback set.  This keeps the "2-page demo" visible while the DB is empty
+// or only partially filled with test rows.
+const MIN_REAL_PROJECTS = fallbackProjects.length;
+
 export const useDevOpsSectionData = () => {
   const [projects, setProjects] = useState<DevOpsProject[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,10 +29,11 @@ export const useDevOpsSectionData = () => {
         if (error) {
           console.warn(error.message);
           setProjects(fallbackProjects);
-        } else if (data && data.length > 0) {
+        } else if (data && data.length >= MIN_REAL_PROJECTS) {
+          // Enough real content — show production data
           setProjects(data as DevOpsProject[]);
         } else {
-          // Table empty or not yet populated — show hardcoded fallback
+          // Table empty or not yet fully populated — keep demo fallback
           setProjects(fallbackProjects);
         }
       } catch (e) {

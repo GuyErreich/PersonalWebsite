@@ -43,4 +43,40 @@ export const devOpsProjects: DevOpsProject[] = [
     github_url: "https://github.com",
     icon_name: "Terminal",
   },
+  {
+    id: "5",
+    title: "GitOps Workflow",
+    description:
+      "ArgoCD-based GitOps setup that syncs Kubernetes cluster state from Git, enabling declarative, auditable, and automated deployments.",
+    tech_stack: ["ArgoCD", "Kubernetes", "Helm", "Git"],
+    github_url: "https://github.com",
+    icon_name: "GitBranch",
+  },
+  {
+    id: "6",
+    title: "Container Security Scanner",
+    description:
+      "Automated vulnerability scanning pipeline integrating Trivy into CI to block container images with critical CVEs before deployment.",
+    tech_stack: ["Trivy", "Docker", "GitHub Actions", "Python"],
+    github_url: "https://github.com",
+    icon_name: "Shield",
+  },
+  {
+    id: "7",
+    title: "Log Aggregation Platform",
+    description:
+      "Centralised logging with the ELK stack — Filebeat ships logs from all pods, Logstash transforms them, Kibana visualises trends.",
+    tech_stack: ["Elasticsearch", "Logstash", "Kibana", "Filebeat"],
+    github_url: "https://github.com",
+    icon_name: "Monitor",
+  },
+  {
+    id: "8",
+    title: "Service Mesh Setup",
+    description:
+      "Istio service mesh deployment for inter-service mTLS, traffic shaping, and distributed tracing across a microservices architecture.",
+    tech_stack: ["Istio", "Kubernetes", "Jaeger", "Envoy"],
+    github_url: "https://github.com",
+    icon_name: "Network",
+  },
 ];
