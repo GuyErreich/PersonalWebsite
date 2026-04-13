@@ -7,16 +7,21 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, ChevronUp, SlidersHorizontal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useMediaQuery } from "../../../../hooks/responsive/useMediaQuery";
 import type { DevOpsSortKey } from "../../../../hooks/devops/useDevOpsFilter";
+import { useMediaQuery } from "../../../../hooks/responsive/useMediaQuery";
 import { useScrollContainer } from "../../../../lib/ScrollContainerContext";
-import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+  playMenuOpenSound,
+} from "../../../../lib/sound/interactionSounds";
 import { SearchInput } from "../../common/controls/SearchInput";
 import { FilterChipGroup } from "../../common/filters/FilterChipGroup";
 import { ScrollViewport } from "../../common/scroll/ScrollViewport";
-import { DevOpsLetterTouchBubble } from "../mobile/DevOpsLetterTouchBubble";
 import type { SortOption } from "../../SortDropdown";
 import { SortDropdown } from "../../SortDropdown";
+import { DevOpsLetterTouchBubble } from "../mobile/DevOpsLetterTouchBubble";
 
 interface DevOpsFilterBarProps {
   search: string;
@@ -96,6 +101,21 @@ export const DevOpsFilterBar = ({
   const offsetRef = useRef(0);
   const maxOffsetRef = useRef(0);
 
+  const openDropdown = useCallback(() => {
+    playMenuOpenSound();
+    setDropdownOpen(true);
+  }, []);
+
+  const closeDropdown = useCallback(() => {
+    setDropdownOpen((wasOpen) => {
+      if (wasOpen) {
+        playMenuCloseSound();
+      }
+      return false;
+    });
+    setStackSearch("");
+  }, []);
+
   // Re-evaluate which item under the cursor using coordinate math —
   // works during CSS translateY transition because the scrollport rect never moves.
   const updateHoveredFromMouse = useCallback((currentOffset?: number) => {
@@ -122,13 +142,12 @@ export const DevOpsFilterBar = ({
     if (!dropdownOpen) return;
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-        setStackSearch("");
+        closeDropdown();
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [dropdownOpen]);
+  }, [dropdownOpen, closeDropdown]);
 
   // Auto-focus the stack search input when the dropdown opens
   useEffect(() => {
@@ -279,11 +298,7 @@ export const DevOpsFilterBar = ({
       {/* Row: search + filter button */}
       <div className="flex items-center gap-2">
         {/* Compact search */}
-        <SearchInput
-          value={search}
-          onValueChange={onSearchChange}
-          placeholder="Search..."
-        />
+        <SearchInput value={search} onValueChange={onSearchChange} placeholder="Search..." />
 
         {/* Filter dropdown trigger — only shown if stacks are available */}
         {allStacks.length > 0 && (
@@ -295,7 +310,11 @@ export const DevOpsFilterBar = ({
               onMouseEnter={playHoverSound}
               onClick={() => {
                 playClickSound();
-                setDropdownOpen((o) => !o);
+                if (dropdownOpen) {
+                  closeDropdown();
+                } else {
+                  openDropdown();
+                }
               }}
               aria-haspopup="listbox"
               aria-expanded={dropdownOpen}
@@ -441,6 +460,7 @@ export const DevOpsFilterBar = ({
                                           onClick={() => {
                                             playClickSound();
                                             onStackToggle(stack);
+                                            closeDropdown();
                                           }}
                                           className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10 ${
                                             isActive
@@ -508,13 +528,13 @@ export const DevOpsFilterBar = ({
                               onClick={() => {
                                 playClickSound();
                                 setOffset(targetOffset);
+                                closeDropdown();
                               }}
                               onMouseEnter={() => {
                                 playHoverSound();
                                 setHoveredLetter(letter);
                               }}
                               onMouseLeave={() => setHoveredLetter(null)}
-
                               animate={{
                                 color: isHovered
                                   ? "rgb(255 255 255)"

@@ -98,11 +98,7 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
         </motion.div>
       </div>
 
-      <DevOpsPaginationDots
-        currentPage={safePage}
-        totalPages={totalPages}
-        onGoTo={goToPage}
-      />
+      <DevOpsPaginationDots currentPage={safePage} totalPages={totalPages} onGoTo={goToPage} />
     </div>
   );
 };

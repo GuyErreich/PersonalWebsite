@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-
 import { useEffect, useRef } from "react";
 import { DevOpsSection } from "../components/DevOpsSection";
 import { GameDevSection } from "../components/GameDevSection";
@@ -69,7 +68,6 @@ export const Home = () => {
       }
       // Find the scrollable container (main)
 
-
       // Use native smooth scroll snap
       section.scrollIntoView({ behavior: "smooth", block: "start" });
       releasePagingLock();
@@ -81,6 +79,20 @@ export const Home = () => {
       pageTo(currentIndex + delta);
     };
 
+    const canPageFromTarget = (target: EventTarget | null, deltaY: number) => {
+      let el = target as HTMLElement | null;
+      while (el && el !== main) {
+        const { overflowY } = window.getComputedStyle(el);
+        if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
+          const atTop = el.scrollTop === 0;
+          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+          return deltaY < 0 ? atTop : atBottom;
+        }
+        el = el.parentElement;
+      }
+      return true;
+    };
+
     const onWheel = (event: WheelEvent) => {
       // Ctrl+wheel is the browser zoom gesture — never intercept it.
       if (event.ctrlKey) return;
@@ -89,36 +101,26 @@ export const Home = () => {
       // it handled the scroll internally, so don't trigger section paging.
       if (event.defaultPrevented) return;
 
-      // Bail out when the event originated inside a scrollable descendant that
-      // hasn't yet reached its scroll edge in the paging direction.  This allows
-      // users to scroll content inside overflow panels (GameDev gallery, DevOps
-      // project lists) without accidentally triggering section paging.
-      let el = event.target as HTMLElement | null;
-      while (el && el !== main) {
-        const { overflowY } = window.getComputedStyle(el);
-        if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
-          const atTop = el.scrollTop === 0;
-          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-          if ((event.deltaY < 0 && !atTop) || (event.deltaY > 0 && !atBottom)) return;
-          break;
-        }
-        el = el.parentElement;
-      }
+      // Let nested scrollable panels consume wheel input until they reach an edge.
+      if (!canPageFromTarget(event.target, event.deltaY)) return;
 
       event.preventDefault();
       pageByDelta(event.deltaY > 0 ? 1 : -1);
     };
 
     let touchStartY = 0;
+    let touchStartTarget: EventTarget | null = null;
 
     const onTouchStart = (event: TouchEvent) => {
       touchStartY = event.touches[0]?.clientY ?? 0;
+      touchStartTarget = event.target;
     };
 
     const onTouchEnd = (event: TouchEvent) => {
       const touchEndY = event.changedTouches[0]?.clientY ?? touchStartY;
       const deltaY = touchStartY - touchEndY;
       if (Math.abs(deltaY) < 40) return;
+      if (!canPageFromTarget(touchStartTarget, deltaY)) return;
       pageByDelta(deltaY > 0 ? 1 : -1);
     };
 

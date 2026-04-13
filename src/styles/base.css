@@ -6,14 +6,6 @@
 
 html {
   scroll-behavior: smooth;
-  /* WebKit-only: slow down scroll snap (not standard, but helps on Safari/Chrome) */
-  scroll-snap-type: y mandatory;
-  scroll-snap-stop: always;
-  /* Try to slow down snap (WebKit only, not standard) */
-  scroll-snap-duration: 2.5s;
-  /* Try to slow down scroll-behavior for browsers that support it */
-  scroll-behavior: smooth;
-  transition: scroll-behavior 2.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 body {

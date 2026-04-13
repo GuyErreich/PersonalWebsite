@@ -179,10 +179,16 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                   <p className="block text-sm font-medium text-gray-300 mb-1">Project Icon</p>
                   <div className="grid grid-cols-6 gap-2">
                     {AVAILABLE_ICONS.map((iconOpt) => (
-                      <button
+                      <motion.button
                         key={iconOpt.id}
                         type="button"
-                        onClick={() => setSelectedIcon(iconOpt.id)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onMouseEnter={playHoverSound}
+                        onClick={() => {
+                          playClickSound();
+                          setSelectedIcon(iconOpt.id);
+                        }}
                         className={`p-2 rounded-lg flex flex-col items-center justify-center transition-colors ${
                           selectedIcon === iconOpt.id
                             ? "bg-blue-600 text-white"
@@ -194,7 +200,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         <span className="text-[10px] truncate w-full flex justify-center">
                           {iconOpt.label}
                         </span>
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
                 </div>

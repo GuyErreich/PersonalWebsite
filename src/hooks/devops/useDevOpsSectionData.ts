@@ -27,7 +27,6 @@ export const useDevOpsSectionData = () => {
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.warn(error.message);
           setProjects(fallbackProjects);
         } else if (data && data.length >= MIN_REAL_PROJECTS) {
           // Enough real content — show production data
@@ -36,8 +35,7 @@ export const useDevOpsSectionData = () => {
           // Table empty or not yet fully populated — keep demo fallback
           setProjects(fallbackProjects);
         }
-      } catch (e) {
-        console.warn(e instanceof Error ? e.message : String(e));
+      } catch {
         setProjects(fallbackProjects);
       } finally {
         setIsLoading(false);

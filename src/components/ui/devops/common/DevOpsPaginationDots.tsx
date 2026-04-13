@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { PaginationDots } from "../../common/PaginationDots";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
+import { PaginationDots } from "../../common/PaginationDots";
 
 interface DevOpsPaginationDotsProps {
   currentPage: number;
