@@ -49,7 +49,7 @@ export const FloatingContactDock = () => {
             whileTap={{ scale: 0.94 }}
             onMouseEnter={playHoverSound}
             onClick={playClickSound}
-            href="https://linkedin.com"
+            href="https://www.linkedin.com/in/guy-erreich"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open LinkedIn profile"
@@ -62,7 +62,7 @@ export const FloatingContactDock = () => {
             whileTap={{ scale: 0.94 }}
             onMouseEnter={playHoverSound}
             onClick={playClickSound}
-            href="mailto:hello@example.com"
+            href="mailto:gerreich.dev@gmail.com"
             aria-label="Send email"
             className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-gray-300 transition-colors hover:border-emerald-400/40 hover:bg-emerald-500/12 hover:text-emerald-300"
           >
