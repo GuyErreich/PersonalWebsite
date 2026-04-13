@@ -85,14 +85,15 @@ export const GameDevGallery = ({
 }: GameDevGalleryProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const isShortScreen = useMediaQuery("(max-height: 700px)");
+
   const [currentPage, setCurrentPage] = useState(0);
   const directionRef = useRef(1);
 
   // Non-compact (all projects): desktop=6 (3-col), big mobile=6 (2-col 3-row), small mobile=4 (2-col 2-row)
   const ITEMS_PER_PAGE = compact ? maxCompactItems : isDesktop ? 6 : isShortScreen ? 4 : 6;
-
   const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
   const safePage = Math.min(currentPage, Math.max(0, totalPages - 1));
+
   // Keep currentPage state in sync with safePage so navigation direction and pagination are correct
   useEffect(() => {
     if (currentPage !== safePage) setCurrentPage(safePage);
@@ -102,10 +103,12 @@ export const GameDevGallery = ({
     directionRef.current = -1;
     setCurrentPage((p) => p - 1);
   };
+
   const goToNext = () => {
     directionRef.current = 1;
     setCurrentPage((p) => p + 1);
   };
+
   const goToPage = (page: number) => {
     directionRef.current = page > safePage ? 1 : -1;
     setCurrentPage(page);

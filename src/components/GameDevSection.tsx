@@ -19,6 +19,7 @@ const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
 
 export const GameDevSection = () => {
   const [showAllProjectsView, setShowAllProjectsView] = useState(false);
+
   const { galleryItems, isLoading, showreelUrl } = useGameDevSectionData();
   const { ref: sectionRef, motionStyle } = useScrollReveal();
 

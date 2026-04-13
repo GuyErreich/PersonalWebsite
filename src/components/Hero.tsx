@@ -284,6 +284,7 @@ export const Hero = () => {
 
   const heroSectionRef = useRef<HTMLElement>(null);
   const [isHeroVisible, setIsHeroVisible] = useState(true);
+
   const scrollContainer = useScrollContainer();
   const { scrollY } = useScroll({ container: scrollContainer ?? undefined });
   useMotionValueEvent(scrollY, "change", () => {
@@ -299,6 +300,7 @@ export const Hero = () => {
     // 0 = hero fills viewport, 1 = hero bottom reaches viewport top
     offset: ["start start", "end start"],
   });
+
   return (
     <section id="about" className="section-hero snap-section" ref={heroSectionRef}>
       {/* Replay Background Animation Lever - Desktop Only (Floating) */}
