@@ -25,6 +25,7 @@ export const GameDevOverviewDesktop = ({
       <GameDevPanelShell
         eyebrow="Featured Gallery"
         title="Selected Work"
+        clipScroll
         description="A curated set of projects and prototypes highlighting gameplay, technical systems, and visual polish."
         rightAction={
           galleryItems.length > 0 ? (
@@ -42,7 +43,13 @@ export const GameDevOverviewDesktop = ({
           </GameDevPanelButton>
         }
       >
-        <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} compact />
+        <GameDevGallery
+          items={galleryItems}
+          iconMap={iconMap}
+          isLoading={isLoading}
+          compact
+          maxCompactItems={3}
+        />
       </GameDevPanelShell>
     </div>
   );

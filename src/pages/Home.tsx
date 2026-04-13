@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+
 import { useEffect, useRef } from "react";
 import { DevOpsSection } from "../components/DevOpsSection";
 import { GameDevSection } from "../components/GameDevSection";
@@ -60,7 +61,17 @@ export const Home = () => {
       if (nextIndex < 0 || nextIndex >= sections.length || isPagingRef.current) return;
 
       isPagingRef.current = true;
-      sections[nextIndex].scrollIntoView({ behavior: "smooth", block: "start" });
+      const section = sections[nextIndex];
+      const main = mainRef.current;
+      if (!section || !main) {
+        releasePagingLock();
+        return;
+      }
+      // Find the scrollable container (main)
+
+
+      // Use native smooth scroll snap
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
       releasePagingLock();
     };
 
@@ -71,7 +82,29 @@ export const Home = () => {
     };
 
     const onWheel = (event: WheelEvent) => {
+      // Ctrl+wheel is the browser zoom gesture — never intercept it.
+      if (event.ctrlKey) return;
       if (Math.abs(event.deltaY) < 12) return;
+      // A child element (e.g. compact gallery) already called preventDefault() —
+      // it handled the scroll internally, so don't trigger section paging.
+      if (event.defaultPrevented) return;
+
+      // Bail out when the event originated inside a scrollable descendant that
+      // hasn't yet reached its scroll edge in the paging direction.  This allows
+      // users to scroll content inside overflow panels (GameDev gallery, DevOps
+      // project lists) without accidentally triggering section paging.
+      let el = event.target as HTMLElement | null;
+      while (el && el !== main) {
+        const { overflowY } = window.getComputedStyle(el);
+        if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
+          const atTop = el.scrollTop === 0;
+          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
+          if ((event.deltaY < 0 && !atTop) || (event.deltaY > 0 && !atBottom)) return;
+          break;
+        }
+        el = el.parentElement;
+      }
+
       event.preventDefault();
       pageByDelta(event.deltaY > 0 ? 1 : -1);
     };

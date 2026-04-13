@@ -79,7 +79,7 @@
   }
 
   .gamedev-panel-card {
-    @apply flex min-h-0 self-start flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/80 p-4 md:max-h-[70svh] sm:p-5 lg:p-6;
+    @apply flex min-h-0 flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/80 p-4 md:max-h-[88svh] sm:p-5 lg:p-6;
   }
 
   .gamedev-panel-header {
@@ -114,6 +114,11 @@
     @apply min-h-0 flex-1 overflow-y-auto pr-1;
     scrollbar-width: none;
     -ms-overflow-style: none;
+    overscroll-behavior: contain;
+  }
+
+  .gamedev-panel-clip {
+    @apply min-h-0 flex-1 overflow-hidden;
   }
 
   .gamedev-panel-scroll::-webkit-scrollbar {

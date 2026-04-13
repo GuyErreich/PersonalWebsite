@@ -13,6 +13,7 @@ interface GameDevPanelShellProps {
   rightAction?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  clipScroll?: boolean;
 }
 
 export const GameDevPanelShell = ({
@@ -22,6 +23,7 @@ export const GameDevPanelShell = ({
   rightAction,
   children,
   footer,
+  clipScroll = false,
 }: GameDevPanelShellProps) => {
   return (
     <div className="gamedev-panel-card">
@@ -33,7 +35,7 @@ export const GameDevPanelShell = ({
         {rightAction}
       </div>
       {description ? <p className="gamedev-panel-description">{description}</p> : null}
-      <div className="gamedev-panel-scroll">{children}</div>
+      <div className={clipScroll ? "gamedev-panel-clip" : "gamedev-panel-scroll"}>{children}</div>
       {footer}
     </div>
   );

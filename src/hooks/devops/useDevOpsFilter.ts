@@ -7,18 +7,24 @@
 import { useMemo, useState } from "react";
 import type { DevOpsProject } from "../../components/ui/devops/common/types";
 
+export type DevOpsSortKey = "default" | "title-asc" | "title-desc" | "date-desc" | "date-asc";
+
 interface UseDevOpsFilterResult {
   filteredProjects: DevOpsProject[];
   search: string;
   setSearch: (v: string) => void;
-  activeStack: string | null;
-  setActiveStack: (v: string | null) => void;
+  activeStacks: string[];
+  toggleStack: (v: string) => void;
+  clearStacks: () => void;
   allStacks: string[];
+  sortKey: DevOpsSortKey;
+  setSortKey: (v: DevOpsSortKey) => void;
 }
 
 export const useDevOpsFilter = (projects: DevOpsProject[]): UseDevOpsFilterResult => {
   const [search, setSearch] = useState("");
-  const [activeStack, setActiveStack] = useState<string | null>(null);
+  const [activeStacks, setActiveStacks] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<DevOpsSortKey>("default");
 
   const allStacks = useMemo(() => {
     const stacks = new Set<string>();
@@ -28,15 +34,49 @@ export const useDevOpsFilter = (projects: DevOpsProject[]): UseDevOpsFilterResul
     return Array.from(stacks).sort();
   }, [projects]);
 
+  const toggleStack = (stack: string) => {
+    setActiveStacks((prev) =>
+      prev.includes(stack) ? prev.filter((s) => s !== stack) : [...prev, stack],
+    );
+  };
+
+  const clearStacks = () => setActiveStacks([]);
+
   const filteredProjects = useMemo(() => {
     const q = search.toLowerCase().trim();
-    return projects.filter((p) => {
+    const filtered = projects.filter((p) => {
       const matchesSearch =
         !q || p.title.toLowerCase().includes(q) || p.description.toLowerCase().includes(q);
-      const matchesStack = !activeStack || p.tech_stack.includes(activeStack);
-      return matchesSearch && matchesStack;
+      const matchesStacks =
+        activeStacks.length === 0 || activeStacks.every((s) => p.tech_stack.includes(s));
+      return matchesSearch && matchesStacks;
     });
-  }, [projects, search, activeStack]);
 
-  return { filteredProjects, search, setSearch, activeStack, setActiveStack, allStacks };
+    return [...filtered].sort((a, b) => {
+      switch (sortKey) {
+        case "title-asc":
+          return a.title.localeCompare(b.title);
+        case "title-desc":
+          return b.title.localeCompare(a.title);
+        case "date-desc":
+          return (b.created_at ?? "").localeCompare(a.created_at ?? "");
+        case "date-asc":
+          return (a.created_at ?? "").localeCompare(b.created_at ?? "");
+        default:
+          return 0;
+      }
+    });
+  }, [projects, search, activeStacks, sortKey]);
+
+  return {
+    filteredProjects,
+    search,
+    setSearch,
+    activeStacks,
+    toggleStack,
+    clearStacks,
+    allStacks,
+    sortKey,
+    setSortKey,
+  };
 };

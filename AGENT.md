@@ -25,6 +25,25 @@ For UI-heavy features, prefer:
 - `mobile/` for mobile-specific layout composition
 - thin selector components at the feature root
 
+## Abstraction & Extension Pattern
+
+- Treat repeated UI logic as a base abstraction first, then extend per feature/section.
+- Place global base primitives in top-level common folders (for example `src/components/ui/common/` and `src/components/ui/common/desktop/`).
+- Create thin section wrappers in section `common/`, `desktop/`, and `mobile/` folders to apply section-specific theme, naming, and behavior.
+- Reuse section wrappers across responsive variants instead of duplicating implementation logic.
+- Keep naming consistent with the dominant domain naming in that feature. Avoid introducing alternate suffixes (for example `*Controls`) when a clearer domain naming already exists.
+- Pagination is one example of this pattern, not a special-case exception.
+
+## Mandatory Refactor Default
+
+- If you touch duplicated UI shell, motion, or interaction logic, extraction to base abstraction + section wrappers is required in the same change.
+- Do not leave matched behavior implemented as duplicated code paths unless the user explicitly requests a minimal temporary patch.
+
+## Upfront Architecture Checkpoint
+
+- Before implementing UI changes, decide and state the target split: global base primitive, section wrapper(s), and responsive variant composition.
+- Create or wire section wrappers first when section differences are known (theme, spacing, behavior), then implement through wrappers instead of direct base usage in feature screens.
+
 ## Skill Usage
 
 - Use `ui-architecture` for UI structure, reuse boundaries, responsive variant splitting, and component extraction decisions.

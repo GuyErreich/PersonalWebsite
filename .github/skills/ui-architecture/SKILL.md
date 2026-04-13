@@ -39,6 +39,26 @@ For UI-heavy features, prefer:
 
 Keep selector components thin and declarative.
 
+### Abstraction & Extension Pattern (Required)
+
+- Design reusable base primitives at top-level common boundaries, then extend per feature/section with thin wrappers.
+- Use section `common/`, `desktop/`, and `mobile/` wrappers for section theme/behavior differences while preserving shared core logic.
+- Reuse section wrappers across responsive variants; avoid duplicating implementation across desktop/mobile files.
+- Keep naming consistent with the dominant naming style in each feature domain; avoid introducing alternate suffixes that fragment naming conventions.
+- Apply this pattern broadly (pagination, cards, controls, overlays, filter bars, etc.), not just to one UI element type.
+- Pagination remains the reference example: global dots + global desktop base, then section wrappers for theme-specific behavior.
+
+### Default Enforcement (Blocking)
+
+- When editing duplicated UI shell/motion/interaction logic, extraction is mandatory in the same change.
+- Do not stop at visual parity if the same logic appears elsewhere; refactor to a base primitive + wrappers before finishing.
+- Only skip same-change extraction if explicitly instructed by the user to do a minimal one-off patch.
+
+### Start-First Checkpoint (Blocking)
+
+- Before writing implementation code, define the intended base primitive, section wrapper(s), and responsive variant boundaries.
+- If section differences are known upfront (theme, spacing, behavior), create section wrappers first and implement through wrappers rather than calling base primitives directly from feature screens.
+
 ## 4. Component Design Principles
 
 - Keep top-level components focused on composition, not implementation details.

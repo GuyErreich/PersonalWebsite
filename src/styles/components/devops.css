@@ -14,7 +14,7 @@
 
   .devops-paginated-scroll {
     /* pt-3 gives 12px headroom so top-row cards' whileHover y:-10 doesn't clip */
-    @apply min-h-0 flex-1 overflow-y-auto pt-3;
+    @apply min-h-0 shrink overflow-y-auto pt-3;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }
@@ -22,4 +22,5 @@
   .devops-paginated-scroll::-webkit-scrollbar {
     display: none;
   }
+
 }
