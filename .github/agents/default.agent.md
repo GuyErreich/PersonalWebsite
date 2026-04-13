@@ -54,6 +54,7 @@ Always adhere to the following development standards:
    - Always add a blank line before `return (`.
    - Add a blank line between sibling handler or helper functions.
    - Never add blank lines *within* a tightly-related group (e.g. consecutive `useState` calls).
+   - **The same rule applies in JSX**: add a blank line between each logically distinct sibling element or element group (background layer, overlay, section edge, main content, controls, etc.).
    - See §14 in the `code-quality` skill for examples.
 
 Follow the `ui-interactions` skill for specific code implementation examples when building new UI elements.

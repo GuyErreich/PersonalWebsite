@@ -29,6 +29,7 @@ export const GameDevSection = () => {
         <div className="gamedev-background-layer">
           <MemoizedGamingIconsBackground id="gamedev-particles" />
         </div>
+
         <GameDevSlidingPanels
           showSecondaryPanel={showAllProjectsView}
           motionStyle={motionStyle}
@@ -50,6 +51,7 @@ export const GameDevSection = () => {
             />
           }
         />
+
         <SectionEdge variant="circuit" fillColor="#111827" height={100} className="z-[4]" />
       </section>
     </SectionEntranceOverlay>

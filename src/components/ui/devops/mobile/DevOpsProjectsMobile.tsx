@@ -86,6 +86,7 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
           </motion.div>
         </AnimatePresence>
       </div>
+
       <DevOpsPaginationControls
         currentPage={safePage}
         totalPages={totalPages}

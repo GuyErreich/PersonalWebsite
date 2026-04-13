@@ -619,3 +619,39 @@ return (...);
 ```
 
 Add a blank line between sibling handler/helper functions even when they share the same responsibility group.
+
+### JSX sibling elements
+
+The same rule applies inside `return (...)`. Add a blank line between each logically distinct sibling element or element group.
+
+**Bad — all siblings run together:**
+```tsx
+return (
+  <section>
+    <div className="background-layer">...</div>
+    <div className="overlay" />
+    <SectionEdge />
+    <MainContent />
+    <Chevron />
+  </section>
+);
+```
+
+**Good — blank line between each responsibility group:**
+```tsx
+return (
+  <section>
+    <div className="background-layer">...</div>
+
+    <div className="overlay" />
+
+    <SectionEdge />
+
+    <MainContent />
+
+    <Chevron />
+  </section>
+);
+```
+
+For short JSX with only 2–3 tightly-coupled sibling elements (e.g. `<Navbar />` then `<main>`), blank lines are optional but encouraged when the elements serve different purposes (nav, floating widget, scroll container).
