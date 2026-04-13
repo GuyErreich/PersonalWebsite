@@ -38,6 +38,7 @@ export const DevOpsSection = () => {
           className={isCompact ? "mb-4" : "mb-8"}
           compact={isCompact}
         />
+
         <DevOpsProjectsPanel projects={projects} isLoading={isLoading} />
       </SectionWrapper>
     </SectionEntranceOverlay>

@@ -130,14 +130,18 @@ export const Home = () => {
     <ScrollContainerContext.Provider value={mainRef}>
       <div className="h-screen overflow-hidden bg-gray-900 text-gray-100 font-sans selection:bg-blue-500/30">
         <Navbar />
+
         <FloatingContactDock />
+
         <main
           id="home-pager"
           ref={mainRef}
           className="viewport-pager viewport-scroll-hidden h-screen overflow-y-auto overflow-x-hidden"
         >
           <Hero />
+
           <GameDevSection />
+
           <DevOpsSection />
         </main>
       </div>

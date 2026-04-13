@@ -358,8 +358,10 @@ export const Hero = () => {
           )}
         </AnimatePresence>
       </div>
+
       {/* Readability overlay */}
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-gray-900/40 via-transparent to-transparent pointer-events-none" />
+
       {/* Hero → GameDev shaped edge — jagged alien terrain silhouette */}
       <SectionEdge
         variant="terrain"
@@ -676,7 +678,7 @@ export const Hero = () => {
                     whileTap={{ scale: 0.9 }}
                     onMouseEnter={playTagHoverSound}
                     onClick={playTagClickSound}
-                    href="https://github.com"
+                    href="https://github.com/GuyErreich"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 p-3 rounded-full"
@@ -687,7 +689,7 @@ export const Hero = () => {
                   <motion.a
                     whileHover={{ scale: 1.2, rotate: -5 }}
                     whileTap={{ scale: 0.9 }}
-                    href="https://linkedin.com"
+                    href="https://www.linkedin.com/in/guy-erreich"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 transition-colors bg-gray-800 hover:bg-[#0077b5]/20 p-3 rounded-full"
@@ -707,7 +709,7 @@ export const Hero = () => {
                     whileTap={{ scale: 0.9 }}
                     onMouseEnter={playTagHoverSound}
                     onClick={playTagClickSound}
-                    href="mailto:hello@example.com"
+                    href="mailto:gerreich.dev@gmail.com"
                     className="text-gray-400 hover:text-emerald-400 transition-colors bg-gray-800 hover:bg-emerald-500/10 p-3 rounded-full"
                   >
                     <span className="sr-only">Email</span>

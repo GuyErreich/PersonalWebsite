@@ -40,7 +40,7 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - Keep JSX focused on composition. Move repeated layout shells, interactive button logic, and long class chains into reusable components or named CSS classes.
 - Prefer a small number of meaningful container/wrapper layers. Do not add nested wrappers unless they provide a clear layout, semantics, or state boundary.
 - Use `.github/skills/ui-architecture/SKILL.md` when planning or reviewing feature-level UI structure and reuse boundaries.
-- **Block separation**: Within function/component bodies, separate distinct logical groups with a blank line. Standard order: responsive config → state & refs → derived values → effects → handlers → return. Always add a blank line before `return`. Never add blank lines *within* a tightly-related group (e.g. consecutive `useState` calls in the same group). Add a blank line between sibling handler functions.
+- **Block separation**: Within function/component bodies, separate distinct logical groups with a blank line. Standard order: responsive config → state & refs → derived values → effects → handlers → return. Always add a blank line before `return`. Never add blank lines *within* a tightly-related group (e.g. consecutive `useState` calls in the same group). Add a blank line between sibling handler functions. The same rule applies inside JSX: add a blank line between each logically distinct sibling element or element group (background layer, overlay, section edge, main content, navigation controls, etc.).
 
 ## TypeScript & Lint Rules (enforced — zero tolerance)
 
