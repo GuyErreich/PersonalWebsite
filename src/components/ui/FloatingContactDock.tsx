@@ -36,7 +36,7 @@ export const FloatingContactDock = () => {
             whileTap={{ scale: 0.94 }}
             onMouseEnter={playHoverSound}
             onClick={playClickSound}
-            href="https://github.com"
+            href="https://github.com/GuyErreich"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open GitHub profile"

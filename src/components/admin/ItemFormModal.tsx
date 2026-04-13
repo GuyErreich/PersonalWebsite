@@ -49,7 +49,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { stacks: availableTechStacks } = useDevOpsTechStacks();
+  const { stacks: availableTechStacks } = useDevOpsTechStacks(isOpen && type === "devops");
 
   // Form State
   const [title, setTitle] = useState("");
@@ -85,8 +85,6 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
         finalThumbnailUrl = await uploadToR2(thumbnailFile, "gamedev-thumbnails");
       }
 
-      const tableName = type === "gamedev" ? "gamedev_items" : "devops_projects";
-
       let dbError: { message: string } | null = null;
 
       if (type === "gamedev") {
@@ -114,9 +112,6 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
           },
         ]));
       }
-
-      // Keep the variable used so TS doesn't complain about tableName being unused
-      void tableName;
 
       if (dbError) throw dbError;
 

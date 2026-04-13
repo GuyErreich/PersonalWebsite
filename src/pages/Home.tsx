@@ -90,6 +90,16 @@ export const Home = () => {
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      const isInteractive =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "BUTTON" ||
+        target.tagName === "A" ||
+        target.isContentEditable;
+      if (isInteractive) return;
+
       if (["ArrowDown", "PageDown", " "].includes(event.key)) {
         event.preventDefault();
         pageByDelta(1);
