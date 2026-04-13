@@ -18,13 +18,14 @@ interface UseDevOpsTechStacksResult {
 
 const SETTINGS_KEY = "devops_tech_stacks";
 
-export const useDevOpsTechStacks = (): UseDevOpsTechStacksResult => {
+export const useDevOpsTechStacks = (enabled = true): UseDevOpsTechStacksResult => {
   const [stacks, setStacks] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     void (async () => {
       const { data, error: fetchError } = await supabase
         .from("site_settings")
@@ -47,7 +48,7 @@ export const useDevOpsTechStacks = (): UseDevOpsTechStacksResult => {
       }
       setLoading(false);
     })();
-  }, []);
+  }, [enabled]);
 
   const persist = async (updated: string[]) => {
     setSaving(true);

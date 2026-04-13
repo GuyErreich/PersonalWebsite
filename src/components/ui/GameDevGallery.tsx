@@ -6,7 +6,7 @@
 
 import { AnimatePresence, motion, useInView } from "framer-motion";
 import { ChevronLeft, ChevronRight, Gamepad2 } from "lucide-react";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../hooks/useSwipeNavigation";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
@@ -93,6 +93,10 @@ export const GameDevGallery = ({
 
   const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
   const safePage = Math.min(currentPage, Math.max(0, totalPages - 1));
+  // Keep currentPage state in sync with safePage so navigation direction and pagination are correct
+  useEffect(() => {
+    if (currentPage !== safePage) setCurrentPage(safePage);
+  }, [safePage, currentPage]);
 
   const goToPrev = () => {
     directionRef.current = -1;

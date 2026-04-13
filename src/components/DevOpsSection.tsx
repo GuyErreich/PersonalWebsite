@@ -28,7 +28,7 @@ export const DevOpsSection = () => {
             ? "justify-start pt-20 pb-2 md:pt-8 md:pb-6"
             : "justify-start pt-10 pb-8 md:pt-8 md:pb-6"
         }
-        bottomFadeClassName="h-28 md:h-200"
+        bottomFadeClassName="h-28 md:h-[200px]"
         background={<DevOpsBackground />}
       >
         <SectionHeader
