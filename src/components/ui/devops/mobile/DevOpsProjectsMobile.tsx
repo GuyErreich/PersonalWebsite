@@ -23,17 +23,19 @@ interface DevOpsProjectsMobileProps {
 export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) => {
   const isVeryShort = useMediaQuery("(max-height: 700px)");
   const ITEMS_PER_PAGE = isVeryShort ? ITEMS_PER_PAGE_SHORT : ITEMS_PER_PAGE_DEFAULT;
+
   const [currentPage, setCurrentPage] = useState(0);
   const directionRef = useRef(1);
 
   const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
   // Clamp page in case screen height changes after user navigated
   const safePage = Math.min(currentPage, Math.max(0, totalPages - 1));
+  const pageItems = projects.slice(safePage * ITEMS_PER_PAGE, (safePage + 1) * ITEMS_PER_PAGE);
+
   // Keep currentPage state in sync with safePage so navigation & swipe use the correct base
   useEffect(() => {
     if (currentPage !== safePage) setCurrentPage(safePage);
   }, [safePage, currentPage]);
-  const pageItems = projects.slice(safePage * ITEMS_PER_PAGE, (safePage + 1) * ITEMS_PER_PAGE);
 
   const goToPrev = () => {
     directionRef.current = -1;

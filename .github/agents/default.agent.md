@@ -48,6 +48,14 @@ Always adhere to the following development standards:
    - Keep JSX focused on composition and use the minimum number of wrappers needed for layout, semantics, scroll boundaries, or state boundaries.
    - Prefer Flexbox and Grid for layout. Do not use table layout for page structure.
 
+7. **Code Block Separation (readability):**
+   - Within component/hook bodies, separate distinct logical groups with a blank line.
+   - Standard order: responsive config → state & refs → derived values → effects → handlers → return.
+   - Always add a blank line before `return (`.
+   - Add a blank line between sibling handler or helper functions.
+   - Never add blank lines *within* a tightly-related group (e.g. consecutive `useState` calls).
+   - See §14 in the `code-quality` skill for examples.
+
 Follow the `ui-interactions` skill for specific code implementation examples when building new UI elements.
-Follow the `code-quality` skill for TypeScript/ESLint patterns, the DRY rule, and the validation checklist.
+Follow the `code-quality` skill for TypeScript/ESLint patterns, the DRY rule, the block-separation rule, and the validation checklist.
 Follow the `ui-architecture` skill when planning or refactoring feature-level UI structure, reuse boundaries, and responsive layout variants.

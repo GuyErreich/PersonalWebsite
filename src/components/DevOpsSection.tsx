@@ -14,6 +14,7 @@ import { SectionWrapper } from "./ui/SectionWrapper";
 
 export const DevOpsSection = () => {
   const { projects, isLoading } = useDevOpsSectionData();
+
   const isShortScreen = useMediaQuery("(max-height: 800px)");
   const isMobile = useMediaQuery("(max-width: 767px)");
   const isCompact = isShortScreen || isMobile;

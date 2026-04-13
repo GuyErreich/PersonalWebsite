@@ -559,3 +559,63 @@ void ctx.close().catch(() => {}); // intentional
 | `useEffect` with async work | `void (async () => { ... })()` |
 | Library API with async callback + post-step | `await` the whole call, then next line |
 | Fire-and-forget browser API (audio resume/close) | `void promise.catch(() => {}) // intentional` |
+
+---
+
+## 14. Code Block Separation by Responsibility
+
+**Rule:** Within a function or component body, separate distinct logical groups with a single blank line. Group by *what the code does*, not by where it happens to appear.
+
+### Standard group order in React components and hooks
+
+| Group | What belongs here |
+|---|---|
+| Responsive config | `useMediaQuery`, feature flags, derived config constants |
+| State & refs | `useState`, `useRef`, `useContext` |
+| Derived values | computations from state/config (pure, no side effects) |
+| Effects | `useEffect`, `useMotionValueEvent` |
+| Handlers & actions | event handlers, action functions, async mutations |
+| Gesture / animation hooks | `useSwipeNavigation`, `useScroll`, `useInView` |
+| Return | JSX return statement |
+
+Always separate each group from the next with a single blank line.  
+Never add blank lines *within* a tightly-related group (e.g. between two `useState` declarations in the same group).  
+Always add a blank line before the `return` statement.
+
+### Bad — groups crammed together
+
+```ts
+const isDesktop = useMediaQuery("(min-width: 768px)");
+const isShortScreen = useMediaQuery("(max-height: 700px)");
+const [currentPage, setCurrentPage] = useState(0);
+const directionRef = useRef(1);
+const ITEMS_PER_PAGE = isDesktop ? 6 : 4;
+const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+useEffect(() => { ... }, []);
+const goToPrev = () => { ... };
+const goToNext = () => { ... };
+return (...);
+```
+
+### Good — blank line between each responsibility group
+
+```ts
+const isDesktop = useMediaQuery("(min-width: 768px)");
+const isShortScreen = useMediaQuery("(max-height: 700px)");
+
+const [currentPage, setCurrentPage] = useState(0);
+const directionRef = useRef(1);
+
+const ITEMS_PER_PAGE = isDesktop ? 6 : 4;
+const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
+
+useEffect(() => { ... }, []);
+
+const goToPrev = () => { ... };
+
+const goToNext = () => { ... };
+
+return (...);
+```
+
+Add a blank line between sibling handler/helper functions even when they share the same responsibility group.
