@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { motion } from "framer-motion";
 import {
   Code2,
   Cpu,
@@ -20,6 +21,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
+import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import { uploadToR2 } from "../../lib/storage/r2client";
 import { supabase } from "../../lib/supabase";
 
@@ -280,16 +282,20 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                     {availableTechStacks.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {availableTechStacks.map((stack) => (
-                          <button
+                          <motion.button
                             key={stack}
                             type="button"
-                            onClick={() =>
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onMouseEnter={playHoverSound}
+                            onClick={() => {
+                              playClickSound();
                               setSelectedStacks((prev) =>
                                 prev.includes(stack)
                                   ? prev.filter((s) => s !== stack)
                                   : [...prev, stack],
-                              )
-                            }
+                              );
+                            }}
                             className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                               selectedStacks.includes(stack)
                                 ? "border-blue-500/60 bg-blue-600/40 text-blue-200"
@@ -297,7 +303,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                             }`}
                           >
                             {stack}
-                          </button>
+                          </motion.button>
                         ))}
                       </div>
                     ) : (
@@ -326,9 +332,13 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         }}
                         className="flex-1 rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
                       />
-                      <button
+                      <motion.button
                         type="button"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onMouseEnter={playHoverSound}
                         onClick={() => {
+                          playClickSound();
                           const trimmed = customStackInput.trim();
                           if (trimmed && !selectedStacks.includes(trimmed)) {
                             setSelectedStacks((prev) => [...prev, trimmed]);
@@ -339,7 +349,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         className="rounded-md bg-gray-600 px-3 py-2 text-sm text-white hover:bg-gray-500 disabled:opacity-40"
                       >
                         Add
-                      </button>
+                      </motion.button>
                     </div>
 
                     {/* Selected stack summary */}

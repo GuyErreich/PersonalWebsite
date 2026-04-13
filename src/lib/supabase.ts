@@ -126,6 +126,12 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>
         "Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
       );
     }
-    return Reflect.get(supabaseClient, prop, supabaseClient);
+    const value = Reflect.get(supabaseClient, prop, supabaseClient);
+    // Bind functions so that `this` inside SDK methods always refers to the real
+    // client, not the proxy (calling `proxy.from(...)` would otherwise invoke the
+    // method with `this = proxy`, which breaks internal SDK state references).
+    return typeof value === "function"
+      ? (value as (...args: unknown[]) => unknown).bind(supabaseClient)
+      : value;
   },
 }) as ReturnType<typeof createClient<Database>>;

@@ -655,3 +655,42 @@ return (
 ```
 
 For short JSX with only 2–3 tightly-coupled sibling elements (e.g. `<Navbar />` then `<main>`), blank lines are optional but encouraged when the elements serve different purposes (nav, floating widget, scroll container).
+
+---
+
+## 15. Architecture Style — Abstraction Then Extension
+
+Use this as a coding-style rule across the entire codebase (not just pagination):
+
+1. Build a shared base primitive first in top-level common boundaries.
+2. Add thin section wrappers second to apply section theme/behavior.
+3. Add responsive variants last (`desktop/`, `mobile/`) that compose wrappers, not duplicate logic.
+
+### Default enforcement (blocking)
+
+- If a change touches duplicated UI shell, motion, or interaction logic, extraction is mandatory in the same change.
+- Do not stop at visual parity when duplicate logic still exists elsewhere.
+- Only skip same-change extraction when the user explicitly requests a minimal one-off patch.
+
+### Start-first checkpoint (blocking)
+
+- Before coding UI implementation details, define the base primitive, section wrapper(s), and responsive variant composition.
+- When section differences are expected, create section wrappers first and route implementation through them instead of direct base usage from feature-level screens.
+
+### Placement rule
+
+- Global base primitives: `src/components/ui/common/` and `src/components/ui/common/desktop/`
+- Section wrappers: section `common/`, `desktop/`, and `mobile/` folders
+- Feature selector/root: thin component that only chooses variant/composition
+
+### Naming rule
+
+- Keep naming aligned with the dominant domain naming in that feature.
+- Do not introduce alternate suffixes (for example `*Controls`) when equivalent `*Pagination*` / domain naming already exists.
+
+### Fast decision checklist
+
+- Base first (`common/`)
+- Wrapper second (section `common/`)
+- Variant last (`desktop/` / `mobile/`)
+- Reuse before creating new files

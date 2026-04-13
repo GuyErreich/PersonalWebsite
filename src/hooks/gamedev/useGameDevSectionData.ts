@@ -46,6 +46,7 @@ export const useGameDevSectionData = () => {
         }
       } catch (e) {
         console.warn(e instanceof Error ? e.message : String(e));
+        setGalleryItems(fallbackGameDevItems);
       } finally {
         setIsLoading(false);
       }

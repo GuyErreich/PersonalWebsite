@@ -7,6 +7,7 @@
 import { useDevOpsFilter } from "../../../hooks/devops/useDevOpsFilter";
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
 import { DevOpsFilterBar } from "./common/DevOpsFilterBar";
+import { DevOpsFilterBarMobile } from "./mobile/DevOpsFilterBarMobile";
 import type { DevOpsProject } from "./common/types";
 import { DevOpsProjectsDesktop } from "./desktop/DevOpsProjectsDesktop";
 import { DevOpsProjectsMobile } from "./mobile/DevOpsProjectsMobile";
@@ -18,11 +19,20 @@ interface DevOpsProjectsPanelProps {
 
 export const DevOpsProjectsPanel = ({ projects, isLoading }: DevOpsProjectsPanelProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
-  const { filteredProjects, search, setSearch, activeStack, setActiveStack, allStacks } =
-    useDevOpsFilter(projects);
+  const {
+    filteredProjects,
+    search,
+    setSearch,
+    activeStacks,
+    toggleStack,
+    clearStacks,
+    allStacks,
+    sortKey,
+    setSortKey,
+  } = useDevOpsFilter(projects);
 
-  // Reset pagination when filter/search changes
-  const filterKey = `${activeStack ?? ""}|${search}`;
+  // Reset pagination when filter/search/sort changes
+  const filterKey = `${activeStacks.join(",")}|${search}|${sortKey}`;
 
   if (isLoading) {
     return (
@@ -36,13 +46,29 @@ export const DevOpsProjectsPanel = ({ projects, isLoading }: DevOpsProjectsPanel
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <DevOpsFilterBar
-        search={search}
-        onSearchChange={setSearch}
-        allStacks={allStacks}
-        activeStack={activeStack}
-        onStackChange={setActiveStack}
-      />
+      {isDesktop ? (
+        <DevOpsFilterBar
+          search={search}
+          onSearchChange={setSearch}
+          allStacks={allStacks}
+          activeStacks={activeStacks}
+          onStackToggle={toggleStack}
+          onClearStacks={clearStacks}
+          sortKey={sortKey}
+          onSortChange={setSortKey}
+        />
+      ) : (
+        <DevOpsFilterBarMobile
+          search={search}
+          onSearchChange={setSearch}
+          allStacks={allStacks}
+          activeStacks={activeStacks}
+          onStackToggle={toggleStack}
+          onClearStacks={clearStacks}
+          sortKey={sortKey}
+          onSortChange={setSortKey}
+        />
+      )}
       {isDesktop ? (
         <DevOpsProjectsDesktop key={filterKey} projects={filteredProjects} />
       ) : (

@@ -8,8 +8,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "../../../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../../../hooks/useSwipeNavigation";
+import { slideXVariants } from "../../../../lib/motionVariants";
 import { playClickSound } from "../../../../lib/sound/interactionSounds";
-import { DevOpsPaginationControls } from "../common/DevOpsPaginationControls";
+import { DevOpsPaginationDots } from "../common/DevOpsPaginationDots";
 import { DevOpsProjectsGrid } from "../common/DevOpsProjectsGrid";
 import type { DevOpsProject } from "../common/types";
 
@@ -26,6 +27,7 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
 
   const [currentPage, setCurrentPage] = useState(0);
   const directionRef = useRef(1);
+  const navCountRef = useRef(0);
 
   const totalPages = Math.ceil(projects.length / ITEMS_PER_PAGE);
   // Clamp page in case screen height changes after user navigated
@@ -39,16 +41,19 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
 
   const goToPrev = () => {
     directionRef.current = -1;
+    navCountRef.current++;
     setCurrentPage((p) => p - 1);
   };
 
   const goToNext = () => {
     directionRef.current = 1;
+    navCountRef.current++;
     setCurrentPage((p) => p + 1);
   };
 
   const goToPage = (page: number) => {
     directionRef.current = page > safePage ? 1 : -1;
+    navCountRef.current++;
     setCurrentPage(page);
   };
 
@@ -70,28 +75,32 @@ export const DevOpsProjectsMobile = ({ projects }: DevOpsProjectsMobileProps) =>
   return (
     <div className="devops-paginated-shell" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <div className="devops-paginated-scroll">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={`${safePage}-${ITEMS_PER_PAGE}`}
-            initial={{ opacity: 0, x: directionRef.current * 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: directionRef.current * -50 }}
-            transition={{ duration: 0.28, ease: "easeInOut" }}
-          >
-            <DevOpsProjectsGrid
-              projects={pageItems}
-              className="grid grid-cols-2 gap-2"
-              indexOffset={safePage * ITEMS_PER_PAGE}
-            />
-          </motion.div>
-        </AnimatePresence>
+        <motion.div layout transition={{ layout: { duration: 0.5, ease: "easeInOut" } }}>
+          <div className="relative overflow-x-hidden">
+            <AnimatePresence mode="popLayout" custom={directionRef.current}>
+              <motion.div
+                key={navCountRef.current}
+                custom={directionRef.current}
+                variants={slideXVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+              >
+                <DevOpsProjectsGrid
+                  projects={pageItems}
+                  className="grid grid-cols-2 gap-2"
+                  indexOffset={safePage * ITEMS_PER_PAGE}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </motion.div>
       </div>
 
-      <DevOpsPaginationControls
+      <DevOpsPaginationDots
         currentPage={safePage}
         totalPages={totalPages}
-        onPrev={goToPrev}
-        onNext={goToNext}
         onGoTo={goToPage}
       />
     </div>
