@@ -26,43 +26,57 @@ export const useDevOpsTechStacks = (enabled = true): UseDevOpsTechStacksResult =
 
   useEffect(() => {
     if (!enabled) return;
-    void (async () => {
-      const { data, error: fetchError } = await supabase
-        .from("site_settings")
-        .select("value")
-        .eq("key", SETTINGS_KEY)
-        .single();
 
-      // PGRST116 = row not found — first time, no stacks saved yet
-      if (fetchError && fetchError.code !== "PGRST116") {
-        setError(fetchError.message);
-      } else if (data) {
-        try {
-          const parsed: unknown = JSON.parse(data.value);
-          if (Array.isArray(parsed)) {
-            setStacks(parsed.filter((s): s is string => typeof s === "string"));
+    void (async () => {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("site_settings")
+          .select("value")
+          .eq("key", SETTINGS_KEY)
+          .single();
+
+        // PGRST116 = row not found — first time, no stacks saved yet
+        if (fetchError && fetchError.code !== "PGRST116") {
+          setError(fetchError.message);
+        } else if (data) {
+          try {
+            const parsed: unknown = JSON.parse(data.value);
+            if (Array.isArray(parsed)) {
+              setStacks(parsed.filter((s): s is string => typeof s === "string"));
+            }
+          } catch {
+            // intentional — malformed JSON; start fresh
           }
-        } catch {
-          // intentional — malformed JSON; start fresh
         }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     })();
   }, [enabled]);
 
   const persist = async (updated: string[]) => {
     setSaving(true);
     setError(null);
-    const { error: upsertError } = await supabase.from("site_settings").upsert({
-      key: SETTINGS_KEY,
-      value: JSON.stringify(updated),
-    });
-    setSaving(false);
-    if (upsertError) {
-      setError(upsertError.message);
-      return;
+
+    try {
+      const { error: upsertError } = await supabase.from("site_settings").upsert({
+        key: SETTINGS_KEY,
+        value: JSON.stringify(updated),
+      });
+
+      if (upsertError) {
+        setError(upsertError.message);
+        return;
+      }
+
+      setStacks(updated);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
-    setStacks(updated);
   };
 
   const addStack = async (stack: string) => {

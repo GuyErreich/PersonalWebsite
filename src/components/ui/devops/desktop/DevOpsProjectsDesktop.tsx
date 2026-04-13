@@ -69,7 +69,9 @@ export const DevOpsProjectsDesktop = ({ projects }: DevOpsProjectsDesktopProps) 
                 animate="center"
                 exit="exit"
                 transition={{ duration: 0.5, ease: "easeInOut" }}
-                className={isXl && !isShortScreen ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-6"}
+                className={
+                  isXl && !isShortScreen ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-6"
+                }
               >
                 {pageItems.map((project, index) => (
                   <DevOpsProjectsGrid
@@ -81,24 +83,26 @@ export const DevOpsProjectsDesktop = ({ projects }: DevOpsProjectsDesktopProps) 
                   />
                 ))}
                 {/* Ghost cells to pad the grid so the container height is stable */}
-                {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - pageItems.length) }).map((_, i) => {
-                  const template = pageItems[0] || projects[0];
-                  if (!template) return <div key={i} />;
-                  return (
-                    <div
-                      key={`ghost-${i}`}
-                      className="opacity-0 pointer-events-none select-none"
-                      aria-hidden="true"
-                    >
-                      <DevOpsProjectsGrid
-                        projects={[template]}
-                        className="contents"
-                        indexOffset={0}
-                        totalSlots={1}
-                      />
-                    </div>
-                  );
-                })}
+                {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - pageItems.length) }).map(
+                  (_, i) => {
+                    const template = pageItems[0] || projects[0];
+                    if (!template) return <div key={i} />;
+                    return (
+                      <div
+                        key={`ghost-${i}`}
+                        className="opacity-0 pointer-events-none select-none"
+                        aria-hidden="true"
+                      >
+                        <DevOpsProjectsGrid
+                          projects={[template]}
+                          className="contents"
+                          indexOffset={0}
+                          totalSlots={1}
+                        />
+                      </div>
+                    );
+                  },
+                )}
               </motion.div>
             </AnimatePresence>
           </div>

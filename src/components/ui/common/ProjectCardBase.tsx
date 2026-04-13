@@ -57,7 +57,12 @@ export const ProjectCardBase = ({
     >
       {hasThumbnail && (
         <div className="h-32 shrink-0 overflow-hidden xl:h-36">
-          <img src={thumbnailUrl} alt={title} className="h-full w-full object-cover" loading="lazy" />
+          <img
+            src={thumbnailUrl}
+            alt={title}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
         </div>
       )}
 

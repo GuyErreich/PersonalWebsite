@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { PaginationDesktop } from "../../common/desktop/PaginationDesktop";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
+import { PaginationDesktop } from "../../common/desktop/PaginationDesktop";
 
 interface DevOpsPaginationDesktopProps {
   currentPage: number;

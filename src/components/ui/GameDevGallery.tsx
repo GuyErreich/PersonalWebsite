@@ -11,10 +11,10 @@ import { useMediaQuery } from "../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../hooks/useSwipeNavigation";
 import { slideXVariants } from "../../lib/motionVariants";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
-import { GameDevProjectCard } from "./gamedev/common/GameDevProjectCard";
-import { GameDevPaginationDesktop } from "./gamedev/desktop/GameDevPaginationDesktop";
 import { GameDevPaginationDots } from "./gamedev/common/GameDevPaginationDots";
+import { GameDevProjectCard } from "./gamedev/common/GameDevProjectCard";
 import type { GameDevItem } from "./gamedev/common/types";
+import { GameDevPaginationDesktop } from "./gamedev/desktop/GameDevPaginationDesktop";
 
 // ── Sub-components so hooks can be called per-item in mapped lists ──────────
 
@@ -227,20 +227,14 @@ export const GameDevGallery = ({
         ) : items.length > 0 ? (
           <div className="flex items-stretch gap-2 flex-1 min-h-0">
             {/* Strip container — measured by ResizeObserver to derive per-card height */}
-            <div
-              ref={stripRef}
-              className="flex-1 overflow-hidden h-full"
-            >
+            <div ref={stripRef} className="flex-1 overflow-hidden h-full">
               <motion.div
                 className="flex flex-col gap-2 h-full"
                 animate={{ y: -safeCompactOffset * dynamicStep }}
                 transition={{ type: "spring", stiffness: 350, damping: 32, mass: 0.8 }}
               >
                 {items.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="flex-1 min-h-0 min-h-min"
-                  >
+                  <div key={item.id} className="flex-1 min-h-0 min-h-min">
                     <GalleryInfoCard item={item} index={index} iconMap={iconMap} compact />
                   </div>
                 ))}
@@ -328,24 +322,26 @@ export const GameDevGallery = ({
                     />
                   ))}
                   {/* Ghost cards to pad the grid so the container height is stable */}
-                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - pageItems.length) }).map((_, i) => {
-                    const template = pageItems[0] || items[0];
-                    if (!template) return <div key={i} />;
-                    return (
-                      <div
-                        key={`ghost-${i}`}
-                        className="opacity-0 pointer-events-none select-none"
-                        aria-hidden="true"
-                      >
-                        <GalleryInfoCard
-                          item={template}
-                          index={i}
-                          iconMap={iconMap}
-                          withThumbnail
-                        />
-                      </div>
-                    );
-                  })}
+                  {Array.from({ length: Math.max(0, ITEMS_PER_PAGE - pageItems.length) }).map(
+                    (_, i) => {
+                      const template = pageItems[0] || items[0];
+                      if (!template) return <div key={i} />;
+                      return (
+                        <div
+                          key={`ghost-${i}`}
+                          className="opacity-0 pointer-events-none select-none"
+                          aria-hidden="true"
+                        >
+                          <GalleryInfoCard
+                            item={template}
+                            index={i}
+                            iconMap={iconMap}
+                            withThumbnail
+                          />
+                        </div>
+                      );
+                    },
+                  )}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -353,7 +349,11 @@ export const GameDevGallery = ({
 
           {/* Pagination — colored common dots on mobile */}
           {!isDesktop && totalPages > 1 && (
-            <GameDevPaginationDots currentPage={safePage} totalPages={totalPages} onGoTo={goToPage} />
+            <GameDevPaginationDots
+              currentPage={safePage}
+              totalPages={totalPages}
+              onGoTo={goToPage}
+            />
           )}
 
           {/* Pagination — sticky so it's always visible at the bottom of the scroll area (desktop only) */}

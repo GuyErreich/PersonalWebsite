@@ -7,9 +7,9 @@
 import { useDevOpsFilter } from "../../../hooks/devops/useDevOpsFilter";
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
 import { DevOpsFilterBar } from "./common/DevOpsFilterBar";
-import { DevOpsFilterBarMobile } from "./mobile/DevOpsFilterBarMobile";
 import type { DevOpsProject } from "./common/types";
 import { DevOpsProjectsDesktop } from "./desktop/DevOpsProjectsDesktop";
+import { DevOpsFilterBarMobile } from "./mobile/DevOpsFilterBarMobile";
 import { DevOpsProjectsMobile } from "./mobile/DevOpsProjectsMobile";
 
 interface DevOpsProjectsPanelProps {
