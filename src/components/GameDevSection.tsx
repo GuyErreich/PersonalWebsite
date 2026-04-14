@@ -8,12 +8,12 @@ import { memo, useState } from "react";
 import { useGameDevSectionData } from "../hooks/gamedev/useGameDevSectionData";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { GamingIconsBackground } from "./backgrounds/tsparticles/GamingIconsBackground";
-import { GameDevSlidingPanels } from "./ui/gamedev/common/GameDevSlidingPanels";
-import { iconMap } from "./ui/gamedev/common/iconMap";
+import { SectionEntranceOverlay } from "./ui/common/sections/SectionEntranceOverlay";
+import { SectionEdge } from "./ui/edges/SectionEdge";
+import { iconMap } from "./ui/gamedev/common/data/iconMap";
+import { GameDevSlidingPanels } from "./ui/gamedev/common/panels/GameDevSlidingPanels";
 import { GameDevAllProjectsPanel } from "./ui/gamedev/GameDevAllProjectsPanel";
 import { GameDevOverviewPanel } from "./ui/gamedev/GameDevOverviewPanel";
-import { SectionEdge } from "./ui/SectionEdge";
-import { SectionEntranceOverlay } from "./ui/SectionEntranceOverlay";
 
 const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
 

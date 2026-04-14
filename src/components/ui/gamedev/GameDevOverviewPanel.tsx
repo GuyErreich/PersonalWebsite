@@ -5,9 +5,9 @@
  */
 
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
-import type { GameDevOverviewLayoutProps } from "./common/types";
-import { GameDevOverviewDesktop } from "./desktop/GameDevOverviewDesktop";
-import { GameDevOverviewMobileShort } from "./mobile/GameDevOverviewMobileShort";
+import type { GameDevOverviewLayoutProps } from "./common/data/types";
+import { GameDevOverviewDesktop } from "./desktop/layouts/GameDevOverviewDesktop";
+import { GameDevOverviewMobileShort } from "./mobile/layouts/GameDevOverviewMobileShort";
 
 export const GameDevOverviewPanel = ({
   showreelUrl,

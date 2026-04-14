@@ -9,7 +9,7 @@ import { DevOpsSection } from "../components/DevOpsSection";
 import { GameDevSection } from "../components/GameDevSection";
 import { Hero } from "../components/Hero";
 import { Navbar } from "../components/Navbar";
-import { FloatingContactDock } from "../components/ui/FloatingContactDock";
+import { FloatingContactDock } from "../components/ui/common/controls/FloatingContactDock";
 import { ScrollContainerContext } from "../lib/ScrollContainerContext";
 
 export const Home = () => {

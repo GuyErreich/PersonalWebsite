@@ -5,9 +5,9 @@
  */
 
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
-import type { GameDevAllProjectsLayoutProps } from "./common/types";
-import { GameDevAllProjectsDesktop } from "./desktop/GameDevAllProjectsDesktop";
-import { GameDevAllProjectsMobile } from "./mobile/GameDevAllProjectsMobile";
+import type { GameDevAllProjectsLayoutProps } from "./common/data/types";
+import { GameDevAllProjectsDesktop } from "./desktop/layouts/GameDevAllProjectsDesktop";
+import { GameDevAllProjectsMobile } from "./mobile/layouts/GameDevAllProjectsMobile";
 
 export const GameDevAllProjectsPanel = ({
   galleryItems,
