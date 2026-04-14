@@ -6,10 +6,10 @@
 
 import { ArrowRight } from "lucide-react";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
-import { GameDevGallery } from "../../common/gallery/GameDevGallery";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
+import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
 export const GameDevOverviewMobile = ({
   showreelUrl,
@@ -37,13 +37,7 @@ export const GameDevOverviewMobile = ({
             </GameDevPanelButton>
           }
         >
-          <GameDevGallery
-            items={galleryItems}
-            iconMap={iconMap}
-            isLoading={isLoading}
-            compact
-            mobileItemsPerPage={1}
-          />
+          <GameDevHiveGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
         </GameDevPanelShell>
       </div>
     </div>

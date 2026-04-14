@@ -26,11 +26,22 @@ export interface GameDevGalleryPanelProps {
   iconMap: GameDevIconMap;
 }
 
+export interface GameDevAllProjectsPanelProps extends GameDevGalleryPanelProps {
+  onBack: () => void;
+}
+
 export interface GameDevOverviewLayoutProps extends GameDevGalleryPanelProps {
   showreelUrl: string | null;
   onViewAll: () => void;
 }
 
-export interface GameDevAllProjectsLayoutProps extends GameDevGalleryPanelProps {
-  onBack: () => void;
+export interface GameDevAllProjectsLayoutProps extends GameDevAllProjectsPanelProps {
+  search: string;
+  onSearchChange: (value: string) => void;
+  allStacks: string[];
+  activeStacks: string[];
+  onStackToggle: (value: string) => void;
+  onClearStacks: () => void;
+  sortKey: string;
+  onSortChange: (value: string) => void;
 }
