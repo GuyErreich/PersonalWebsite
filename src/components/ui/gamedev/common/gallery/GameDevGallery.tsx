@@ -62,6 +62,7 @@ interface GameDevGalleryProps {
   isLoading?: boolean;
   compact?: boolean;
   maxCompactItems?: number;
+  mobileItemsPerPage?: number;
 }
 
 export const GameDevGallery = ({
@@ -70,8 +71,10 @@ export const GameDevGallery = ({
   isLoading = false,
   compact = false,
   maxCompactItems = 4,
+  mobileItemsPerPage = 1,
 }: GameDevGalleryProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const mobilePageSize = Math.max(1, mobileItemsPerPage);
 
   // Compact slider: measure available strip height so 3 cards always fill the space
   const COMPACT_GAP = 8; // px — gap-2
@@ -122,13 +125,25 @@ export const GameDevGallery = ({
     if (compactOffset !== safeCompactOffset) setCompactOffset(safeCompactOffset);
   }, [safeCompactOffset, compactOffset]);
 
-  // Non-compact (all projects — 6 cards per page on desktop, 3 on mobile).
+  // Non-compact (all projects — 6 cards per page on desktop).
   //   desktop (md+) → 6 cards (2-row × 3-col, or 1-row × 6-col)
-  //   mobile        → 3 cards (1-row × 3-col)
-  const ITEMS_PER_PAGE = compact ? maxCompactItems : isDesktop ? 6 : 3;
+  //   mobile        → controlled via mobileItemsPerPage (default 1)
+  const ITEMS_PER_PAGE = compact ? maxCompactItems : isDesktop ? 6 : mobilePageSize;
   const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
   const { safePage, canPrev, canNext, direction, frameKey, goToPrev, goToNext, goToPage } =
     usePaginatedNavigation({ totalPages });
+
+  const mobileCompactTotalPages = Math.ceil(items.length / mobilePageSize);
+  const {
+    safePage: safeCompactMobilePage,
+    canPrev: canPrevCompactMobile,
+    canNext: canNextCompactMobile,
+    direction: compactMobileDirection,
+    frameKey: compactMobileFrameKey,
+    goToPrev: goToPrevCompactMobile,
+    goToNext: goToNextCompactMobile,
+    goToPage: goToCompactMobilePage,
+  } = usePaginatedNavigation({ totalPages: mobileCompactTotalPages });
 
   const { onTouchStart, onTouchEnd } = useSwipeNavigation({
     onSwipeLeft: () => {
@@ -141,6 +156,21 @@ export const GameDevGallery = ({
       if (canPrev) {
         playClickSound();
         goToPrev();
+      }
+    },
+  });
+
+  const { onTouchStart: onCompactTouchStart, onTouchEnd: onCompactTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      if (canNextCompactMobile) {
+        playClickSound();
+        goToNextCompactMobile();
+      }
+    },
+    onSwipeRight: () => {
+      if (canPrevCompactMobile) {
+        playClickSound();
+        goToPrevCompactMobile();
       }
     },
   });
@@ -172,25 +202,55 @@ export const GameDevGallery = ({
 
     // Mobile: freely scrollable list of all items — scroll is handled by gamedev-panel-scroll
     if (!isDesktop) {
+      const compactMobilePageItems = items.slice(
+        safeCompactMobilePage * mobilePageSize,
+        (safeCompactMobilePage + 1) * mobilePageSize,
+      );
+
       return (
-        <div className="flex w-full flex-col gap-2">
-          {isLoading
-            ? Array.from({ length: maxCompactItems }).map((_, i) => (
-                <div key={i} className="h-20 rounded-xl bg-gray-700/40 animate-pulse" />
-              ))
-            : items.map((item, index) => (
-                <GalleryInfoCard
-                  key={item.id}
-                  item={item}
-                  index={index}
-                  iconMap={iconMap}
-                  compact
+        <div
+          className="flex w-full flex-col gap-3"
+          onTouchStart={onCompactTouchStart}
+          onTouchEnd={onCompactTouchEnd}
+        >
+          {isLoading ? (
+            Array.from({ length: mobilePageSize }).map((_, i) => (
+              <div key={i} className="h-28 rounded-xl bg-gray-700/40 animate-pulse" />
+            ))
+          ) : items.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-700 p-6 text-center text-sm text-gray-500">
+              No projects added yet.
+            </div>
+          ) : (
+            <>
+              <PaginatedSlideFrame
+                direction={compactMobileDirection}
+                frameKey={compactMobileFrameKey}
+                contentClassName="grid grid-cols-1 gap-2"
+              >
+                {compactMobilePageItems.map((item, index) => (
+                  <GalleryInfoCard
+                    key={item.id}
+                    item={item}
+                    index={index}
+                    iconMap={iconMap}
+                    compact
+                  />
+                ))}
+              </PaginatedSlideFrame>
+
+              {mobileCompactTotalPages > 1 && (
+                <GameDevPaginationDots
+                  currentPage={safeCompactMobilePage}
+                  totalPages={mobileCompactTotalPages}
+                  onGoTo={goToCompactMobilePage}
                 />
-              ))}
+              )}
+            </>
+          )}
         </div>
       );
     }
-
     // Desktop: spring-animated continuous vertical strip — fills available height, 3 equal slots
     return (
       <div ref={compactWheelRef} className="flex w-full flex-col gap-3 h-full pr-1">

@@ -43,25 +43,34 @@ export const GameDevAllProjectsMobile = ({
         eyebrow="Full Gallery View"
         title="All Projects"
         rightAction={
-          <div className="flex items-center gap-2">
-            <SortDropdown
-              value={sortKey}
-              options={GAMEDEV_SORT_OPTIONS}
-              onChange={(v) => setSortKey(v as GameDevSortKey)}
-            />
-            <GameDevPanelButton
-              variant="secondary"
-              hoverX={-3}
-              onClick={onBack}
-              icon={<ArrowLeft className="h-4 w-4" />}
-              iconPosition="start"
-            >
-              Back
-            </GameDevPanelButton>
-          </div>
+          <GameDevPanelButton
+            variant="secondary"
+            hoverX={-3}
+            onClick={onBack}
+            icon={<ArrowLeft className="h-4 w-4" />}
+            iconPosition="start"
+          >
+            Back
+          </GameDevPanelButton>
         }
       >
-        <GameDevGallery items={sortedItems} iconMap={iconMap} isLoading={isLoading} />
+        <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-400">
+            Sort
+          </p>
+          <SortDropdown
+            value={sortKey}
+            options={GAMEDEV_SORT_OPTIONS}
+            onChange={(v) => setSortKey(v as GameDevSortKey)}
+          />
+        </div>
+
+        <GameDevGallery
+          items={sortedItems}
+          iconMap={iconMap}
+          isLoading={isLoading}
+          mobileItemsPerPage={1}
+        />
       </GameDevPanelShell>
     </div>
   );

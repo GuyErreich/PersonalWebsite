@@ -460,7 +460,6 @@ export const DevOpsFilterBar = ({
                                           onClick={() => {
                                             playClickSound();
                                             onStackToggle(stack);
-                                            closeDropdown();
                                           }}
                                           className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10 ${
                                             isActive
@@ -528,7 +527,6 @@ export const DevOpsFilterBar = ({
                               onClick={() => {
                                 playClickSound();
                                 setOffset(targetOffset);
-                                closeDropdown();
                               }}
                               onMouseEnter={() => {
                                 playHoverSound();

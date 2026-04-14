@@ -158,6 +158,7 @@ export const GameDevOverviewMobileShort = ({
                   isLoading={isLoading}
                   compact
                   maxCompactItems={maxProjects}
+                  mobileItemsPerPage={1}
                 />
               </GameDevPanelShell>
             </motion.div>
