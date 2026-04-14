@@ -6,11 +6,11 @@
 
 import { useDevOpsSectionData } from "../hooks/devops/useDevOpsSectionData";
 import { useMediaQuery } from "../hooks/responsive/useMediaQuery";
-import { DevOpsBackground } from "./ui/devops/common/DevOpsBackground";
+import { SectionEntranceOverlay } from "./ui/common/sections/SectionEntranceOverlay";
+import { SectionHeader } from "./ui/common/sections/SectionHeader";
+import { SectionWrapper } from "./ui/common/sections/SectionWrapper";
+import { DevOpsBackground } from "./ui/devops/common/visuals/DevOpsBackground";
 import { DevOpsProjectsPanel } from "./ui/devops/DevOpsProjectsPanel";
-import { SectionEntranceOverlay } from "./ui/SectionEntranceOverlay";
-import { SectionHeader } from "./ui/SectionHeader";
-import { SectionWrapper } from "./ui/SectionWrapper";
 
 export const DevOpsSection = () => {
   const { projects, isLoading } = useDevOpsSectionData();

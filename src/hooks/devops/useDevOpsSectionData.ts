@@ -5,8 +5,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { devOpsProjects as fallbackProjects } from "../../components/ui/devops/common/projects";
-import type { DevOpsProject } from "../../components/ui/devops/common/types";
+import { devOpsProjects as fallbackProjects } from "../../components/ui/devops/common/data/projects";
+import type { DevOpsProject } from "../../components/ui/devops/common/data/types";
 import { supabase } from "../../lib/supabase";
 
 // Only switch to real DB data once there are at least as many rows as the

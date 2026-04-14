@@ -6,11 +6,11 @@
 
 import { useDevOpsFilter } from "../../../hooks/devops/useDevOpsFilter";
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
-import { DevOpsFilterBar } from "./common/DevOpsFilterBar";
-import type { DevOpsProject } from "./common/types";
-import { DevOpsProjectsDesktop } from "./desktop/DevOpsProjectsDesktop";
-import { DevOpsFilterBarMobile } from "./mobile/DevOpsFilterBarMobile";
-import { DevOpsProjectsMobile } from "./mobile/DevOpsProjectsMobile";
+import type { DevOpsProject } from "./common/data/types";
+import { DevOpsFilterBar } from "./common/filters/DevOpsFilterBar";
+import { DevOpsProjectsDesktop } from "./desktop/layouts/DevOpsProjectsDesktop";
+import { DevOpsFilterBarMobile } from "./mobile/filters/DevOpsFilterBarMobile";
+import { DevOpsProjectsMobile } from "./mobile/layouts/DevOpsProjectsMobile";
 
 interface DevOpsProjectsPanelProps {
   projects: DevOpsProject[];

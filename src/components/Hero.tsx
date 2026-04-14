@@ -26,9 +26,9 @@ import { ReverseHyperspace } from "./backgrounds/three/hero/ReverseHyperspace";
 import { ThreeHeroBackground } from "./backgrounds/three/ThreeHeroBackground";
 import { HyperspaceLever } from "./HyperspaceLever";
 import { RocketReplayButton } from "./RocketReplayButton";
-import { GitHubIcon, LinkedInIcon } from "./ui/BrandIcons";
-import { IrisTransition } from "./ui/IrisTransition";
-import { SectionEdge } from "./ui/SectionEdge";
+import { GitHubIcon, LinkedInIcon } from "./ui/common/icons/BrandIcons";
+import { IrisTransition } from "./ui/common/transitions/IrisTransition";
+import { SectionEdge } from "./ui/edges/SectionEdge";
 
 const ResponsiveCamera = () => {
   const { camera, size } = useThree();

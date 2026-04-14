@@ -7,7 +7,7 @@
 import { motion } from "framer-motion";
 import { Mail, Terminal } from "lucide-react";
 import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";
-import { GitHubIcon, LinkedInIcon } from "./ui/BrandIcons";
+import { GitHubIcon, LinkedInIcon } from "./ui/common/icons/BrandIcons";
 
 export const Footer = () => {
   return (

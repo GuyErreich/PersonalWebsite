@@ -5,8 +5,8 @@
  */
 
 import { useEffect, useState } from "react";
-import { fallbackGameDevItems } from "../../components/ui/gamedev/common/items";
-import type { GameDevItem } from "../../components/ui/gamedev/common/types";
+import { fallbackGameDevItems } from "../../components/ui/gamedev/common/data/items";
+import type { GameDevItem } from "../../components/ui/gamedev/common/data/types";
 import { supabase } from "../../lib/supabase";
 
 const MIN_REAL_ITEMS = fallbackGameDevItems.length;

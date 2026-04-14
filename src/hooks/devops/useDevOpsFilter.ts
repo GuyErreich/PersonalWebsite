@@ -5,7 +5,7 @@
  */
 
 import { useMemo, useState } from "react";
-import type { DevOpsProject } from "../../components/ui/devops/common/types";
+import type { DevOpsProject } from "../../components/ui/devops/common/data/types";
 
 export type DevOpsSortKey = "default" | "title-asc" | "title-desc" | "date-desc" | "date-asc";
 
