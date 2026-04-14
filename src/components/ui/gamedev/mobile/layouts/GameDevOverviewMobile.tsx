@@ -37,7 +37,13 @@ export const GameDevOverviewMobile = ({
             </GameDevPanelButton>
           }
         >
-          <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} compact />
+          <GameDevGallery
+            items={galleryItems}
+            iconMap={iconMap}
+            isLoading={isLoading}
+            compact
+            mobileItemsPerPage={1}
+          />
         </GameDevPanelShell>
       </div>
     </div>
