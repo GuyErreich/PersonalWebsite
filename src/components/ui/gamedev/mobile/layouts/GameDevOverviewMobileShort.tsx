@@ -7,13 +7,12 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Film, Layers } from "lucide-react";
 import { useRef, useState } from "react";
-import { useMediaQuery } from "../../../../../hooks/responsive/useMediaQuery";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
-import { GameDevGallery } from "../../common/gallery/GameDevGallery";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
+import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
 type Tab = "showreel" | "projects";
 
@@ -36,8 +35,6 @@ export const GameDevOverviewMobileShort = ({
   const [hasInteracted, setHasInteracted] = useState(false);
   const directionRef = useRef(1); // 1 = forward (showreel→projects), -1 = backward
   const TAB_ORDER: Tab[] = ["showreel", "projects"];
-  const isShortScreen = useMediaQuery("(max-height: 700px)");
-  const maxProjects = isShortScreen ? 2 : 4;
 
   const markInteracted = () => {
     if (!hasInteracted) {
@@ -152,14 +149,7 @@ export const GameDevOverviewMobileShort = ({
                   </GameDevPanelButton>
                 }
               >
-                <GameDevGallery
-                  items={galleryItems}
-                  iconMap={iconMap}
-                  isLoading={isLoading}
-                  compact
-                  maxCompactItems={maxProjects}
-                  mobileItemsPerPage={1}
-                />
+                <GameDevHiveGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
               </GameDevPanelShell>
             </motion.div>
           )}

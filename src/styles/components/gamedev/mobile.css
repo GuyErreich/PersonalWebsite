@@ -48,4 +48,178 @@
   .gamedev-mobile-short-panel::-webkit-scrollbar {
     display: none;
   }
+
+  .gamedev-hive-shell {
+    @apply flex flex-col gap-3;
+  }
+
+  .gamedev-hive-stage {
+    @apply relative isolate min-h-[23rem] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#050b14] px-2 py-3;
+    touch-action: none;
+  }
+
+  .gamedev-hive-stage--loading {
+    @apply flex items-center justify-center;
+  }
+
+  .gamedev-hive-stage--spread {
+    @apply border-cyan-300/22;
+    box-shadow:
+      inset 0 0 0 1px rgba(34, 211, 238, 0.08),
+      0 16px 40px rgba(2, 6, 23, 0.34);
+  }
+
+  .gamedev-hive-backdrop {
+    @apply pointer-events-none absolute inset-0 opacity-80;
+    background:
+      radial-gradient(circle at center, rgba(14, 116, 144, 0.18) 0%, rgba(5, 11, 20, 0) 48%),
+      radial-gradient(circle at center, rgba(147, 51, 234, 0.15) 0%, rgba(5, 11, 20, 0) 68%),
+      linear-gradient(180deg, rgba(8, 16, 27, 0.96) 0%, rgba(4, 10, 18, 0.98) 100%);
+  }
+
+  .gamedev-hive-backdrop::after {
+    content: "";
+    @apply absolute inset-[8%] rounded-full opacity-35;
+    background-image:
+      radial-gradient(circle at center, rgba(34, 211, 238, 0.18) 0, rgba(34, 211, 238, 0) 63%),
+      repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 0 1px, transparent 1px 48px);
+  }
+
+  .gamedev-hive-center-target {
+    @apply pointer-events-none absolute top-1/2 left-1/2 z-10 h-22 w-22 -translate-x-1/2 -translate-y-1/2 rounded-[1.35rem] border border-cyan-400/18;
+    box-shadow:
+      0 0 0 1px rgba(34, 211, 238, 0.08),
+      inset 0 0 26px rgba(34, 211, 238, 0.06);
+  }
+
+  .gamedev-hive-center-target::before,
+  .gamedev-hive-center-target::after {
+    content: "";
+    @apply absolute bg-cyan-300/18;
+  }
+
+  .gamedev-hive-center-target::before {
+    @apply top-1/2 left-1/2 h-px w-8 -translate-x-1/2 -translate-y-1/2;
+  }
+
+  .gamedev-hive-center-target::after {
+    @apply top-1/2 left-1/2 h-8 w-px -translate-x-1/2 -translate-y-1/2;
+  }
+
+  .gamedev-hive-center-target--spread {
+    @apply border-cyan-300/32;
+    box-shadow:
+      0 0 0 1px rgba(34, 211, 238, 0.12),
+      0 0 28px rgba(34, 211, 238, 0.16),
+      inset 0 0 30px rgba(34, 211, 238, 0.1);
+  }
+
+  .gamedev-hive-cluster {
+    @apply absolute inset-0 z-20;
+    cursor: grab;
+  }
+
+  .gamedev-hive-cluster:active {
+    cursor: grabbing;
+  }
+
+  .gamedev-hive-active-card {
+    @apply pointer-events-none absolute right-3 bottom-3 z-30 w-[8.75rem];
+  }
+
+  .gamedev-hive-active-card--spread {
+    @apply w-[12rem];
+  }
+
+  .gamedev-hive-node {
+    @apply absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-start gap-1 rounded-[1rem] border border-white/10 bg-[#09111d]/84 px-1 py-1 text-center text-white shadow-[0_10px_28px_rgba(2,6,23,0.42)] backdrop-blur-sm;
+  }
+
+  .gamedev-hive-node--center {
+    @apply border-cyan-400/28 bg-[#0b1622]/92 shadow-[0_16px_40px_rgba(2,6,23,0.58)];
+  }
+
+  .gamedev-hive-node-thumb {
+    @apply h-10 w-full rounded-[0.72rem] border border-white/15 bg-cover bg-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)];
+  }
+
+  .gamedev-hive-node-icon {
+    @apply flex h-9 w-full items-center justify-center rounded-[0.72rem] border border-purple-500/30 bg-purple-500/14 text-purple-200;
+  }
+
+  .gamedev-hive-node-label {
+    @apply line-clamp-2 w-full px-0.5 text-[8px] font-semibold leading-tight text-gray-200;
+  }
+
+  .gamedev-hive-focus-core {
+    @apply flex items-center gap-2.5 rounded-full border border-cyan-400/20 bg-[#08101b]/88 px-2.5 py-2 shadow-[0_12px_30px_rgba(2,6,23,0.52)] backdrop-blur-md;
+  }
+
+  .gamedev-hive-focus-orb {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-purple-500/30 bg-purple-500/14;
+  }
+
+  .gamedev-hive-focus-copy {
+    @apply min-w-0;
+  }
+
+  .gamedev-hive-focus-index {
+    @apply mb-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-cyan-300/80;
+  }
+
+  .gamedev-hive-focus-title {
+    @apply line-clamp-2 text-[11px] font-bold leading-tight text-white;
+  }
+
+  .gamedev-hive-focus-description {
+    @apply mt-1 line-clamp-3 text-[10px] leading-relaxed text-gray-300;
+  }
+
+  .gamedev-hive-focus-tags {
+    @apply mt-1.5 flex flex-wrap gap-1;
+  }
+
+  .gamedev-hive-focus-tag {
+    @apply rounded-full border border-cyan-400/18 bg-cyan-400/8 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-cyan-200/78;
+  }
+
+  .gamedev-hive-meta {
+    @apply flex items-start justify-between gap-3 px-1;
+  }
+
+  .gamedev-hive-caption {
+    @apply max-w-[14rem] text-[10px] uppercase tracking-[0.14em] text-gray-500;
+  }
+
+  .gamedev-hive-count {
+    @apply text-[11px] font-semibold tracking-[0.18em] text-cyan-300/80;
+  }
+
+  .gamedev-hive-active-skeleton {
+    @apply h-13 w-[8.75rem] rounded-full bg-gray-700/40 animate-pulse;
+  }
+
+  .gamedev-hive-node-skeleton {
+    @apply absolute h-14 w-14 rounded-[1rem] bg-gray-700/30 animate-pulse;
+  }
+
+  .gamedev-hive-node-skeleton--a {
+    top: 15%;
+    left: 18%;
+  }
+
+  .gamedev-hive-node-skeleton--b {
+    top: 18%;
+    right: 16%;
+  }
+
+  .gamedev-hive-node-skeleton--c {
+    bottom: 16%;
+    left: 12%;
+  }
+
+  .gamedev-hive-node-skeleton--d {
+    right: 14%;
+    bottom: 18%;
+  }
 }
