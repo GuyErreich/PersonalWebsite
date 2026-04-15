@@ -102,10 +102,6 @@ let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
 
 if (supabaseUrl && supabaseAnonKey) {
   supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
-} else if (typeof window !== "undefined") {
-  console.warn(
-    "Supabase not configured: VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be set.",
-  );
 }
 
 // Export a getter that throws only when actually used (not at module load time)

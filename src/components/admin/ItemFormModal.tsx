@@ -69,6 +69,12 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (type === "devops" && selectedStacks.length === 0) {
+      setError("Select at least one tech stack.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

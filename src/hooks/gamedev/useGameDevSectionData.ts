@@ -25,9 +25,7 @@ export const useGameDevSectionData = () => {
           .eq("key", "showreel_url")
           .single();
 
-        if (showreelError) {
-          console.warn(showreelError.message);
-        } else if (showreelData) {
+        if (!showreelError && showreelData) {
           setShowreelUrl(showreelData.value);
         }
 
@@ -37,15 +35,13 @@ export const useGameDevSectionData = () => {
           .order("created_at", { ascending: false });
 
         if (itemsError) {
-          console.warn(itemsError.message);
           setGalleryItems(fallbackGameDevItems);
         } else if (items && items.length >= MIN_REAL_ITEMS) {
           setGalleryItems(items as GameDevItem[]);
         } else {
           setGalleryItems(fallbackGameDevItems);
         }
-      } catch (e) {
-        console.warn(e instanceof Error ? e.message : String(e));
+      } catch {
         setGalleryItems(fallbackGameDevItems);
       } finally {
         setIsLoading(false);
