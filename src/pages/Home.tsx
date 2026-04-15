@@ -191,7 +191,9 @@ export const Home = () => {
 
           <DevOpsSection />
 
-          <Footer />
+          <section className="snap-section">
+            <Footer />
+          </section>
         </main>
       </div>
     </ScrollContainerContext.Provider>
