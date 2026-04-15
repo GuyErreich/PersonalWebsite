@@ -447,11 +447,14 @@ export const StackFilterBar = ({
                               const isActive = activeStacks.includes(stack);
 
                               return (
-                                <button
+                                <motion.button
                                   key={stack}
                                   type="button"
                                   role="option"
                                   aria-selected={isActive}
+                                  whileHover={{ scale: 1.02 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onMouseEnter={playHoverSound}
                                   onClick={() => {
                                     playClickSound();
                                     onStackToggle(stack);
@@ -469,7 +472,7 @@ export const StackFilterBar = ({
                                       className={`h-3 w-3 shrink-0 ${theme.activeOptionIconClassName}`}
                                     />
                                   ) : null}
-                                </button>
+                                </motion.button>
                               );
                             })
                           )}
@@ -534,10 +537,13 @@ export const StackFilterBar = ({
                                             transition: "transform 0.1s ease, opacity 0.1s ease",
                                           }}
                                         >
-                                          <button
+                                          <motion.button
                                             type="button"
                                             role="option"
                                             aria-selected={isActive}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onMouseEnter={playHoverSound}
                                             onClick={() => {
                                               playClickSound();
                                               onStackToggle(stack);
@@ -554,7 +560,7 @@ export const StackFilterBar = ({
                                                 className={`h-3 w-3 shrink-0 ${theme.activeOptionIconClassName}`}
                                               />
                                             ) : null}
-                                          </button>
+                                          </motion.button>
                                         </div>
                                       </div>
                                     );
