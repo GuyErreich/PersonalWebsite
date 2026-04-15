@@ -5,11 +5,13 @@
  */
 
 import { memo, useState } from "react";
+import { useGameDevFilter } from "../hooks/gamedev/useGameDevFilter";
 import { useGameDevSectionData } from "../hooks/gamedev/useGameDevSectionData";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { GamingIconsBackground } from "./backgrounds/tsparticles/GamingIconsBackground";
 import { SectionEntranceOverlay } from "./ui/common/sections/SectionEntranceOverlay";
 import { SectionEdge } from "./ui/edges/SectionEdge";
+import type { GameDevSortKey } from "./ui/gamedev/common/data/filtering";
 import { iconMap } from "./ui/gamedev/common/data/iconMap";
 import { GameDevSlidingPanels } from "./ui/gamedev/common/panels/GameDevSlidingPanels";
 import { GameDevAllProjectsPanel } from "./ui/gamedev/GameDevAllProjectsPanel";
@@ -21,6 +23,17 @@ export const GameDevSection = () => {
   const [showAllProjectsView, setShowAllProjectsView] = useState(false);
 
   const { galleryItems, isLoading, showreelUrl } = useGameDevSectionData();
+  const {
+    filteredItems,
+    search,
+    setSearch,
+    activeStacks,
+    toggleStack,
+    clearStacks,
+    allStacks,
+    sortKey,
+    setSortKey,
+  } = useGameDevFilter(galleryItems);
   const { ref: sectionRef, motionStyle } = useScrollReveal();
 
   return (
@@ -44,10 +57,18 @@ export const GameDevSection = () => {
           }
           secondaryPanel={
             <GameDevAllProjectsPanel
-              galleryItems={galleryItems}
+              galleryItems={filteredItems}
               isLoading={isLoading}
               iconMap={iconMap}
               onBack={() => setShowAllProjectsView(false)}
+              search={search}
+              onSearchChange={setSearch}
+              allStacks={allStacks}
+              activeStacks={activeStacks}
+              onStackToggle={toggleStack}
+              onClearStacks={clearStacks}
+              sortKey={sortKey}
+              onSortChange={(value) => setSortKey(value as GameDevSortKey)}
             />
           }
         />

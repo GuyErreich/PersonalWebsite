@@ -14,6 +14,7 @@ interface GameDevPanelShellProps {
   children: ReactNode;
   footer?: ReactNode;
   clipScroll?: boolean;
+  className?: string;
 }
 
 export const GameDevPanelShell = ({
@@ -24,9 +25,10 @@ export const GameDevPanelShell = ({
   children,
   footer,
   clipScroll = false,
+  className,
 }: GameDevPanelShellProps) => {
   return (
-    <div className="gamedev-panel-card">
+    <div className={className ? `gamedev-panel-card ${className}` : "gamedev-panel-card"}>
       <div className="gamedev-panel-header">
         <div>
           <p className="gamedev-panel-eyebrow">{eyebrow}</p>

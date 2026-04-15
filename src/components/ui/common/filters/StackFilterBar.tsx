@@ -25,7 +25,7 @@ import { FilterLetterTouchBubble } from "./FilterLetterTouchBubble";
 const PER_PAGE = 5;
 const ITEM_HEIGHT = 30;
 
-interface StackFilterTheme {
+export interface StackFilterTheme {
   activeButtonClassName: string;
   activeBadgeClassName: string;
   activeOptionClassName: string;
@@ -67,17 +67,18 @@ export const StackFilterBar = ({
 }: StackFilterBarProps) => {
   const scrollContainer = useScrollContainer();
   const isMobile = useMediaQuery("(max-width: 767px)");
-  const swipeStartY = useRef<number | undefined>(undefined);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [stackSearch, setStackSearch] = useState("");
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [offset, setOffset] = useState(0);
+  const [mobileTopIndex, setMobileTopIndex] = useState(0);
   const [hoveredLetter, setHoveredLetter] = useState<string | null>(null);
   const [touchLetter, setTouchLetter] = useState<string | null>(null);
   const [touchBubblePos, setTouchBubblePos] = useState<{ x: number; y: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const stackSearchRef = useRef<HTMLInputElement>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
+  const mobileListRef = useRef<HTMLDivElement>(null);
   const scrollportRef = useRef<HTMLDivElement>(null);
   const letterSidebarRef = useRef<HTMLDivElement>(null);
   const lastTouchedLetterRef = useRef<string | null>(null);
@@ -130,15 +131,19 @@ export const StackFilterBar = ({
   useEffect(() => {
     if (!dropdownOpen) return;
 
-    const handler = (event: MouseEvent) => {
+    const handler = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         closeDropdown();
       }
     };
 
     document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler as EventListener, { passive: true });
 
-    return () => document.removeEventListener("mousedown", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler as EventListener);
+    };
   }, [closeDropdown, dropdownOpen]);
 
   useEffect(() => {
@@ -160,6 +165,7 @@ export const StackFilterBar = ({
   const maxOffset = Math.max(0, filteredStacks.length - PER_PAGE);
   const safeOffset = Math.max(0, Math.min(offset, maxOffset));
   const pageStacks = filteredStacks.slice(safeOffset, safeOffset + PER_PAGE);
+  const mobileVisibleStacks = filteredStacks.slice(mobileTopIndex, mobileTopIndex + PER_PAGE);
   const canUp = safeOffset > 0;
   const canDown = safeOffset < maxOffset;
 
@@ -172,8 +178,20 @@ export const StackFilterBar = ({
   }, [maxOffset]);
 
   useEffect(() => {
+    setMobileTopIndex((current) => Math.max(0, Math.min(maxOffset, current)));
+  }, [maxOffset]);
+
+  useEffect(() => {
+    if (isMobile) {
+      setMobileTopIndex(0);
+      if (mobileListRef.current) {
+        mobileListRef.current.scrollTop = 0;
+      }
+      return;
+    }
+
     setOffset(0);
-  }, [stackSearch]);
+  }, [isMobile, stackSearch]);
 
   useEffect(() => {
     const element = scrollContainer?.current as HTMLElement | null;
@@ -190,7 +208,7 @@ export const StackFilterBar = ({
   }, [dropdownOpen, scrollContainer]);
 
   useEffect(() => {
-    if (!dropdownOpen) return;
+    if (!dropdownOpen || isMobile) return;
 
     const element = listContainerRef.current;
 
@@ -226,7 +244,7 @@ export const StackFilterBar = ({
     element.addEventListener("wheel", handler, { passive: false });
 
     return () => element.removeEventListener("wheel", handler);
-  }, [dropdownOpen, updateHoveredFromMouse]);
+  }, [dropdownOpen, isMobile, updateHoveredFromMouse]);
 
   const letterIndex = useMemo(() => {
     const map = new Map<string, number>();
@@ -252,12 +270,26 @@ export const StackFilterBar = ({
     return map;
   }, [filteredStacks]);
 
-  const pageLetters = useMemo(
-    () => new Set(pageStacks.map((stack) => stack[0]?.toUpperCase() ?? "#")),
-    [pageStacks],
-  );
+  const pageLetters = useMemo(() => {
+    const visible = isMobile ? mobileVisibleStacks : pageStacks;
+
+    return new Set(visible.map((stack) => stack[0]?.toUpperCase() ?? "#"));
+  }, [isMobile, mobileVisibleStacks, pageStacks]);
 
   const letterEntries = useMemo(() => [...letterIndex.entries()], [letterIndex]);
+
+  const jumpToOffset = useCallback(
+    (targetOffset: number) => {
+      if (isMobile && mobileListRef.current) {
+        mobileListRef.current.scrollTo({ top: targetOffset * ITEM_HEIGHT, behavior: "smooth" });
+        setMobileTopIndex(targetOffset);
+        return;
+      }
+
+      setOffset(targetOffset);
+    },
+    [isMobile],
+  );
 
   const updateLetterFromTouch = useCallback(
     (touch: React.Touch) => {
@@ -280,37 +312,10 @@ export const StackFilterBar = ({
       setHoveredLetter(letter);
       setTouchLetter(letter);
       setTouchBubblePos({ x: rect.width / 2, y: clampedY });
-      setOffset(targetOffset);
+      jumpToOffset(targetOffset);
     },
-    [letterEntries],
+    [jumpToOffset, letterEntries],
   );
-
-  const handleTouchStart = (event: React.TouchEvent) => {
-    if (!isMobile || !dropdownOpen) return;
-
-    swipeStartY.current = event.touches[0].clientY;
-  };
-
-  const handleTouchEnd = (event: React.TouchEvent) => {
-    if (!isMobile || !dropdownOpen) return;
-
-    const touch = event.changedTouches[0];
-    const startY = swipeStartY.current;
-
-    if (startY === undefined) return;
-
-    const deltaY = startY - touch.clientY;
-
-    if (Math.abs(deltaY) < 30) return;
-
-    if (deltaY > 0 && offsetRef.current < maxOffsetRef.current) {
-      setOffset(Math.min(maxOffsetRef.current, offsetRef.current + 1));
-    } else if (deltaY < 0 && offsetRef.current > 0) {
-      setOffset(Math.max(0, offsetRef.current - 1));
-    }
-
-    swipeStartY.current = undefined;
-  };
 
   const handleLetterTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     if (!isMobile) return;
@@ -333,7 +338,7 @@ export const StackFilterBar = ({
   };
 
   return (
-    <div className="mb-3 flex flex-col gap-2">
+    <div className="mb-3 flex flex-col gap-2" data-no-swipe-page>
       <div className="flex items-center gap-2">
         <SearchInput value={search} onValueChange={onSearchChange} placeholder="Search..." />
 
@@ -401,8 +406,6 @@ export const StackFilterBar = ({
                       aria-multiselectable="true"
                       aria-label={listAriaLabel}
                       className="flex-1"
-                      onTouchStart={handleTouchStart}
-                      onTouchEnd={handleTouchEnd}
                     >
                       {!isMobile ? (
                         <div className="flex justify-center py-0.5">
@@ -426,94 +429,142 @@ export const StackFilterBar = ({
                         </div>
                       ) : null}
 
-                      <ScrollViewport viewportRef={scrollportRef} height={PER_PAGE * ITEM_HEIGHT}>
-                        <AnimatePresence mode="wait">
+                      {isMobile ? (
+                        <div
+                          ref={mobileListRef}
+                          className="max-h-[150px] overflow-y-auto py-1"
+                          onScroll={(event) => {
+                            const nextTopIndex = Math.floor(
+                              event.currentTarget.scrollTop / ITEM_HEIGHT,
+                            );
+                            setMobileTopIndex(Math.max(0, Math.min(maxOffset, nextTopIndex)));
+                          }}
+                        >
                           {filteredStacks.length === 0 ? (
-                            <motion.div
-                              key="empty"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.12 }}
-                              className="px-3 py-2 text-xs text-gray-500"
-                            >
-                              No matches
-                            </motion.div>
+                            <div className="px-3 py-2 text-xs text-gray-500">No matches</div>
                           ) : (
-                            <motion.div
-                              key={stackSearch}
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 0.12 }}
-                            >
-                              <motion.div
-                                style={{
-                                  transform: `translateY(-${safeOffset * ITEM_HEIGHT}px)`,
-                                  transition: "transform 0.16s ease",
-                                  willChange: "transform",
-                                }}
-                                onMouseMove={(event) => {
-                                  mousePos.current = { x: event.clientX, y: event.clientY };
-                                  updateHoveredFromMouse();
-                                }}
-                                onMouseLeave={() => {
-                                  mousePos.current = null;
-                                  setHoveredIdx(null);
-                                }}
-                              >
-                                {filteredStacks.map((stack, index) => {
-                                  const isActive = activeStacks.includes(stack);
-                                  const distance =
-                                    hoveredIdx === null ? 0 : Math.abs(index - hoveredIdx);
-                                  const t = hoveredIdx === null ? 0.25 : Math.min(distance / 2, 1);
-                                  const scale = 1.12 - t * 0.34;
-                                  const opacity = 1 - t * 0.6;
+                            filteredStacks.map((stack) => {
+                              const isActive = activeStacks.includes(stack);
 
-                                  return (
-                                    <div
-                                      key={stack}
-                                      data-idx={index}
-                                      style={{ height: ITEM_HEIGHT, overflow: "hidden" }}
-                                    >
-                                      <div
-                                        style={{
-                                          transform: `scale(${scale})`,
-                                          opacity,
-                                          transformOrigin: "center",
-                                          transition: "transform 0.1s ease, opacity 0.1s ease",
-                                        }}
-                                      >
-                                        <button
-                                          type="button"
-                                          role="option"
-                                          aria-selected={isActive}
-                                          onClick={() => {
-                                            playClickSound();
-                                            onStackToggle(stack);
-                                          }}
-                                          className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10 ${
-                                            isActive
-                                              ? theme.activeOptionClassName
-                                              : "text-gray-300 hover:text-white"
-                                          }`}
-                                        >
-                                          {stack}
-                                          {isActive ? (
-                                            <Check
-                                              className={`h-3 w-3 shrink-0 ${theme.activeOptionIconClassName}`}
-                                            />
-                                          ) : null}
-                                        </button>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </motion.div>
-                            </motion.div>
+                              return (
+                                <button
+                                  key={stack}
+                                  type="button"
+                                  role="option"
+                                  aria-selected={isActive}
+                                  onClick={() => {
+                                    playClickSound();
+                                    onStackToggle(stack);
+                                  }}
+                                  className={`flex w-full items-center justify-between px-3 text-left text-xs transition-colors hover:bg-white/10 ${
+                                    isActive
+                                      ? theme.activeOptionClassName
+                                      : "text-gray-300 hover:text-white"
+                                  }`}
+                                  style={{ height: ITEM_HEIGHT }}
+                                >
+                                  {stack}
+                                  {isActive ? (
+                                    <Check
+                                      className={`h-3 w-3 shrink-0 ${theme.activeOptionIconClassName}`}
+                                    />
+                                  ) : null}
+                                </button>
+                              );
+                            })
                           )}
-                        </AnimatePresence>
-                      </ScrollViewport>
+                        </div>
+                      ) : (
+                        <ScrollViewport viewportRef={scrollportRef} height={PER_PAGE * ITEM_HEIGHT}>
+                          <AnimatePresence mode="wait">
+                            {filteredStacks.length === 0 ? (
+                              <motion.div
+                                key="empty"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.12 }}
+                                className="px-3 py-2 text-xs text-gray-500"
+                              >
+                                No matches
+                              </motion.div>
+                            ) : (
+                              <motion.div
+                                key={stackSearch}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.12 }}
+                              >
+                                <motion.div
+                                  style={{
+                                    transform: `translateY(-${safeOffset * ITEM_HEIGHT}px)`,
+                                    transition: "transform 0.16s ease",
+                                    willChange: "transform",
+                                  }}
+                                  onMouseMove={(event) => {
+                                    mousePos.current = { x: event.clientX, y: event.clientY };
+                                    updateHoveredFromMouse();
+                                  }}
+                                  onMouseLeave={() => {
+                                    mousePos.current = null;
+                                    setHoveredIdx(null);
+                                  }}
+                                >
+                                  {filteredStacks.map((stack, index) => {
+                                    const isActive = activeStacks.includes(stack);
+                                    const distance =
+                                      hoveredIdx === null ? 0 : Math.abs(index - hoveredIdx);
+                                    const t =
+                                      hoveredIdx === null ? 0.25 : Math.min(distance / 2, 1);
+                                    const scale = 1.12 - t * 0.34;
+                                    const opacity = 1 - t * 0.6;
+
+                                    return (
+                                      <div
+                                        key={stack}
+                                        data-idx={index}
+                                        style={{ height: ITEM_HEIGHT, overflow: "hidden" }}
+                                      >
+                                        <div
+                                          style={{
+                                            transform: `scale(${scale})`,
+                                            opacity,
+                                            transformOrigin: "center",
+                                            transition: "transform 0.1s ease, opacity 0.1s ease",
+                                          }}
+                                        >
+                                          <button
+                                            type="button"
+                                            role="option"
+                                            aria-selected={isActive}
+                                            onClick={() => {
+                                              playClickSound();
+                                              onStackToggle(stack);
+                                            }}
+                                            className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10 ${
+                                              isActive
+                                                ? theme.activeOptionClassName
+                                                : "text-gray-300 hover:text-white"
+                                            }`}
+                                          >
+                                            {stack}
+                                            {isActive ? (
+                                              <Check
+                                                className={`h-3 w-3 shrink-0 ${theme.activeOptionIconClassName}`}
+                                              />
+                                            ) : null}
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </motion.div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </ScrollViewport>
+                      )}
 
                       {!isMobile ? (
                         <div className="flex justify-center py-0.5">
@@ -558,7 +609,7 @@ export const StackFilterBar = ({
                               aria-label={`Jump to ${letter}`}
                               onClick={() => {
                                 playClickSound();
-                                setOffset(targetOffset);
+                                jumpToOffset(targetOffset);
                               }}
                               onMouseEnter={() => {
                                 playHoverSound();

@@ -5,9 +5,9 @@
  */
 
 import { ArrowLeft } from "lucide-react";
-import { GAMEDEV_SORT_OPTIONS } from "../../common/data/filtering";
+import { StackFilterBar } from "../../../common/filters/StackFilterBar";
+import { GAMEDEV_SORT_OPTIONS, GAMEDEV_STACK_FILTER_THEME } from "../../common/data/filtering";
 import type { GameDevAllProjectsLayoutProps } from "../../common/data/types";
-import { GameDevFilterBar } from "../../common/filters/GameDevFilterBar";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
@@ -43,7 +43,7 @@ export const GameDevAllProjectsMobile = ({
           </GameDevPanelButton>
         }
       >
-        <GameDevFilterBar
+        <StackFilterBar
           search={search}
           onSearchChange={onSearchChange}
           allStacks={allStacks}
@@ -53,6 +53,9 @@ export const GameDevAllProjectsMobile = ({
           sortKey={sortKey}
           sortOptions={GAMEDEV_SORT_OPTIONS}
           onSortChange={onSortChange}
+          dropdownAriaLabel="Filter by game development stack"
+          listAriaLabel="Game development stack options"
+          theme={GAMEDEV_STACK_FILTER_THEME}
         />
 
         <GameDevHiveGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
