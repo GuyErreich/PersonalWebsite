@@ -80,7 +80,17 @@ export const Home = () => {
     };
 
     const canPageFromTarget = (target: EventTarget | null, deltaY: number) => {
+      // First pass: if ANY ancestor opts out of section paging, never page —
+      // regardless of whether a scrollable child is at its edge.
       let el = target as HTMLElement | null;
+      while (el && el !== main) {
+        if (el.hasAttribute("data-no-swipe-page")) return false;
+        el = el.parentElement;
+      }
+
+      // Second pass: let an inner scrollable element consume the swipe until it
+      // reaches its edge, then allow section paging.
+      el = target as HTMLElement | null;
       while (el && el !== main) {
         const { overflowY } = window.getComputedStyle(el);
         if ((overflowY === "auto" || overflowY === "scroll") && el.scrollHeight > el.clientHeight) {
@@ -90,6 +100,7 @@ export const Home = () => {
         }
         el = el.parentElement;
       }
+
       return true;
     };
 
