@@ -178,7 +178,9 @@ export const Home = () => {
       <div className="h-screen overflow-hidden bg-gray-900 text-gray-100 font-sans selection:bg-blue-500/30">
         <Navbar />
 
-        <FloatingContactDock />
+        <div className="hidden md:block">
+          <FloatingContactDock />
+        </div>
 
         <main
           id="home-pager"
@@ -191,7 +193,7 @@ export const Home = () => {
 
           <DevOpsSection />
 
-          <section className="snap-section">
+          <section id="contact" className="snap-section">
             <Footer />
           </section>
         </main>

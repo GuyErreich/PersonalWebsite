@@ -42,21 +42,24 @@ export const GameDevAllProjectsMobile = ({
             Back
           </GameDevPanelButton>
         }
+        clipScroll
       >
-        <StackFilterBar
-          search={search}
-          onSearchChange={onSearchChange}
-          allStacks={allStacks}
-          activeStacks={activeStacks}
-          onStackToggle={onStackToggle}
-          onClearStacks={onClearStacks}
-          sortKey={sortKey}
-          sortOptions={GAMEDEV_SORT_OPTIONS}
-          onSortChange={onSortChange}
-          dropdownAriaLabel="Filter by game development stack"
-          listAriaLabel="Game development stack options"
-          theme={GAMEDEV_STACK_FILTER_THEME}
-        />
+        <div className="shrink-0">
+          <StackFilterBar
+            search={search}
+            onSearchChange={onSearchChange}
+            allStacks={allStacks}
+            activeStacks={activeStacks}
+            onStackToggle={onStackToggle}
+            onClearStacks={onClearStacks}
+            sortKey={sortKey}
+            sortOptions={GAMEDEV_SORT_OPTIONS}
+            onSortChange={onSortChange}
+            dropdownAriaLabel="Filter by game development stack"
+            listAriaLabel="Game development stack options"
+            theme={GAMEDEV_STACK_FILTER_THEME}
+          />
+        </div>
 
         <GameDevHiveGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
       </GameDevPanelShell>

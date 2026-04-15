@@ -7,22 +7,24 @@
  */
 
 @layer components {
+  /* Section shell — viewport slot only. Snap handled by .snap-section class on the element. */
   .gamedev-section-shell {
-    @apply relative flex w-full flex-col items-center justify-center overflow-hidden bg-gray-900 py-20 !h-[104svh] !min-h-[104svh] !pt-10 !pb-8 md:!pt-8 md:!pb-6;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
+    @apply relative w-full overflow-hidden bg-gray-900 h-[100svh] min-h-[100svh];
   }
 
-  @media (max-height: 700px) {
+  /* Bigger mobile screens (landscape or large phones): partial expansion */
+  @media (min-width: 480px) and (max-width: 767px) {
     .gamedev-section-shell {
-      @apply py-16;
+      height: var(--gamedev-mob-h);
+      min-height: var(--gamedev-mob-h);
     }
   }
 
-  /* Mobile phones: clear the fixed h-16 navbar with breathing room; shrink bottom to compensate */
-  @media (max-width: 767px) {
+  /* Desktop: full expansion to use available space when sidebars/menus fold away */
+  @media (min-width: 768px) {
     .gamedev-section-shell {
-      @apply !pt-20 !pb-2;
+      height: var(--gamedev-desk-h);
+      min-height: var(--gamedev-desk-h);
     }
   }
 
@@ -30,8 +32,14 @@
     @apply absolute inset-0 z-0 pointer-events-none;
   }
 
+  /* Content frame — absolute, starts exactly below the fixed navbar, fills remaining height. */
   .gamedev-content-shell {
-    @apply relative z-20 mx-auto flex h-full w-full max-w-7xl items-start px-4 sm:px-6 lg:px-8;
+    position: absolute;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    @apply z-20 flex w-full max-w-7xl mx-auto items-start px-4 sm:px-6 lg:px-8;
   }
 
   .gamedev-slider-viewport {
@@ -79,7 +87,14 @@
   }
 
   .gamedev-panel-card {
-    @apply flex min-h-0 flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/80 p-4 md:max-h-[88svh] sm:p-5 lg:p-6;
+    @apply flex min-h-0 flex-col rounded-[2rem] border border-cyan-500/15 bg-[#08101b]/80 p-4 sm:p-5 lg:p-6;
+  }
+
+  /* Panel card height: anchored to section height variable so it always matches */
+  @media (min-width: 768px) {
+    .gamedev-panel-card {
+      max-height: calc(var(--gamedev-desk-h) - var(--nav-h) - 2rem);
+    }
   }
 
   .gamedev-panel-header {
@@ -118,7 +133,7 @@
   }
 
   .gamedev-panel-clip {
-    @apply min-h-0 flex-1 overflow-hidden;
+    @apply min-h-0 flex-1 overflow-hidden flex flex-col;
   }
 
   .gamedev-panel-scroll::-webkit-scrollbar {

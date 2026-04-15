@@ -36,12 +36,15 @@ export const SectionWrapper = ({
       <div className="section-top-fade" />
       {/* DevOps → Footer: smooth gradient dissolve into footer bg */}
       <div className={`section-bottom-fade ${bottomFadeClassName}`.trim()} />
-      <motion.div
-        style={motionStyle}
-        className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full h-full flex flex-col ${innerClassName}`}
-      >
-        {children}
-      </motion.div>
+      {/* Visible-area frame: starts below fixed navbar, full remaining height. */}
+      <div className="section-frame z-10">
+        <motion.div
+          style={motionStyle}
+          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full h-full flex flex-col ${innerClassName}`}
+        >
+          {children}
+        </motion.div>
+      </div>
     </section>
   );
 };

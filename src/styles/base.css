@@ -4,6 +4,15 @@
  * SPDX-License-Identifier: MIT
  */
 
+:root {
+  /* Height of the fixed navigation bar — single source of truth for all layout math */
+  --nav-h: 4rem; /* = 64px = h-16 */
+
+  /* GameDev section height per breakpoint — update here, all layout math follows */
+  --gamedev-mob-h: 110svh;  /* big mobile: 480px–767px */
+  --gamedev-desk-h: 120svh; /* desktop: 768px+ */
+}
+
 html {
   scroll-behavior: smooth;
 }

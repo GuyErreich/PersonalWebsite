@@ -5,7 +5,15 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import { X as CloseIcon, Code2, Gamepad2, Menu as MenuIcon, Terminal, User } from "lucide-react";
+import {
+  X as CloseIcon,
+  Code2,
+  Gamepad2,
+  Mail,
+  Menu as MenuIcon,
+  Terminal,
+  User,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "../hooks/responsive/useMediaQuery";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
@@ -81,6 +89,7 @@ export const Navbar = () => {
       icon: Code2,
       color: "text-green-400",
     },
+    { href: "#contact", label: "Contact", icon: Mail, color: "text-cyan-300" },
   ];
 
   const drawerVariants: import("framer-motion").Variants = {

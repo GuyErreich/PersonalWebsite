@@ -25,6 +25,7 @@ export const GameDevOverviewMobile = ({
       </div>
       <div className="gamedev-mobile-panel-frame">
         <GameDevPanelShell
+          clipScroll
           eyebrow="Featured Gallery"
           title="Selected Work"
           description="A curated set of projects and prototypes highlighting gameplay, technical systems, and visual polish."

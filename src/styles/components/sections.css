@@ -28,46 +28,44 @@
   }
 
   /*
-    Responsive Hero Layout Section
-    Symmetrical py limits so justify-center keeps it vertically perfect inside the view
+    Visible-area frame — occupies exactly the viewport below the fixed navbar.
+    Use as the direct parent for any content that must be positioned or centred
+    in the true visible area. All centring and height math flows from this boundary.
   */
-  .section-screen {
-    @apply h-[100svh] min-h-[100svh] flex flex-col items-center justify-center relative overflow-hidden py-20;
-  }
-
-  @media (max-height: 700px) {
-    .section-screen {
-      @apply py-16;
-    }
-  }
-
-  .section-hero {
-    @apply h-[100svh] min-h-[100svh] flex flex-col items-center justify-center relative overflow-hidden bg-gray-900 py-20;
-  }
-
-  @media (max-height: 700px) {
-    .section-hero {
-      @apply py-16;
-    }
+  .section-frame {
+    position: absolute;
+    top: var(--nav-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
   /*
-    Adaptive Glass Card Layout
-    Handles the squashing behavior for wide-but-short screens
+    Section shells — viewport slots only. No flex, no padding.
+    All content positioning is handled by .section-frame children.
   */
-  .card-responsive-wrapper {
-    @apply relative z-10 w-[92%] sm:w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 sm:mt-8 md:mt-0;
+  .section-screen {
+    @apply h-[100svh] min-h-[100svh] relative overflow-hidden;
   }
 
-  @media (max-height: 700px) {
-    .card-responsive-wrapper {
-      @apply max-w-5xl;
-    }
+  .section-hero {
+    @apply h-[100svh] min-h-[100svh] relative overflow-hidden bg-gray-900;
+  }
+
+  /*
+    Hero glass card — max-height anchored to the visible area via --nav-h.
+    Content-sized by default; clipped if it ever exceeds the available height.
+    mb-[6%] pulls the card above dead-center within the visible frame.
+  */
+  .card-responsive-wrapper {
+    @apply relative z-10 w-[92%] sm:w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-[6%];
+    max-height: calc(100svh - var(--nav-h) - 2rem);
+    overflow: hidden;
   }
 
   .glass-card-body {
     @apply relative m-[1.5px] bg-gray-900/95 backdrop-blur-xl rounded-2xl shadow-inner text-center flex flex-col items-center overflow-hidden;
-    @apply p-4 sm:p-6 md:p-[4vh] lg:p-8;
+    @apply p-3 sm:p-4 md:p-[2.8vh] lg:p-5;
   }
 
   @media (max-height: 700px) {
@@ -78,27 +76,27 @@
 
   /* Fluid typography for our Hero ensuring no wrapping overflow */
   .hero-title {
-    @apply text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-2 md:mb-[2vh] relative flex justify-center;
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight mb-1 md:mb-[1.2vh] relative flex justify-center;
   }
 
   @media (max-height: 700px) {
     .hero-title {
-      @apply text-4xl;
+      @apply text-3xl;
     }
   }
 
   .hero-subtitle {
-    @apply text-xl sm:text-3xl md:text-4xl text-gray-300 font-medium mb-3 md:mb-[3vh];
+    @apply text-lg sm:text-2xl md:text-3xl text-gray-300 font-medium mb-2 md:mb-[1.8vh];
   }
 
   @media (max-height: 700px) {
     .hero-subtitle {
-      @apply text-2xl;
+      @apply text-xl;
     }
   }
 
   .hero-paragraph-box {
-    @apply mt-2 md:mt-[1.5vh] max-w-3xl mx-auto text-base sm:text-lg md:text-xl text-gray-300 font-medium mb-5 md:mb-[4vh] leading-tight flex flex-col items-center;
+    @apply mt-1 md:mt-[0.8vh] max-w-3xl mx-auto text-sm sm:text-base md:text-lg text-gray-300 font-medium mb-3 md:mb-[2vh] leading-tight flex flex-col items-center;
   }
 
   @media (max-height: 700px) {
