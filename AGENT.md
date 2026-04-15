@@ -51,6 +51,18 @@ For UI-heavy features, prefer:
 - Use `code-quality` for lint cleanup, type strictness, duplication cleanup, and validation expectations.
 - Use `threejs` when changing React Three Fiber, shaders, scene composition, or rendering-performance-sensitive background code.
 
+## Viewport Layout Model (Mandatory — never bypass)
+
+This project uses a fixed-navbar layout contract. All full-screen sections must follow it:
+
+- **One source of truth**: `--nav-h: 4rem` in `src/styles/base.css`. Never hardcode `64px` or `4rem` elsewhere.
+- **Section shells are viewport slots only**: `h-[100svh] relative overflow-hidden`. No `flex`, no `padding`, no centering.
+- **Visible-area frame**: all content that must sit below the navbar uses `.section-frame` (or equivalent `position: absolute; top: var(--nav-h); left:0; right:0; bottom:0`). Do not use `pt-16` / `pt-20` on sections to clear the navbar.
+- **Card/panel height**: use `max-height: calc(100svh - var(--nav-h) - Xrem)`, not `h-[82%]` or other viewport percentages.
+- **Centering**: belongs on the `.section-frame` child (`flex items-center justify-center`), never driven by section padding.
+
+Violating this pattern causes centring drift, overflow, and blank-space bugs that cascade across screen sizes. See `ui-architecture` SKILL.md §7 for the full reference.
+
 ## Local Agent Files
 
 When working inside a folder that contains its own `AGENT.md`, follow that local guidance in addition to this file.

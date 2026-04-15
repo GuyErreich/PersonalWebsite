@@ -23,12 +23,8 @@ export const DevOpsSection = () => {
     <SectionEntranceOverlay theme="devops">
       <SectionWrapper
         id="devops"
-        className="section-screen !py-0 bg-gray-950"
-        innerClassName={
-          isCompact
-            ? "justify-start pt-20 pb-2 md:pt-8 md:pb-6"
-            : "justify-start pt-10 pb-8 md:pt-8 md:pb-6"
-        }
+        className="section-screen bg-gray-950"
+        innerClassName={isCompact ? "justify-start pt-3 pb-2" : "justify-start pt-6 pb-4"}
         bottomFadeClassName="h-28 md:h-[200px]"
         background={<DevOpsBackground />}
       >

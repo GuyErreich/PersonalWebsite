@@ -80,3 +80,107 @@ After architectural refactors:
 - `npm run build` must pass.
 - Verify no stale duplicate files remain after folder reorganizations.
 - Verify imports are updated to new folder boundaries.
+
+---
+
+## 7. Viewport Layout Model (Mandatory — do not deviate)
+
+This project uses a fixed-navbar viewport layout. Every full-screen section must follow this model consistently. **Never reintroduce nav-clearing padding or percentage heights on sections.**
+
+### The contract
+
+```
+:root { --nav-h: 4rem; }   <-- single source of truth for the navbar height
+```
+
+The `--nav-h` variable is defined in `src/styles/base.css`. If the navbar height ever changes, update **only this variable** — all layout math recalculates automatically.
+
+### Section shell pattern
+
+Every full-screen section is **a viewport slot only** — no flex, no padding, no centering:
+
+```css
+.section-hero, .section-screen, .gamedev-section-shell {
+  /* Viewport slot only */
+  height: 100svh;
+  min-height: 100svh;
+  position: relative;
+  overflow: hidden;
+}
+```
+
+### Visible-area frame pattern
+
+All content that must live in the **true visible area** (below the fixed navbar) uses a `.section-frame` child:
+
+```css
+.section-frame {
+  position: absolute;
+  top: var(--nav-h);  /* starts exactly where navbar ends */
+  left: 0;
+  right: 0;
+  bottom: 0;          /* fills remaining viewport */
+}
+```
+
+Place centering flex directly on `.section-frame` or a child of it:
+
+```jsx
+<section className="section-hero snap-section">
+  {/* backgrounds, edges, overlays go here as absolute elements */}
+  <div className="section-frame flex flex-col items-center justify-center">
+    {/* card or content */}
+  </div>
+</section>
+```
+
+### Card max-height pattern
+
+Never use `h-[82%]` or percentage heights on cards. Use `max-height` anchored to `--nav-h`:
+
+```css
+.card-responsive-wrapper {
+  max-height: calc(100svh - var(--nav-h) - 2rem);
+  overflow: hidden;
+}
+```
+
+This means:
+- Adding/removing padding on the section never changes the card height.
+- Centering never drifts.
+- The card can never clip or overflow the visible area.
+
+### GameDev content shell
+
+`.gamedev-content-shell` follows the same absolute frame pattern:
+
+```css
+.gamedev-content-shell {
+  position: absolute;
+  top: var(--nav-h);
+  left: 0; right: 0; bottom: 0;
+}
+```
+
+### Footer
+
+Footer uses `h-[100svh]` as a viewport slot with a `.section-frame` wrapping the inner content, ensuring the content is positioned in the visible area without `pt-18` or similar hacks.
+
+### Anti-patterns (blocked)
+
+| Anti-pattern | Correct replacement |
+|---|---|
+| `pt-16` / `pt-20` on a section to clear navbar | Use `.section-frame` (its `top: var(--nav-h)` does this) |
+| `h-[82%]` on a card inside a section | `max-height: calc(100svh - var(--nav-h) - 2rem)` |
+| `h-[104svh]` with `!important` overrides | Section is exactly `h-[100svh]`; frame provides the usable area |
+| `justify-center` on the section itself | Move centering onto the `.section-frame` child |
+| `pt-20 pb-2 md:pt-8 md:pb-6` to create visual room | Use `.section-frame` and apply only minor content padding inside it |
+| Hardcoded `64px` or `4rem` anywhere outside `--nav-h` | Always reference `var(--nav-h)` |
+
+### Enforcement rule
+
+When writing or reviewing any full-screen section:
+1. Check the section tag has **no padding and no flex** — only `h-[100svh] relative overflow-hidden`.
+2. Check visible content lives inside a `.section-frame` or equivalent `position:absolute; top:var(--nav-h)` container.
+3. Check card/panel height uses `max-height: calc(100svh - var(--nav-h) - ...)`, not percentages.
+4. Do not add nav-clearing padding. Do not deviate from this model without updating the model first.
