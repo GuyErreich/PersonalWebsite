@@ -5,6 +5,7 @@
  */
 
 import type { ElementType } from "react";
+import type { GameDevSortKey } from "./filtering";
 
 export interface GameDevItem {
   id: string;
@@ -39,6 +40,6 @@ export interface GameDevAllProjectsLayoutProps extends GameDevGalleryPanelProps 
   activeStacks: string[];
   onStackToggle: (value: string) => void;
   onClearStacks: () => void;
-  sortKey: string;
-  onSortChange: (value: string) => void;
+  sortKey: GameDevSortKey;
+  onSortChange: (value: GameDevSortKey) => void;
 }

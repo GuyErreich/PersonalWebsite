@@ -148,9 +148,22 @@ export const Navbar = () => {
                       whileTap={{ scale: 0.95 }}
                       onMouseEnter={playHoverSound}
                       onClick={(event) => {
-                        event.preventDefault();
                         playClickSound();
+                        const targetSelector = link.href.startsWith("#") ? link.href : "";
+                        const target = targetSelector
+                          ? document.querySelector<HTMLElement>(targetSelector)
+                          : null;
+
+                        if (!target) {
+                          return;
+                        }
+
+                        event.preventDefault();
                         navigateToSection(link.href);
+
+                        if (window.location.hash !== link.href) {
+                          window.history.pushState(null, "", link.href);
+                        }
                       }}
                       className="flex items-center space-x-3 px-3 py-2 rounded-xl group hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
                     >
@@ -255,10 +268,24 @@ export const Navbar = () => {
                       whileTap={{ scale: 0.98 }}
                       onMouseEnter={playHoverSound}
                       onClick={(event) => {
-                        event.preventDefault();
                         playClickSound();
                         playMenuCloseSound();
+                        const targetSelector = link.href.startsWith("#") ? link.href : "";
+                        const target = targetSelector
+                          ? document.querySelector<HTMLElement>(targetSelector)
+                          : null;
+
+                        if (!target) {
+                          return;
+                        }
+
+                        event.preventDefault();
                         navigateToSection(link.href);
+
+                        if (window.location.hash !== link.href) {
+                          window.history.pushState(null, "", link.href);
+                        }
+
                         setMobileOpen(false);
                       }}
                       className="flex items-center space-x-4 group p-3 rounded-xl hover:bg-gray-800/50 border border-transparent hover:border-cyan-900/50 transition-colors"
