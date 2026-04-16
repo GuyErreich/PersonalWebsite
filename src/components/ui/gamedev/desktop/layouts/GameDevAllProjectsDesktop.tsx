@@ -32,6 +32,7 @@ export const GameDevAllProjectsDesktop = ({
       <GameDevPanelShell
         eyebrow="Full Gallery View"
         title="All Projects"
+        clipScroll
         rightAction={
           <GameDevPanelButton
             variant="secondary"
@@ -59,7 +60,7 @@ export const GameDevAllProjectsDesktop = ({
           theme={GAMEDEV_STACK_FILTER_THEME}
         />
 
-        <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
+        <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} denseCards />
       </GameDevPanelShell>
     </div>
   );

@@ -47,7 +47,7 @@ export const ProjectCardBase = ({
   const hasThumbnail = !!thumbnailUrl;
 
   return (
-    <div ref={ref} className="h-full overflow-visible pt-2">
+    <div ref={ref} className="h-full min-h-0 overflow-visible pt-2">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
@@ -56,7 +56,7 @@ export const ProjectCardBase = ({
         className={theme.containerClassName}
       >
         {hasThumbnail && (
-          <div className="h-32 shrink-0 overflow-hidden xl:h-36">
+          <div className={`${compact ? "h-20 xl:h-24" : "h-32 xl:h-36"} shrink-0 overflow-hidden`}>
             <img
               src={thumbnailUrl}
               alt={title}
@@ -66,7 +66,7 @@ export const ProjectCardBase = ({
           </div>
         )}
 
-        <div className={`flex flex-col gap-2.5 ${compact ? "p-3" : "p-5"}`}>
+        <div className={`flex min-h-0 flex-col ${compact ? "gap-2 p-3" : "gap-2.5 p-5"}`}>
           <div className="flex items-start justify-between gap-3">
             <div className={`${theme.iconShellClassName} ${compact ? "p-2" : "p-2.5"}`}>{icon}</div>
 
@@ -87,13 +87,11 @@ export const ProjectCardBase = ({
             )}
           </div>
 
-          <h3 className={`${theme.titleClassName} ${compact ? "text-base" : "text-xl"}`}>
-            {title}
-          </h3>
+          <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>{title}</h3>
 
           <p
-            className={`flex-grow leading-relaxed text-gray-400 ${
-              compact ? "line-clamp-3 text-sm" : "line-clamp-4 text-base"
+            className={`min-h-0 flex-grow leading-relaxed text-gray-400 ${
+              compact ? "line-clamp-2 text-xs" : "line-clamp-4 text-base"
             }`}
           >
             {description}
