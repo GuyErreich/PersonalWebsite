@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 // Explicit schema type so Supabase can type-check table access correctly.
 // Extend this when new tables are added.
@@ -96,16 +96,18 @@ interface Database {
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
+type TypedClient = SupabaseClient<Database>;
+
 // Allow graceful degradation if Supabase is not configured
 // (e.g., local dev without env vars should show UI, not crash)
-let supabaseClient: ReturnType<typeof createClient<Database>> | null = null;
+let supabaseClient: TypedClient | null = null;
 
 if (supabaseUrl && supabaseAnonKey) {
   supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
 }
 
 // Export a getter that throws only when actually used (not at module load time)
-export const getSupabaseClient = (): ReturnType<typeof createClient<Database>> => {
+export const getSupabaseClient = (): TypedClient => {
   if (!supabaseClient) {
     throw new Error(
       "Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
@@ -115,7 +117,7 @@ export const getSupabaseClient = (): ReturnType<typeof createClient<Database>> =
 };
 
 // For backward compatibility, export a proxy that throws on first use if not configured
-export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>>, {
+export const supabase = new Proxy({} as TypedClient, {
   get: (_, prop) => {
     if (!supabaseClient) {
       throw new Error(
@@ -130,4 +132,4 @@ export const supabase = new Proxy({} as ReturnType<typeof createClient<Database>
       ? (value as (...args: unknown[]) => unknown).bind(supabaseClient)
       : value;
   },
-}) as ReturnType<typeof createClient<Database>>;
+}) as TypedClient;
