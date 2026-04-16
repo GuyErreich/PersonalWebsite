@@ -14,7 +14,7 @@
   }
 
   .gamedev-mobile-panel-frame {
-    @apply flex min-h-0 h-[95%] w-full flex-col overflow-hidden pt-1 pb-2;
+    @apply flex min-h-0 h-[var(--gamedev-mobile-frame-h)] w-full flex-col overflow-hidden pt-1 pb-2;
   }
 
   /* Panel card fills its constrained flex frame on mobile */
@@ -61,6 +61,11 @@
 
   /* Hive shell always participates in flex layout — fills gamedev-panel-clip (flex column) */
   .gamedev-hive-shell {
+    --gamedev-hive-stage-min-h: 18rem;
+    --gamedev-hive-spread-card-w: 12rem;
+    --gamedev-hive-caption-max-w: 14rem;
+    --gamedev-hive-caption-max-w-sm: 12rem;
+
     @apply flex min-h-0 flex-1 flex-col gap-3;
   }
 
@@ -72,7 +77,8 @@
   }
 
   .gamedev-hive-stage {
-    @apply relative isolate flex-1 min-h-[18rem] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#050b14] px-2 py-3;
+    @apply relative isolate flex-1 overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#050b14] px-2 py-3;
+    min-height: var(--gamedev-hive-stage-min-h);
     touch-action: none;
   }
 
@@ -153,7 +159,7 @@
   }
 
   .gamedev-hive-active-card--spread {
-    @apply w-[12rem];
+    width: var(--gamedev-hive-spread-card-w);
   }
 
   .gamedev-hive-node {
@@ -213,7 +219,8 @@
   }
 
   .gamedev-hive-caption {
-    @apply max-w-[14rem] text-[10px] uppercase tracking-[0.14em] text-gray-500;
+    @apply text-[10px] uppercase tracking-[0.14em] text-gray-500;
+    max-width: var(--gamedev-hive-caption-max-w);
   }
 
   .gamedev-hive-count {
@@ -251,7 +258,8 @@
   /* Very small phones (320-479px): reduce caption width and text size to prevent cutoff */
   @media (max-width: 479px) {
     .gamedev-hive-caption {
-      @apply max-w-[12rem] text-[9px];
+      @apply text-[9px];
+      max-width: var(--gamedev-hive-caption-max-w-sm);
     }
   }
 }

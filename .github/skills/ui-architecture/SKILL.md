@@ -81,6 +81,22 @@ After architectural refactors:
 - Verify no stale duplicate files remain after folder reorganizations.
 - Verify imports are updated to new folder boundaries.
 
+## 6.1 No Magic Values Policy (Mandatory)
+
+- Before introducing a numeric CSS/layout value, search for an existing reusable variable/class/token first.
+- If the value is already defined in project tokens/variables, reuse it instead of hardcoding.
+- If no reusable value exists and the same value appears (or is expected to appear) in 2+ places, create a named reusable token/class in the same change.
+- For layout contracts, prefer CSS variables (for example in `:root` or section scope) over repeated literals.
+- Do not keep duplicated literals like repeated `1.6rem`, `2rem`, `95%`, or repeated viewport formulas across files.
+
+## 6.2 Hierarchy-First Positioning & Sizing (Mandatory)
+
+- Always solve positioning and sizing at the top-most layout boundary first (section/root/frame level), then let child content conform to those boundaries.
+- Do not duplicate the same positioning/sizing intent across multiple nested elements when it can be expressed once at a higher level.
+- Overrides for fine-tuning are allowed only after top-level control is in place.
+- Apply overrides with a strict hierarchy mindset: try to fix at the highest level first; only go deeper when the higher-level fix cannot achieve the required behavior.
+- When going deeper, keep the override scope minimal and document why the top-level boundary was insufficient.
+
 ---
 
 ## 7. Viewport Layout Model (Mandatory — do not deviate)
@@ -116,10 +132,16 @@ All content that must live in the **true visible area** (below the fixed navbar)
 ```css
 .section-frame {
   position: absolute;
-  top: var(--nav-h);  /* starts exactly where navbar ends */
+  top: var(--section-frame-top, var(--nav-h));
   left: 0;
   right: 0;
-  bottom: 0;          /* fills remaining viewport */
+  bottom: 0;
+}
+
+@media (min-width: 768px) {
+  .section-desktop-offset {
+    --section-frame-top: calc(var(--nav-h) - var(--section-desktop-lift));
+  }
 }
 ```
 
@@ -136,11 +158,11 @@ Place centering flex directly on `.section-frame` or a child of it:
 
 ### Card max-height pattern
 
-Never use `h-[82%]` or percentage heights on cards. Use `max-height` anchored to `--nav-h`:
+Never use `h-[82%]` or percentage heights on cards. Use `max-height` anchored to layout variables:
 
 ```css
 .card-responsive-wrapper {
-  max-height: calc(100svh - var(--nav-h) - 2rem);
+  max-height: calc(100svh - var(--nav-h) - var(--section-content-gap));
   overflow: hidden;
 }
 ```
@@ -157,7 +179,7 @@ This means:
 ```css
 .gamedev-content-shell {
   position: absolute;
-  top: var(--nav-h);
+  top: var(--section-frame-top, var(--nav-h));
   left: 0; right: 0; bottom: 0;
 }
 ```
@@ -171,7 +193,7 @@ Footer uses `h-[100svh]` as a viewport slot with a `.section-frame` wrapping the
 | Anti-pattern | Correct replacement |
 |---|---|
 | `pt-16` / `pt-20` on a section to clear navbar | Use `.section-frame` (its `top: var(--nav-h)` does this) |
-| `h-[82%]` on a card inside a section | `max-height: calc(100svh - var(--nav-h) - 2rem)` |
+| `h-[82%]` on a card inside a section | `max-height: calc(100svh - var(--nav-h) - var(--section-content-gap))` |
 | `h-[104svh]` with `!important` overrides | Section is exactly `h-[100svh]`; frame provides the usable area |
 | `justify-center` on the section itself | Move centering onto the `.section-frame` child |
 | `pt-20 pb-2 md:pt-8 md:pb-6` to create visual room | Use `.section-frame` and apply only minor content padding inside it |
@@ -181,6 +203,6 @@ Footer uses `h-[100svh]` as a viewport slot with a `.section-frame` wrapping the
 
 When writing or reviewing any full-screen section:
 1. Check the section tag has **no padding and no flex** — only `h-[100svh] relative overflow-hidden`.
-2. Check visible content lives inside a `.section-frame` or equivalent `position:absolute; top:var(--nav-h)` container.
-3. Check card/panel height uses `max-height: calc(100svh - var(--nav-h) - ...)`, not percentages.
+2. Check visible content lives inside a `.section-frame` (or equivalent) using `top: var(--section-frame-top, var(--nav-h))`.
+3. Check card/panel height uses shared variables in `calc(...)` (for example `--section-content-gap`), not percentages.
 4. Do not add nav-clearing padding. Do not deviate from this model without updating the model first.

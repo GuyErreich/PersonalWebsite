@@ -35,7 +35,7 @@
   /* Content frame — absolute, starts exactly below the fixed navbar, fills remaining height. */
   .gamedev-content-shell {
     position: absolute;
-    top: var(--nav-h);
+    top: var(--section-frame-top, var(--nav-h));
     left: 0;
     right: 0;
     bottom: 0;
@@ -93,7 +93,7 @@
   /* Panel card height: anchored to section height variable so it always matches */
   @media (min-width: 768px) {
     .gamedev-panel-card {
-      max-height: calc(var(--gamedev-desk-h) - var(--nav-h) - 2rem);
+      max-height: calc(var(--gamedev-desk-h) - var(--nav-h) - var(--section-content-gap));
     }
   }
 

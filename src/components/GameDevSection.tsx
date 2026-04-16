@@ -38,7 +38,11 @@ export const GameDevSection = () => {
 
   return (
     <SectionEntranceOverlay theme="gamedev">
-      <section id="gamedev" ref={sectionRef} className="gamedev-section-shell snap-section">
+      <section
+        id="gamedev"
+        ref={sectionRef}
+        className="gamedev-section-shell section-desktop-offset snap-section"
+      >
         <div className="gamedev-background-layer">
           <MemoizedGamingIconsBackground id="gamedev-particles" />
         </div>

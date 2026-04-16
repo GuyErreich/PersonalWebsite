@@ -6,6 +6,8 @@ This file defines global working rules for the repository.
 
 - Reuse before creating: always check for existing components, hooks, CSS classes, and utilities before adding new ones.
 - If logic, layout structure, interaction wiring, or utility-class chains repeat in 2 or more places, extract them into a shared hook, component, or CSS class.
+- Avoid magic values. Reuse existing variables/tokens/classes first; if a needed value appears in 2+ places, create a shared variable/class in the same change.
+- Solve positioning and sizing at the top-most layout boundary first (section/root/frame), and let content conform to it. Only add deeper overrides for fine tuning when a higher-level fix cannot satisfy the requirement.
 - Keep wrappers minimal. Every wrapper must provide layout, semantics, scroll boundaries, or state boundaries.
 - Prefer Flexbox and Grid for layout. Do not use table layout for page structure.
 - Keep top-level UI components focused on composition rather than implementation detail.
