@@ -8,9 +8,19 @@
   /* Height of the fixed navigation bar — single source of truth for all layout math */
   --nav-h: 4rem; /* = 64px = h-16 */
 
+  /* Desktop lift for non-hero section frames (GameDev + DevOps). */
+  --section-desktop-lift: 1.6rem;
+
+  /* Shared breathing room in max-height formulas below fixed nav. */
+  --section-content-gap: 2rem;
+
   /* GameDev section height per breakpoint — update here, all layout math follows */
   --gamedev-mob-h: 110svh;  /* big mobile: 480px–767px */
-  --gamedev-desk-h: 120svh; /* desktop: 768px+ */
+  /* desktop: extra room on short windows, capped on tall windows */
+  --gamedev-desk-h: 100svh;
+
+  /* GameDev mobile frame height inside the panel stack. */
+  --gamedev-mobile-frame-h: 95%;
 }
 
 html {

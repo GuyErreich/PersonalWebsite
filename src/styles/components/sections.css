@@ -34,10 +34,17 @@
   */
   .section-frame {
     position: absolute;
-    top: var(--nav-h);
+    top: var(--section-frame-top, var(--nav-h));
     left: 0;
     right: 0;
     bottom: 0;
+  }
+
+  /* Non-hero sections: set a section-level frame top offset on desktop only. */
+  @media (min-width: 768px) {
+    .section-desktop-offset {
+      --section-frame-top: calc(var(--nav-h) - var(--section-desktop-lift));
+    }
   }
 
   /*
@@ -59,7 +66,7 @@
   */
   .card-responsive-wrapper {
     @apply relative z-10 w-[92%] sm:w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-[6%];
-    max-height: calc(100svh - var(--nav-h) - 2rem);
+    max-height: calc(100svh - var(--nav-h) - var(--section-content-gap));
     overflow: hidden;
   }
 

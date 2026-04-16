@@ -23,7 +23,7 @@ export const DevOpsSection = () => {
     <SectionEntranceOverlay theme="devops">
       <SectionWrapper
         id="devops"
-        className="section-screen bg-gray-950"
+        className="section-screen section-desktop-offset bg-gray-950"
         innerClassName={isCompact ? "justify-start pt-3 pb-2" : "justify-start pt-6 pb-4"}
         bottomFadeClassName="h-28 md:h-[200px]"
         background={<DevOpsBackground />}

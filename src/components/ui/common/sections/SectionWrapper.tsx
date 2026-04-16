@@ -19,7 +19,7 @@ interface SectionWrapperProps {
 
 export const SectionWrapper = ({
   id,
-  className = "py-12 md:py-16 bg-gray-900",
+  className = "bg-gray-900",
   innerClassName = "justify-center",
   children,
   background,

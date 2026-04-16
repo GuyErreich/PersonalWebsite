@@ -28,18 +28,16 @@ export const HeroMediaSection = ({
   const { ref, motionStyle } = useScrollReveal();
 
   return (
-    <section
-      id={id}
-      ref={ref}
-      className={`section-hero snap-section w-full relative z-10 ${sectionClassName}`}
-    >
-      <motion.div
-        style={motionStyle}
-        className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8 sm:mt-0 flex flex-col items-center justify-center h-full"
-      >
-        <SectionHeader title={title} description={description} />
-        {children}
-      </motion.div>
+    <section id={id} ref={ref} className={`section-hero snap-section ${sectionClassName}`}>
+      <div className="section-frame">
+        <motion.div
+          style={motionStyle}
+          className="mx-auto flex h-full w-full max-w-7xl flex-col items-center justify-center px-4 sm:px-6 lg:px-8"
+        >
+          <SectionHeader title={title} description={description} />
+          {children}
+        </motion.div>
+      </div>
     </section>
   );
 };
