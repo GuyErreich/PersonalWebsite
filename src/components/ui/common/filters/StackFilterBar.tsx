@@ -49,6 +49,7 @@ interface StackFilterBarProps {
   dropdownAriaLabel: string;
   listAriaLabel: string;
   theme: StackFilterTheme;
+  className?: string;
 }
 
 export const StackFilterBar = ({
@@ -64,6 +65,7 @@ export const StackFilterBar = ({
   dropdownAriaLabel,
   listAriaLabel,
   theme,
+  className,
 }: StackFilterBarProps) => {
   const scrollContainer = useScrollContainer();
   const isMobile = useMediaQuery("(max-width: 767px)");
@@ -338,7 +340,10 @@ export const StackFilterBar = ({
   };
 
   return (
-    <div className="mb-3 flex flex-col gap-2" data-no-swipe-page>
+    <div
+      className={`mb-3 flex flex-col gap-2${className ? ` ${className}` : ""}`}
+      data-no-swipe-page
+    >
       <div className="flex items-center gap-2">
         <SearchInput value={search} onValueChange={onSearchChange} placeholder="Search..." />
 

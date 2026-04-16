@@ -20,9 +20,7 @@ export const GameDevOverviewMobile = ({
 }: GameDevOverviewLayoutProps) => {
   return (
     <div className="gamedev-overview-mobile-stack">
-      <div className="shrink-0">
-        <GameDevShowreelPanel showreelUrl={showreelUrl} />
-      </div>
+      <GameDevShowreelPanel className="shrink-0" showreelUrl={showreelUrl} />
       <div className="gamedev-mobile-panel-frame">
         <GameDevPanelShell
           clipScroll
