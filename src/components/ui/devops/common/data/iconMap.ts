@@ -19,16 +19,24 @@ import {
 import type { ElementType } from "react";
 
 export const devOpsIconMap: Record<string, ElementType> = {
-  Server,
-  Cloud,
-  Database,
-  Terminal,
-  GitBranch,
-  Container,
-  Workflow,
-  Monitor,
-  Network,
-  Shield,
+  server: Server,
+  cloud: Cloud,
+  database: Database,
+  terminal: Terminal,
+  gitbranch: GitBranch,
+  container: Container,
+  workflow: Workflow,
+  monitor: Monitor,
+  network: Network,
+  shield: Shield,
+};
+
+export const resolveDevOpsIcon = (iconName: string | null | undefined): ElementType => {
+  if (!iconName) {
+    return Server;
+  }
+
+  return devOpsIconMap[iconName.toLowerCase()] ?? Server;
 };
 
 // Icon accent colours — cycled by absolute project index so each card gets

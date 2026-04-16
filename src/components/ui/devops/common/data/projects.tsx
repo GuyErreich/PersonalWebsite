@@ -14,7 +14,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "A robust GitHub Actions pipeline for automated testing, building, and deploying containerized applications to Kubernetes clusters.",
     tech_stack: ["GitHub Actions", "Docker", "Kubernetes", "Bash"],
     github_url: "https://github.com",
-    icon_name: "Server",
+    icon_name: "server",
   },
   {
     id: "2",
@@ -23,7 +23,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "Terraform modules to provision scalable AWS infrastructure including VPCs, EKS clusters, and RDS databases with high availability.",
     tech_stack: ["Terraform", "AWS", "HCL", "Python"],
     github_url: "https://github.com",
-    icon_name: "Cloud",
+    icon_name: "cloud",
   },
   {
     id: "3",
@@ -32,7 +32,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "Prometheus and Grafana setup with custom exporters to monitor application performance and alert on anomalies in real-time.",
     tech_stack: ["Prometheus", "Grafana", "Go", "Alertmanager"],
     github_url: "https://github.com",
-    icon_name: "Database",
+    icon_name: "database",
   },
   {
     id: "4",
@@ -41,7 +41,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "A powerful command-line interface written in Go to automate repetitive developer tasks and streamline local environment setup.",
     tech_stack: ["Go", "CLI", "Automation"],
     github_url: "https://github.com",
-    icon_name: "Terminal",
+    icon_name: "terminal",
   },
   {
     id: "5",
@@ -50,7 +50,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "ArgoCD-based GitOps setup that syncs Kubernetes cluster state from Git, enabling declarative, auditable, and automated deployments.",
     tech_stack: ["ArgoCD", "Kubernetes", "Helm", "Git"],
     github_url: "https://github.com",
-    icon_name: "GitBranch",
+    icon_name: "gitbranch",
   },
   {
     id: "6",
@@ -59,7 +59,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "Automated vulnerability scanning pipeline integrating Trivy into CI to block container images with critical CVEs before deployment.",
     tech_stack: ["Trivy", "Docker", "GitHub Actions", "Python"],
     github_url: "https://github.com",
-    icon_name: "Shield",
+    icon_name: "shield",
   },
   {
     id: "7",
@@ -68,7 +68,7 @@ export const devOpsProjects: DevOpsProject[] = [
       "Centralised logging with the ELK stack — Filebeat ships logs from all pods, Logstash transforms them, Kibana visualises trends.",
     tech_stack: ["Elasticsearch", "Logstash", "Kibana", "Filebeat"],
     github_url: "https://github.com",
-    icon_name: "Monitor",
+    icon_name: "monitor",
   },
   {
     id: "8",
@@ -77,6 +77,6 @@ export const devOpsProjects: DevOpsProject[] = [
       "Istio service mesh deployment for inter-service mTLS, traffic shaping, and distributed tracing across a microservices architecture.",
     tech_stack: ["Istio", "Kubernetes", "Jaeger", "Envoy"],
     github_url: "https://github.com",
-    icon_name: "Network",
+    icon_name: "network",
   },
 ];

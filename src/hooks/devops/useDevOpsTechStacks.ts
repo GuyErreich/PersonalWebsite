@@ -31,6 +31,9 @@ export const useDevOpsTechStacks = (enabled = true): UseDevOpsTechStacksResult =
       return;
     }
 
+    setLoading(true);
+    setError(null);
+
     void (async () => {
       try {
         const { data, error: fetchError } = await supabase

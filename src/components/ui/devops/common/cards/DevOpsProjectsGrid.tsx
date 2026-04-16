@@ -4,10 +4,9 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Server } from "lucide-react";
 import type { ReactNode } from "react";
 import { GhostSlotRepeater } from "../../../common/pagination/GhostSlotRepeater";
-import { devOpsIconMap, ICON_COLORS } from "../data/iconMap";
+import { ICON_COLORS, resolveDevOpsIcon } from "../data/iconMap";
 import type { DevOpsProject } from "../data/types";
 import { DevOpsProjectCard } from "./DevOpsProjectCard";
 
@@ -32,9 +31,9 @@ export const DevOpsProjectsGrid = ({
     <div className={className}>
       {projects.map((project, index) => {
         const absIndex = indexOffset + index;
-        const IconClass = (
-          project.icon_name ? (devOpsIconMap[project.icon_name] ?? Server) : Server
-        ) as React.ComponentType<{ className?: string }>;
+        const IconClass = resolveDevOpsIcon(project.icon_name) as React.ComponentType<{
+          className?: string;
+        }>;
         const colorClass = ICON_COLORS[absIndex % ICON_COLORS.length];
         const icon: ReactNode = <IconClass className={`h-6 w-6 ${colorClass}`} />;
 
@@ -59,9 +58,9 @@ export const DevOpsProjectsGrid = ({
           const template = projects[0];
           if (!template) return null;
 
-          const GhostIcon = (
-            template.icon_name ? (devOpsIconMap[template.icon_name] ?? Server) : Server
-          ) as React.ComponentType<{ className?: string }>;
+          const GhostIcon = resolveDevOpsIcon(template.icon_name) as React.ComponentType<{
+            className?: string;
+          }>;
 
           return (
             <div key={`ghost-${i}`} className="invisible" aria-hidden="true">
