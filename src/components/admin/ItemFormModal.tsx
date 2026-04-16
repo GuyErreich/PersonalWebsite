@@ -121,7 +121,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
         ]));
       }
 
-      if (dbError) throw dbError;
+      if (dbError) throw new Error(dbError.message);
 
       // Reset form on success
       setTitle("");

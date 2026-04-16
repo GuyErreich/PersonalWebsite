@@ -19,7 +19,8 @@ export const usePaginatedNavigation = ({
   const directionRef = useRef(1);
   const frameKeyRef = useRef(0);
 
-  const safePage = Math.min(currentPage, Math.max(0, totalPages - 1));
+  const maxPageIndex = Math.max(0, totalPages - 1);
+  const safePage = Math.max(0, Math.min(currentPage, maxPageIndex));
   const canPrev = safePage > 0;
   const canNext = safePage < totalPages - 1;
 

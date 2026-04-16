@@ -6,6 +6,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import { StackFilterBar } from "../../../common/filters/StackFilterBar";
+import type { GameDevSortKey } from "../../common/data/filtering";
 import { GAMEDEV_SORT_OPTIONS, GAMEDEV_STACK_FILTER_THEME } from "../../common/data/filtering";
 import type { GameDevAllProjectsLayoutProps } from "../../common/data/types";
 import { GameDevGallery } from "../../common/gallery/GameDevGallery";
@@ -52,7 +53,7 @@ export const GameDevAllProjectsDesktop = ({
           onClearStacks={onClearStacks}
           sortKey={sortKey}
           sortOptions={GAMEDEV_SORT_OPTIONS}
-          onSortChange={onSortChange}
+          onSortChange={(value) => onSortChange(value as GameDevSortKey)}
           dropdownAriaLabel="Filter by game development stack"
           listAriaLabel="Game development stack options"
           theme={GAMEDEV_STACK_FILTER_THEME}
