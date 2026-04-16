@@ -25,7 +25,11 @@ export const useDevOpsTechStacks = (enabled = true): UseDevOpsTechStacksResult =
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      // Clear loading state when disabled to prevent perpetual loading UI
+      setLoading(false);
+      return;
+    }
 
     void (async () => {
       try {
