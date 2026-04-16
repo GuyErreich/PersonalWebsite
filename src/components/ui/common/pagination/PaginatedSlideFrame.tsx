@@ -14,6 +14,7 @@ interface PaginatedSlideFrameProps {
   children: ReactNode;
   contentClassName?: string;
   clipClassName?: string;
+  wrapperClassName?: string;
 }
 
 export const PaginatedSlideFrame = ({
@@ -22,9 +23,14 @@ export const PaginatedSlideFrame = ({
   children,
   contentClassName,
   clipClassName = "relative overflow-hidden",
+  wrapperClassName,
 }: PaginatedSlideFrameProps) => {
   return (
-    <motion.div layout transition={{ layout: { duration: 0.5, ease: "easeInOut" } }}>
+    <motion.div
+      layout
+      transition={{ layout: { duration: 0.5, ease: "easeInOut" } }}
+      className={wrapperClassName}
+    >
       <div className={clipClassName}>
         <AnimatePresence mode="popLayout" custom={direction}>
           <motion.div

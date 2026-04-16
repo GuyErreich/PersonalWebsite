@@ -83,7 +83,12 @@
   /* Panel primitives */
 
   .gamedev-panel-frame {
-    @apply h-full w-full pt-2 pb-4 md:pt-3 md:pb-5 lg:pt-4 lg:pb-6;
+    @apply flex h-full w-full flex-col pt-2 pb-4 md:pt-3 md:pb-5 lg:pt-4 lg:pb-6;
+  }
+
+  /* Card fills its desktop panel frame, matching Selected Work height */
+  .gamedev-panel-frame > .gamedev-panel-card {
+    @apply min-h-0 flex-1;
   }
 
   .gamedev-panel-card {

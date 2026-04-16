@@ -61,6 +61,7 @@ interface GameDevGalleryProps {
   iconMap: Record<string, React.ElementType>;
   isLoading?: boolean;
   compact?: boolean;
+  denseCards?: boolean;
   maxCompactItems?: number;
   mobileItemsPerPage?: number;
 }
@@ -70,6 +71,7 @@ export const GameDevGallery = ({
   iconMap,
   isLoading = false,
   compact = false,
+  denseCards = false,
   maxCompactItems = 4,
   mobileItemsPerPage = 1,
 }: GameDevGalleryProps) => {
@@ -316,13 +318,19 @@ export const GameDevGallery = ({
   // ── Full gallery — paginated grid of info cards ────────────────────────
 
   const pageItems = items.slice(safePage * ITEMS_PER_PAGE, (safePage + 1) * ITEMS_PER_PAGE);
+  // denseCards → use 2-row grid to fill the full-height panel; cards stay full-size
+  const useDenseGrid = denseCards && isDesktop;
 
   return (
-    <div className="flex flex-col gap-4" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div
+      className="flex min-h-0 flex-1 flex-col gap-4"
+      onTouchStart={onTouchStart}
+      onTouchEnd={onTouchEnd}
+    >
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-3 md:grid-rows-2 md:auto-rows-fr md:gap-4">
           {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-            <div key={i} className="h-40 md:h-52 rounded-xl bg-gray-700/40 animate-pulse" />
+            <div key={i} className="h-40 rounded-xl bg-gray-700/40 animate-pulse md:h-full" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -334,7 +342,11 @@ export const GameDevGallery = ({
           <PaginatedSlideFrame
             direction={direction}
             frameKey={frameKey}
-            contentClassName="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4"
+            wrapperClassName="min-h-0 flex-1"
+            clipClassName="relative h-full min-h-0 overflow-hidden"
+            contentClassName={`grid h-full min-h-0 grid-cols-1 gap-3 md:gap-4 ${
+              useDenseGrid ? "md:grid-cols-3 md:grid-rows-2 md:auto-rows-fr" : "md:grid-cols-3"
+            }`}
           >
             {pageItems.map((item, index) => (
               <GalleryInfoCard
@@ -356,7 +368,7 @@ export const GameDevGallery = ({
                 return (
                   <div
                     key={`ghost-${i}`}
-                    className="opacity-0 pointer-events-none select-none"
+                    className="pointer-events-none select-none opacity-0"
                     aria-hidden="true"
                   >
                     <GalleryInfoCard item={template} index={i} iconMap={iconMap} withThumbnail />
