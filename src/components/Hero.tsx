@@ -9,6 +9,7 @@ import {
   AnimatePresence,
   animate,
   motion,
+  useInView,
   useMotionValue,
   useMotionValueEvent,
   useScroll,
@@ -16,9 +17,9 @@ import {
 } from "framer-motion";
 import Cookies from "js-cookie";
 import { ChevronDown, Mail } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type * as THREE from "three";
-import { getCanvasDPR, shouldRenderHeavyEffects } from "../lib/performance";
+import { getAdaptiveCanvasDPR, shouldRenderHeavyEffects } from "../lib/performance";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
@@ -29,6 +30,28 @@ import { RocketReplayButton } from "./RocketReplayButton";
 import { GitHubIcon, LinkedInIcon } from "./ui/common/icons/BrandIcons";
 import { IrisTransition } from "./ui/common/transitions/IrisTransition";
 import { SectionEdge } from "./ui/edges/SectionEdge";
+
+// Constants extracted outside component to prevent recreations
+const DEV_OPS_BADGES = ["AWS", "Kubernetes", "Terraform", "CI/CD", "Docker", "Helm"] as const;
+const GAME_DEV_BADGES = ["Unity", "C#", "Game Feel", "Shaders", "Godot"] as const;
+const UI_DELAY_OFFSET = 3.0;
+const HERO_REWIND_DURATION_MS = 2000;
+const HERO_INITIAL_INTRO_LOCK_MS = 25000;
+
+const HERO_TIMINGS = {
+  cinematic: {
+    cardReveal: 12.5,
+    titleReveal: 13.0,
+    titleShine: 13.9,
+  },
+  fast: {
+    cardReveal: 0.18,
+    titleReveal: 0.18,
+    titleShine: 0.75,
+  },
+} as const;
+
+type HeroTimingKey = keyof (typeof HERO_TIMINGS)["cinematic"];
 
 const ResponsiveCamera = () => {
   const { camera, size } = useThree();
@@ -85,21 +108,32 @@ const TypewriterText = ({
   return <motion.span className={className}>{displayText}</motion.span>;
 };
 
-const devOpsBadges = ["AWS", "Kubernetes", "Terraform", "CI/CD", "Docker", "Helm"];
-const gameDevBadges = ["Unity", "C#", "Game Feel", "Shaders", "Godot"];
-
 export const Hero = () => {
   const [hasCookie] = useState(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("intro") === "1") return false;
     }
-    if (import.meta.env.DEV) return false;
+
     return !!Cookies.get("hero_visited");
   });
   const [skipIntro, setSkipIntro] = useState(hasCookie);
   const [isRewinding, setIsRewinding] = useState(false);
   const [animationKey, setAnimationKey] = useState(0);
+  const [isIntroScrollLocked, setIsIntroScrollLocked] = useState(!hasCookie);
+  const [forceCinematicReplay, setForceCinematicReplay] = useState(false);
+
+  useEffect(() => {
+    if (!isIntroScrollLocked) return;
+
+    const lockTimeout = window.setTimeout(() => {
+      setIsIntroScrollLocked(false);
+    }, HERO_INITIAL_INTRO_LOCK_MS);
+
+    return () => {
+      window.clearTimeout(lockTimeout);
+    };
+  }, [isIntroScrollLocked]);
 
   useEffect(() => {
     Cookies.set("hero_visited", "true", { expires: 7 });
@@ -170,7 +204,7 @@ export const Hero = () => {
         };
 
         // UI Sounds Start Post-Background Animation
-        const uiOffset = 3.0;
+        const uiOffset = UI_DELAY_OFFSET;
 
         // 3. Big Title Stamp (13.0s)
         scheduleTone(13.0 + uiOffset, 80, "square", 0.6, 0.2);
@@ -262,27 +296,56 @@ export const Hero = () => {
     }
 
     setIsRewinding(true);
+    setForceCinematicReplay(true);
     setSkipIntro(false);
 
-    // Rewind lasts 2 seconds, then resets
+    // Rewind lasts HERO_REWIND_DURATION_MS, then resets
     setTimeout(() => {
       setIsRewinding(false);
       setAnimationKey((prev) => prev + 1);
-    }, 2000);
+    }, HERO_REWIND_DURATION_MS);
   };
 
-  const UI_DELAY_OFFSET = 3.0;
-  const getDelay = (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay + UI_DELAY_OFFSET);
+  const getDelay = useCallback(
+    (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay + UI_DELAY_OFFSET),
+    [skipIntro],
+  );
+
+  const getLcpDelay = useCallback(
+    (baseDelay: number) => Math.max(0, skipIntro ? 0 : baseDelay),
+    [skipIntro],
+  );
+
+  const shouldPreserveCinematicIntro = !skipIntro && (!hasCookie || forceCinematicReplay);
+  const heroTimingMode = shouldPreserveCinematicIntro ? "cinematic" : "fast";
+
+  const getHeroTimingDelay = useCallback(
+    (key: HeroTimingKey) => {
+      const baseDelay = HERO_TIMINGS[heroTimingMode][key];
+
+      if (heroTimingMode === "cinematic") {
+        return getDelay(baseDelay);
+      }
+
+      return getLcpDelay(baseDelay);
+    },
+    [getDelay, getLcpDelay, heroTimingMode],
+  );
 
   const [showHeavyEffects, setShowHeavyEffects] = useState(true);
   const [canvasDPR, setCanvasDPR] = useState(1);
 
   useEffect(() => {
     setShowHeavyEffects(shouldRenderHeavyEffects());
-    setCanvasDPR(getCanvasDPR());
   }, []);
 
   const heroSectionRef = useRef<HTMLElement>(null);
+  const [canvasEventSource, setCanvasEventSource] = useState<HTMLElement | null>(null);
+
+  const setCanvasEventSourceRef = useCallback((node: HTMLDivElement | null) => {
+    setCanvasEventSource(node);
+  }, []);
+
   const [isHeroVisible, setIsHeroVisible] = useState(true);
 
   const scrollContainer = useScrollContainer();
@@ -293,6 +356,15 @@ export const Hero = () => {
     setIsHeroVisible(heroSectionRef.current.getBoundingClientRect().bottom > containerTop);
   });
 
+  useEffect(() => {
+    if (!isHeroVisible && !isRewinding && !skipIntro) {
+      setSkipIntro(true);
+      setForceCinematicReplay(false);
+      setAnimationKey((prev) => prev + 1);
+      setIsIntroScrollLocked(false);
+    }
+  }, [isHeroVisible, isRewinding, skipIntro]);
+
   // Scroll-driven exit animations
   const { scrollYProgress: heroExitProgress } = useScroll({
     container: scrollContainer ?? undefined,
@@ -300,9 +372,36 @@ export const Hero = () => {
     // 0 = hero fills viewport, 1 = hero bottom reaches viewport top
     offset: ["start start", "end start"],
   });
+  const isHeroNearViewport = useInView(heroSectionRef, {
+    root: scrollContainer ?? undefined,
+    margin: "70% 0px 70% 0px",
+  });
+  const heroBackgroundOpacity = useTransform(heroExitProgress, [0.74, 1], [1, 0]);
+
+  useEffect(() => {
+    const updateAdaptiveDpr = () => {
+      setCanvasDPR(getAdaptiveCanvasDPR());
+    };
+
+    updateAdaptiveDpr();
+    window.addEventListener("resize", updateAdaptiveDpr);
+    window.addEventListener("focus", updateAdaptiveDpr);
+    document.addEventListener("visibilitychange", updateAdaptiveDpr);
+
+    return () => {
+      window.removeEventListener("resize", updateAdaptiveDpr);
+      window.removeEventListener("focus", updateAdaptiveDpr);
+      document.removeEventListener("visibilitychange", updateAdaptiveDpr);
+    };
+  }, []);
 
   return (
-    <section id="about" className="section-hero snap-section" ref={heroSectionRef}>
+    <section
+      id="about"
+      className="section-hero snap-section"
+      ref={heroSectionRef}
+      data-no-swipe-page={isIntroScrollLocked ? "true" : undefined}
+    >
       {/* Replay Background Animation Lever - Desktop Only (Floating) */}
       <div
         id="lever-panel"
@@ -318,7 +417,10 @@ export const Hero = () => {
       </div>
 
       {/* Background Layer */}
-      <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">
+      <div
+        ref={setCanvasEventSourceRef}
+        className="absolute inset-0 z-0 h-full w-full pointer-events-none"
+      >
         <AnimatePresence mode="wait">
           {isRewinding ? (
             <motion.div
@@ -329,10 +431,16 @@ export const Hero = () => {
               transition={{ duration: 0.2 }}
               className="absolute inset-0 h-full w-full"
             >
-              <Canvas camera={{ position: [0, 0, 5], fov: 60 }} dpr={canvasDPR}>
-                <ResponsiveCamera />
-                <ReverseHyperspace />
-              </Canvas>
+              {canvasEventSource ? (
+                <Canvas
+                  camera={{ position: [0, 0, 5], fov: 60 }}
+                  dpr={canvasDPR}
+                  eventSource={canvasEventSource}
+                >
+                  <ResponsiveCamera />
+                  <ReverseHyperspace />
+                </Canvas>
+              ) : null}
               <motion.div
                 className="absolute inset-0 bg-black"
                 initial={{ opacity: 0 }}
@@ -340,18 +448,25 @@ export const Hero = () => {
                 transition={{ duration: 2, times: [0, 0.9, 1] }}
               />
             </motion.div>
-          ) : showHeavyEffects ? (
+          ) : showHeavyEffects && isHeroNearViewport ? (
             <motion.div
               key={`bg-${animationKey}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
               className="absolute inset-0 h-full w-full"
+              style={{ opacity: heroBackgroundOpacity }}
             >
-              <Canvas camera={{ position: [0, 0, 5], fov: 50 }} dpr={canvasDPR}>
-                <ResponsiveCamera />
-                <ThreeHeroBackground skipIntro={skipIntro} />
-              </Canvas>
+              {canvasEventSource ? (
+                <Canvas
+                  camera={{ position: [0, 0, 5], fov: 50 }}
+                  dpr={canvasDPR}
+                  eventSource={canvasEventSource}
+                >
+                  <ResponsiveCamera />
+                  <ThreeHeroBackground skipIntro={skipIntro} />
+                </Canvas>
+              ) : null}
             </motion.div>
           ) : (
             <div className="absolute inset-0 h-full w-full bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950" />
@@ -407,7 +522,7 @@ export const Hero = () => {
                   filter: "brightness(1) blur(0px)",
                 }}
                 transition={{
-                  delay: getDelay(12.5),
+                  delay: getHeroTimingDelay("cardReveal"),
                   duration: 0.5,
                   type: "spring",
                   stiffness: 200,
@@ -499,7 +614,7 @@ export const Hero = () => {
                     animate={{ opacity: 1, scale: 1, y: 0, filter: "blur(0px)" }}
                     transition={{
                       duration: 0.2,
-                      delay: getDelay(13.0),
+                      delay: getHeroTimingDelay("titleReveal"),
                       ease: "easeIn",
                     }}
                     className="hero-title"
@@ -523,10 +638,10 @@ export const Hero = () => {
                       transition={{
                         backgroundPosition: {
                           duration: 1.2,
-                          delay: getDelay(13.9),
+                          delay: getHeroTimingDelay("titleShine"),
                           ease: "easeInOut",
                         },
-                        opacity: { duration: 0.1, delay: getDelay(13.9) },
+                        opacity: { duration: 0.1, delay: getHeroTimingDelay("titleShine") },
                       }}
                       className="absolute inset-0 block text-transparent bg-clip-text pointer-events-none"
                       style={{
@@ -624,7 +739,7 @@ export const Hero = () => {
                   >
                     {/* DevOps badges — blue toned */}
                     <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-                      {devOpsBadges.map((badge, i) => (
+                      {DEV_OPS_BADGES.map((badge, i) => (
                         <motion.button
                           type="button"
                           key={badge}
@@ -646,7 +761,7 @@ export const Hero = () => {
                     </div>
                     {/* GameDev badges — emerald/purple toned */}
                     <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
-                      {gameDevBadges.map((badge, i) => (
+                      {GAME_DEV_BADGES.map((badge, i) => (
                         <motion.button
                           type="button"
                           key={badge}

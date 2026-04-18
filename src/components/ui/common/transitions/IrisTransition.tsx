@@ -34,29 +34,29 @@ interface IrisTransitionProps {
 export const IrisTransition = ({ scrollProgress }: IrisTransitionProps) => {
   // ── Motion values ──────────────────────────────────────────────────────────
   // Dark cover: fades in before iris to hide galaxy without touching WebGL compositor
-  const bgCoverOpacity = useTransform(scrollProgress, [0.32, 0.5], [0, 1]);
+  const bgCoverOpacity = useTransform(scrollProgress, [0.2, 0.6], [0, 1]);
 
   // Iris aperture: transparent centre shrinks to a pinhole then seals
-  const irisRadius = useTransform(scrollProgress, [0.48, 0.97], [100, 0]);
+  const irisRadius = useTransform(scrollProgress, [0.36, 1], [100, 0]);
   // Final black fill once the iris is nearly closed
-  const finalBlack = useTransform(scrollProgress, [0.93, 0.99], [0, 1]);
+  const finalBlack = useTransform(scrollProgress, [0.96, 1], [0, 1]);
 
   // Aperture ring glow — cyan/violet halo tracking the iris edge
-  const glowRadius = useTransform(scrollProgress, [0.48, 0.97], [104, 1]);
-  const glowOpacity = useTransform(scrollProgress, [0.48, 0.68, 0.93], [0, 1, 0]);
+  const glowRadius = useTransform(scrollProgress, [0.36, 1], [104, 1]);
+  const glowOpacity = useTransform(scrollProgress, [0.36, 0.76, 0.98], [0, 1, 0]);
 
   // Chromatic aberration — R channel slightly larger, B slightly smaller
-  const chromaR = useTransform(scrollProgress, [0.48, 0.97], [102, 0.5]);
-  const chromaB = useTransform(scrollProgress, [0.48, 0.97], [98, 0]);
-  const chromaOpacity = useTransform(scrollProgress, [0.48, 0.72, 0.93], [0, 0.7, 0]);
+  const chromaR = useTransform(scrollProgress, [0.36, 1], [102, 0.5]);
+  const chromaB = useTransform(scrollProgress, [0.36, 1], [98, 0]);
+  const chromaOpacity = useTransform(scrollProgress, [0.36, 0.78, 0.98], [0, 0.82, 0]);
 
   // Central bloom — brief wormhole-collapse light pulse
-  const bloomOpacity = useTransform(scrollProgress, [0.48, 0.63, 0.82], [0, 1, 0]);
-  const bloomRadius = useTransform(scrollProgress, [0.48, 0.82], [5, 26]);
+  const bloomOpacity = useTransform(scrollProgress, [0.36, 0.72, 0.93], [0, 1, 0]);
+  const bloomRadius = useTransform(scrollProgress, [0.36, 0.93], [4, 30]);
 
   // Aperture blades — 6-blade conic shutter that rotates as the iris closes
-  const bladeRotate = useTransform(scrollProgress, [0.48, 0.97], [0, 44]);
-  const bladeOpacity = useTransform(scrollProgress, [0.48, 0.62, 0.93], [0, 0.22, 0]);
+  const bladeRotate = useTransform(scrollProgress, [0.36, 1], [0, 44]);
+  const bladeOpacity = useTransform(scrollProgress, [0.36, 0.72, 0.98], [0, 0.28, 0]);
 
   // ── Gradient templates ─────────────────────────────────────────────────────
   const irisGradient = useMotionTemplate`radial-gradient(${irisRadius}% ${irisRadius}% at 50% 42%, transparent 60%, rgba(17,24,39,0.98) 100%)`;

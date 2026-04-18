@@ -14,7 +14,9 @@
  * amber/crimson glow halos.  Star field fades in above the fill zone.
  */
 
+import { useInView } from "framer-motion";
 import { useEffect, useRef } from "react";
+import { useScrollContainer } from "../../../lib/ScrollContainerContext";
 import { buildGlProgram, hexToVec3 } from "../../../lib/webgl";
 
 interface MeteorEdgeProps {
@@ -143,8 +145,15 @@ export const MeteorEdge = ({ fillColor, className = "" }: MeteorEdgeProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
+  const container = useScrollContainer();
+  const shouldRenderWebgl = useInView(wrapperRef, {
+    root: container ?? undefined,
+    margin: "30% 0px 30% 0px",
+  });
 
   useEffect(() => {
+    if (!shouldRenderWebgl) return;
+
     const canvas = canvasRef.current;
     const wrapper = wrapperRef.current;
     if (!canvas || !wrapper) return;
@@ -206,7 +215,7 @@ export const MeteorEdge = ({ fillColor, className = "" }: MeteorEdgeProps) => {
       gl.deleteBuffer(buf);
       gl.deleteProgram(prog);
     };
-  }, [fillColor]);
+  }, [fillColor, shouldRenderWebgl]);
 
   return (
     <div

@@ -17,7 +17,6 @@ const TRACK_COLORS = [
   new THREE.Color("#8b5cf6"), // index 2 — Sphere Track Purple
   new THREE.Color("#ffffff"), // fallback
 ] as const;
-const _scratchColor = new THREE.Color();
 const _scratchVec = new THREE.Vector3();
 
 // Orbital Constellations Web Component (Connects orbiting shapes within and across tracks)
@@ -43,6 +42,14 @@ export const ConstellationWeb = ({
   const MAX_CONNECTIONS = 2000;
   const positions = useMemo(() => new Float32Array(MAX_CONNECTIONS * 2 * 3), []);
   const colors = useMemo(() => new Float32Array(MAX_CONNECTIONS * 2 * 3), []);
+
+  const maxPointCount = useMemo(
+    () => orbitsInfo.reduce((sum, orbit) => sum + orbit.shapes.length, 0),
+    [orbitsInfo],
+  );
+  const pointPositions = useMemo(() => new Float32Array(maxPointCount * 3), [maxPointCount]);
+  const pointColors = useMemo(() => new Float32Array(maxPointCount * 3), [maxPointCount]);
+  const pointOpacities = useMemo(() => new Float32Array(maxPointCount), [maxPointCount]);
 
   // BufferAttributes created once — only needsUpdate toggled in the frame loop
   const posAttr = useMemo(() => new THREE.BufferAttribute(positions, 3), [positions]);
@@ -77,15 +84,9 @@ export const ConstellationWeb = ({
         ? connectionThreshold
         : baseThreshold + Math.sin(t * 0.5) * 1.5;
 
-    const allPoints: {
-      x: number;
-      y: number;
-      z: number;
-      color: THREE.Color;
-      opacity: number;
-    }[] = [];
-
     if (!orbitsInfo.every((o) => o.ref.current)) return;
+
+    let pointCount = 0;
 
     orbitsInfo.forEach((orbit, index) => {
       const group = orbit.ref.current;
@@ -99,53 +100,57 @@ export const ConstellationWeb = ({
         _scratchVec.set(pos.x, 0, pos.z);
         _scratchVec.applyEuler(group.rotation);
         _scratchVec.multiplyScalar(group.scale.x);
-        allPoints.push({
-          x: _scratchVec.x,
-          y: _scratchVec.y,
-          z: _scratchVec.z,
-          color: trackColor,
-          opacity: orbit.opacity !== undefined ? orbit.opacity : 1,
-        });
+
+        const p3 = pointCount * 3;
+        pointPositions[p3] = _scratchVec.x;
+        pointPositions[p3 + 1] = _scratchVec.y;
+        pointPositions[p3 + 2] = _scratchVec.z;
+
+        pointColors[p3] = trackColor.r;
+        pointColors[p3 + 1] = trackColor.g;
+        pointColors[p3 + 2] = trackColor.b;
+
+        pointOpacities[pointCount] = orbit.opacity !== undefined ? orbit.opacity : 1;
+        pointCount++;
       });
     });
 
     let lineIdx = 0;
     const globalFade = globalOpacityRef?.current !== undefined ? globalOpacityRef.current : 1.0;
+    const thresholdSq = pulsingThreshold * pulsingThreshold;
 
-    for (let i = 0; i < allPoints.length; i++) {
-      for (let j = i + 1; j < allPoints.length; j++) {
+    for (let i = 0; i < pointCount; i++) {
+      for (let j = i + 1; j < pointCount; j++) {
         if (lineIdx >= MAX_CONNECTIONS) break;
 
-        const p1 = allPoints[i];
-        const p2 = allPoints[j];
+        const i3 = i * 3;
+        const j3 = j * 3;
 
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const dz = p1.z - p2.z;
-        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        const dx = pointPositions[i3] - pointPositions[j3];
+        const dy = pointPositions[i3 + 1] - pointPositions[j3 + 1];
+        const dz = pointPositions[i3 + 2] - pointPositions[j3 + 2];
+        const distSq = dx * dx + dy * dy + dz * dz;
 
-        if (dist < pulsingThreshold) {
+        if (distSq < thresholdSq) {
+          const dist = Math.sqrt(distSq);
           // Smoother, slightly more gracious alpha falloff to allow the dense web to look atmospheric
           const alphaRatio = 1.0 - dist / pulsingThreshold;
           const alpha = alphaRatio ** 1.2; // Less harsh dropoff so far lines still show
 
-          positions[lineIdx * 6] = p1.x;
-          positions[lineIdx * 6 + 1] = p1.y;
-          positions[lineIdx * 6 + 2] = p1.z;
-          positions[lineIdx * 6 + 3] = p2.x;
-          positions[lineIdx * 6 + 4] = p2.y;
-          positions[lineIdx * 6 + 5] = p2.z;
+          positions[lineIdx * 6] = pointPositions[i3];
+          positions[lineIdx * 6 + 1] = pointPositions[i3 + 1];
+          positions[lineIdx * 6 + 2] = pointPositions[i3 + 2];
+          positions[lineIdx * 6 + 3] = pointPositions[j3];
+          positions[lineIdx * 6 + 4] = pointPositions[j3 + 1];
+          positions[lineIdx * 6 + 5] = pointPositions[j3 + 2];
 
           // Color lines by dynamically blending the color of shape A and shape B based on distance
-          const mixedOpacity = Math.min(p1.opacity, p2.opacity);
+          const mixedOpacity = Math.min(pointOpacities[i], pointOpacities[j]);
           const brightness = alpha * 0.8 * mixedOpacity * globalFade; // Boost the brightness so colors show, scaling by point opacity and global fade
 
-          // Blend the color of node i with node j — reuse scratch to avoid clone()
-          _scratchColor.copy(p1.color).lerp(p2.color, 0.5);
-
-          const r = _scratchColor.r * brightness;
-          const g = _scratchColor.g * brightness;
-          const b = _scratchColor.b * brightness;
+          const r = (pointColors[i3] + pointColors[j3]) * 0.5 * brightness;
+          const g = (pointColors[i3 + 1] + pointColors[j3 + 1]) * 0.5 * brightness;
+          const b = (pointColors[i3 + 2] + pointColors[j3 + 2]) * 0.5 * brightness;
 
           colors[lineIdx * 6] = r;
           colors[lineIdx * 6 + 1] = g;

@@ -27,6 +27,7 @@ export const DevOpsSection = () => {
         innerClassName={isCompact ? "justify-start pt-3 pb-2" : "justify-start pt-6 pb-4"}
         bottomFadeClassName="h-28 md:h-[200px]"
         background={<DevOpsBackground />}
+        backgroundInViewOnly
       >
         <SectionHeader
           title="DevOps & Automation"

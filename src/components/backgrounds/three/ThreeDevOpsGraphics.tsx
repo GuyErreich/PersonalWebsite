@@ -20,6 +20,14 @@ export const ThreeDevOpsGraphics = () => {
     }
   });
 
+  // Non-indexed BoxGeometry so <Wireframe> doesn't need to convert it at runtime
+  const boxGeo = useMemo(() => {
+    const indexed = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+    const nonIndexed = indexed.toNonIndexed();
+    indexed.dispose();
+    return nonIndexed;
+  }, []);
+
   // Create a memoized network pattern
   const lines = useMemo(() => {
     const points: THREE.Vector3[] = [];
@@ -61,7 +69,7 @@ export const ThreeDevOpsGraphics = () => {
               Math.sin((i / 5) * Math.PI * 2) * 4,
             ]}
           >
-            <boxGeometry args={[0.5, 0.5, 0.5]} />
+            <primitive object={boxGeo} attach="geometry" />
             <meshStandardMaterial color="#10b981" />
             <Wireframe thickness={0.05} stroke={"#34d399"} />
           </mesh>
