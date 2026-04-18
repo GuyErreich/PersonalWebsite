@@ -28,9 +28,44 @@ if (!rawOrigins) {
 const ALLOWED_ORIGINS = new Set(
   rawOrigins
     .split(",")
-    .map((o) => o.trim())
+    .map((o: string) => o.trim())
     .filter(Boolean),
 );
+
+
+const IMAGE_CONTENT_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+]);
+const VIDEO_CONTENT_TYPES = new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]);
+
+const FOLDER_POLICIES: Record<
+  string,
+  {
+    contentTypes: Set<string>;
+    extensions: Set<string>;
+  }
+> = {
+  media: {
+    contentTypes: new Set([...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES]),
+    extensions: new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "mp4", "webm", "ogg", "mov"]),
+  },
+  "hero-showreel": {
+    contentTypes: VIDEO_CONTENT_TYPES,
+    extensions: new Set(["mp4", "webm", "ogg", "mov"]),
+  },
+  "gamedev-assets": {
+    contentTypes: new Set([...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES]),
+    extensions: new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "mp4", "webm", "ogg", "mov"]),
+  },
+  "gamedev-thumbnails": {
+    contentTypes: IMAGE_CONTENT_TYPES,
+    extensions: new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]),
+  },
+};
 
 function corsHeaders(origin: string): Record<string, string> | null {
   if (!ALLOWED_ORIGINS.has(origin)) return null;
@@ -76,6 +111,9 @@ Deno.serve(async (req: Request) => {
     if (!authHeader) {
       return json({ error: "Missing Authorization header" }, 401);
     }
+    if (!authHeader.startsWith("Bearer ")) {
+      return json({ error: "Invalid Authorization header" }, 401);
+    }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
@@ -93,6 +131,9 @@ Deno.serve(async (req: Request) => {
     } = await supabase.auth.getUser();
     if (authError || !user) {
       return json({ error: "Unauthorized" }, 401);
+    }
+    if (!user.app_metadata || user.app_metadata.role !== "admin") {
+      return json({ error: "Forbidden" }, 403);
     }
 
     // --- Parse request ---
@@ -122,6 +163,19 @@ Deno.serve(async (req: Request) => {
     // Normalise fileExt: strip leading dots, allow only alphanumeric chars
     const rawExt = fileExt ?? "";
     const safeExt = rawExt.replace(/^\.+/, "").replace(/[^a-zA-Z0-9]/g, "");
+    if (safeExt.length > 10) {
+      return json({ error: "Invalid file extension" }, 400);
+    }
+    const extNoDot = safeExt.toLowerCase();
+    const normalizedContentType = contentType.trim().toLowerCase();
+    const policy = FOLDER_POLICIES[folder];
+    if (!policy.contentTypes.has(normalizedContentType)) {
+      return json({ error: "File type not allowed" }, 400);
+    }
+    if (!extNoDot || !policy.extensions.has(extNoDot)) {
+      return json({ error: "File extension not allowed" }, 400);
+    }
+
     const ext = safeExt.length > 0 ? `.${safeExt}` : "";
     const key = `${folder}/${crypto.randomUUID()}${ext}`;
 
@@ -156,6 +210,7 @@ Deno.serve(async (req: Request) => {
 
     return json({ signedUrl, publicUrl: `${publicUrl}/${key}` });
   } catch (err) {
-    return json({ error: err instanceof Error ? err.message : "Internal server error" }, 500);
+    console.error(err instanceof Error ? err.message : String(err));
+    return json({ error: "Internal server error" }, 500);
   }
 });

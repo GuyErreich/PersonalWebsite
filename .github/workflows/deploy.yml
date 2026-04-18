@@ -11,7 +11,7 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     environment:
       name: dev
-      url: ${{ steps.cloudflare.outputs.url }}
+      url: ${{ steps.cloudflare.outputs.alias || steps.cloudflare.outputs.url }}
     permissions:
       contents: read
       deployments: write
@@ -40,7 +40,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: "personal-website" # Update with your CF Pages project name
+          projectName: "portfolio-website" # Update with your CF Pages project name
           directory: "dist"
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref || github.ref_name }} # Deploys using branch name for preview URLs in CF
+          branch: dev

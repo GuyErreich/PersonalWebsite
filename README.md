@@ -162,7 +162,10 @@ supabase secrets set R2_ACCESS_KEY_ID=<your-r2-access-key>
 supabase secrets set R2_SECRET_ACCESS_KEY=<your-r2-secret-key>
 supabase secrets set R2_BUCKET_NAME=<your-bucket-name>
 supabase secrets set R2_PUBLIC_URL=<your-r2-public-url>
+supabase secrets set ALLOWED_ORIGINS=<comma-separated-allowed-origins>
 ```
+
+Admin authorization for `r2-presign` is based on Supabase Auth metadata (`app_metadata.role = "admin"`), not an email allowlist secret.
 
 Deploy the edge function after setting secrets:
 
@@ -184,6 +187,25 @@ npm run build   # Type-check + production build
 npm run lint    # ESLint + Biome checks
 npm run preview # Serve the production build locally
 ```
+
+Security smoke tests for `r2-presign`:
+
+```bash
+PRESIGN_URL=https://<ref>.supabase.co/functions/v1/r2-presign \
+ALLOWED_ORIGIN=https://<your-site-origin> \
+SUPABASE_URL=https://<ref>.supabase.co \
+SUPABASE_ANON_KEY=<anon-key> \
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key> \
+npm run security:test:r2-presign
+```
+
+For GitHub Actions automation, add these repository or environment secrets:
+
+- `PRESIGN_URL`
+- `ALLOWED_ORIGIN`
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Code Style & Conventions
 

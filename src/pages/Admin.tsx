@@ -24,16 +24,19 @@ export const Admin = () => {
   useEffect(() => {
     const checkUser = async () => {
       const {
-        data: { session },
+        data: { user },
         error,
-      } = await supabase.auth.getSession();
-      if (error || !session) {
+      } = await supabase.auth.getUser();
+
+      if (error || !user) {
         navigate("/login");
         return;
       }
+
       setLoading(false);
     };
-    checkUser();
+
+    void checkUser();
   }, [navigate]);
 
   const handleLogout = useCallback(async () => {

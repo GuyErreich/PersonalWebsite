@@ -47,6 +47,49 @@ const AVAILABLE_ICONS = [
   { id: "monitor", icon: Monitor, label: "Desktop" },
 ];
 
+const ALLOWED_MEDIA_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "video/mp4",
+  "video/webm",
+  "video/ogg",
+  "video/quicktime",
+]);
+const ALLOWED_THUMBNAIL_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+]);
+
+const MAX_MEDIA_SIZE_BYTES = 100 * 1024 * 1024;
+const MAX_THUMBNAIL_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_TITLE_LENGTH = 120;
+const MAX_DESCRIPTION_LENGTH = 2000;
+const MAX_STACK_LENGTH = 40;
+
+const normalizeOptionalHttpsUrl = (value: string, fieldName: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(`${fieldName} must be a valid URL.`);
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new Error(`${fieldName} must use HTTPS.`);
+  }
+
+  return parsed.href;
+};
+
 export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModalProps) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,8 +113,51 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (type === "devops" && selectedStacks.length === 0) {
+    const normalizedTitle = title.trim();
+    const normalizedDescription = description.trim();
+
+    if (!normalizedTitle) {
+      setError("Title is required.");
+      return;
+    }
+    if (normalizedTitle.length > MAX_TITLE_LENGTH) {
+      setError(`Title must be ${MAX_TITLE_LENGTH} characters or fewer.`);
+      return;
+    }
+
+    if (!normalizedDescription) {
+      setError("Description is required.");
+      return;
+    }
+    if (normalizedDescription.length > MAX_DESCRIPTION_LENGTH) {
+      setError(`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`);
+      return;
+    }
+
+    const normalizedStacks = Array.from(
+      new Set(
+        selectedStacks
+          .map((stack) => stack.trim())
+          .filter((stack) => stack.length > 0),
+      ),
+    );
+    if (normalizedStacks.some((stack) => stack.length > MAX_STACK_LENGTH)) {
+      setError(`Each tech stack item must be ${MAX_STACK_LENGTH} characters or fewer.`);
+      return;
+    }
+
+    if (type === "devops" && normalizedStacks.length === 0) {
       setError("Select at least one tech stack.");
+      return;
+    }
+
+    let normalizedGithubUrl: string | null;
+    let normalizedLiveUrl: string | null;
+    try {
+      normalizedGithubUrl = normalizeOptionalHttpsUrl(githubUrl, "GitHub URL");
+      normalizedLiveUrl = normalizeOptionalHttpsUrl(liveUrl, "Live URL");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid URL value.");
       return;
     }
 
@@ -99,24 +185,24 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
         if (!finalMediaUrl) throw new Error("Media file is required for Game Dev projects.");
         ({ error: dbError } = await supabase.from("gamedev_items").insert([
           {
-            title,
-            description,
+            title: normalizedTitle,
+            description: normalizedDescription,
             media_url: finalMediaUrl,
             thumbnail_url: finalThumbnailUrl,
             icon_name: selectedIcon,
-            github_url: githubUrl || null,
-            live_url: liveUrl || null,
+            github_url: normalizedGithubUrl,
+            live_url: normalizedLiveUrl,
           },
         ]));
       } else {
         ({ error: dbError } = await supabase.from("devops_projects").insert([
           {
-            title,
-            description,
-            tech_stack: selectedStacks,
+            title: normalizedTitle,
+            description: normalizedDescription,
+            tech_stack: normalizedStacks,
             icon_name: selectedIcon,
-            github_url: githubUrl || null,
-            live_url: liveUrl || null,
+            github_url: normalizedGithubUrl,
+            live_url: normalizedLiveUrl,
           },
         ]));
       }
@@ -254,11 +340,24 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                       <input
                         id="item-media"
                         type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/ogg,video/quicktime"
                         required
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
-                            setMediaFile(e.target.files[0]);
+                            const nextFile = e.target.files[0];
+                            if (!ALLOWED_MEDIA_MIME_TYPES.has(nextFile.type.toLowerCase())) {
+                              setError("Media file type is not allowed.");
+                              setMediaFile(null);
+                              return;
+                            }
+                            if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
+                              setError("Media file is empty or exceeds 100MB.");
+                              setMediaFile(null);
+                              return;
+                            }
+                            setError(null);
+                            setMediaFile(nextFile);
                           }
                         }}
                       />
@@ -276,11 +375,23 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                       <input
                         id="item-thumbnail"
                         type="file"
-                        accept="image/*"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {
-                            setThumbnailFile(e.target.files[0]);
+                            const nextFile = e.target.files[0];
+                            if (!ALLOWED_THUMBNAIL_MIME_TYPES.has(nextFile.type.toLowerCase())) {
+                              setError("Thumbnail file type is not allowed.");
+                              setThumbnailFile(null);
+                              return;
+                            }
+                            if (nextFile.size <= 0 || nextFile.size > MAX_THUMBNAIL_SIZE_BYTES) {
+                              setError("Thumbnail file is empty or exceeds 5MB.");
+                              setThumbnailFile(null);
+                              return;
+                            }
+                            setError(null);
+                            setThumbnailFile(nextFile);
                           }
                         }}
                       />
