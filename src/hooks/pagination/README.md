@@ -13,7 +13,7 @@ export const Home = () => {
   useSectionPager({ mainRef });
 
   return (
-    <main ref={mainRef} className="overflow-hidden">
+    <main ref={mainRef} className="h-screen overflow-y-auto overflow-x-hidden">
       <section className="snap-section h-screen">Hero</section>
       <section className="snap-section h-screen">DevOps</section>
       <section className="snap-section h-screen">GameDev</section>
@@ -39,7 +39,6 @@ All tuning values live in `sectionPager/constants.ts` and can be adjusted withou
 ```typescript
 export const PAGE_SCROLL_DURATION_MS = 1400;      // Custom animation duration
 export const PAGE_SCROLL_LOCK_MS = 900;           // Cooldown between pages
-export const HERO_LOCK_ACTIVE_SCROLL_TOP_RATIO = 0.6;  // When hero lock expires
 export const WHEEL_DELTA_THRESHOLD = 12;          // Wheel sensitivity
 export const TOUCH_DELTA_THRESHOLD = 40;          // Touch sensitivity
 ```
@@ -119,7 +118,7 @@ graph TD
 3. **Device-Aware Paging**: 
    - **Strong devices**: Custom 1400ms smooth scroll animation (easeInOutCubic).
    - **Mid-tier/constrained**: Native `scrollIntoView({ behavior: 'smooth' })`.
-4. **Scroll Lock**: During hero intro, paging is prevented until scroll crosses threshold.
+4. **Scroll Lock**: During hero intro, paging is prevented while the hero section is marked with `data-no-swipe-page`. Paging resumes when that attribute is removed by the hero intro flow.
 5. **Cleanup**: Removes all listeners and cancels pending animations on unmount.
 
 ## Architecture
@@ -140,7 +139,7 @@ useSectionPager (orchestration)
 
 ### Required
 
-- **`ref={mainRef}` on `<main>`**: The scroll container. Must be `overflow-hidden` with fixed viewport height.
+- **`ref={mainRef}` on `<main>`**: The scroll container. Use fixed viewport height and vertical scrolling (`overflow-y-auto`).
 - **`className="snap-section"` on section containers**: Identifies pageable sections.
 
 ### Optional
@@ -167,19 +166,20 @@ Adaptive paging is controlled by `isMidTierOrConstrainedDevice()` from `lib/perf
 
 - **Gesture State Lock**: Prevents rapid `pageByDelta` calls during touch; resets after paging completes.
 - **RAF Management**: All animation frames are tracked and cancelled on unmount.
+- **Hero Lock Check**: O(1) lookup of hero section `data-no-swipe-page` attribute.
 - **Snap Disable/Restore**: CSS `scroll-snap-type` is temporarily disabled during custom animation to prevent jarring behavior.
 - **Section Refresh**: Sections are re-queried on window resize (in case DOM changed).
 
 ## Troubleshooting
 
 ### Paging is jerky or stutters
-- Ensure main element is `overflow-hidden` with fixed `height` (usually `h-screen`).
+- Ensure main element uses fixed `height` (usually `h-screen`) and vertical scrolling (`overflow-y-auto`).
 - Check if other event listeners are also preventing default (can cause preventDefault conflicts).
 - Verify device is not memory-constrained; check `isMidTierOrConstrainedDevice()` logic.
 
 ### Hero intro doesn't lock scrolling
-- Confirm hero section has `id="about"` and `data-no-swipe-page="true"` on parent.
-- Check that initial scroll is < 60% of viewport height (HERO_LOCK_ACTIVE_SCROLL_TOP_RATIO).
+- Confirm hero section has `id="about"` and `data-no-swipe-page="true"` while intro is active.
+- Check that hero intro flow removes `data-no-swipe-page` after lock release.
 
 ### Touch doesn't work on mobile
 - Ensure `touchmove` handler is attached with `{ passive: false }` (allows preventDefault).

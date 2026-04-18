@@ -122,6 +122,7 @@ export const Hero = () => {
   const [animationKey, setAnimationKey] = useState(0);
   const [isIntroScrollLocked, setIsIntroScrollLocked] = useState(!hasCookie);
   const [forceCinematicReplay, setForceCinematicReplay] = useState(false);
+  const replayTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isIntroScrollLocked) return;
@@ -137,6 +138,14 @@ export const Hero = () => {
 
   useEffect(() => {
     Cookies.set("hero_visited", "true", { expires: 7 });
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (replayTimeoutRef.current !== null) {
+        window.clearTimeout(replayTimeoutRef.current);
+      }
+    };
   }, []);
 
   // Synced Audio/SFX track for the main intro animation
@@ -291,7 +300,7 @@ export const Hero = () => {
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.2);
-    } catch (_e) {
+    } catch {
       // ignore
     }
 
@@ -299,10 +308,15 @@ export const Hero = () => {
     setForceCinematicReplay(true);
     setSkipIntro(false);
 
+    if (replayTimeoutRef.current !== null) {
+      window.clearTimeout(replayTimeoutRef.current);
+    }
+
     // Rewind lasts HERO_REWIND_DURATION_MS, then resets
-    setTimeout(() => {
+    replayTimeoutRef.current = window.setTimeout(() => {
       setIsRewinding(false);
       setAnimationKey((prev) => prev + 1);
+      replayTimeoutRef.current = null;
     }, HERO_REWIND_DURATION_MS);
   };
 

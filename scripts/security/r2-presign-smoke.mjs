@@ -9,6 +9,7 @@
  * - SUPABASE_SERVICE_ROLE_KEY (service role key, for creating/deleting test users)
  */
 
+import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const PRESIGN_URL = process.env.PRESIGN_URL;
@@ -39,7 +40,7 @@ const headersBase = {
   Origin: ALLOWED_ORIGIN,
 };
 
-const randomSuffix = () => `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const randomSuffix = () => `${Date.now()}-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
 const randomStrongPassword = () => `R2Smoke!${randomSuffix()}#A9`;
 
@@ -51,11 +52,7 @@ const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: false, autoRefreshToken: false },
 });
 
-const createUserAndToken = async ({
-  email,
-  password,
-  appMetadata,
-}) => {
+const createUserAndToken = async ({ email, password, appMetadata }) => {
   const { data, error } = await adminClient.auth.admin.createUser({
     email,
     password,

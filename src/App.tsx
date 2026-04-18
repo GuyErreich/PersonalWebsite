@@ -8,12 +8,16 @@ import { lazy, Suspense } from "react";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { Home } from "./pages/Home";
 
-const Login = lazy(async () =>
-  import("./pages/Login").then((module) => ({ default: module.Login })),
-);
-const Admin = lazy(async () =>
-  import("./pages/Admin").then((module) => ({ default: module.Admin })),
-);
+const Login = lazy(async () => {
+  const module = await import("./pages/Login");
+
+  return { default: module.Login };
+});
+const Admin = lazy(async () => {
+  const module = await import("./pages/Admin");
+
+  return { default: module.Admin };
+});
 
 function App() {
   const routeFallback = <div className="min-h-screen bg-gray-900" />;

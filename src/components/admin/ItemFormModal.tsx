@@ -135,11 +135,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
     }
 
     const normalizedStacks = Array.from(
-      new Set(
-        selectedStacks
-          .map((stack) => stack.trim())
-          .filter((stack) => stack.length > 0),
-      ),
+      new Set(selectedStacks.map((stack) => stack.trim()).filter((stack) => stack.length > 0)),
     );
     if (normalizedStacks.some((stack) => stack.length > MAX_STACK_LENGTH)) {
       setError(`Each tech stack item must be ${MAX_STACK_LENGTH} characters or fewer.`);

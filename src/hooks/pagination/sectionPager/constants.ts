@@ -15,12 +15,6 @@ export const PAGE_SCROLL_DURATION_MS = 1400;
  */
 export const PAGE_SCROLL_LOCK_MS = 900;
 /**
- * Threshold ratio (0–1) of viewport height below which hero intro lock remains active.
- * At ratio 0.6: lock is active while scroll < 60% of viewport height.
- * Allows users to scroll *past* intro before lock releases.
- */
-export const HERO_LOCK_ACTIVE_SCROLL_TOP_RATIO = 0.6;
-/**
  * Minimum wheel delta (pixels) required to trigger a page advance.
  * Higher = more scrolling needed to page; lower = more sensitive.
  * Typical range: 10–20px for comfortable desktop scrolling.

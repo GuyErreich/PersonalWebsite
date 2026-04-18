@@ -4,6 +4,8 @@ import { defineConfig } from "vite";
 
 const VENDOR_PATH = "/node_modules/";
 
+const normalizeModuleId = (id: string) => id.replace(/\\/g, "/");
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -11,21 +13,23 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes(VENDOR_PATH)) return undefined;
+          const normalizedId = normalizeModuleId(id);
+
+          if (!normalizedId.includes(VENDOR_PATH)) return undefined;
 
           if (
-            id.includes("/three/") ||
-            id.includes("/@react-three/fiber/") ||
-            id.includes("/@react-three/drei/")
+            normalizedId.includes("/three/") ||
+            normalizedId.includes("/@react-three/fiber/") ||
+            normalizedId.includes("/@react-three/drei/")
           ) {
             return "three-vendor";
           }
 
-          if (id.includes("/framer-motion/") || id.includes("/gsap/")) {
+          if (normalizedId.includes("/framer-motion/") || normalizedId.includes("/gsap/")) {
             return "motion-vendor";
           }
 
-          if (id.includes("/@supabase/")) {
+          if (normalizedId.includes("/@supabase/")) {
             return "supabase-vendor";
           }
 

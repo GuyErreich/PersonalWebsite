@@ -74,7 +74,7 @@ const FOLDER_UPLOAD_POLICIES: Record<
 
 const assertAllowedUpload = (file: File, folderPath: string): void => {
   if (!ALLOWED_FOLDERS.has(folderPath)) {
-    throw new Error(`Folder \"${folderPath}\" is not allowed.`);
+    throw new Error(`Folder "${folderPath}" is not allowed.`);
   }
 
   const policy = FOLDER_UPLOAD_POLICIES[folderPath];

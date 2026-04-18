@@ -33,6 +33,12 @@ export const Admin = () => {
         return;
       }
 
+      const userRole = typeof user.app_metadata?.role === "string" ? user.app_metadata.role : null;
+      if (userRole !== "admin") {
+        navigate("/");
+        return;
+      }
+
       setLoading(false);
     };
 

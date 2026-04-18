@@ -133,7 +133,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
       const normalized = pullAmount / maxPull;
       setEnergy(normalized);
     });
-  }, [dragY]);
+  }, [dragY, maxPull]);
 
   const handleDragEnd = () => {
     if (energy > 0.85) {

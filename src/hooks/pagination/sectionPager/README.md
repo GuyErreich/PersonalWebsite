@@ -45,7 +45,6 @@ Centralized tuning values for paging behavior. Adjust these to fine-tune the pag
 
 - **`PAGE_SCROLL_DURATION_MS`** (1400): Duration of custom smooth-scroll animation on strong devices (easeInOutCubic).
 - **`PAGE_SCROLL_LOCK_MS`** (900): Cooldown period between consecutive page transitions.
-- **`HERO_LOCK_ACTIVE_SCROLL_TOP_RATIO`** (0.6): Ratio of viewport height at which hero intro lock remains active.
 - **`WHEEL_DELTA_THRESHOLD`** (12): Minimum wheel delta (px) to trigger page advance.
 - **`TOUCH_DELTA_THRESHOLD`** (40): Minimum touch delta (px) to trigger page advance.
 
@@ -93,4 +92,4 @@ See `useSectionPager.ts` for how these utilities are orchestrated together.
 
 - Helpers are called frequently during scroll/input but do minimal DOM work (getBoundingClientRect is cached locally).
 - Touch gesture state prevents redundant calls to `pageByDelta`.
-- Hero lock check is O(1) — just reads a data attribute and scroll position.
+- Hero lock check is O(1) — just reads the hero section's `data-no-swipe-page` attribute.

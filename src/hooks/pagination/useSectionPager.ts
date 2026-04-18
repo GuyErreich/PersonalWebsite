@@ -18,7 +18,7 @@ import {
 /**
  * Configuration options for useSectionPager hook.
  *
- * @property mainRef - Ref to the scroll container element (should be `<main>` with overflow-hidden and fixed height)
+ * @property mainRef - Ref to the scroll container element (should be `<main>` with fixed height and vertical scrolling)
  */
 interface UseSectionPagerOptions {
   mainRef: React.RefObject<HTMLElement | null>;
@@ -32,9 +32,9 @@ interface UseSectionPagerOptions {
  * or native smooth scroll on mid-tier/constrained devices.
  *
  * **Setup requirements:**
- * 1. Attach ref to a `<main>` element with `overflow-hidden` and fixed `height` (e.g., `h-screen`)
+ * 1. Attach ref to a `<main>` element with fixed `height` (e.g., `h-screen`) and vertical scrolling (`overflow-y-auto`)
  * 2. Mark pageable sections with `className="snap-section"`
- * 3. Mark hero section with `id="about"` and `data-no-swipe-page="true"` to enable intro lock
+ * 3. Mark hero section with `id="about"`; intro lock is active while hero has `data-no-swipe-page="true"`
  *
  * **Features:**
  * - **Adaptive paging**: Custom animation on strong devices, native smooth on constrained

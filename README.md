@@ -25,8 +25,7 @@ src/
 │   │   ├── three/        # Three.js / React Three Fiber scenes
 │   │   └── tsparticles/  # 2D particle effects
 │   ├── admin/            # Admin panel for managing content
-│   ├── ui/               # Reusable UI building blocks
-│   └── pages/            # Route-level page components
+│   └── ui/               # Reusable UI building blocks
 ├── hooks/                # Custom React hooks (organized by domain)
 │   ├── pagination/       # Section paging logic (useSectionPager)
 │   ├── responsive/       # Media query hooks
