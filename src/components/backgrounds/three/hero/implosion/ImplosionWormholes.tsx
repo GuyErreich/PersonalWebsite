@@ -50,13 +50,31 @@ export const ImplosionWormholes = ({ count = 400 }: { count?: number }) => {
 
   // We keep live arrays here to upload per-frame
   const { blueDustPositions, wormholePositions, wormholeAlphas, wormholeColors } = useMemo(() => {
+    const staticWormholeColors = new Float32Array(count * 6);
+
+    for (let i = 0; i < count; i++) {
+      staticWormholeColors[i * 6] = 1.0;
+      staticWormholeColors[i * 6 + 1] = 1.0;
+      staticWormholeColors[i * 6 + 2] = 1.0;
+
+      if (colors[i] === 0) {
+        staticWormholeColors[i * 6 + 3] = 0.1;
+        staticWormholeColors[i * 6 + 4] = 0.55;
+        staticWormholeColors[i * 6 + 5] = 1.0;
+      } else {
+        staticWormholeColors[i * 6 + 3] = 0.7;
+        staticWormholeColors[i * 6 + 4] = 0.1;
+        staticWormholeColors[i * 6 + 5] = 0.9;
+      }
+    }
+
     return {
       blueDustPositions: new Float32Array(count * 3),
       wormholePositions: new Float32Array(count * 6),
       wormholeAlphas: new Float32Array(count * 2),
-      wormholeColors: new Float32Array(count * 6),
+      wormholeColors: staticWormholeColors,
     };
-  }, [count]);
+  }, [count, colors]);
 
   // Need to trigger needsUpdate on geometry whenever buffers completely swap due to a count change
   useEffect(() => {
@@ -133,8 +151,6 @@ export const ImplosionWormholes = ({ count = 400 }: { count?: number }) => {
     const bPos = blueDustRef.current.geometry.attributes.position.array as Float32Array;
     const wPos = wormholeRef.current.geometry.attributes.position.array as Float32Array;
     const wAlpha = wormholeRef.current.geometry.attributes.aAlpha.array as Float32Array;
-    const wColor = wormholeRef.current.geometry.attributes.aColor.array as Float32Array;
-
     for (let i = 0; i < count; i++) {
       const startP = startProgresses[i];
       const localProgress = (progress - startP) / WORMHOLE_EFFECT_DURATION;
@@ -142,20 +158,6 @@ export const ImplosionWormholes = ({ count = 400 }: { count?: number }) => {
       const oX = initialPositions[i * 3];
       const oY = initialPositions[i * 3 + 1];
       const oZ = initialPositions[i * 3 + 2];
-
-      // Setup colors statically once
-      wColor[i * 6] = 1.0;
-      wColor[i * 6 + 1] = 1.0;
-      wColor[i * 6 + 2] = 1.0;
-      if (colors[i] === 0) {
-        wColor[i * 6 + 3] = 0.1;
-        wColor[i * 6 + 4] = 0.55;
-        wColor[i * 6 + 5] = 1.0;
-      } else {
-        wColor[i * 6 + 3] = 0.7;
-        wColor[i * 6 + 4] = 0.1;
-        wColor[i * 6 + 5] = 0.9;
-      }
 
       if (localProgress < 0) {
         // Not started yet. Show as dust.
@@ -236,7 +238,6 @@ export const ImplosionWormholes = ({ count = 400 }: { count?: number }) => {
     blueDustRef.current.geometry.attributes.position.needsUpdate = true;
     wormholeRef.current.geometry.attributes.position.needsUpdate = true;
     wormholeRef.current.geometry.attributes.aAlpha.needsUpdate = true;
-    wormholeRef.current.geometry.attributes.aColor.needsUpdate = true;
 
     const bMat = blueDustRef.current.material as THREE.ShaderMaterial;
     bMat.uniforms.uOpacity.value = Math.min(1.0, progress * 4.0) * 0.6 * finalPinch;

@@ -15,6 +15,8 @@ export const StarParticles = ({ minRadius = 1.0 }: { minRadius?: number }) => {
 
   const particlesRef = useRef<THREE.Points>(null);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
+  const lastVisibleRef = useRef(false);
+  const lastScaleRef = useRef(0);
 
   // Dense particle count to engulf the 3 orbit tracks effectively
   const particleCount = 3500;
@@ -178,36 +180,49 @@ export const StarParticles = ({ minRadius = 1.0 }: { minRadius?: number }) => {
 
     if (!particlesRef.current) return;
 
-    if (proxy.progress === 0 && proxy.activeT === 0) {
-      particlesRef.current.visible = false;
+    const shouldBeVisible = !(proxy.progress === 0 && proxy.activeT === 0);
+
+    if (lastVisibleRef.current !== shouldBeVisible) {
+      particlesRef.current.visible = shouldBeVisible;
+      lastVisibleRef.current = shouldBeVisible;
+    }
+
+    if (!shouldBeVisible) {
       return;
-    } else {
-      particlesRef.current.visible = true;
     }
 
     // Deploy fast alongside the proxy progress
     const ease = 1 - (1 - proxy.progress) ** 5;
+    const scale = ease + 0.01;
 
-    particlesRef.current.scale.set(ease * 1.0 + 0.01, ease * 1.0 + 0.01, ease * 1.0 + 0.01);
+    if (Math.abs(lastScaleRef.current - scale) > 0.0001) {
+      particlesRef.current.scale.setScalar(scale);
+      lastScaleRef.current = scale;
+    }
 
     // Once spawned, rotate infinitely
     const t = proxy.activeT > 0 ? clock.elapsedTime : 0;
     particlesRef.current.rotation.y = t * 0.015;
 
+    if (proxy.activeT <= 0) {
+      return;
+    }
+
     const geom = particlesRef.current.geometry;
     const positionAttr = geom.attributes.position;
+    const positionArray = positionAttr.array as Float32Array;
+    const floatRadius = 0.2;
 
     // Only physical bobbing remains on CPU, calculating 3500 points
     // (Notice that Color-flickering has been fully offloaded to the GPU!)
     for (let i = 0; i < particleCount; i++) {
       const i3 = i * 3;
       const noiseAmt = Math.sin(t * speeds[i] + offsets[i]);
-      const floatRadius = 0.2;
 
-      positionAttr.array[i3] = initialPositions[i3] + noiseDirections[i3] * noiseAmt * floatRadius;
-      positionAttr.array[i3 + 1] =
+      positionArray[i3] = initialPositions[i3] + noiseDirections[i3] * noiseAmt * floatRadius;
+      positionArray[i3 + 1] =
         initialPositions[i3 + 1] + noiseDirections[i3 + 1] * noiseAmt * floatRadius;
-      positionAttr.array[i3 + 2] =
+      positionArray[i3 + 2] =
         initialPositions[i3 + 2] + noiseDirections[i3 + 2] * noiseAmt * floatRadius;
     }
 

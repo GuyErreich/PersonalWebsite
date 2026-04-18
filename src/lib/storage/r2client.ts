@@ -25,12 +25,78 @@ interface PresignResponse {
   publicUrl: string;
 }
 
+const ALLOWED_FOLDERS = new Set(["media", "hero-showreel", "gamedev-assets", "gamedev-thumbnails"]);
+
+const FOLDER_UPLOAD_POLICIES: Record<
+  string,
+  {
+    mimeTypes: Set<string>;
+    maxBytes: number;
+  }
+> = {
+  media: {
+    mimeTypes: new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/avif",
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+      "video/quicktime",
+    ]),
+    maxBytes: 100 * 1024 * 1024,
+  },
+  "hero-showreel": {
+    mimeTypes: new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]),
+    maxBytes: 200 * 1024 * 1024,
+  },
+  "gamedev-assets": {
+    mimeTypes: new Set([
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "image/gif",
+      "image/avif",
+      "video/mp4",
+      "video/webm",
+      "video/ogg",
+      "video/quicktime",
+    ]),
+    maxBytes: 100 * 1024 * 1024,
+  },
+  "gamedev-thumbnails": {
+    mimeTypes: new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]),
+    maxBytes: 5 * 1024 * 1024,
+  },
+};
+
+const assertAllowedUpload = (file: File, folderPath: string): void => {
+  if (!ALLOWED_FOLDERS.has(folderPath)) {
+    throw new Error(`Folder \"${folderPath}\" is not allowed.`);
+  }
+
+  const policy = FOLDER_UPLOAD_POLICIES[folderPath];
+  const mimeType = file.type.trim().toLowerCase();
+
+  if (!policy.mimeTypes.has(mimeType)) {
+    throw new Error("File type is not allowed for this upload target.");
+  }
+
+  if (file.size <= 0 || file.size > policy.maxBytes) {
+    throw new Error("File is empty or exceeds the allowed size limit.");
+  }
+};
+
 /**
  * Uploads a file to Cloudflare R2 via a server-side presigned URL.
  * Credentials never leave the Supabase edge function — only a short-lived
  * signed URL is returned to the browser.
  */
 export const uploadToR2 = async (file: File, folderPath: string = "media"): Promise<string> => {
+  assertAllowedUpload(file, folderPath);
+
   // Get the caller's current session token to authenticate with the edge function
   const {
     data: { session },
@@ -62,7 +128,16 @@ export const uploadToR2 = async (file: File, folderPath: string = "media"): Prom
     throw new Error(`Failed to get presigned URL: ${msg}`);
   }
 
-  const { signedUrl, publicUrl } = (await presignRes.json()) as PresignResponse;
+  const presignBody = (await presignRes.json()) as PresignResponse;
+  const signedUrlParsed = new URL(presignBody.signedUrl);
+  const publicUrlParsed = new URL(presignBody.publicUrl);
+
+  if (signedUrlParsed.protocol !== "https:" || publicUrlParsed.protocol !== "https:") {
+    throw new Error("Presign function returned a non-HTTPS URL.");
+  }
+
+  const signedUrl = signedUrlParsed.href;
+  const publicUrl = publicUrlParsed.href;
 
   // Upload the file directly to R2 using the short-lived presigned URL
   const uploadRes = await fetch(signedUrl, {

@@ -14,6 +14,10 @@
   --color-light: #f3f4f6;
 }
 
+:root {
+  color-scheme: dark;
+}
+
 @import "./styles/base.css";
 @import "./styles/components/sections.css";
 @import "./styles/components/devops.css";

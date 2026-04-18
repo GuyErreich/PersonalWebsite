@@ -6,13 +6,19 @@
 
 import { Text } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useOrchestrator } from "../../../../lib/AnimationContext";
 import { useThoughtsSound } from "./useThoughtsSound";
 
+type FadableMaterial = THREE.Material & { opacity: number; transparent: boolean };
+
+const THOUGHT_COLORS = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"] as const;
+
 export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean }) => {
   const groupRef = useRef<THREE.Group>(null);
+  const lastVisibilityRef = useRef<boolean[]>([]);
+  const lastOpacityRef = useRef<number[]>([]);
   const { size } = useThree();
   const isMobile = size.width / size.height < 1;
   const fontSize = isMobile ? 0.165 : 0.25;
@@ -66,19 +72,35 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
 
     return thoughts.map((text, i) => {
       const { x, y, z } = positions[i];
-      const colors = ["#60a5fa", "#34d399", "#38bdf8", "#2dd4bf", "#4ade80"];
       return {
         text,
         x,
         y,
         z,
-        color: colors[i % colors.length],
+        color: THOUGHT_COLORS[i % THOUGHT_COLORS.length],
         ref: React.createRef<THREE.Group>(),
         textRef: React.createRef<THREE.Mesh>(),
         delay: i * 0.6,
       };
     });
   }, [thoughts, isMobile]);
+
+  useEffect(() => {
+    lastVisibilityRef.current = Array(textItems.length).fill(false);
+    lastOpacityRef.current = Array(textItems.length).fill(-1);
+  }, [textItems]);
+
+  useEffect(() => {
+    textItems.forEach((item) => {
+      const textMesh = item.textRef.current;
+      if (!textMesh) return;
+
+      const mat = textMesh.material as FadableMaterial;
+      if (!mat.transparent) {
+        mat.transparent = true;
+      }
+    });
+  }, [textItems]);
 
   useFrame(() => {
     // Rely exclusively on orchestrator proxy time
@@ -91,10 +113,17 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
       if (!group || !textMesh) return;
 
       if (activeT < item.delay && collapseProgress === 0) {
-        group.visible = false;
+        if (lastVisibilityRef.current[i] !== false) {
+          group.visible = false;
+          lastVisibilityRef.current[i] = false;
+        }
         return;
       }
-      group.visible = true;
+
+      if (lastVisibilityRef.current[i] !== true) {
+        group.visible = true;
+        lastVisibilityRef.current[i] = true;
+      }
 
       const elementT = Math.max(0, activeT - item.delay);
 
@@ -133,10 +162,10 @@ export const FloatingThoughts = ({ skipIntro = false }: { skipIntro?: boolean })
       group.position.set(currentX, currentY, currentZ);
       group.scale.setScalar(scale);
 
-      if (textMesh.material) {
-        const mat = textMesh.material as THREE.MeshBasicMaterial;
-        mat.transparent = true;
+      const mat = textMesh.material as FadableMaterial;
+      if (Math.abs(lastOpacityRef.current[i] - opacity) > 0.001) {
         mat.opacity = opacity;
+        lastOpacityRef.current[i] = opacity;
       }
     });
 

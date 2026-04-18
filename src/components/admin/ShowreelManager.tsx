@@ -9,6 +9,14 @@ import { useEffect, useState } from "react";
 import { uploadToR2 } from "../../lib/storage/r2client";
 import { supabase } from "../../lib/supabase";
 
+const ALLOWED_SHOWREEL_MIME_TYPES = new Set([
+  "video/mp4",
+  "video/webm",
+  "video/ogg",
+  "video/quicktime",
+]);
+const MAX_SHOWREEL_SIZE_BYTES = 200 * 1024 * 1024;
+
 export const ShowreelManager = () => {
   const [loading, setLoading] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
@@ -100,10 +108,31 @@ export const ShowreelManager = () => {
           <form onSubmit={handleUpload} className="space-y-4">
             <input
               type="file"
-              accept="video/*"
+              accept="video/mp4,video/webm,video/ogg,video/quicktime"
               required
               className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600"
-              onChange={(e) => setVideoFile(e.target.files ? e.target.files[0] : null)}
+              onChange={(e) => {
+                const file = e.target.files ? e.target.files[0] : null;
+                if (!file) {
+                  setVideoFile(null);
+                  return;
+                }
+
+                if (!ALLOWED_SHOWREEL_MIME_TYPES.has(file.type.toLowerCase())) {
+                  setMessage({ type: "error", text: "Showreel file type is not allowed." });
+                  setVideoFile(null);
+                  return;
+                }
+
+                if (file.size <= 0 || file.size > MAX_SHOWREEL_SIZE_BYTES) {
+                  setMessage({ type: "error", text: "Showreel file is empty or exceeds 200MB." });
+                  setVideoFile(null);
+                  return;
+                }
+
+                setMessage(null);
+                setVideoFile(file);
+              }}
             />
 
             <button

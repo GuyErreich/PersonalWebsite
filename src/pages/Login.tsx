@@ -19,9 +19,15 @@ export const Login = () => {
     void (async () => {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+          return;
+        }
+
+        if (user) {
           navigate("/management");
         }
       } catch {
