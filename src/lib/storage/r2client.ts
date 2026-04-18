@@ -10,6 +10,12 @@
 // ever receives a short-lived presigned PUT URL, never the actual keys.
 
 import { supabase } from "../supabase";
+import {
+  R2_ALLOWED_FOLDERS,
+  R2_UPLOAD_FOLDERS,
+  R2_UPLOAD_POLICIES,
+  type R2UploadFolder,
+} from "./r2UploadPolicies";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 if (!supabaseUrl) {
@@ -24,63 +30,15 @@ interface PresignResponse {
   signedUrl: string;
   publicUrl: string;
 }
-
-const ALLOWED_FOLDERS = new Set(["media", "hero-showreel", "gamedev-assets", "gamedev-thumbnails"]);
-
-const FOLDER_UPLOAD_POLICIES: Record<
-  string,
-  {
-    mimeTypes: Set<string>;
-    maxBytes: number;
-  }
-> = {
-  media: {
-    mimeTypes: new Set([
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "image/avif",
-      "video/mp4",
-      "video/webm",
-      "video/ogg",
-      "video/quicktime",
-    ]),
-    maxBytes: 100 * 1024 * 1024,
-  },
-  "hero-showreel": {
-    mimeTypes: new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]),
-    maxBytes: 200 * 1024 * 1024,
-  },
-  "gamedev-assets": {
-    mimeTypes: new Set([
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "image/gif",
-      "image/avif",
-      "video/mp4",
-      "video/webm",
-      "video/ogg",
-      "video/quicktime",
-    ]),
-    maxBytes: 100 * 1024 * 1024,
-  },
-  "gamedev-thumbnails": {
-    mimeTypes: new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]),
-    maxBytes: 5 * 1024 * 1024,
-  },
-};
-
-const assertAllowedUpload = (file: File, folderPath: string): void => {
-  if (!ALLOWED_FOLDERS.has(folderPath)) {
+const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): void => {
+  if (!R2_ALLOWED_FOLDERS.has(folderPath)) {
     throw new Error(`Folder "${folderPath}" is not allowed.`);
   }
 
-  const policy = FOLDER_UPLOAD_POLICIES[folderPath];
+  const policy = R2_UPLOAD_POLICIES[folderPath];
   const mimeType = file.type.trim().toLowerCase();
 
-  if (!policy.mimeTypes.has(mimeType)) {
+  if (!policy.mimeTypes.includes(mimeType)) {
     throw new Error("File type is not allowed for this upload target.");
   }
 
@@ -94,7 +52,10 @@ const assertAllowedUpload = (file: File, folderPath: string): void => {
  * Credentials never leave the Supabase edge function — only a short-lived
  * signed URL is returned to the browser.
  */
-export const uploadToR2 = async (file: File, folderPath: string = "media"): Promise<string> => {
+export const uploadToR2 = async (
+  file: File,
+  folderPath: R2UploadFolder = R2_UPLOAD_FOLDERS.media,
+): Promise<string> => {
   assertAllowedUpload(file, folderPath);
 
   // Get the caller's current session token to authenticate with the edge function

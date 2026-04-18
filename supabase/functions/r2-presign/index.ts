@@ -202,7 +202,7 @@ Deno.serve(async (req: Request) => {
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: key,
-      ContentType: contentType,
+      ContentType: normalizedContentType,
     });
 
     // Presigned URL valid for 15 minutes — enough for a video upload

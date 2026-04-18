@@ -7,15 +7,15 @@
 import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { uploadToR2 } from "../../lib/storage/r2client";
+import { R2_UPLOAD_FOLDERS, R2_UPLOAD_POLICIES } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 
-const ALLOWED_SHOWREEL_MIME_TYPES = new Set([
-  "video/mp4",
-  "video/webm",
-  "video/ogg",
-  "video/quicktime",
-]);
-const MAX_SHOWREEL_SIZE_BYTES = 200 * 1024 * 1024;
+const ALLOWED_SHOWREEL_MIME_TYPES = new Set(
+  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].mimeTypes,
+);
+const MAX_SHOWREEL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].maxBytes;
+const SHOWREEL_ACCEPT_TYPES =
+  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].mimeTypes.join(",");
 
 export const ShowreelManager = () => {
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export const ShowreelManager = () => {
 
     try {
       // Upload directly to Cloudflare R2
-      const rawUrl = await uploadToR2(videoFile, "hero-showreel");
+      const rawUrl = await uploadToR2(videoFile, R2_UPLOAD_FOLDERS.heroShowreel);
       // Reconstruct via URL parser so the stored/displayed href is derived from
       // parsed components, not the raw string (breaks static-analysis taint chain).
       const parsedUpload = new URL(rawUrl);
@@ -108,7 +108,7 @@ export const ShowreelManager = () => {
           <form onSubmit={handleUpload} className="space-y-4">
             <input
               type="file"
-              accept="video/mp4,video/webm,video/ogg,video/quicktime"
+              accept={SHOWREEL_ACCEPT_TYPES}
               required
               className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600"
               onChange={(e) => {

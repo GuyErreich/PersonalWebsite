@@ -8,6 +8,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
+const isAdminRole = (role: unknown): boolean => {
+  return typeof role === "string" && role === "admin";
+};
+
 export const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,9 +31,12 @@ export const Login = () => {
           return;
         }
 
-        if (user) {
+        if (isAdminRole(user.app_metadata?.role)) {
           navigate("/management");
+          return;
         }
+
+        navigate("/");
       } catch {
         // intentional — network failure on session check; user stays on login page
       }
@@ -41,7 +48,7 @@ export const Login = () => {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -49,6 +56,19 @@ export const Login = () => {
     if (error) {
       setError(error.message);
     } else {
+      if (!isAdminRole(authData.user?.app_metadata?.role)) {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          setError(signOutError.message);
+          setLoading(false);
+          return;
+        }
+
+        setError("Admin access is required.");
+        setLoading(false);
+        return;
+      }
+
       navigate("/management");
     }
     setLoading(false);

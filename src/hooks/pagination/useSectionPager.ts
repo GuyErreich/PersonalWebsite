@@ -190,7 +190,6 @@ export const useSectionPager = ({ mainRef }: UseSectionPagerOptions) => {
       const targetTop = getTargetScrollTop(section, scroller);
 
       animateScrollTo(targetTop);
-      releasePagingLock(PAGE_SCROLL_DURATION_MS + 100);
     };
 
     const pageByDelta = (delta: number) => {

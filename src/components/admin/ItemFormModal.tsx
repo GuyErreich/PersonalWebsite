@@ -23,6 +23,7 @@ import { useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import { uploadToR2 } from "../../lib/storage/r2client";
+import { R2_UPLOAD_FOLDERS, R2_UPLOAD_POLICIES } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 
 interface ItemFormModalProps {
@@ -47,27 +48,15 @@ const AVAILABLE_ICONS = [
   { id: "monitor", icon: Monitor, label: "Desktop" },
 ];
 
-const ALLOWED_MEDIA_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-  "video/mp4",
-  "video/webm",
-  "video/ogg",
-  "video/quicktime",
-]);
-const ALLOWED_THUMBNAIL_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-]);
+const ALLOWED_MEDIA_MIME_TYPES = new Set(
+  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].mimeTypes,
+);
+const ALLOWED_THUMBNAIL_MIME_TYPES = new Set(
+  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].mimeTypes,
+);
 
-const MAX_MEDIA_SIZE_BYTES = 100 * 1024 * 1024;
-const MAX_THUMBNAIL_SIZE_BYTES = 5 * 1024 * 1024;
+const MAX_MEDIA_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].maxBytes;
+const MAX_THUMBNAIL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].maxBytes;
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_STACK_LENGTH = 40;
@@ -167,12 +156,12 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
       // Handle File Upload for Game Dev Items using Cloudflare R2
       if (type === "gamedev" && mediaFile) {
         // We organize folders by project type
-        finalMediaUrl = await uploadToR2(mediaFile, "gamedev-assets");
+        finalMediaUrl = await uploadToR2(mediaFile, R2_UPLOAD_FOLDERS.gameDevAssets);
       }
 
       // Handle optional Custom Thumbnail Upload
       if (type === "gamedev" && thumbnailFile) {
-        finalThumbnailUrl = await uploadToR2(thumbnailFile, "gamedev-thumbnails");
+        finalThumbnailUrl = await uploadToR2(thumbnailFile, R2_UPLOAD_FOLDERS.gameDevThumbnails);
       }
 
       let dbError: { message: string } | null = null;
