@@ -33,8 +33,9 @@ export const Admin = () => {
         return;
       }
 
-      const userRole = typeof user.app_metadata?.role === "string" ? user.app_metadata.role : null;
-      if (userRole !== "admin") {
+      const roles = user.app_metadata?.roles;
+      const isAdmin = Array.isArray(roles) ? roles.includes("admin") : roles === "admin";
+      if (!isAdmin) {
         navigate("/");
         return;
       }

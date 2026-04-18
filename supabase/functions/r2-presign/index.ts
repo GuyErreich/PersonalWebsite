@@ -132,7 +132,10 @@ Deno.serve(async (req: Request) => {
     if (authError || !user) {
       return json({ error: "Unauthorized" }, 401);
     }
-    if (!user.app_metadata || user.app_metadata.role !== "admin") {
+    const roles = user.app_metadata?.roles;
+    const isAdminRole = (r: unknown) => typeof r === "string" && /^admin$/.test(r);
+    const isAdmin = Array.isArray(roles) ? roles.some(isAdminRole) : isAdminRole(roles);
+    if (!isAdmin) {
       return json({ error: "Forbidden" }, 403);
     }
 

@@ -8,8 +8,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 
-const isAdminRole = (role: unknown): boolean => {
-  return typeof role === "string" && role === "admin";
+const isAdminRole = (roles: unknown): boolean => {
+  if (Array.isArray(roles)) return roles.some((r) => r === "admin");
+  return typeof roles === "string" && roles === "admin";
 };
 
 export const Login = () => {
@@ -31,7 +32,7 @@ export const Login = () => {
           return;
         }
 
-        if (isAdminRole(user.app_metadata?.role)) {
+        if (isAdminRole(user.app_metadata?.roles)) {
           navigate("/management");
           return;
         }
@@ -56,7 +57,7 @@ export const Login = () => {
     if (error) {
       setError(error.message);
     } else {
-      if (!isAdminRole(authData.user?.app_metadata?.role)) {
+      if (!isAdminRole(authData.user?.app_metadata?.roles)) {
         const { error: signOutError } = await supabase.auth.signOut();
         if (signOutError) {
           setError(signOutError.message);
