@@ -6,33 +6,16 @@
 
 import { Environment } from "@react-three/drei";
 import { Canvas } from "@react-three/fiber";
-import { useCallback, useEffect, useState } from "react";
-import { getAdaptiveCanvasDPR } from "../../../../../lib/performance";
+import { useCallback, useState } from "react";
+import { useAdaptiveCanvasDpr } from "../../../../../hooks/responsive/useAdaptiveCanvasDpr";
 import { ThreeDevOpsGraphics } from "../../../../backgrounds/three/ThreeDevOpsGraphics";
 
 export const DevOpsBackground = () => {
-  const [canvasDPR, setCanvasDPR] = useState(1);
+  const canvasDPR = useAdaptiveCanvasDpr();
   const [canvasEventSource, setCanvasEventSource] = useState<HTMLElement | null>(null);
 
   const setCanvasEventSourceRef = useCallback((node: HTMLDivElement | null) => {
     setCanvasEventSource(node);
-  }, []);
-
-  useEffect(() => {
-    const updateAdaptiveDpr = () => {
-      setCanvasDPR(getAdaptiveCanvasDPR());
-    };
-
-    updateAdaptiveDpr();
-    window.addEventListener("resize", updateAdaptiveDpr);
-    window.addEventListener("focus", updateAdaptiveDpr);
-    document.addEventListener("visibilitychange", updateAdaptiveDpr);
-
-    return () => {
-      window.removeEventListener("resize", updateAdaptiveDpr);
-      window.removeEventListener("focus", updateAdaptiveDpr);
-      document.removeEventListener("visibilitychange", updateAdaptiveDpr);
-    };
   }, []);
 
   return (

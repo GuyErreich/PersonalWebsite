@@ -19,7 +19,8 @@ import Cookies from "js-cookie";
 import { ChevronDown, Mail } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type * as THREE from "three";
-import { getAdaptiveCanvasDPR, shouldRenderHeavyEffects } from "../lib/performance";
+import { useAdaptiveCanvasDpr } from "../hooks/responsive/useAdaptiveCanvasDpr";
+import { shouldRenderHeavyEffects } from "../lib/performance";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
@@ -347,7 +348,7 @@ export const Hero = () => {
   );
 
   const [showHeavyEffects, setShowHeavyEffects] = useState(true);
-  const [canvasDPR, setCanvasDPR] = useState(1);
+  const canvasDPR = useAdaptiveCanvasDpr();
 
   useEffect(() => {
     setShowHeavyEffects(shouldRenderHeavyEffects());
@@ -391,23 +392,6 @@ export const Hero = () => {
     margin: "70% 0px 70% 0px",
   });
   const heroBackgroundOpacity = useTransform(heroExitProgress, [0.74, 1], [1, 0]);
-
-  useEffect(() => {
-    const updateAdaptiveDpr = () => {
-      setCanvasDPR(getAdaptiveCanvasDPR());
-    };
-
-    updateAdaptiveDpr();
-    window.addEventListener("resize", updateAdaptiveDpr);
-    window.addEventListener("focus", updateAdaptiveDpr);
-    document.addEventListener("visibilitychange", updateAdaptiveDpr);
-
-    return () => {
-      window.removeEventListener("resize", updateAdaptiveDpr);
-      window.removeEventListener("focus", updateAdaptiveDpr);
-      document.removeEventListener("visibilitychange", updateAdaptiveDpr);
-    };
-  }, []);
 
   return (
     <section

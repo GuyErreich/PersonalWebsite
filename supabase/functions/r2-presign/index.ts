@@ -172,6 +172,10 @@ Deno.serve(async (req: Request) => {
     const extNoDot = safeExt.toLowerCase();
     const normalizedContentType = contentType.trim().toLowerCase();
     const policy = FOLDER_POLICIES[folder];
+    if (!policy) {
+      return json({ error: `Folder policy is not configured for "${folder}"` }, 400);
+    }
+
     if (!policy.contentTypes.has(normalizedContentType)) {
       return json({ error: "File type not allowed" }, 400);
     }

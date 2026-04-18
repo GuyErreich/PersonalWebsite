@@ -69,8 +69,6 @@ export const useSectionPager = ({ mainRef }: UseSectionPagerOptions) => {
     const main = mainRef.current;
     if (!main) return;
 
-    const useNativeSmoothPaging = isMidTierOrConstrainedDevice();
-
     let pagingTimeoutId: number | null = null;
     let pagingRafId: number | null = null;
     let restoreSnapRafId: number | null = null;
@@ -180,6 +178,8 @@ export const useSectionPager = ({ mainRef }: UseSectionPagerOptions) => {
         releasePagingLock();
         return;
       }
+
+      const useNativeSmoothPaging = isMidTierOrConstrainedDevice();
 
       if (useNativeSmoothPaging) {
         section.scrollIntoView({ behavior: "smooth", block: "start" });
