@@ -32,7 +32,7 @@ export const Login = () => {
           return;
         }
 
-        if (isAdminRole(user.app_metadata?.roles)) {
+        if (isAdminRole(user.app_metadata?.role ?? user.app_metadata?.roles)) {
           navigate("/management");
           return;
         }
@@ -57,7 +57,7 @@ export const Login = () => {
     if (error) {
       setError(error.message);
     } else {
-      if (!isAdminRole(authData.user?.app_metadata?.roles)) {
+      if (!isAdminRole(authData.user?.app_metadata?.role ?? authData.user?.app_metadata?.roles)) {
         const { error: signOutError } = await supabase.auth.signOut();
         if (signOutError) {
           setError(signOutError.message);

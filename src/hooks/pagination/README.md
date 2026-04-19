@@ -145,7 +145,7 @@ useSectionPager (orchestration)
 ### Optional
 
 - **`id="about"` on hero section**: Identifies the intro lock target.
-- **`data-no-swipe-page="true"` on parent of hero**: Prevents paging while intro is active.
+- **`data-no-swipe-page="true"` on hero section**: Prevents paging while intro is active.
 
 ## Input Behavior
 

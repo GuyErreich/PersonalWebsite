@@ -55,6 +55,10 @@ const ALLOWED_THUMBNAIL_MIME_TYPES = new Set(
   R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].mimeTypes,
 );
 
+const MEDIA_ACCEPT = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].mimeTypes.join(",");
+const THUMBNAIL_ACCEPT =
+  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].mimeTypes.join(",");
+
 const MAX_MEDIA_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].maxBytes;
 const MAX_THUMBNAIL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].maxBytes;
 const MAX_TITLE_LENGTH = 120;
@@ -325,7 +329,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                       <input
                         id="item-media"
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/webm,video/ogg,video/quicktime"
+                        accept={MEDIA_ACCEPT}
                         required
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                         onChange={(e) => {
@@ -360,7 +364,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                       <input
                         id="item-thumbnail"
                         type="file"
-                        accept="image/jpeg,image/png,image/webp,image/gif,image/avif"
+                        accept={THUMBNAIL_ACCEPT}
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500"
                         onChange={(e) => {
                           if (e.target.files && e.target.files.length > 0) {

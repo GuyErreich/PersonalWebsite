@@ -56,7 +56,7 @@ interface UseSectionPagerOptions {
  *   const mainRef = useRef<HTMLElement>(null);
  *   useSectionPager({ mainRef });
  *   return (
- *     <main ref={mainRef} className="h-screen overflow-hidden">
+ *     <main ref={mainRef} className="h-screen overflow-y-auto">
  *       <section className="snap-section h-screen">Hero</section>
  *       <section className="snap-section h-screen">DevOps</section>
  *       <section className="snap-section h-screen">GameDev</section>
