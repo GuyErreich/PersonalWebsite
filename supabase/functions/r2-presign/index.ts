@@ -169,13 +169,14 @@ Deno.serve(async (req: Request) => {
       folderPath?: string;
     };
 
-    // Whitelist allowed folder prefixes to prevent path traversal
-    const ALLOWED_FOLDERS = ["media", "hero-showreel", "gamedev-assets", "gamedev-thumbnails"];
+    // Whitelist allowed folder prefixes to prevent path traversal.
+    // Use FOLDER_POLICIES as the canonical source to avoid drift.
+    const ALLOWED_FOLDERS = Object.keys(FOLDER_POLICIES);
     const rawFolder = folderPath ?? "media";
     if (!ALLOWED_FOLDERS.includes(rawFolder)) {
       return json({ error: `Folder "${rawFolder}" is not allowed` }, 400);
     }
-    const folder = rawFolder;
+    const folder = rawFolder as keyof typeof FOLDER_POLICIES;
 
     // Normalise fileExt: strip leading dots, allow only alphanumeric chars
     const rawExt = fileExt ?? "";
@@ -186,9 +187,6 @@ Deno.serve(async (req: Request) => {
     const extNoDot = safeExt.toLowerCase();
     const normalizedContentType = contentType.trim().toLowerCase();
     const policy = FOLDER_POLICIES[folder];
-    if (!policy) {
-      return json({ error: `Folder policy is not configured for "${folder}"` }, 400);
-    }
 
     if (!policy.contentTypes.has(normalizedContentType)) {
       return json({ error: "File type not allowed" }, 400);

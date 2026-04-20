@@ -13,7 +13,7 @@ import { ShowreelManager } from "../components/admin/ShowreelManager";
 import { isAdminRole } from "../lib/auth/roles";
 import { supabase } from "../lib/supabase";
 
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 5 minutes
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
 
 export const Admin = () => {
   const navigate = useNavigate();

@@ -112,27 +112,19 @@ Manage game type filter state and provide filtered game list.
 ### Async Data Fetching
 
 ```typescript
-// ❌ Don't: useEffect with async IIFE pattern
-useEffect(() => {
-  (async () => {
-    const data = await fetch(...);
-  })();
-}, [deps]);
-
-// ✅ Do: Named async function with error handling
+// ✅ Do: use the repo-standard async IIFE pattern with cancellation and error handling
 useEffect(() => {
   let cancelled = false;
 
-  const fetchData = async () => {
+  void (async () => {
     try {
       const data = await fetch(...);
       if (!cancelled) setData(data);
     } catch (error) {
       if (!cancelled) setError(error instanceof Error ? error.message : 'Unknown');
     }
-  };
+  })();
 
-  fetchData();
   return () => { cancelled = true; };
 }, [deps]);
 ```
@@ -166,12 +158,12 @@ Always include every variable referenced in useEffect/useCallback/useMemo depend
 ```typescript
 // ❌ Missing dependency 'config'
 useEffect(() => {
-  console.log(config.value);
+  document.title = config.value;
 }, []); // ESLint error!
 
 // ✅ Correct
 useEffect(() => {
-  console.log(config.value);
+  document.title = config.value;
 }, [config]); // Dependency included
 ```
 
