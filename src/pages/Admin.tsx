@@ -10,6 +10,7 @@ import { useNavigate } from "react-router-dom";
 import { DevOpsTechStackManager } from "../components/admin/DevOpsTechStackManager";
 import { ItemFormModal } from "../components/admin/ItemFormModal";
 import { ShowreelManager } from "../components/admin/ShowreelManager";
+import { isAdminRole } from "../lib/auth/roles";
 import { supabase } from "../lib/supabase";
 
 const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 5 minutes
@@ -23,26 +24,28 @@ export const Admin = () => {
 
   useEffect(() => {
     const checkUser = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser();
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
 
-      if (error || !user) {
+        if (error || !user) {
+          navigate("/login");
+          return;
+        }
+
+        const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
+        if (!isAdminRole(roleValue)) {
+          navigate("/");
+          return;
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error(err instanceof Error ? err.message : String(err));
         navigate("/login");
-        return;
       }
-
-      const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
-      const isAdmin = Array.isArray(roleValue)
-        ? roleValue.includes("admin")
-        : roleValue === "admin";
-      if (!isAdmin) {
-        navigate("/");
-        return;
-      }
-
-      setLoading(false);
     };
 
     void checkUser();

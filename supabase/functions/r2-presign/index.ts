@@ -42,6 +42,20 @@ const IMAGE_CONTENT_TYPES = new Set([
 ]);
 const VIDEO_CONTENT_TYPES = new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]);
 
+// UPLOAD POLICY DUPLICATION NOTICE:
+// These FOLDER_POLICIES are duplicated from `src/lib/storage/r2UploadPolicies.ts` (client-side).
+// Edge Functions cannot import client TypeScript modules, so we must maintain them separately.
+//
+// **Critical:** Keep this object in sync with the client-side R2_UPLOAD_POLICIES constant.
+// If they diverge, uploads will fail in confusing ways:
+//   - Client accepts a file → server rejects with 400 "not allowed"
+//   - Or vice-versa → security issue
+//
+// Maintenance:
+// 1. Update BOTH files when adding a new folder, MIME type, or extension
+// 2. Add test coverage in scripts/security/r2-presign-smoke.mjs that validates
+//    server policy acceptance against known client uploads
+// 3. Keep this comment updated with the client path
 const FOLDER_POLICIES: Record<
   string,
   {

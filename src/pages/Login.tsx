@@ -6,12 +6,8 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isAdminRole } from "../lib/auth/roles";
 import { supabase } from "../lib/supabase";
-
-const isAdminRole = (roles: unknown): boolean => {
-  if (Array.isArray(roles)) return roles.some((r) => r === "admin");
-  return typeof roles === "string" && roles === "admin";
-};
 
 export const Login = () => {
   const [email, setEmail] = useState("");
