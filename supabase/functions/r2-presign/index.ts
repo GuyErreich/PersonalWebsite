@@ -183,7 +183,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "File extension not allowed" }, 400);
     }
 
-    const ext = safeExt.length > 0 ? `.${safeExt}` : "";
+    const ext = extNoDot.length > 0 ? `.${extNoDot}` : "";
     const key = `${folder}/${crypto.randomUUID()}${ext}`;
 
     // --- Build presigned URL using server-side R2 credentials ---

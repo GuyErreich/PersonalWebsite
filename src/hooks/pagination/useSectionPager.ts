@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect } from "react";
+import { type RefObject, useEffect } from "react";
 import { isMidTierOrConstrainedDevice } from "../../lib/performance";
 import { PAGE_SCROLL_DURATION_MS, PAGE_SCROLL_LOCK_MS } from "./sectionPager/constants";
 import { createSectionPagerHandlers } from "./sectionPager/handlers";
@@ -21,7 +21,7 @@ import {
  * @property mainRef - Ref to the scroll container element (should be `<main>` with fixed height and vertical scrolling)
  */
 interface UseSectionPagerOptions {
-  mainRef: React.RefObject<HTMLElement | null>;
+  mainRef: RefObject<HTMLElement | null>;
 }
 
 /**

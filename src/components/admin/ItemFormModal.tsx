@@ -333,21 +333,28 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         required
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
                         onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            const nextFile = e.target.files[0];
-                            if (!ALLOWED_MEDIA_MIME_TYPES.has(nextFile.type.toLowerCase())) {
-                              setError("Media file type is not allowed.");
-                              setMediaFile(null);
-                              return;
-                            }
-                            if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
-                              setError("Media file is empty or exceeds 100MB.");
-                              setMediaFile(null);
-                              return;
-                            }
-                            setError(null);
-                            setMediaFile(nextFile);
+                          const input = e.currentTarget;
+                          const nextFile =
+                            input.files && input.files.length > 0 ? input.files[0] : null;
+                          if (!nextFile) {
+                            setMediaFile(null);
+                            input.value = "";
+                            return;
                           }
+                          if (!ALLOWED_MEDIA_MIME_TYPES.has(nextFile.type.toLowerCase())) {
+                            setError("Media file type is not allowed.");
+                            setMediaFile(null);
+                            input.value = "";
+                            return;
+                          }
+                          if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
+                            setError("Media file is empty or exceeds 100MB.");
+                            setMediaFile(null);
+                            input.value = "";
+                            return;
+                          }
+                          setError(null);
+                          setMediaFile(nextFile);
                         }}
                       />
                     </div>
@@ -367,21 +374,28 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         accept={THUMBNAIL_ACCEPT}
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500"
                         onChange={(e) => {
-                          if (e.target.files && e.target.files.length > 0) {
-                            const nextFile = e.target.files[0];
-                            if (!ALLOWED_THUMBNAIL_MIME_TYPES.has(nextFile.type.toLowerCase())) {
-                              setError("Thumbnail file type is not allowed.");
-                              setThumbnailFile(null);
-                              return;
-                            }
-                            if (nextFile.size <= 0 || nextFile.size > MAX_THUMBNAIL_SIZE_BYTES) {
-                              setError("Thumbnail file is empty or exceeds 5MB.");
-                              setThumbnailFile(null);
-                              return;
-                            }
-                            setError(null);
-                            setThumbnailFile(nextFile);
+                          const input = e.currentTarget;
+                          const nextFile =
+                            input.files && input.files.length > 0 ? input.files[0] : null;
+                          if (!nextFile) {
+                            setThumbnailFile(null);
+                            input.value = "";
+                            return;
                           }
+                          if (!ALLOWED_THUMBNAIL_MIME_TYPES.has(nextFile.type.toLowerCase())) {
+                            setError("Thumbnail file type is not allowed.");
+                            setThumbnailFile(null);
+                            input.value = "";
+                            return;
+                          }
+                          if (nextFile.size <= 0 || nextFile.size > MAX_THUMBNAIL_SIZE_BYTES) {
+                            setError("Thumbnail file is empty or exceeds 5MB.");
+                            setThumbnailFile(null);
+                            input.value = "";
+                            return;
+                          }
+                          setError(null);
+                          setThumbnailFile(nextFile);
                         }}
                       />
                     </div>
