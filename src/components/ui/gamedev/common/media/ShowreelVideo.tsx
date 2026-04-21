@@ -56,6 +56,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const amplificationAvailableRef = useRef(true);
 
   // Load default volume from DB
   useEffect(() => {
@@ -97,6 +98,12 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Apply volume: 0-100 = native volume (gain=1), 101-300 = gain amplification (volume=1)
   const applyVolumeToGraph = (sliderVal: number, muted: boolean) => {
     if (!videoRef.current) return;
+
+    if (!amplificationAvailableRef.current) {
+      videoRef.current.volume = muted ? 0 : Math.min(sliderVal, 100) / 100;
+      return;
+    }
+
     if (muted) {
       videoRef.current.volume = 0;
       if (gainNodeRef.current) gainNodeRef.current.gain.value = 0;
@@ -114,17 +121,29 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Setup Web Audio graph once on first play — creates GainNode for >100% amplification
   const setupAudioGraph = () => {
     if (audioCtxRef.current || !videoRef.current) return;
+
     const AudioContextClass =
       window.AudioContext ||
       (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    const gain = ctx.createGain();
-    const source = ctx.createMediaElementSource(videoRef.current);
-    source.connect(gain);
-    gain.connect(ctx.destination);
-    audioCtxRef.current = ctx;
-    gainNodeRef.current = gain;
+    if (!AudioContextClass) {
+      amplificationAvailableRef.current = false;
+      return;
+    }
+
+    try {
+      const ctx = new AudioContextClass();
+      const gain = ctx.createGain();
+      const source = ctx.createMediaElementSource(videoRef.current);
+
+      source.connect(gain);
+      gain.connect(ctx.destination);
+
+      audioCtxRef.current = ctx;
+      gainNodeRef.current = gain;
+      amplificationAvailableRef.current = true;
+    } catch {
+      amplificationAvailableRef.current = false;
+    }
   };
 
   const scheduleHide = () => {
@@ -274,6 +293,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             <video
               ref={videoRef}
               src={url}
+              crossOrigin="anonymous"
               autoPlay={!isPlaying}
               loop={!isPlaying}
               muted={!isPlaying}
