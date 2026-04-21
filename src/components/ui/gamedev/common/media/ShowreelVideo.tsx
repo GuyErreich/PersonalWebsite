@@ -28,56 +28,19 @@ const LETTER_GRADIENTS = [
   "from-emerald-400 to-cyan-300",
 ];
 
-/**
- * Convert linear slider value (0-1) to logarithmic volume with dB scaling.
- * Constrains actual output to safer levels while making the slider more responsive at lower volumes.
- * At slider 0 = 0% volume, at slider 1.0 = ~35% volume (safe maximum ~-9dB).
- */
-const getLogarithmicVolume = (sliderValue: number): number => {
-  // Exponential curve: volume = (slider^2.5) * 0.35
-  // This keeps even max volume safe while making lower slider values very quiet
-  return sliderValue ** 2.5 * 0.35;
-};
-
 export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const hasCookie = !!Cookies.get("hero_visited");
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const sliderValueRef = useRef(0.08); // Track the current slider position
-  const applyingScaleRef = useRef(false); // Prevent recursion when applying scaling
 
   const handlePlay = () => {
     playClickSound();
     if (videoRef.current) {
       videoRef.current.muted = false;
-      // Start at a safe default: 0.08 slider position → ~0.001 actual volume (very quiet, ~-60dB)
-      sliderValueRef.current = 0.08;
-      videoRef.current.volume = getLogarithmicVolume(sliderValueRef.current);
+      // Set default to 20% volume - safe and audible
+      videoRef.current.volume = 0.2;
       videoRef.current.currentTime = 0;
       videoRef.current.controls = true;
-
-      // Intercept volume slider changes and apply safe logarithmic scaling
-      const handleVolumeChange = () => {
-        if (applyingScaleRef.current || !videoRef.current) return;
-
-        try {
-          applyingScaleRef.current = true;
-          // Get the slider value the browser set (0-1)
-          const browserSliderValue = videoRef.current.volume;
-
-          // Update tracked slider position
-          sliderValueRef.current = browserSliderValue;
-
-          // Apply logarithmic scaling with safety cap
-          const scaledVolume = getLogarithmicVolume(browserSliderValue);
-          videoRef.current.volume = scaledVolume;
-        } finally {
-          applyingScaleRef.current = false;
-        }
-      };
-
-      videoRef.current.addEventListener("volumechange", handleVolumeChange);
-
       void videoRef.current.play().catch(() => {});
     }
     setIsPlaying(true);
