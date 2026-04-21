@@ -245,22 +245,17 @@
     );
   }
 
-  /* Volume slider — 0-300%, with zone bands for normal / amplified / extreme */
+  /* Volume slider — 0-100% native volume track */
   .showreel-volume-slider {
     width: 72px;
     flex-shrink: 0;
-    /* Zone layout: 0-33.33% = cyan (0-100%), 33.33-66.66% = amber (100-200%), 66.66-100% = red (200-300%) */
-    /* --vol-fill drives the filled portion of the cyan zone */
+    /* --vol-fill drives the filled portion */
     background: linear-gradient(
       to right,
       #22d3ee 0%,
-      #22d3ee var(--vol-fill, 3.33%),
-      rgba(34, 211, 238, 0.18) var(--vol-fill, 3.33%),
-      rgba(34, 211, 238, 0.18) 33.33%,
-      rgba(245, 158, 11, 0.35) 33.33%,
-      rgba(245, 158, 11, 0.35) 66.66%,
-      rgba(239, 68, 68, 0.35) 66.66%,
-      rgba(239, 68, 68, 0.35) 100%
+      #22d3ee var(--vol-fill, 10%),
+      rgba(34, 211, 238, 0.18) var(--vol-fill, 10%),
+      rgba(34, 211, 238, 0.18) 100%
     );
   }
 

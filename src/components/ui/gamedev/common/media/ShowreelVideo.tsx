@@ -53,10 +53,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const gainNodeRef = useRef<GainNode | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const amplificationAvailableRef = useRef(true);
 
   // Load default volume from DB
   useEffect(() => {
@@ -69,22 +66,17 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         .single();
       if (!isMounted || error || !data) return;
       const v = Number(data.value);
-      if (!Number.isNaN(v) && v >= 0 && v <= 300) setSliderVolume(v);
+      if (!Number.isNaN(v) && v >= 0 && v <= 100) setSliderVolume(v);
     })();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  // Cleanup AudioContext and hide timer on unmount
+  // Cleanup hide timer on unmount
   useEffect(() => {
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      if (audioCtxRef.current) {
-        void audioCtxRef.current.close().catch(() => {}); // intentional
-        audioCtxRef.current = null;
-        gainNodeRef.current = null;
-      }
     };
   }, []);
 
@@ -95,55 +87,11 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
 
-  // Apply volume: 0-100 = native volume (gain=1), 101-300 = gain amplification (volume=1)
+  // Apply volume in native browser range 0-100.
   const applyVolumeToGraph = (sliderVal: number, muted: boolean) => {
     if (!videoRef.current) return;
 
-    if (!amplificationAvailableRef.current) {
-      videoRef.current.volume = muted ? 0 : Math.min(sliderVal, 100) / 100;
-      return;
-    }
-
-    if (muted) {
-      videoRef.current.volume = 0;
-      if (gainNodeRef.current) gainNodeRef.current.gain.value = 0;
-      return;
-    }
-    if (sliderVal <= 100) {
-      videoRef.current.volume = sliderVal / 100;
-      if (gainNodeRef.current) gainNodeRef.current.gain.value = 1;
-    } else {
-      videoRef.current.volume = 1;
-      if (gainNodeRef.current) gainNodeRef.current.gain.value = sliderVal / 100;
-    }
-  };
-
-  // Setup Web Audio graph once on first play — creates GainNode for >100% amplification
-  const setupAudioGraph = () => {
-    if (audioCtxRef.current || !videoRef.current) return;
-
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-    if (!AudioContextClass) {
-      amplificationAvailableRef.current = false;
-      return;
-    }
-
-    try {
-      const ctx = new AudioContextClass();
-      const gain = ctx.createGain();
-      const source = ctx.createMediaElementSource(videoRef.current);
-
-      source.connect(gain);
-      gain.connect(ctx.destination);
-
-      audioCtxRef.current = ctx;
-      gainNodeRef.current = gain;
-      amplificationAvailableRef.current = true;
-    } catch {
-      amplificationAvailableRef.current = false;
-    }
+    videoRef.current.volume = muted ? 0 : Math.max(0, Math.min(sliderVal, 100)) / 100;
   };
 
   const scheduleHide = () => {
@@ -151,22 +99,11 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
   };
 
-  const ensureAudioContextRunning = async () => {
-    if (!audioCtxRef.current) return;
-    if (audioCtxRef.current.state === "suspended") {
-      await audioCtxRef.current.resume();
-    }
-  };
-
   const handlePlay = () => {
     playClickSound();
     if (videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.currentTime = 0;
-      if (sliderVolume > 100) {
-        setupAudioGraph();
-        void ensureAudioContextRunning().catch(() => {}); // intentional
-      }
       applyVolumeToGraph(sliderVolume, isMuted);
       void videoRef.current.play().catch(() => {}); // intentional
     }
@@ -178,7 +115,6 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const handlePlayPause = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
-      void ensureAudioContextRunning().catch(() => {}); // intentional
       void videoRef.current.play().catch(() => {}); // intentional
       scheduleHide();
     } else {
@@ -189,17 +125,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handleVolumeChange = (val: number) => {
-    if (val > 100) {
-      setupAudioGraph();
-      void ensureAudioContextRunning().catch(() => {}); // intentional
-    }
-    setSliderVolume(val);
+    const clamped = Math.max(0, Math.min(val, 100));
+    setSliderVolume(clamped);
     setIsMuted(false);
-    applyVolumeToGraph(val, false);
+    applyVolumeToGraph(clamped, false);
   };
 
   const handleMute = () => {
-    void ensureAudioContextRunning().catch(() => {}); // intentional
     const next = !isMuted;
     setIsMuted(next);
     applyVolumeToGraph(sliderVolume, next);
@@ -248,13 +180,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Derived values for slider visuals
   const effectiveVol = isMuted ? 0 : sliderVolume;
   const seekPct = `${duration ? (currentTime / duration) * 100 : 0}%`;
-  const volFill = `${(effectiveVol / 300) * 100}%`;
-  const volLabelClass =
-    !isMuted && sliderVolume > 200
-      ? "text-red-400"
-      : !isMuted && sliderVolume > 100
-        ? "text-amber-400"
-        : "text-cyan-300/80";
+  const volFill = `${(effectiveVol / 100) * 100}%`;
+  const volLabelClass = "text-cyan-300/80";
 
   return (
     <motion.div
@@ -443,12 +370,12 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   )}
                 </button>
 
-                {/* Volume slider — 0 to 300% with GainNode amplification above 100% */}
+                {/* Volume slider — strict 0 to 100 native browser volume. */}
                 <input
                   type="range"
                   aria-label="Volume"
                   min={0}
-                  max={300}
+                  max={100}
                   step={1}
                   value={effectiveVol}
                   onChange={(e) => handleVolumeChange(Number(e.target.value))}

@@ -35,8 +35,6 @@ export const ShowreelManager = () => {
   } | null>(null);
 
   const previewVideoRef = useRef<HTMLVideoElement>(null);
-  const previewAudioCtxRef = useRef<AudioContext | null>(null);
-  const previewGainNodeRef = useRef<GainNode | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -48,70 +46,23 @@ export const ShowreelManager = () => {
         .single();
       if (!isMounted || error || !data) return;
       const v = Number(data.value);
-      if (!Number.isNaN(v) && v >= 0 && v <= 300) setDefaultVolume(v);
+      if (!Number.isNaN(v) && v >= 0 && v <= 100) setDefaultVolume(v);
     })();
     return () => {
       isMounted = false;
     };
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (previewAudioCtxRef.current) {
-        void previewAudioCtxRef.current.close().catch(() => {}); // intentional
-        previewAudioCtxRef.current = null;
-        previewGainNodeRef.current = null;
-      }
-    };
-  }, []);
-
-  const setupPreviewAudioGraph = () => {
-    if (previewAudioCtxRef.current || !previewVideoRef.current) return;
-
-    const AudioContextClass =
-      window.AudioContext ||
-      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-
-    if (!AudioContextClass) return;
-
-    const ctx = new AudioContextClass();
-    const gain = ctx.createGain();
-    const source = ctx.createMediaElementSource(previewVideoRef.current);
-
-    source.connect(gain);
-    gain.connect(ctx.destination);
-
-    previewAudioCtxRef.current = ctx;
-    previewGainNodeRef.current = gain;
-  };
-
-  const ensurePreviewAudioRunning = async () => {
-    if (!previewAudioCtxRef.current) return;
-    if (previewAudioCtxRef.current.state === "suspended") {
-      await previewAudioCtxRef.current.resume();
-    }
-  };
-
   const applyPreviewVolume = (volumePercent: number) => {
     if (!previewVideoRef.current) return;
 
-    if (volumePercent <= 100) {
-      previewVideoRef.current.volume = volumePercent / 100;
-      if (previewGainNodeRef.current) previewGainNodeRef.current.gain.value = 1;
-      return;
-    }
-
-    previewVideoRef.current.volume = 1;
-    if (previewGainNodeRef.current) {
-      previewGainNodeRef.current.gain.value = volumePercent / 100;
-    }
+    previewVideoRef.current.volume = Math.max(0, Math.min(volumePercent, 100)) / 100;
   };
 
   const handleDefaultVolumeChange = (volumePercent: number) => {
-    setDefaultVolume(volumePercent);
-    setupPreviewAudioGraph();
-    void ensurePreviewAudioRunning().catch(() => {}); // intentional
-    applyPreviewVolume(volumePercent);
+    const clamped = Math.max(0, Math.min(volumePercent, 100));
+    setDefaultVolume(clamped);
+    applyPreviewVolume(clamped);
   };
 
   useEffect(() => {
@@ -268,12 +219,9 @@ export const ShowreelManager = () => {
                 src={currentUrl}
                 controls
                 onLoadedMetadata={() => {
-                  setupPreviewAudioGraph();
                   applyPreviewVolume(defaultVolume);
                 }}
                 onPlay={() => {
-                  setupPreviewAudioGraph();
-                  void ensurePreviewAudioRunning().catch(() => {}); // intentional
                   applyPreviewVolume(defaultVolume);
                 }}
                 className="w-full h-full object-cover"
@@ -291,31 +239,21 @@ export const ShowreelManager = () => {
       <div className="mt-6 pt-6 border-t border-gray-700">
         <h3 className="text-sm font-medium text-gray-400 mb-1">Default Starting Volume</h3>
         <p className="text-xs text-gray-500 mb-4">
-          Sets the initial volume when a visitor first plays the showreel. 0–100% uses native
-          volume; 101–300% applies gain amplification (like VLC). Default: 10%.
+          Sets the initial volume when a visitor first plays the showreel. Range is 0–100%. Default:
+          10%.
         </p>
 
         <div className="flex items-center gap-4">
           <input
             type="range"
             min={0}
-            max={300}
+            max={100}
             step={1}
             value={defaultVolume}
             onChange={(e) => handleDefaultVolumeChange(Number(e.target.value))}
             className="flex-1 accent-cyan-400"
           />
-          <span
-            className={`text-sm font-mono w-14 text-right ${
-              defaultVolume > 200
-                ? "text-red-400"
-                : defaultVolume > 100
-                  ? "text-amber-400"
-                  : "text-cyan-300"
-            }`}
-          >
-            {defaultVolume}%
-          </span>
+          <span className="text-sm font-mono w-14 text-right text-cyan-300">{defaultVolume}%</span>
           <button
             type="button"
             onClick={() => {
