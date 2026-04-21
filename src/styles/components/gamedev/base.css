@@ -178,6 +178,81 @@
     transition: opacity 0.3s ease;
   }
 
+  .showreel-volume-control {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .showreel-volume-popup {
+    position: absolute;
+    left: 50%;
+    bottom: calc(100% + 8px);
+    transform: translateX(-50%);
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 44px;
+    padding: 8px 6px;
+    border: 1px solid rgba(34, 211, 238, 0.25);
+    border-radius: 10px;
+    background: rgba(7, 14, 24, 0.95);
+    box-shadow: 0 8px 24px rgba(2, 6, 23, 0.55);
+    backdrop-filter: blur(8px);
+  }
+
+  .showreel-volume-popup-slider {
+    width: 16px;
+    height: 80px;
+    margin: 0;
+    cursor: ns-resize;
+    -webkit-appearance: none;
+    appearance: none;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    border-radius: 999px;
+    outline: none;
+    background: linear-gradient(
+      to top,
+      #22d3ee 0%,
+      #22d3ee var(--vol-fill, 10%),
+      rgba(34, 211, 238, 0.18) var(--vol-fill, 10%),
+      rgba(34, 211, 238, 0.18) 100%
+    );
+  }
+
+  .showreel-volume-popup-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 0;
+    background: #22d3ee;
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.8);
+  }
+
+  .showreel-volume-popup-slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 0;
+    background: #22d3ee;
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.8);
+  }
+
+  .showreel-volume-popup-value {
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    color: rgba(34, 211, 238, 0.9);
+    white-space: nowrap;
+  }
+
   /* Icon buttons (play/pause, mute, fullscreen) */
   .showreel-ctrl-btn {
     display: flex;
@@ -247,7 +322,7 @@
 
   /* Volume slider — 0-100% native volume track */
   .showreel-volume-slider {
-    width: 72px;
+    width: 176px;
     flex-shrink: 0;
     /* --vol-fill drives the filled portion */
     background: linear-gradient(
@@ -280,5 +355,40 @@
     background: #22d3ee;
     box-shadow: 0 0 6px rgba(34, 211, 238, 0.7);
     cursor: pointer;
+  }
+
+  @media (max-width: 768px) {
+    .showreel-controls {
+      gap: 10px;
+      padding: 8px 12px;
+    }
+
+    .showreel-ctrl-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .showreel-volume-control {
+      width: 34px;
+    }
+
+    .showreel-time {
+      font-size: 12px;
+    }
+
+    .showreel-volume-popup {
+      width: 50px;
+      padding: 9px 7px;
+    }
+
+    .showreel-volume-popup-slider {
+      width: 18px;
+      height: 90px;
+    }
+
+    .showreel-volume-popup-action-btn {
+      min-height: 28px;
+      font-size: 11px;
+    }
   }
 }

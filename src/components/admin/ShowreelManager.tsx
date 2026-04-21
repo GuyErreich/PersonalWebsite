@@ -6,6 +6,10 @@
 
 import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+  createSteppedSliderAnimator,
+  type SteppedSliderAnimator,
+} from "../../lib/steppedSliderAnimator";
 import { uploadToR2 } from "../../lib/storage/r2client";
 import {
   getMimeTypesForFolder,
@@ -17,10 +21,11 @@ import { supabase } from "../../lib/supabase";
 const ALLOWED_SHOWREEL_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel));
 const MAX_SHOWREEL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].maxBytes;
 const SHOWREEL_ACCEPT_TYPES = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel).join(",");
+const VOLUME_STEP = 1;
+const VOLUME_STEP_INTERVAL_MS = 12;
 
 const formatVolumePercent = (value: number) => {
-  const fixed = value.toFixed(1);
-  return fixed.endsWith(".0") ? `${Math.round(value)}%` : `${fixed}%`;
+  return `${Math.round(value)}%`;
 };
 
 export const ShowreelManager = () => {
@@ -40,6 +45,27 @@ export const ShowreelManager = () => {
   } | null>(null);
 
   const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
+
+  useEffect(() => {
+    volumeAnimatorRef.current = createSteppedSliderAnimator({
+      initialValue: 10,
+      min: 0,
+      max: 100,
+      step: VOLUME_STEP,
+      intervalMs: VOLUME_STEP_INTERVAL_MS,
+      onStep: (nextVolume) => {
+        setDefaultVolume(nextVolume);
+        if (!previewVideoRef.current) return;
+        previewVideoRef.current.volume = nextVolume / 100;
+      },
+    });
+
+    return () => {
+      volumeAnimatorRef.current?.stop();
+      volumeAnimatorRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -51,7 +77,10 @@ export const ShowreelManager = () => {
         .single();
       if (!isMounted || error || !data) return;
       const v = Number(data.value);
-      if (!Number.isNaN(v) && v >= 0 && v <= 100) setDefaultVolume(v);
+      if (!Number.isNaN(v) && v >= 0 && v <= 100) {
+        setDefaultVolume(v);
+        volumeAnimatorRef.current?.setImmediate(v);
+      }
     })();
     return () => {
       isMounted = false;
@@ -65,9 +94,7 @@ export const ShowreelManager = () => {
   };
 
   const handleDefaultVolumeChange = (volumePercent: number) => {
-    const clamped = Math.max(0, Math.min(volumePercent, 100));
-    setDefaultVolume(clamped);
-    applyPreviewVolume(clamped);
+    volumeAnimatorRef.current?.setImmediate(volumePercent);
   };
 
   useEffect(() => {
@@ -253,7 +280,7 @@ export const ShowreelManager = () => {
             type="range"
             min={0}
             max={100}
-            step={0.1}
+            step={1}
             value={defaultVolume}
             onChange={(e) => handleDefaultVolumeChange(Number(e.target.value))}
             className="flex-1 accent-cyan-400"

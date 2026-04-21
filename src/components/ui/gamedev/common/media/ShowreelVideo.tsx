@@ -9,6 +9,10 @@ import Cookies from "js-cookie";
 import { Maximize2, Minimize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
+import {
+  createSteppedSliderAnimator,
+  type SteppedSliderAnimator,
+} from "../../../../../lib/steppedSliderAnimator";
 import { supabase } from "../../../../../lib/supabase";
 
 interface ShowreelVideoProps {
@@ -30,6 +34,9 @@ const LETTER_GRADIENTS = [
 ];
 
 const DEFAULT_VOLUME = 10; // 10% — safe starting point before DB value loads
+const VOLUME_STEP = 1;
+const VOLUME_STEP_INTERVAL_MS = 12;
+const VOLUME_POPUP_CLOSE_DELAY_MS = 180;
 
 const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
@@ -38,8 +45,7 @@ const formatTime = (s: number) => {
 };
 
 const formatVolumePercent = (value: number) => {
-  const fixed = value.toFixed(1);
-  return fixed.endsWith(".0") ? `${Math.round(value)}%` : `${fixed}%`;
+  return `${Math.round(value)}%`;
 };
 
 export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
@@ -54,11 +60,52 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  const [isVolumePopupOpen, setIsVolumePopupOpen] = useState(false);
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumePopupCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
+  const volumePopupRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const touchQuery = window.matchMedia("(pointer: coarse)");
+
+    const updateTouchMode = () => {
+      setIsTouchDevice(touchQuery.matches);
+    };
+
+    updateTouchMode();
+    touchQuery.addEventListener("change", updateTouchMode);
+
+    return () => {
+      touchQuery.removeEventListener("change", updateTouchMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    volumeAnimatorRef.current = createSteppedSliderAnimator({
+      initialValue: DEFAULT_VOLUME,
+      min: 0,
+      max: 100,
+      step: VOLUME_STEP,
+      intervalMs: VOLUME_STEP_INTERVAL_MS,
+      onStep: (nextVolume) => {
+        setSliderVolume(nextVolume);
+        setIsMuted(false);
+        if (!videoRef.current) return;
+        videoRef.current.volume = nextVolume / 100;
+      },
+    });
+
+    return () => {
+      volumeAnimatorRef.current?.stop();
+      volumeAnimatorRef.current = null;
+    };
+  }, []);
 
   // Load default volume from DB
   useEffect(() => {
@@ -71,7 +118,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         .single();
       if (!isMounted || error || !data) return;
       const v = Number(data.value);
-      if (!Number.isNaN(v) && v >= 0 && v <= 100) setSliderVolume(v);
+      if (!Number.isNaN(v) && v >= 0 && v <= 100) {
+        setSliderVolume(v);
+        volumeAnimatorRef.current?.setImmediate(v);
+      }
     })();
     return () => {
       isMounted = false;
@@ -82,6 +132,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   useEffect(() => {
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
     };
   }, []);
 
@@ -100,6 +151,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const scheduleHide = () => {
+    if (isTouchDevice || isVolumePopupOpen) return;
+
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
   };
@@ -113,6 +166,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       void videoRef.current.play().catch(() => {}); // intentional
     }
     setIsPlaying(true);
+    setIsVolumePopupOpen(false);
     setShowControls(true);
     scheduleHide();
   };
@@ -130,10 +184,34 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handleVolumeChange = (val: number) => {
-    const clamped = Math.max(0, Math.min(val, 100));
-    setSliderVolume(clamped);
-    setIsMuted(false);
-    applyVolumeToGraph(clamped, false);
+    volumeAnimatorRef.current?.setImmediate(val);
+  };
+
+  const handleVolumeMute = () => {
+    playClickSound();
+    handleMute();
+  };
+
+  const handleVolumeEnter = () => {
+    if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
+
+    setShowControls(true);
+    setIsVolumePopupOpen(true);
+
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+  };
+
+  const handleVolumeLeave = () => {
+    if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
+
+    volumePopupCloseTimerRef.current = setTimeout(() => {
+      setIsVolumePopupOpen(false);
+
+      if (isTouchDevice) return;
+
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
+    }, VOLUME_POPUP_CLOSE_DELAY_MS);
   };
 
   const handleMute = () => {
@@ -161,6 +239,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     if (isPlaying && !isPaused) scheduleHide();
   };
 
+  const handleTouchStart = () => {
+    setShowControls(true);
+  };
+
   const containerVariants = {
     hidden: {},
     visible: {
@@ -186,7 +268,6 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const effectiveVol = isMuted ? 0 : sliderVolume;
   const seekPct = `${duration ? (currentTime / duration) * 100 : 0}%`;
   const volFill = `${(effectiveVol / 100) * 100}%`;
-  const volLabelClass = "text-cyan-300/80";
 
   return (
     <motion.div
@@ -200,6 +281,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         ref={containerRef}
         aria-label="Showreel video player"
         onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
         onMouseLeave={() => {
           if (isPlaying && !isPaused) scheduleHide();
         }}
@@ -360,37 +442,51 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
 
-                {/* Mute toggle */}
-                <button
-                  type="button"
-                  aria-label={isMuted ? "Unmute" : "Mute"}
-                  onClick={handleMute}
-                  onMouseEnter={playHoverSound}
-                  className="showreel-ctrl-btn"
+                {/* Volume popup control — hover to show, click to mute */}
+                <div
+                  ref={volumePopupRef}
+                  className="showreel-volume-control"
+                  role="toolbar"
+                  aria-label="Volume control"
+                  onMouseEnter={handleVolumeEnter}
+                  onMouseLeave={handleVolumeLeave}
                 >
-                  {isMuted || sliderVolume === 0 ? (
-                    <VolumeX className="w-4 h-4 text-cyan-300" />
-                  ) : (
-                    <Volume2 className="w-4 h-4 text-cyan-300" />
+                  <button
+                    type="button"
+                    aria-label={isMuted ? "Unmute" : "Mute"}
+                    aria-expanded={isVolumePopupOpen}
+                    aria-controls="showreel-volume-popup"
+                    onClick={handleVolumeMute}
+                    onMouseEnter={playHoverSound}
+                    className="showreel-ctrl-btn"
+                  >
+                    {isMuted || sliderVolume === 0 ? (
+                      <VolumeX className="w-4 h-4 text-cyan-300" />
+                    ) : (
+                      <Volume2 className="w-4 h-4 text-cyan-300" />
+                    )}
+                  </button>
+
+                  {isVolumePopupOpen && (
+                    <div id="showreel-volume-popup" className="showreel-volume-popup">
+                      <input
+                        type="range"
+                        aria-label="Volume"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={effectiveVol}
+                        onChange={(e) => handleVolumeChange(Number(e.target.value))}
+                        className="showreel-volume-popup-slider"
+                        style={{ "--vol-fill": volFill } as React.CSSProperties}
+                      />
+
+                      <span className="showreel-volume-popup-value">
+                        {formatVolumePercent(effectiveVol)}
+                      </span>
+                    </div>
                   )}
-                </button>
-
-                {/* Volume slider — strict 0 to 100 native browser volume. */}
-                <input
-                  type="range"
-                  aria-label="Volume"
-                  min={0}
-                  max={100}
-                  step={0.1}
-                  value={effectiveVol}
-                  onChange={(e) => handleVolumeChange(Number(e.target.value))}
-                  className="showreel-volume-slider"
-                  style={{ "--vol-fill": volFill } as React.CSSProperties}
-                />
-
-                <span className={`showreel-volume-label ${volLabelClass}`}>
-                  {formatVolumePercent(effectiveVol)}
-                </span>
+                </div>
 
                 {/* Fullscreen toggle */}
                 <button
