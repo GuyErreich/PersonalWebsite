@@ -132,12 +132,20 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
   };
 
+  const ensureAudioContextRunning = async () => {
+    if (!audioCtxRef.current) return;
+    if (audioCtxRef.current.state === "suspended") {
+      await audioCtxRef.current.resume();
+    }
+  };
+
   const handlePlay = () => {
     playClickSound();
     if (videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.currentTime = 0;
       setupAudioGraph();
+      void ensureAudioContextRunning().catch(() => {}); // intentional
       applyVolumeToGraph(sliderVolume, isMuted);
       void videoRef.current.play().catch(() => {}); // intentional
     }
@@ -149,6 +157,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const handlePlayPause = () => {
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
+      void ensureAudioContextRunning().catch(() => {}); // intentional
       void videoRef.current.play().catch(() => {}); // intentional
       scheduleHide();
     } else {
@@ -159,12 +168,14 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handleVolumeChange = (val: number) => {
+    void ensureAudioContextRunning().catch(() => {}); // intentional
     setSliderVolume(val);
     setIsMuted(false);
     applyVolumeToGraph(val, false);
   };
 
   const handleMute = () => {
+    void ensureAudioContextRunning().catch(() => {}); // intentional
     const next = !isMuted;
     setIsMuted(next);
     applyVolumeToGraph(sliderVolume, next);
