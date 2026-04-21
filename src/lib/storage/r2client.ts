@@ -45,6 +45,12 @@ const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): void => {
   if (file.size <= 0 || file.size > policy.maxBytes) {
     throw new Error("File is empty or exceeds the allowed size limit.");
   }
+
+  const rawExt = file.name.split(".").pop();
+  const safeExt = (rawExt ?? "").replace(/^\.+/, "").replace(/[^a-zA-Z0-9]/g, "");
+  if (!safeExt || safeExt.length > 10) {
+    throw new Error("Filename must include a valid extension.");
+  }
 };
 
 /**
