@@ -47,7 +47,7 @@ const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): string => 
   const policy = R2_UPLOAD_POLICIES[folderPath];
   const mimeType = file.type.trim().toLowerCase();
 
-  if (!policy.mimeTypes.includes(mimeType)) {
+  if (!(mimeType in policy.mimeTypeExtensions)) {
     throw new Error("File type is not allowed for this upload target.");
   }
 
@@ -60,8 +60,9 @@ const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): string => 
     throw new Error("Filename must include a valid extension.");
   }
 
-  if (!policy.extensions.includes(safeExt)) {
-    throw new Error("File extension is not allowed for this upload target.");
+  const allowedExts = policy.mimeTypeExtensions[mimeType] ?? [];
+  if (!allowedExts.includes(safeExt)) {
+    throw new Error("File extension is not allowed for this MIME type.");
   }
 
   return safeExt;

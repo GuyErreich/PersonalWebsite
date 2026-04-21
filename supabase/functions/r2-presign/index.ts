@@ -32,20 +32,9 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean),
 );
 
-
-const IMAGE_CONTENT_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-]);
-const VIDEO_CONTENT_TYPES = new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]);
-
 // UPLOAD POLICY DUPLICATION NOTICE:
 // This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:
-// - mimeTypes
-// - extensions
+// - mimeTypeExtensions (MIME type → allowed file extensions mapping)
 // - maxBytes
 // Edge Functions cannot import client TypeScript modules, so we must maintain copies separately.
 //
@@ -62,25 +51,51 @@ const VIDEO_CONTENT_TYPES = new Set(["video/mp4", "video/webm", "video/ogg", "vi
 const FOLDER_POLICIES: Record<
   string,
   {
-    contentTypes: Set<string>;
-    extensions: Set<string>;
+    mimeTypeExtensions: Record<string, readonly string[]>;
   }
 > = {
   media: {
-    contentTypes: new Set([...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES]),
-    extensions: new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "mp4", "webm", "ogg", "mov"]),
+    mimeTypeExtensions: {
+      "image/jpeg": ["jpg", "jpeg"],
+      "image/png": ["png"],
+      "image/webp": ["webp"],
+      "image/gif": ["gif"],
+      "image/avif": ["avif"],
+      "video/mp4": ["mp4"],
+      "video/webm": ["webm"],
+      "video/ogg": ["ogg"],
+      "video/quicktime": ["mov"],
+    },
   },
   "hero-showreel": {
-    contentTypes: VIDEO_CONTENT_TYPES,
-    extensions: new Set(["mp4", "webm", "ogg", "mov"]),
+    mimeTypeExtensions: {
+      "video/mp4": ["mp4"],
+      "video/webm": ["webm"],
+      "video/ogg": ["ogg"],
+      "video/quicktime": ["mov"],
+    },
   },
   "gamedev-assets": {
-    contentTypes: new Set([...IMAGE_CONTENT_TYPES, ...VIDEO_CONTENT_TYPES]),
-    extensions: new Set(["jpg", "jpeg", "png", "webp", "gif", "avif", "mp4", "webm", "ogg", "mov"]),
+    mimeTypeExtensions: {
+      "image/jpeg": ["jpg", "jpeg"],
+      "image/png": ["png"],
+      "image/webp": ["webp"],
+      "image/gif": ["gif"],
+      "image/avif": ["avif"],
+      "video/mp4": ["mp4"],
+      "video/webm": ["webm"],
+      "video/ogg": ["ogg"],
+      "video/quicktime": ["mov"],
+    },
   },
   "gamedev-thumbnails": {
-    contentTypes: IMAGE_CONTENT_TYPES,
-    extensions: new Set(["jpg", "jpeg", "png", "webp", "gif", "avif"]),
+    mimeTypeExtensions: {
+      "image/jpeg": ["jpg", "jpeg"],
+      "image/png": ["png"],
+      "image/webp": ["webp"],
+      "image/gif": ["gif"],
+      "image/avif": ["avif"],
+    },
   },
 };
 
@@ -203,11 +218,13 @@ Deno.serve(async (req: Request) => {
     const normalizedContentType = contentType.trim().toLowerCase();
     const policy = FOLDER_POLICIES[folder];
 
-    if (!policy.contentTypes.has(normalizedContentType)) {
+    // Validate MIME type and ensure extension is allowed for that specific MIME type
+    if (!(normalizedContentType in policy.mimeTypeExtensions)) {
       return json({ error: "File type not allowed" }, 400);
     }
-    if (!extNoDot || !policy.extensions.has(extNoDot)) {
-      return json({ error: "File extension not allowed" }, 400);
+    const allowedExtsForMime = policy.mimeTypeExtensions[normalizedContentType] ?? [];
+    if (!extNoDot || !allowedExtsForMime.includes(extNoDot)) {
+      return json({ error: "File extension is not allowed for this MIME type" }, 400);
     }
 
     const ext = extNoDot.length > 0 ? `.${extNoDot}` : "";

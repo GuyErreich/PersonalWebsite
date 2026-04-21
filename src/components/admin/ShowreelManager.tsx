@@ -7,15 +7,16 @@
 import { Play } from "lucide-react";
 import { useEffect, useState } from "react";
 import { uploadToR2 } from "../../lib/storage/r2client";
-import { R2_UPLOAD_FOLDERS, R2_UPLOAD_POLICIES } from "../../lib/storage/r2UploadPolicies";
+import {
+  getMimeTypesForFolder,
+  R2_UPLOAD_FOLDERS,
+  R2_UPLOAD_POLICIES,
+} from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 
-const ALLOWED_SHOWREEL_MIME_TYPES = new Set(
-  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].mimeTypes,
-);
+const ALLOWED_SHOWREEL_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel));
 const MAX_SHOWREEL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].maxBytes;
-const SHOWREEL_ACCEPT_TYPES =
-  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].mimeTypes.join(",");
+const SHOWREEL_ACCEPT_TYPES = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel).join(",");
 
 export const ShowreelManager = () => {
   const [loading, setLoading] = useState(false);

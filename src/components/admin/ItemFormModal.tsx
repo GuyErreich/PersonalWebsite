@@ -23,7 +23,11 @@ import { useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import { uploadToR2 } from "../../lib/storage/r2client";
-import { R2_UPLOAD_FOLDERS, R2_UPLOAD_POLICIES } from "../../lib/storage/r2UploadPolicies";
+import {
+  getMimeTypesForFolder,
+  R2_UPLOAD_FOLDERS,
+  R2_UPLOAD_POLICIES,
+} from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 
 interface ItemFormModalProps {
@@ -48,16 +52,13 @@ const AVAILABLE_ICONS = [
   { id: "monitor", icon: Monitor, label: "Desktop" },
 ];
 
-const ALLOWED_MEDIA_MIME_TYPES = new Set(
-  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].mimeTypes,
-);
+const ALLOWED_MEDIA_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevAssets));
 const ALLOWED_THUMBNAIL_MIME_TYPES = new Set(
-  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].mimeTypes,
+  getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevThumbnails),
 );
 
-const MEDIA_ACCEPT = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].mimeTypes.join(",");
-const THUMBNAIL_ACCEPT =
-  R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].mimeTypes.join(",");
+const MEDIA_ACCEPT = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevAssets).join(",");
+const THUMBNAIL_ACCEPT = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevThumbnails).join(",");
 
 const MAX_MEDIA_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].maxBytes;
 const MAX_THUMBNAIL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].maxBytes;
