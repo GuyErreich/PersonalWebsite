@@ -163,8 +163,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     if (videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.currentTime = 0;
-      setupAudioGraph();
-      void ensureAudioContextRunning().catch(() => {}); // intentional
+      if (sliderVolume > 100) {
+        setupAudioGraph();
+        void ensureAudioContextRunning().catch(() => {}); // intentional
+      }
       applyVolumeToGraph(sliderVolume, isMuted);
       void videoRef.current.play().catch(() => {}); // intentional
     }
@@ -187,7 +189,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handleVolumeChange = (val: number) => {
-    void ensureAudioContextRunning().catch(() => {}); // intentional
+    if (val > 100) {
+      setupAudioGraph();
+      void ensureAudioContextRunning().catch(() => {}); // intentional
+    }
     setSliderVolume(val);
     setIsMuted(false);
     applyVolumeToGraph(val, false);
@@ -293,7 +298,6 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             <video
               ref={videoRef}
               src={url}
-              crossOrigin="anonymous"
               autoPlay={!isPlaying}
               loop={!isPlaying}
               muted={!isPlaying}
