@@ -37,6 +37,9 @@ export const Admin = () => {
 
         const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
         if (!isAdminRole(roleValue)) {
+          void supabase.auth.signOut().catch(() => {
+            // intentional — best-effort cleanup before redirect
+          });
           navigate("/");
           return;
         }

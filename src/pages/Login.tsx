@@ -33,7 +33,13 @@ export const Login = () => {
           return;
         }
 
-        navigate("/");
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          setError(signOutError.message);
+          return;
+        }
+
+        setError("Admin access is required.");
       } catch {
         // intentional — network failure on session check; user stays on login page
       }
