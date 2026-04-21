@@ -5,7 +5,7 @@
  */
 
 import { Play } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { uploadToR2 } from "../../lib/storage/r2client";
 import {
   getMimeTypesForFolder,
@@ -34,6 +34,10 @@ export const ShowreelManager = () => {
     text: string;
   } | null>(null);
 
+  const previewVideoRef = useRef<HTMLVideoElement>(null);
+  const previewAudioCtxRef = useRef<AudioContext | null>(null);
+  const previewGainNodeRef = useRef<GainNode | null>(null);
+
   useEffect(() => {
     let isMounted = true;
     void (async () => {
@@ -50,6 +54,65 @@ export const ShowreelManager = () => {
       isMounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewAudioCtxRef.current) {
+        void previewAudioCtxRef.current.close().catch(() => {}); // intentional
+        previewAudioCtxRef.current = null;
+        previewGainNodeRef.current = null;
+      }
+    };
+  }, []);
+
+  const setupPreviewAudioGraph = () => {
+    if (previewAudioCtxRef.current || !previewVideoRef.current) return;
+
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const gain = ctx.createGain();
+    const source = ctx.createMediaElementSource(previewVideoRef.current);
+
+    source.connect(gain);
+    gain.connect(ctx.destination);
+
+    previewAudioCtxRef.current = ctx;
+    previewGainNodeRef.current = gain;
+  };
+
+  const ensurePreviewAudioRunning = async () => {
+    if (!previewAudioCtxRef.current) return;
+    if (previewAudioCtxRef.current.state === "suspended") {
+      await previewAudioCtxRef.current.resume();
+    }
+  };
+
+  const applyPreviewVolume = (volumePercent: number) => {
+    if (!previewVideoRef.current) return;
+
+    if (volumePercent <= 100) {
+      previewVideoRef.current.volume = volumePercent / 100;
+      if (previewGainNodeRef.current) previewGainNodeRef.current.gain.value = 1;
+      return;
+    }
+
+    previewVideoRef.current.volume = 1;
+    if (previewGainNodeRef.current) {
+      previewGainNodeRef.current.gain.value = volumePercent / 100;
+    }
+  };
+
+  const handleDefaultVolumeChange = (volumePercent: number) => {
+    setDefaultVolume(volumePercent);
+    setupPreviewAudioGraph();
+    void ensurePreviewAudioRunning().catch(() => {}); // intentional
+    applyPreviewVolume(volumePercent);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -200,7 +263,21 @@ export const ShowreelManager = () => {
           <h3 className="text-sm font-medium text-gray-400 mb-4">Current Showreel</h3>
           {currentUrl ? (
             <div className="rounded-lg overflow-hidden border border-gray-700 bg-black aspect-video relative">
-              <video src={currentUrl} controls className="w-full h-full object-cover" />
+              <video
+                ref={previewVideoRef}
+                src={currentUrl}
+                controls
+                onLoadedMetadata={() => {
+                  setupPreviewAudioGraph();
+                  applyPreviewVolume(defaultVolume);
+                }}
+                onPlay={() => {
+                  setupPreviewAudioGraph();
+                  void ensurePreviewAudioRunning().catch(() => {}); // intentional
+                  applyPreviewVolume(defaultVolume);
+                }}
+                className="w-full h-full object-cover"
+              />
             </div>
           ) : (
             <div className="flex items-center justify-center h-32 rounded-lg border-2 border-dashed border-gray-700 text-gray-500 text-sm">
@@ -225,7 +302,7 @@ export const ShowreelManager = () => {
             max={300}
             step={1}
             value={defaultVolume}
-            onChange={(e) => setDefaultVolume(Number(e.target.value))}
+            onChange={(e) => handleDefaultVolumeChange(Number(e.target.value))}
             className="flex-1 accent-cyan-400"
           />
           <span
