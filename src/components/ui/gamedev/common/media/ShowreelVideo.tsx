@@ -37,6 +37,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     playClickSound();
     if (videoRef.current) {
       videoRef.current.muted = false;
+      videoRef.current.volume = 0.5; // Start at medium volume to protect ears
       videoRef.current.currentTime = 0;
       videoRef.current.controls = true;
       void videoRef.current.play().catch(() => {});
@@ -104,7 +105,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                 !isPlaying
                   ? "blur-[5px] brightness-[0.3] scale-[1.06]"
                   : "blur-0 brightness-100 scale-100"
-              }`}
+              } showreel-video`}
+              style={{
+                filter: isPlaying ? "none" : "blur(20px) brightness(0.3)",
+              }}
             />
 
             {/* Cinematic scanlines overlay */}
