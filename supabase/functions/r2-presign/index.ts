@@ -155,15 +155,21 @@ Deno.serve(async (req: Request) => {
 
     // --- Parse request ---
     const body: unknown = await req.json();
+    const bodyRecord = body as Record<string, unknown>;
     if (
       typeof body !== "object" ||
       body === null ||
-      typeof (body as Record<string, unknown>).contentType !== "string"
+      typeof bodyRecord.contentType !== "string" ||
+      (bodyRecord.fileExt !== undefined && typeof bodyRecord.fileExt !== "string") ||
+      (bodyRecord.folderPath !== undefined && typeof bodyRecord.folderPath !== "string")
     ) {
-      return json({ error: "contentType (string) is required in request body" }, 400);
+      return json(
+        { error: "contentType must be a string; fileExt/folderPath must be strings when provided" },
+        400,
+      );
     }
 
-    const { contentType, fileExt, folderPath } = body as {
+    const { contentType, fileExt, folderPath } = bodyRecord as {
       contentType: string;
       fileExt?: string;
       folderPath?: string;

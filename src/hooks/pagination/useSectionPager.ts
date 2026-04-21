@@ -108,7 +108,7 @@ export const useSectionPager = ({ mainRef }: UseSectionPagerOptions) => {
       return getClosestSectionIndex(main, sections);
     };
 
-    const releasePagingLock = (delayMs = 700) => {
+    const releasePagingLock = (delayMs = PAGE_SCROLL_LOCK_MS) => {
       if (pagingTimeoutId !== null) {
         window.clearTimeout(pagingTimeoutId);
       }

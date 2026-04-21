@@ -262,7 +262,7 @@ const MyHook = (param: string) => {
 
 The site uses a smart paging system that adapts to device capability:
 
-- **Strong devices** (≥8GB RAM, ≥8 cores, ≥1440px): Custom 1400ms easeInOutCubic smooth-scroll animation
+- **Strong devices** (>8GB RAM, >8 cores, ≥1440px): Custom 1400ms easeInOutCubic smooth-scroll animation
 - **Mid-tier/constrained**: Native browser `scrollIntoView({ behavior: 'smooth' })`
 
 This adaptive approach preserves the cinematic intro feel on capable hardware while ensuring smooth performance on mobile and budget devices.

@@ -159,8 +159,8 @@ useSectionPager (orchestration)
 
 Adaptive paging is controlled by `isMidTierOrConstrainedDevice()` from `lib/performance.ts`:
 
-- **Strong devices**: ≥8GB memory, ≥8 CPU cores, ≥1440px width → Custom smooth scroll.
-- **Mid-tier/constrained**: <8GB memory OR <8 CPU cores OR <1440px width → Native smooth scroll.
+- **Strong devices**: >8GB memory, >8 CPU cores, and ≥1440px width → Custom smooth scroll.
+- **Mid-tier/constrained**: ≤8GB memory OR ≤8 CPU cores OR <1440px width → Native smooth scroll.
 
 ## Performance Considerations
 
