@@ -173,13 +173,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                     }}
                     whileHover={{
                       scale: 1.12,
-                      boxShadow: "0px 0px 45px rgba(52,211,153,0.55)",
+                      boxShadow: "0px 0px 45px rgba(56,189,248,0.55)",
                     }}
                     whileTap={{ scale: 0.9 }}
-                    className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-emerald-500/10 backdrop-blur-md border-[2px] border-emerald-400 flex items-center justify-center text-white shadow-[0_0_25px_rgba(52,211,153,0.3)]"
+                    className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-cyan-400/10 backdrop-blur-md border-[2px] border-cyan-400 flex items-center justify-center text-white shadow-[0_0_25px_rgba(56,189,248,0.3)]"
                   >
                     <Play
-                      className="w-8 h-8 md:w-12 md:h-12 ml-1 md:ml-2 text-emerald-300"
+                      className="w-8 h-8 md:w-12 md:h-12 ml-1 md:ml-2 text-cyan-300"
                       fill="currentColor"
                     />
                   </motion.button>
