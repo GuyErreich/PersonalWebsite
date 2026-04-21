@@ -145,71 +145,145 @@
     display: none;
   }
 
-  /* Showreel video controls — themed styling with safe volume constraints */
-  .showreel-video {
-    /* Make native controls appear with site-appropriate styling */
+  /* Custom showreel video player — controls bar and interactive elements */
+
+  .showreel-container:fullscreen {
+    aspect-ratio: unset;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
   }
 
-  /* Style the video controls panel with site theme (dark, cyan accents) */
-  .showreel-video::-webkit-media-controls-panel {
-    background: linear-gradient(
-      to right,
-      rgba(8, 16, 27, 0.95) 0%,
-      rgba(8, 16, 27, 0.9) 100%
-    );
-    border-top: 1px solid rgba(34, 211, 238, 0.15);
+  .showreel-container:-webkit-full-screen {
+    aspect-ratio: unset;
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
   }
 
-  /* Make the timeline/progress bar cyan-themed */
-  .showreel-video::-webkit-media-controls-timeline {
+  /* Controls bar — fixed to bottom of video, auto-hides via opacity transition in JSX */
+  .showreel-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(8, 16, 27, 0.92);
+    border-top: 1px solid rgba(34, 211, 238, 0.18);
+    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease;
+  }
+
+  /* Icon buttons (play/pause, mute, fullscreen) */
+  .showreel-ctrl-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    border-radius: 6px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    opacity: 0.85;
+    transition: opacity 0.15s ease, background 0.15s ease;
+  }
+
+  .showreel-ctrl-btn:hover {
+    opacity: 1;
     background: rgba(34, 211, 238, 0.1);
   }
 
-  .showreel-video::-webkit-media-controls-timeline::-webkit-slider-thumb {
-    background: linear-gradient(
-      to bottom,
-      rgb(34, 211, 238),
-      rgb(6, 182, 212)
-    );
-    border: 1px solid rgba(34, 211, 238, 0.4);
-    box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+  /* Time display */
+  .showreel-time {
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    color: rgba(148, 163, 184, 0.9);
+    white-space: nowrap;
+    flex-shrink: 0;
+    letter-spacing: 0.04em;
   }
 
-  /* Volume slider styling — themed and constrained */
-  .showreel-video::-webkit-media-controls-volume-slider-container {
-    opacity: 0.9;
+  /* Volume percentage label */
+  .showreel-volume-label {
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+    width: 36px;
+    text-align: right;
+    transition: color 0.2s ease;
   }
 
-  .showreel-video::-webkit-media-controls-volume-slider {
-    background: rgba(34, 211, 238, 0.15);
+  /* Seek bar — flex grows to fill available space */
+  .showreel-seek-slider,
+  .showreel-volume-slider {
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
     border-radius: 2px;
+    outline: none;
+    cursor: pointer;
   }
 
-  .showreel-video::-webkit-media-controls-volume-slider::-webkit-slider-thumb {
+  .showreel-seek-slider {
+    flex: 1;
+    min-width: 0;
     background: linear-gradient(
-      to bottom,
-      rgb(34, 211, 238),
-      rgb(6, 182, 212)
+      to right,
+      #22d3ee 0%,
+      #22d3ee var(--seek-pct, 0%),
+      rgba(34, 211, 238, 0.18) var(--seek-pct, 0%),
+      rgba(34, 211, 238, 0.18) 100%
     );
-    border: 1px solid rgba(34, 211, 238, 0.5);
-    box-shadow: 0 0 8px rgba(34, 211, 238, 0.25);
   }
 
-  /* Make control buttons slightly dimmer to not dominate */
-  .showreel-video::-webkit-media-controls-play-button,
-  .showreel-video::-webkit-media-controls-mute-button,
-  .showreel-video::-webkit-media-controls-fullscreen-button {
-    opacity: 0.8;
+  /* Volume slider — 0-300%, with zone bands for normal / amplified / extreme */
+  .showreel-volume-slider {
+    width: 72px;
+    flex-shrink: 0;
+    /* Zone layout: 0-33.33% = cyan (0-100%), 33.33-66.66% = amber (100-200%), 66.66-100% = red (200-300%) */
+    /* --vol-fill drives the filled portion of the cyan zone */
+    background: linear-gradient(
+      to right,
+      #22d3ee 0%,
+      #22d3ee var(--vol-fill, 3.33%),
+      rgba(34, 211, 238, 0.18) var(--vol-fill, 3.33%),
+      rgba(34, 211, 238, 0.18) 33.33%,
+      rgba(245, 158, 11, 0.35) 33.33%,
+      rgba(245, 158, 11, 0.35) 66.66%,
+      rgba(239, 68, 68, 0.35) 66.66%,
+      rgba(239, 68, 68, 0.35) 100%
+    );
   }
 
-  .showreel-video::-webkit-media-controls-play-button:hover,
-  .showreel-video::-webkit-media-controls-mute-button:hover,
-  .showreel-video::-webkit-media-controls-fullscreen-button:hover {
-    opacity: 1;
+  /* Shared thumb styling for both sliders */
+  .showreel-seek-slider::-webkit-slider-thumb,
+  .showreel-volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.7);
+    cursor: pointer;
   }
 
-  /* Firefox: apply similar styling */
-  .showreel-video::cue {
-    opacity: 0.8;
+  .showreel-seek-slider::-moz-range-thumb,
+  .showreel-volume-slider::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: none;
+    border-radius: 50%;
+    background: #22d3ee;
+    box-shadow: 0 0 6px rgba(34, 211, 238, 0.7);
+    cursor: pointer;
   }
 }

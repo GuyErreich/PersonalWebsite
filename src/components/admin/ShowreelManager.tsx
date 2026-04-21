@@ -27,6 +27,30 @@ export const ShowreelManager = () => {
     text: string;
   } | null>(null);
 
+  const [defaultVolume, setDefaultVolume] = useState(10);
+  const [savingVolume, setSavingVolume] = useState(false);
+  const [volumeMessage, setVolumeMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    void (async () => {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "showreel_default_volume")
+        .single();
+      if (!isMounted || error || !data) return;
+      const v = Number(data.value);
+      if (!Number.isNaN(v) && v >= 0 && v <= 300) setDefaultVolume(v);
+    })();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     let isMounted = true;
     const loadShowreel = async () => {
@@ -93,6 +117,20 @@ export const ShowreelManager = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveDefaultVolume = async () => {
+    setSavingVolume(true);
+    setVolumeMessage(null);
+    const { error } = await supabase
+      .from("site_settings")
+      .upsert({ key: "showreel_default_volume", value: String(defaultVolume) });
+    setSavingVolume(false);
+    if (error) {
+      setVolumeMessage({ type: "error", text: error.message });
+    } else {
+      setVolumeMessage({ type: "success", text: "Default volume saved!" });
     }
   };
 
@@ -170,6 +208,60 @@ export const ShowreelManager = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Default starting volume */}
+      <div className="mt-6 pt-6 border-t border-gray-700">
+        <h3 className="text-sm font-medium text-gray-400 mb-1">Default Starting Volume</h3>
+        <p className="text-xs text-gray-500 mb-4">
+          Sets the initial volume when a visitor first plays the showreel. 0–100% uses native
+          volume; 101–300% applies gain amplification (like VLC). Default: 10%.
+        </p>
+
+        <div className="flex items-center gap-4">
+          <input
+            type="range"
+            min={0}
+            max={300}
+            step={1}
+            value={defaultVolume}
+            onChange={(e) => setDefaultVolume(Number(e.target.value))}
+            className="flex-1 accent-cyan-400"
+          />
+          <span
+            className={`text-sm font-mono w-14 text-right ${
+              defaultVolume > 200
+                ? "text-red-400"
+                : defaultVolume > 100
+                  ? "text-amber-400"
+                  : "text-cyan-300"
+            }`}
+          >
+            {defaultVolume}%
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              void handleSaveDefaultVolume();
+            }}
+            disabled={savingVolume}
+            className="bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-medium py-1.5 px-4 rounded-md transition-colors disabled:opacity-50"
+          >
+            {savingVolume ? "Saving…" : "Save"}
+          </button>
+        </div>
+
+        {volumeMessage && (
+          <div
+            className={`mt-3 p-2 rounded text-xs ${
+              volumeMessage.type === "success"
+                ? "bg-green-500/10 border-green-500/50 text-green-400"
+                : "bg-red-500/10 border-red-500/50 text-red-500"
+            } border`}
+          >
+            {volumeMessage.text}
+          </div>
+        )}
       </div>
     </div>
   );
