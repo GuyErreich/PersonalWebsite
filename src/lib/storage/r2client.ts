@@ -30,7 +30,16 @@ interface PresignResponse {
   signedUrl: string;
   publicUrl: string;
 }
-const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): void => {
+
+const getNormalizedExtension = (fileName: string): string => {
+  const rawExt = fileName.split(".").pop();
+  return (rawExt ?? "")
+    .replace(/^\.+/, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+};
+
+const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): string => {
   if (!R2_ALLOWED_FOLDERS.has(folderPath)) {
     throw new Error(`Folder "${folderPath}" is not allowed.`);
   }
@@ -46,11 +55,16 @@ const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): void => {
     throw new Error("File is empty or exceeds the allowed size limit.");
   }
 
-  const rawExt = file.name.split(".").pop();
-  const safeExt = (rawExt ?? "").replace(/^\.+/, "").replace(/[^a-zA-Z0-9]/g, "");
+  const safeExt = getNormalizedExtension(file.name);
   if (!safeExt || safeExt.length > 10) {
     throw new Error("Filename must include a valid extension.");
   }
+
+  if (!policy.extensions.includes(safeExt)) {
+    throw new Error("File extension is not allowed for this upload target.");
+  }
+
+  return safeExt;
 };
 
 /**
@@ -62,7 +76,7 @@ export const uploadToR2 = async (
   file: File,
   folderPath: R2UploadFolder = R2_UPLOAD_FOLDERS.media,
 ): Promise<string> => {
-  assertAllowedUpload(file, folderPath);
+  const fileExt = assertAllowedUpload(file, folderPath);
 
   // Get the caller's current session token to authenticate with the edge function
   const {
@@ -72,9 +86,6 @@ export const uploadToR2 = async (
   if (sessionError || !session) {
     throw new Error("You must be logged in to upload files.");
   }
-
-  const rawExt = file.name.split(".").pop();
-  const fileExt = rawExt && rawExt.length > 0 ? rawExt : "";
 
   // Ask the edge function to generate a presigned URL (credentials stay server-side)
   const presignRes = await fetch(PRESIGN_FUNCTION_URL, {

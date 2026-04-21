@@ -136,7 +136,7 @@ export const getAdaptiveCanvasDPR = (): number => {
  * - Low-end devices (≤2GB) → Use native smooth
  * - High memory pressure → Use native smooth
  * - Mid-tier (≤8GB + ≤8 cores) → Use native smooth
- * - <1440px width (mobile) on unknown memory → Use native smooth
+ * - <1440px width (mobile) on unknown memory and ≤8 cores → Use native smooth
  * - Otherwise → Use custom rAF animation (1400ms easeInOutCubic)
  *
  * @returns true if device should use native smooth scroll, false if custom rAF animation is acceptable

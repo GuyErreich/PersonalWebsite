@@ -15,6 +15,7 @@ export type R2UploadFolder = (typeof R2_UPLOAD_FOLDERS)[keyof typeof R2_UPLOAD_F
 
 interface R2UploadPolicy {
   mimeTypes: readonly string[];
+  extensions: readonly string[];
   maxBytes: number;
 }
 
@@ -31,10 +32,12 @@ export const R2_UPLOAD_POLICIES: Record<R2UploadFolder, R2UploadPolicy> = {
       "video/ogg",
       "video/quicktime",
     ],
+    extensions: ["jpg", "jpeg", "png", "webp", "gif", "avif", "mp4", "webm", "ogg", "mov"],
     maxBytes: 100 * 1024 * 1024,
   },
   [R2_UPLOAD_FOLDERS.heroShowreel]: {
     mimeTypes: ["video/mp4", "video/webm", "video/ogg", "video/quicktime"],
+    extensions: ["mp4", "webm", "ogg", "mov"],
     maxBytes: 200 * 1024 * 1024,
   },
   [R2_UPLOAD_FOLDERS.gameDevAssets]: {
@@ -49,10 +52,12 @@ export const R2_UPLOAD_POLICIES: Record<R2UploadFolder, R2UploadPolicy> = {
       "video/ogg",
       "video/quicktime",
     ],
+    extensions: ["jpg", "jpeg", "png", "webp", "gif", "avif", "mp4", "webm", "ogg", "mov"],
     maxBytes: 100 * 1024 * 1024,
   },
   [R2_UPLOAD_FOLDERS.gameDevThumbnails]: {
     mimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"],
+    extensions: ["jpg", "jpeg", "png", "webp", "gif", "avif"],
     maxBytes: 5 * 1024 * 1024,
   },
 };

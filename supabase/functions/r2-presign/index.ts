@@ -43,8 +43,11 @@ const IMAGE_CONTENT_TYPES = new Set([
 const VIDEO_CONTENT_TYPES = new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]);
 
 // UPLOAD POLICY DUPLICATION NOTICE:
-// These FOLDER_POLICIES are duplicated from `src/lib/storage/r2UploadPolicies.ts` (client-side).
-// Edge Functions cannot import client TypeScript modules, so we must maintain them separately.
+// This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:
+// - mimeTypes
+// - extensions
+// - maxBytes
+// Edge Functions cannot import client TypeScript modules, so we must maintain copies separately.
 //
 // **Critical:** Keep this object in sync with the client-side R2_UPLOAD_POLICIES constant.
 // If they diverge, uploads will fail in confusing ways:
