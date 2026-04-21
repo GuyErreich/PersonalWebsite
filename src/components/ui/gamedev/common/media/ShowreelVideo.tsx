@@ -37,8 +37,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     playClickSound();
     if (videoRef.current) {
       videoRef.current.muted = false;
-      // Set default to 20% volume - safe and audible
-      videoRef.current.volume = 0.2;
+      // Set default to 3% — source audio is loud, this keeps it gentle on first play
+      videoRef.current.volume = 0.03;
       videoRef.current.currentTime = 0;
       videoRef.current.controls = true;
       void videoRef.current.play().catch(() => {});
@@ -107,9 +107,6 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   ? "blur-[5px] brightness-[0.3] scale-[1.06]"
                   : "blur-0 brightness-100 scale-100"
               } showreel-video`}
-              style={{
-                filter: isPlaying ? "none" : "blur(20px) brightness(0.3)",
-              }}
             />
 
             {/* Cinematic scanlines overlay */}
