@@ -18,6 +18,11 @@ const ALLOWED_SHOWREEL_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLD
 const MAX_SHOWREEL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].maxBytes;
 const SHOWREEL_ACCEPT_TYPES = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel).join(",");
 
+const formatVolumePercent = (value: number) => {
+  const fixed = value.toFixed(1);
+  return fixed.endsWith(".0") ? `${Math.round(value)}%` : `${fixed}%`;
+};
+
 export const ShowreelManager = () => {
   const [loading, setLoading] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
@@ -248,12 +253,14 @@ export const ShowreelManager = () => {
             type="range"
             min={0}
             max={100}
-            step={1}
+            step={0.1}
             value={defaultVolume}
             onChange={(e) => handleDefaultVolumeChange(Number(e.target.value))}
             className="flex-1 accent-cyan-400"
           />
-          <span className="text-sm font-mono w-14 text-right text-cyan-300">{defaultVolume}%</span>
+          <span className="text-sm font-mono w-16 text-right text-cyan-300">
+            {formatVolumePercent(defaultVolume)}
+          </span>
           <button
             type="button"
             onClick={() => {

@@ -37,6 +37,11 @@ const formatTime = (s: number) => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
+const formatVolumePercent = (value: number) => {
+  const fixed = value.toFixed(1);
+  return fixed.endsWith(".0") ? `${Math.round(value)}%` : `${fixed}%`;
+};
+
 export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const hasCookie = !!Cookies.get("hero_visited");
 
@@ -376,14 +381,16 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   aria-label="Volume"
                   min={0}
                   max={100}
-                  step={1}
+                  step={0.1}
                   value={effectiveVol}
                   onChange={(e) => handleVolumeChange(Number(e.target.value))}
                   className="showreel-volume-slider"
                   style={{ "--vol-fill": volFill } as React.CSSProperties}
                 />
 
-                <span className={`showreel-volume-label ${volLabelClass}`}>{effectiveVol}%</span>
+                <span className={`showreel-volume-label ${volLabelClass}`}>
+                  {formatVolumePercent(effectiveVol)}
+                </span>
 
                 {/* Fullscreen toggle */}
                 <button
