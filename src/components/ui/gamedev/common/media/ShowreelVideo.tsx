@@ -168,13 +168,18 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     playClickSound();
     if (videoRef.current) {
       videoRef.current.muted = false;
       videoRef.current.currentTime = 0;
       applyVolumeToGraph(sliderVolume, isMuted);
-      void videoRef.current.play().catch(() => {}); // intentional
+      try {
+        await videoRef.current.play();
+      } catch {
+        // intentional — leave UI in pre-play state on decode/format failure
+        return;
+      }
     }
     setIsPlaying(true);
     setIsVolumePopupOpen(false);
@@ -422,7 +427,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                     aria-label="Play showreel"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handlePlay();
+                      void handlePlay();
                     }}
                     onMouseEnter={playHoverSound}
                     initial={{ opacity: 0, scale: 0.5 }}

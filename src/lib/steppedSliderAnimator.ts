@@ -49,6 +49,17 @@ export const createSteppedSliderAnimator = ({
   intervalMs,
   onStep,
 }: SteppedSliderAnimatorOptions): SteppedSliderAnimator => {
+  if (!Number.isFinite(step) || step <= 0) {
+    throw new RangeError(
+      `createSteppedSliderAnimator: step must be a finite positive number, got ${step}`,
+    );
+  }
+  if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+    throw new RangeError(
+      `createSteppedSliderAnimator: intervalMs must be a finite positive number, got ${intervalMs}`,
+    );
+  }
+
   let current = clamp(roundToStep(initialValue, step), min, max);
   let target = current;
   let timer: ReturnType<typeof setTimeout> | null = null;

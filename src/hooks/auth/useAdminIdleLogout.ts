@@ -12,9 +12,10 @@ const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 const IDLE_CHECK_INTERVAL_MS = 30_000;
 
 /**
- * Globally enforced admin idle-logout hook.
+ * Per-tab admin idle-logout hook.
  * Mount once at app root. Signs out the admin session after 15 minutes of
- * inactivity across any tab, page, or browser-focus state.
+ * inactivity in the current tab. Each tab tracks its own deadline independently;
+ * activity in another tab does not reset this tab's timer.
  *
  * Strategies used:
  *  1. Activity events reset an absolute deadline timestamp.
