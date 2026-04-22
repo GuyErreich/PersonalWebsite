@@ -70,6 +70,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const volumePopupCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
   const volumePopupRef = useRef<HTMLDivElement>(null);
+  const timeUpdateRafRef = useRef<number | null>(null);
 
   useEffect(() => {
     const touchQuery = window.matchMedia("(pointer: coarse)");
@@ -137,6 +138,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     return () => {
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
+      if (timeUpdateRafRef.current !== null) cancelAnimationFrame(timeUpdateRafRef.current);
     };
   }, []);
 
@@ -350,7 +352,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
               loop={!isPlaying}
               muted={!isPlaying}
               playsInline
-              onTimeUpdate={() => setCurrentTime(videoRef.current?.currentTime ?? 0)}
+              onTimeUpdate={() => {
+                if (timeUpdateRafRef.current !== null) return;
+                timeUpdateRafRef.current = requestAnimationFrame(() => {
+                  setCurrentTime(videoRef.current?.currentTime ?? 0);
+                  timeUpdateRafRef.current = null;
+                });
+              }}
               onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
               onPlay={() => setIsPaused(false)}
               onPause={() => setIsPaused(true)}
