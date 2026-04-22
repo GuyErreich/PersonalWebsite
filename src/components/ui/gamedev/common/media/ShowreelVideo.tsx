@@ -7,7 +7,14 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Cookies from "js-cookie";
 import { Maximize2, Minimize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
-import { type FocusEvent, type PointerEvent, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type FocusEvent,
+  type PointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { formatVolumePercent } from "../../../../../lib/format";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import {
@@ -62,7 +69,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
 
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumePopupCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
@@ -475,7 +482,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   value={currentTime}
                   onChange={(e) => handleSeek(Number(e.target.value))}
                   className="showreel-seek-slider"
-                  style={{ "--seek-pct": seekPct } as React.CSSProperties}
+                  style={{ "--seek-pct": seekPct } as CSSProperties}
                 />
 
                 {/* Time display */}
@@ -524,7 +531,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                         value={effectiveVol}
                         onChange={(e) => handleVolumeChange(Number(e.target.value))}
                         className="showreel-volume-popup-slider"
-                        style={{ "--vol-fill": volFill } as React.CSSProperties}
+                        style={{ "--vol-fill": volFill } as CSSProperties}
                       />
 
                       <span className="showreel-volume-popup-value">

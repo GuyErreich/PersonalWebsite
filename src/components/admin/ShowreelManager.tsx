@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { motion } from "framer-motion";
 import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { formatVolumePercent } from "../../lib/format";
+import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import {
   createSteppedSliderAnimator,
   type SteppedSliderAnimator,
@@ -289,16 +291,20 @@ export const ShowreelManager = () => {
           <span className="text-sm font-mono w-16 text-right text-cyan-300">
             {formatVolumePercent(defaultVolume)}
           </span>
-          <button
+          <motion.button
             type="button"
+            onMouseEnter={playHoverSound}
             onClick={() => {
               void handleSaveDefaultVolume();
+              playClickSound();
             }}
             disabled={savingVolume}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             className="bg-cyan-700 hover:bg-cyan-600 text-white text-sm font-medium py-1.5 px-4 rounded-md transition-colors disabled:opacity-50"
           >
             {savingVolume ? "Saving…" : "Save"}
-          </button>
+          </motion.button>
         </div>
 
         {volumeMessage && (
