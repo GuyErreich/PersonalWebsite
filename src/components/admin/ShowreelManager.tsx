@@ -6,6 +6,7 @@
 
 import { Play } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { formatVolumePercent } from "../../lib/format";
 import {
   createSteppedSliderAnimator,
   type SteppedSliderAnimator,
@@ -23,10 +24,6 @@ const MAX_SHOWREEL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowree
 const SHOWREEL_ACCEPT_TYPES = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel).join(",");
 const VOLUME_STEP = 1;
 const VOLUME_STEP_INTERVAL_MS = 12;
-
-const formatVolumePercent = (value: number) => {
-  return `${Math.round(value)}%`;
-};
 
 export const ShowreelManager = () => {
   const [loading, setLoading] = useState(false);

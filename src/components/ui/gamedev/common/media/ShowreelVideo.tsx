@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Cookies from "js-cookie";
 import { Maximize2, Minimize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { type FocusEvent, type PointerEvent, useEffect, useRef, useState } from "react";
+import { formatVolumePercent } from "../../../../../lib/format";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import {
   createSteppedSliderAnimator,
@@ -42,10 +43,6 @@ const formatTime = (s: number) => {
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, "0")}`;
-};
-
-const formatVolumePercent = (value: number) => {
-  return `${Math.round(value)}%`;
 };
 
 export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
