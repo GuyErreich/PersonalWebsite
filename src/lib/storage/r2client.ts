@@ -32,11 +32,10 @@ interface PresignResponse {
 }
 
 const getNormalizedExtension = (fileName: string): string => {
-  const rawExt = fileName.split(".").pop();
-  return (rawExt ?? "")
-    .replace(/^\.+/, "")
-    .replace(/[^a-zA-Z0-9]/g, "")
-    .toLowerCase();
+  const dotIndex = fileName.lastIndexOf(".");
+  if (dotIndex <= 0) return "";
+  const rawExt = fileName.slice(dotIndex + 1);
+  return rawExt.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
 };
 
 const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): string => {
@@ -104,7 +103,12 @@ export const uploadToR2 = async (
   });
 
   if (!presignRes.ok) {
-    const body: unknown = await presignRes.json().catch(() => ({}));
+    let body: unknown = {};
+    try {
+      body = await presignRes.json();
+    } catch {
+      /* intentional — body may be empty on error responses */
+    }
     const msg =
       typeof body === "object" && body !== null && "error" in body
         ? String((body as Record<string, unknown>).error)
