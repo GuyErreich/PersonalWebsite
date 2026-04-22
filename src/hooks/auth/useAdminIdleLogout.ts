@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useRef } from "react";
-import { isAdminRole } from "../../lib/auth/roles";
+import { hasAdminRoleFromMetadata } from "../../lib/auth/roles";
 import { supabase } from "../../lib/supabase";
 
 const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -43,6 +43,35 @@ export const useAdminIdleLogout = () => {
       idleDeadlineRef.current = null;
     };
 
+    const activityEvents = ["mousemove", "keydown", "pointerdown", "scroll"] as const;
+
+    const startActivityTracking = () => {
+      if (idleCheckIntervalId) return;
+
+      for (const eventName of activityEvents) {
+        window.addEventListener(eventName, markActivity, { passive: true });
+      }
+
+      document.addEventListener("visibilitychange", checkIdleExpiry);
+      window.addEventListener("focus", checkIdleExpiry);
+
+      idleCheckIntervalId = setInterval(checkIdleExpiry, IDLE_CHECK_INTERVAL_MS);
+    };
+
+    const stopActivityTracking = () => {
+      for (const eventName of activityEvents) {
+        window.removeEventListener(eventName, markActivity);
+      }
+
+      document.removeEventListener("visibilitychange", checkIdleExpiry);
+      window.removeEventListener("focus", checkIdleExpiry);
+
+      if (!idleCheckIntervalId) return;
+
+      clearInterval(idleCheckIntervalId);
+      idleCheckIntervalId = null;
+    };
+
     const performIdleLogout = async () => {
       const {
         data: { user },
@@ -51,8 +80,7 @@ export const useAdminIdleLogout = () => {
 
       if (error || !user) return;
 
-      const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
-      if (!isAdminRole(roleValue)) return;
+      if (!hasAdminRoleFromMetadata(user.app_metadata)) return;
 
       const { error: signOutError } = await supabase.auth.signOut();
       if (signOutError) {
@@ -99,57 +127,42 @@ export const useAdminIdleLogout = () => {
       if (error || !user) {
         hasAdminSession = false;
         clearIdleTracking();
+        stopActivityTracking();
         return;
       }
 
-      const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
-      hasAdminSession = isAdminRole(roleValue);
+      hasAdminSession = hasAdminRoleFromMetadata(user.app_metadata);
 
       if (!hasAdminSession) {
         clearIdleTracking();
+        stopActivityTracking();
         return;
       }
 
+      startActivityTracking();
       markActivity();
     };
-
-    const activityEvents = ["mousemove", "keydown", "pointerdown", "scroll"] as const;
-    for (const eventName of activityEvents) {
-      window.addEventListener(eventName, markActivity, { passive: true });
-    }
-
-    document.addEventListener("visibilitychange", checkIdleExpiry);
-    window.addEventListener("focus", checkIdleExpiry);
-
-    idleCheckIntervalId = setInterval(checkIdleExpiry, IDLE_CHECK_INTERVAL_MS);
 
     void refreshAdminSessionState();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      const roleValue = session?.user?.app_metadata?.role ?? session?.user?.app_metadata?.roles;
-      hasAdminSession = !!session?.user && isAdminRole(roleValue);
+      hasAdminSession = !!session?.user && hasAdminRoleFromMetadata(session.user.app_metadata);
 
       if (!hasAdminSession) {
         clearIdleTracking();
+        stopActivityTracking();
         return;
       }
 
+      startActivityTracking();
       markActivity();
     });
 
     return () => {
       clearIdleTracking();
-
-      for (const eventName of activityEvents) {
-        window.removeEventListener(eventName, markActivity);
-      }
-
-      document.removeEventListener("visibilitychange", checkIdleExpiry);
-      window.removeEventListener("focus", checkIdleExpiry);
-
-      if (idleCheckIntervalId) clearInterval(idleCheckIntervalId);
+      stopActivityTracking();
 
       subscription.unsubscribe();
     };

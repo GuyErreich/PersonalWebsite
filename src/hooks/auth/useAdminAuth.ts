@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { isAdminRole } from "../../lib/auth/roles";
+import { hasAdminRoleFromMetadata } from "../../lib/auth/roles";
 import { supabase } from "../../lib/supabase";
 
 interface UseAdminAuthResult {
@@ -36,8 +36,7 @@ export const useAdminAuth = (): UseAdminAuthResult => {
           return;
         }
 
-        const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
-        if (!isAdminRole(roleValue)) {
+        if (!hasAdminRoleFromMetadata(user.app_metadata)) {
           const { error: signOutError } = await supabase.auth.signOut();
           if (signOutError) {
             console.error(signOutError.message);
@@ -65,8 +64,7 @@ export const useAdminAuth = (): UseAdminAuthResult => {
         return;
       }
 
-      const roleValue = session.user.app_metadata?.role ?? session.user.app_metadata?.roles;
-      if (!isAdminRole(roleValue)) {
+      if (!hasAdminRoleFromMetadata(session.user.app_metadata)) {
         navigate("/");
       }
     });

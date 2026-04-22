@@ -102,8 +102,6 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       onStep: (nextVolume) => {
         setSliderVolume(nextVolume);
         setIsMuted(false);
-        if (!videoRef.current) return;
-        videoRef.current.volume = nextVolume / 100;
       },
     });
 
