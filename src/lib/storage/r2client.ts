@@ -95,7 +95,12 @@ export const uploadToR2 = async (
       "Content-Type": "application/json",
       Authorization: `Bearer ${session.access_token}`,
     },
-    body: JSON.stringify({ contentType: file.type, fileExt, folderPath }),
+    body: JSON.stringify({
+      contentType: file.type,
+      contentLength: file.size,
+      fileExt,
+      folderPath,
+    }),
   });
 
   if (!presignRes.ok) {

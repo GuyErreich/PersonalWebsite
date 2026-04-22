@@ -7,7 +7,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import Cookies from "js-cookie";
 import { Maximize2, Minimize2, Pause, Play, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type FocusEvent, type PointerEvent, useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import {
   createSteppedSliderAnimator,
@@ -121,14 +121,16 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       if (!Number.isNaN(v) && v >= 0 && v <= 100) {
         setSliderVolume(v);
         volumeAnimatorRef.current?.setImmediate(v);
-        // Apply to video if already playing
-        applyVolumeToGraph(v, isMuted);
       }
     })();
     return () => {
       isMounted = false;
     };
-  }, [isMuted]);
+  }, []);
+
+  useEffect(() => {
+    applyVolumeToGraph(sliderVolume, isMuted);
+  }, [sliderVolume, isMuted]);
 
   // Cleanup hide timer on unmount
   useEffect(() => {
@@ -202,6 +204,34 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     setIsVolumePopupOpen(true);
 
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+  };
+
+  const handleVolumeFocus = () => {
+    if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
+
+    setShowControls(true);
+    setIsVolumePopupOpen(true);
+
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+  };
+
+  const handleVolumeBlur = (e: FocusEvent<HTMLDivElement>) => {
+    const nextFocus = e.relatedTarget;
+    if (nextFocus instanceof Node && volumePopupRef.current?.contains(nextFocus)) {
+      return;
+    }
+
+    setIsVolumePopupOpen(false);
+
+    if (isTouchDevice) return;
+
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => setShowControls(false), 2500);
+  };
+
+  const handleVolumePointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") return;
+    handleVolumeEnter();
   };
 
   const handleVolumeLeave = () => {
@@ -454,6 +484,9 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   aria-label="Volume control"
                   onMouseEnter={handleVolumeEnter}
                   onMouseLeave={handleVolumeLeave}
+                  onFocusCapture={handleVolumeFocus}
+                  onBlurCapture={handleVolumeBlur}
+                  onPointerDown={handleVolumePointerDown}
                 >
                   <button
                     type="button"

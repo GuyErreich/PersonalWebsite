@@ -53,7 +53,12 @@ export const useAdminIdleLogout = () => {
       const roleValue = user.app_metadata?.role ?? user.app_metadata?.roles;
       if (!isAdminRole(roleValue)) return;
 
-      await supabase.auth.signOut();
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        console.error(signOutError.message);
+        idleDeadlineRef.current = Date.now() + ADMIN_IDLE_TIMEOUT_MS;
+        scheduleIdleLogout();
+      }
     };
 
     const checkIdleExpiry = () => {

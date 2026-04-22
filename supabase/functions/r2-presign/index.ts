@@ -35,11 +35,10 @@ const ALLOWED_ORIGINS = new Set(
 // UPLOAD POLICY DUPLICATION NOTICE:
 // This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:
 // - mimeTypeExtensions (MIME type → allowed file extensions mapping)
+// - maxBytes
 //
-// NOTE: maxBytes is NOT enforced server-side — size validation is handled entirely on the client.
-// The client-side policy includes maxBytes to prevent oversized uploads before making the request.
 // Edge Functions cannot import client TypeScript modules, so FOLDER_POLICIES must stay in sync
-// with the client's mimeTypeExtensions (but NOT maxBytes).
+// with the client-side upload policies.
 //
 // **Critical:** Keep mimeTypeExtensions in sync with the client-side R2_UPLOAD_POLICIES constant.
 // If they diverge, uploads will fail in confusing ways:
@@ -55,6 +54,7 @@ const FOLDER_POLICIES: Record<
   string,
   {
     mimeTypeExtensions: Record<string, readonly string[]>;
+    maxBytes: number;
   }
 > = {
   media: {
@@ -69,6 +69,7 @@ const FOLDER_POLICIES: Record<
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
+    maxBytes: 100 * 1024 * 1024,
   },
   "hero-showreel": {
     mimeTypeExtensions: {
@@ -77,6 +78,7 @@ const FOLDER_POLICIES: Record<
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
+    maxBytes: 200 * 1024 * 1024,
   },
   "gamedev-assets": {
     mimeTypeExtensions: {
@@ -90,6 +92,7 @@ const FOLDER_POLICIES: Record<
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
+    maxBytes: 100 * 1024 * 1024,
   },
   "gamedev-thumbnails": {
     mimeTypeExtensions: {
@@ -99,6 +102,7 @@ const FOLDER_POLICIES: Record<
       "image/gif": ["gif"],
       "image/avif": ["avif"],
     },
+    maxBytes: 5 * 1024 * 1024,
   },
 };
 
@@ -187,17 +191,22 @@ Deno.serve(async (req: Request) => {
       typeof body !== "object" ||
       body === null ||
       typeof bodyRecord.contentType !== "string" ||
+      typeof bodyRecord.contentLength !== "number" ||
       (bodyRecord.fileExt !== undefined && typeof bodyRecord.fileExt !== "string") ||
       (bodyRecord.folderPath !== undefined && typeof bodyRecord.folderPath !== "string")
     ) {
       return json(
-        { error: "contentType must be a string; fileExt/folderPath must be strings when provided" },
+        {
+          error:
+            "contentType must be a string; contentLength must be a number; fileExt/folderPath must be strings when provided",
+        },
         400,
       );
     }
 
-    const { contentType, fileExt, folderPath } = bodyRecord as {
+    const { contentType, contentLength, fileExt, folderPath } = bodyRecord as {
       contentType: string;
+      contentLength: number;
       fileExt?: string;
       folderPath?: string;
     };
@@ -220,6 +229,10 @@ Deno.serve(async (req: Request) => {
     const extNoDot = safeExt.toLowerCase();
     const normalizedContentType = contentType.trim().toLowerCase();
     const policy = FOLDER_POLICIES[folder];
+
+    if (!Number.isFinite(contentLength) || contentLength <= 0 || contentLength > policy.maxBytes) {
+      return json({ error: "File is empty or exceeds allowed size for this upload target" }, 400);
+    }
 
     // Validate MIME type and ensure extension is allowed for that specific MIME type
     if (!Object.hasOwn(policy.mimeTypeExtensions, normalizedContentType)) {
@@ -257,6 +270,7 @@ Deno.serve(async (req: Request) => {
       Bucket: bucket,
       Key: key,
       ContentType: normalizedContentType,
+      ContentLength: contentLength,
     });
 
     // Presigned URL valid for 15 minutes — enough for a video upload
