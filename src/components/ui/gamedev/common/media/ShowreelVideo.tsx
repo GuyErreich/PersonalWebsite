@@ -11,6 +11,7 @@ import {
   type CSSProperties,
   type FocusEvent,
   type PointerEvent,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -133,9 +134,16 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     };
   }, []);
 
+  // Apply volume in native browser range 0-100.
+  const applyVolumeToGraph = useCallback((sliderVal: number, muted: boolean) => {
+    if (!videoRef.current) return;
+
+    videoRef.current.volume = muted ? 0 : Math.max(0, Math.min(sliderVal, 100)) / 100;
+  }, []);
+
   useEffect(() => {
     applyVolumeToGraph(sliderVolume, isMuted);
-  }, [sliderVolume, isMuted]);
+  }, [sliderVolume, isMuted, applyVolumeToGraph]);
 
   // Cleanup hide timer on unmount
   useEffect(() => {
@@ -152,13 +160,6 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
   }, []);
-
-  // Apply volume in native browser range 0-100.
-  const applyVolumeToGraph = (sliderVal: number, muted: boolean) => {
-    if (!videoRef.current) return;
-
-    videoRef.current.volume = muted ? 0 : Math.max(0, Math.min(sliderVal, 100)) / 100;
-  };
 
   const scheduleHide = () => {
     if (isTouchDevice || isVolumePopupOpen) return;
