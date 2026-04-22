@@ -444,11 +444,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                 className={`showreel-controls ${showControls ? "opacity-100" : "opacity-0 pointer-events-none"}`}
               >
                 {/* Play / Pause */}
-                <button
+                <motion.button
                   type="button"
                   aria-label={isPaused ? "Play" : "Pause"}
                   onClick={handlePlayPause}
                   onMouseEnter={playHoverSound}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className="showreel-ctrl-btn"
                 >
                   {isPaused ? (
@@ -456,7 +458,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   ) : (
                     <Pause className="w-4 h-4 text-cyan-300" fill="currentColor" />
                   )}
-                </button>
+                </motion.button>
 
                 {/* Seek bar */}
                 <input
@@ -488,13 +490,15 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   onBlurCapture={handleVolumeBlur}
                   onPointerDown={handleVolumePointerDown}
                 >
-                  <button
+                  <motion.button
                     type="button"
                     aria-label={isMuted ? "Unmute" : "Mute"}
                     aria-expanded={isVolumePopupOpen}
                     aria-controls="showreel-volume-popup"
                     onClick={handleVolumeMute}
                     onMouseEnter={playHoverSound}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     className="showreel-ctrl-btn"
                   >
                     {isMuted || sliderVolume === 0 ? (
@@ -502,7 +506,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                     ) : (
                       <Volume2 className="w-4 h-4 text-cyan-300" />
                     )}
-                  </button>
+                  </motion.button>
 
                   {isVolumePopupOpen && (
                     <div id="showreel-volume-popup" className="showreel-volume-popup">
@@ -526,11 +530,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                 </div>
 
                 {/* Fullscreen toggle */}
-                <button
+                <motion.button
                   type="button"
                   aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                   onClick={handleFullscreen}
                   onMouseEnter={playHoverSound}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                   className="showreel-ctrl-btn"
                 >
                   {isFullscreen ? (
@@ -538,7 +544,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   ) : (
                     <Maximize2 className="w-4 h-4 text-cyan-300" />
                   )}
-                </button>
+                </motion.button>
               </div>
             )}
           </>

@@ -119,14 +119,34 @@ git push
 
 For threads that describe **valid concerns but intentionally not fixed** (e.g., out of scope, working as designed, or deferred to future work):
 
-1. Leave a comment on the thread explaining why the issue was not addressed.
+1. Leave a **reply on the same review thread** (sub-comment), not a top-level PR comment.
 2. Include clear reasoning: "This is intentional because…", "Deferring to follow-up PR…", "Not applicable because…", etc.
 3. Use the comment URL from the thread to post your reply via GitHub CLI or UI.
 
+### Posting a thread reply (sub-comment)
+
+Use the review comment's numeric ID (`databaseId`) and reply directly to it.
+
+Example (MCP):
+```json
+{
+  "owner": "OWNER",
+  "repo": "REPO",
+  "pullNumber": PR_NUMBER,
+  "commentId": COMMENT_DATABASE_ID,
+  "body": "This is intentional because ..."
+}
+```
+
+Example (GraphQL via gh):
+```bash
+GH_PAGER=cat gh api graphql --raw-field query='mutation($id:ID!,$body:String!){addPullRequestReviewComment(input:{inReplyTo:$id,body:$body}){comment{id}}}' --raw-field id="REVIEW_COMMENT_NODE_ID" --raw-field body="This is intentional because ..."
+```
+
 Example (via CLI):
 ```bash
-# Post a reply to a specific comment on the PR
-GH_PAGER=cat gh pr comment 29 -b "Re: [line X]: This behavior is intentional because we're treating this as a single-admin internal tool. Multi-user auth complexity is unnecessary for this use case."
+# Reply in-thread to a specific review comment on the PR (via MCP helper)
+# mcp_io_github_git_add_reply_to_pull_request_comment with commentId=<databaseId>
 ```
 
 Then resolve the thread normally (Step 5) after posting the explanation.

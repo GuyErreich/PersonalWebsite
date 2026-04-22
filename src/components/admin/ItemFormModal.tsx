@@ -62,6 +62,7 @@ const THUMBNAIL_ACCEPT = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevThumbnai
 
 const MAX_MEDIA_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].maxBytes;
 const MAX_THUMBNAIL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevThumbnails].maxBytes;
+const MAX_MEDIA_SIZE_MB = Math.round(MAX_MEDIA_SIZE_BYTES / (1024 * 1024));
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 2000;
 const MAX_STACK_LENGTH = 40;
@@ -349,7 +350,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                             return;
                           }
                           if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
-                            setError("Media file is empty or exceeds 100MB.");
+                            setError(`Media file is empty or exceeds ${MAX_MEDIA_SIZE_MB}MB.`);
                             setMediaFile(null);
                             input.value = "";
                             return;
