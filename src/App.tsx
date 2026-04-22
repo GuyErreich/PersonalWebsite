@@ -6,6 +6,7 @@
 
 import { lazy, Suspense } from "react";
 import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { useAdminIdleLogout } from "./hooks/auth/useAdminIdleLogout";
 import { Home } from "./pages/Home";
 
 const Login = lazy(async () => {
@@ -20,6 +21,8 @@ const Admin = lazy(async () => {
 });
 
 function App() {
+  useAdminIdleLogout();
+
   const routeFallback = <div className="min-h-screen bg-gray-900" />;
 
   return (
