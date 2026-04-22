@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Custom Hooks (`src/hooks/`)
 
 Reusable React hooks organized by domain. Each hook encapsulates state management, effects, and lifecycle logic for a specific feature or behavior.

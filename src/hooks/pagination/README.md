@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Section Paging Hook (`useSectionPager`)
 
 A complete scroll paging system for single-page apps with smooth section-to-section transitions. Handles wheel, touch, and keyboard input with adaptive behavior for different device capabilities.

@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Styles Folder Agent Notes
 
 Use this folder for shared CSS organized by responsibility.

@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Library (`src/lib/`)
 
 Utilities, contexts, and external service clients. This folder contains no React components — only reusable logic and configuration.

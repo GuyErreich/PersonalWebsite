@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Section Pager Utilities
 
 Low-level utilities for section-based scroll paging behavior. This module is split into focused, single-responsibility files for maintainability and testability.

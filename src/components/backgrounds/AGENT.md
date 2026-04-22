@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Backgrounds Folder Agent Notes
 
 Use this folder for reusable visual background systems, including Three.js and particle-based scene layers.

@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # UI Folder Agent Notes
 
 Use this folder for shared UI primitives and feature-level UI composition.
