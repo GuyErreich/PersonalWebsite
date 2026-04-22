@@ -213,7 +213,11 @@ export const ShowreelManager = () => {
                 }
 
                 if (file.size <= 0 || file.size > MAX_SHOWREEL_SIZE_BYTES) {
-                  setMessage({ type: "error", text: "Showreel file is empty or exceeds 200MB." });
+                  const maxMB = Math.round(MAX_SHOWREEL_SIZE_BYTES / (1024 * 1024));
+                  setMessage({
+                    type: "error",
+                    text: `Showreel file is empty or exceeds ${maxMB}MB.`,
+                  });
                   setVideoFile(null);
                   input.value = "";
                   return;

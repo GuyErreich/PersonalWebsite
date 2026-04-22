@@ -47,7 +47,7 @@ const assertAllowedUpload = (file: File, folderPath: R2UploadFolder): string => 
   const policy = R2_UPLOAD_POLICIES[folderPath];
   const mimeType = file.type.trim().toLowerCase();
 
-  if (!(mimeType in policy.mimeTypeExtensions)) {
+  if (!Object.hasOwn(policy.mimeTypeExtensions, mimeType)) {
     throw new Error("File type is not allowed for this upload target.");
   }
 

@@ -35,10 +35,13 @@ const ALLOWED_ORIGINS = new Set(
 // UPLOAD POLICY DUPLICATION NOTICE:
 // This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:
 // - mimeTypeExtensions (MIME type → allowed file extensions mapping)
-// - maxBytes
-// Edge Functions cannot import client TypeScript modules, so we must maintain copies separately.
 //
-// **Critical:** Keep this object in sync with the client-side R2_UPLOAD_POLICIES constant.
+// NOTE: maxBytes is NOT enforced server-side — size validation is handled entirely on the client.
+// The client-side policy includes maxBytes to prevent oversized uploads before making the request.
+// Edge Functions cannot import client TypeScript modules, so FOLDER_POLICIES must stay in sync
+// with the client's mimeTypeExtensions (but NOT maxBytes).
+//
+// **Critical:** Keep mimeTypeExtensions in sync with the client-side R2_UPLOAD_POLICIES constant.
 // If they diverge, uploads will fail in confusing ways:
 //   - Client accepts a file → server rejects with 400 "not allowed"
 //   - Or vice-versa → security issue
@@ -219,7 +222,7 @@ Deno.serve(async (req: Request) => {
     const policy = FOLDER_POLICIES[folder];
 
     // Validate MIME type and ensure extension is allowed for that specific MIME type
-    if (!(normalizedContentType in policy.mimeTypeExtensions)) {
+    if (!Object.hasOwn(policy.mimeTypeExtensions, normalizedContentType)) {
       return json({ error: "File type not allowed" }, 400);
     }
     const allowedExtsForMime = policy.mimeTypeExtensions[normalizedContentType] ?? [];

@@ -121,12 +121,14 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       if (!Number.isNaN(v) && v >= 0 && v <= 100) {
         setSliderVolume(v);
         volumeAnimatorRef.current?.setImmediate(v);
+        // Apply to video if already playing
+        applyVolumeToGraph(v, isMuted);
       }
     })();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [isMuted]);
 
   // Cleanup hide timer on unmount
   useEffect(() => {
@@ -172,6 +174,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handlePlayPause = () => {
+    playClickSound();
     if (!videoRef.current) return;
     if (videoRef.current.paused) {
       void videoRef.current.play().catch(() => {}); // intentional
@@ -226,6 +229,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handleFullscreen = () => {
+    playClickSound();
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
       void containerRef.current.requestFullscreen().catch(() => {}); // intentional
