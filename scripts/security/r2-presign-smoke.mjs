@@ -185,7 +185,7 @@ const run = async () => {
     const { userId: adminUserId, accessToken: adminJwt } = await createUserAndToken({
       email: adminEmail,
       password: adminPassword,
-      appMetadata: { role: "admin" },
+      appMetadata: { roles: ["admin"] },
     });
     createdUserIds.push(adminUserId);
 
