@@ -6,8 +6,8 @@
 
 /**
  * Check if a role value indicates admin access.
- * Supports both singular `role: "admin"` and array `roles: ["admin", ...]` formats.
- * @param roleValue - The role metadata value (string, array, or unknown)
+ * Supports roles values as either a string ("admin") or an array containing "admin".
+ * @param roleValue - The roles metadata value (string, array, or unknown)
  * @returns true if the role indicates admin access
  */
 export const isAdminRole = (roleValue: unknown): boolean => {

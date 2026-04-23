@@ -164,7 +164,7 @@ supabase secrets set R2_PUBLIC_URL=<your-r2-public-url>
 supabase secrets set ALLOWED_ORIGINS=<comma-separated-allowed-origins>
 ```
 
-Admin authorization for `r2-presign` is based on Supabase Auth metadata (`app_metadata.role = "admin"`), not an email allowlist secret.
+Admin authorization for `r2-presign` is based on Supabase Auth metadata (`app_metadata.roles` contains `"admin"`), not an email allowlist secret.
 
 Deploy the edge function after setting secrets:
 
