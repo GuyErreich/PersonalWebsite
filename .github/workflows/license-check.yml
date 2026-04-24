@@ -2,32 +2,9 @@ name: License Header Check
 
 on:
   push:
-    branches: ["dev"]
-  pull_request:
-    branches: ["dev"]
 
 jobs:
-  license-check-pr:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Fix license headers
-        uses: apache/skywalking-eyes@v0.8.0
-        with:
-          config: .licenserc.yaml
-          mode: check
-
   license-fix:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
