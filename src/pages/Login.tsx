@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { hasAdminRoleFromMetadata } from "../lib/auth/roles";
 import { supabase } from "../lib/supabase";
 
 export const Login = () => {
@@ -19,13 +20,28 @@ export const Login = () => {
     void (async () => {
       try {
         const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
-          navigate("/management");
+          data: { user },
+          error: authError,
+        } = await supabase.auth.getUser();
+
+        if (authError || !user) {
+          return;
         }
+
+        if (hasAdminRoleFromMetadata(user.app_metadata)) {
+          navigate("/management");
+          return;
+        }
+
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          setError(signOutError.message);
+          return;
+        }
+
+        setError("Admin access is required.");
       } catch {
-        // intentional — network failure on session check; user stays on login page
+        setError("Unable to validate your session. Please try signing in again.");
       }
     })();
   }, [navigate]);
@@ -35,7 +51,7 @@ export const Login = () => {
     setLoading(true);
     setError(null);
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -43,6 +59,19 @@ export const Login = () => {
     if (error) {
       setError(error.message);
     } else {
+      if (!hasAdminRoleFromMetadata(authData.user?.app_metadata)) {
+        const { error: signOutError } = await supabase.auth.signOut();
+        if (signOutError) {
+          setError(signOutError.message);
+          setLoading(false);
+          return;
+        }
+
+        setError("Admin access is required.");
+        setLoading(false);
+        return;
+      }
+
       navigate("/management");
     }
     setLoading(false);

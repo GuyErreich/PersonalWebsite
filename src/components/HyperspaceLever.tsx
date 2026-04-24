@@ -127,11 +127,13 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
 
   const maxPull = 140; // Total track height minus handle height
 
-  dragY.onChange((y) => {
-    const pullAmount = Math.max(0, Math.min(y, maxPull));
-    const normalized = pullAmount / maxPull;
-    setEnergy(normalized);
-  });
+  useEffect(() => {
+    return dragY.on("change", (y) => {
+      const pullAmount = Math.max(0, Math.min(y, maxPull));
+      const normalized = pullAmount / maxPull;
+      setEnergy(normalized);
+    });
+  }, [dragY, maxPull]);
 
   const handleDragEnd = () => {
     if (energy > 0.85) {

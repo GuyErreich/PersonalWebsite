@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { motion } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import type { ReactNode } from "react";
 import { useScrollReveal } from "../../../../hooks/useScrollReveal";
+import { useScrollContainer } from "../../../../lib/ScrollContainerContext";
 
 interface SectionWrapperProps {
   id: string;
@@ -15,6 +16,7 @@ interface SectionWrapperProps {
   children: ReactNode;
   background?: ReactNode;
   bottomFadeClassName?: string;
+  backgroundInViewOnly?: boolean;
 }
 
 export const SectionWrapper = ({
@@ -24,12 +26,18 @@ export const SectionWrapper = ({
   children,
   background,
   bottomFadeClassName = "",
+  backgroundInViewOnly = false,
 }: SectionWrapperProps) => {
   const { ref, motionStyle } = useScrollReveal();
+  const container = useScrollContainer();
+  const shouldRenderBackground = useInView(ref, {
+    root: container ?? undefined,
+    margin: "30% 0px 30% 0px",
+  });
 
   return (
     <section id={id} ref={ref} className={`snap-section overflow-hidden relative ${className}`}>
-      {background && (
+      {background && (!backgroundInViewOnly || shouldRenderBackground) && (
         <div className="absolute inset-0 z-0 h-full w-full pointer-events-none">{background}</div>
       )}
       {/* Top fade — echoes GameDev emerald trailing into the DevOps world */}

@@ -13,10 +13,21 @@ export const ImplosionDust = ({ count = 600 }: { count?: number }) => {
   const orchestrator = useOrchestrator();
   const proxy = orchestrator.getProxy("dust");
   const dustRef = useRef<THREE.Points>(null);
+  const respawnCursorRef = useRef(0);
+  const lastVisibleRef = useRef(false);
+  const lastScaleRef = useRef(-1);
+  const lastOpacityRef = useRef(-1);
+  const lastIntensityRef = useRef(-1);
+  const lastAbsorptionRef = useRef(-1);
+  const lastSizeRef = useRef(-1);
 
-  const { dustPositions, dustSpeeds } = useMemo(() => {
+  const { dustPositions, dustSpeeds, respawnX, respawnY, respawnZ } = useMemo(() => {
     const positions = new Float32Array(count * 3);
     const speeds = new Float32Array(count);
+    const nextRespawnX = new Float32Array(count);
+    const nextRespawnY = new Float32Array(count);
+    const nextRespawnZ = new Float32Array(count);
+
     for (let i = 0; i < count; i++) {
       const r = 4 + Math.random() * 8;
       const theta = Math.random() * Math.PI * 2;
@@ -24,8 +35,21 @@ export const ImplosionDust = ({ count = 600 }: { count?: number }) => {
       positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
       positions[i * 3 + 2] = r * Math.sin(theta);
       speeds[i] = 1.0 + Math.random() * 2.0;
+
+      const respawnRadius = 8 + Math.random() * 4;
+      const respawnTheta = Math.random() * Math.PI * 2;
+      nextRespawnX[i] = respawnRadius * Math.cos(respawnTheta);
+      nextRespawnY[i] = (Math.random() - 0.5) * 0.8;
+      nextRespawnZ[i] = respawnRadius * Math.sin(respawnTheta);
     }
-    return { dustPositions: positions, dustSpeeds: speeds };
+
+    return {
+      dustPositions: positions,
+      dustSpeeds: speeds,
+      respawnX: nextRespawnX,
+      respawnY: nextRespawnY,
+      respawnZ: nextRespawnZ,
+    };
   }, [count]);
 
   const dustUniforms = useMemo(
@@ -74,73 +98,102 @@ export const ImplosionDust = ({ count = 600 }: { count?: number }) => {
   useFrame(() => {
     if (!dustRef.current) return;
 
-    if (proxy.progress === 0 && proxy.activeT === 0) {
-      dustRef.current.visible = false;
+    const shouldBeVisible = !(proxy.progress === 0 && proxy.activeT === 0);
+
+    if (lastVisibleRef.current !== shouldBeVisible) {
+      dustRef.current.visible = shouldBeVisible;
+      lastVisibleRef.current = shouldBeVisible;
+    }
+
+    if (!shouldBeVisible) {
       return;
-    } else {
-      dustRef.current.visible = true;
     }
 
     const progress = proxy.progress;
-
     const positions = dustRef.current.geometry.attributes.position.array as Float32Array;
-    for (let i = 0; i < dustPositions.length / 3; i++) {
+    const positionCount = dustPositions.length / 3;
+    const deltaTime = 0.016;
+    const condenseFactor =
+      progress > 0.7 ? Math.min(2.2, 1.0 + ((progress - 0.7) / 0.3) ** 2.0 * 4.0) : 1.0;
+    const swarmBoost = progress > 0.7 ? 1.0 + ((progress - 0.7) / 0.3) ** 1.5 * 2.5 : 1.0;
+    const respawnAllowed = progress <= 0.85;
+
+    for (let i = 0; i < positionCount; i++) {
       const x = positions[i * 3];
       const y = positions[i * 3 + 1];
       const z = positions[i * 3 + 2];
-      const dist = Math.sqrt(x * x + y * y + z * z);
+      const distSq = x * x + y * y + z * z;
 
-      if (dist < 0.05) {
-        if (progress <= 0.85) {
-          const r = 8 + Math.random() * 4;
-          const theta = Math.random() * Math.PI * 2;
-          positions[i * 3] = r * Math.cos(theta);
-          positions[i * 3 + 1] = (Math.random() - 0.5) * 0.8;
-          positions[i * 3 + 2] = r * Math.sin(theta);
+      if (distSq < 0.0025) {
+        if (respawnAllowed) {
+          const respawnIndex = respawnCursorRef.current % count;
+          positions[i * 3] = respawnX[respawnIndex];
+          positions[i * 3 + 1] = respawnY[respawnIndex];
+          positions[i * 3 + 2] = respawnZ[respawnIndex];
+          respawnCursorRef.current++;
         } else {
-          // Park to center
           positions[i * 3] = 0;
           positions[i * 3 + 1] = 0;
           positions[i * 3 + 2] = 0;
         }
       } else {
-        const condenseFactor =
-          progress > 0.7 ? Math.min(2.2, 1.0 + ((progress - 0.7) / 0.3) ** 2.0 * 4.0) : 1.0;
-
+        const dist = Math.sqrt(distSq);
         const speed = dustSpeeds[i] * 4.0 * condenseFactor;
-        positions[i * 3] -= (x / dist) * speed * 0.016;
-        positions[i * 3 + 1] -= (y / dist) * speed * 0.016;
-        positions[i * 3 + 2] -= (z / dist) * speed * 0.016;
+        const inverseDist = 1 / dist;
+        positions[i * 3] -= x * inverseDist * speed * deltaTime;
+        positions[i * 3 + 1] -= y * inverseDist * speed * deltaTime;
+        positions[i * 3 + 2] -= z * inverseDist * speed * deltaTime;
 
-        const swarmBoost = progress > 0.7 ? 1.0 + ((progress - 0.7) / 0.3) ** 1.5 * 2.5 : 1.0;
         const spinSpeed = (3.0 / (dist + 0.1)) * swarmBoost;
+        const spinAngle = spinSpeed * deltaTime;
+        const cosSpin = Math.cos(spinAngle);
+        const sinSpin = Math.sin(spinAngle);
         const oldX = positions[i * 3];
         const oldZ = positions[i * 3 + 2];
-        positions[i * 3] = oldX * Math.cos(spinSpeed * 0.016) - oldZ * Math.sin(spinSpeed * 0.016);
-        positions[i * 3 + 2] =
-          oldX * Math.sin(spinSpeed * 0.016) + oldZ * Math.cos(spinSpeed * 0.016);
+        positions[i * 3] = oldX * cosSpin - oldZ * sinSpin;
+        positions[i * 3 + 2] = oldX * sinSpin + oldZ * cosSpin;
       }
     }
     dustRef.current.geometry.attributes.position.needsUpdate = true;
 
-    // Final strict mathematical bounds replacing old physics leaps and opacity hacks
     const collapseScale = progress > 0.85 ? Math.max(0, 1.0 - (progress - 0.85) / 0.15) : 1.0;
-    dustRef.current.scale.set(collapseScale, collapseScale, collapseScale);
+    if (Math.abs(lastScaleRef.current - collapseScale) > 0.0001) {
+      dustRef.current.scale.setScalar(collapseScale);
+      lastScaleRef.current = collapseScale;
+    }
 
     const mat = dustRef.current.material as THREE.ShaderMaterial;
 
     const absorptionProgress = progress > 0.7 ? Math.min(1.0, (progress - 0.7) / 0.15) : 0.0;
+    const nextOpacity = Math.min(1.0, progress * 4.0) * 0.7;
 
-    mat.uniforms.uOpacity.value = Math.min(1.0, progress * 4.0) * 0.7;
     const prePeakGlow =
       progress > 0.65 && progress < 0.75
         ? Math.sin(((progress - 0.65) / 0.1) * Math.PI) * 4.0
         : 0.0;
-    mat.uniforms.uIntensity.value = 1.0 + prePeakGlow;
-    mat.uniforms.uAbsorption.value = absorptionProgress ** 1.5;
+    const nextIntensity = 1.0 + prePeakGlow;
+    const nextAbsorption = absorptionProgress ** 1.5;
+    const nextSize = 0.8 * collapseScale;
 
-    // Shrink particle core sizes precisely to zero so origin 0,0,0 coordinate blobs disappear structurally
-    mat.uniforms.uSize.value = 0.8 * collapseScale;
+    if (Math.abs(lastOpacityRef.current - nextOpacity) > 0.0001) {
+      mat.uniforms.uOpacity.value = nextOpacity;
+      lastOpacityRef.current = nextOpacity;
+    }
+
+    if (Math.abs(lastIntensityRef.current - nextIntensity) > 0.0001) {
+      mat.uniforms.uIntensity.value = nextIntensity;
+      lastIntensityRef.current = nextIntensity;
+    }
+
+    if (Math.abs(lastAbsorptionRef.current - nextAbsorption) > 0.0001) {
+      mat.uniforms.uAbsorption.value = nextAbsorption;
+      lastAbsorptionRef.current = nextAbsorption;
+    }
+
+    if (Math.abs(lastSizeRef.current - nextSize) > 0.0001) {
+      mat.uniforms.uSize.value = nextSize;
+      lastSizeRef.current = nextSize;
+    }
   });
 
   return (

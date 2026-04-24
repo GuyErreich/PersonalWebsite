@@ -67,7 +67,6 @@
   .card-responsive-wrapper {
     @apply relative z-10 w-[92%] sm:w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mb-[6%];
     max-height: calc(100svh - var(--nav-h) - var(--section-content-gap));
-    overflow: hidden;
   }
 
   .glass-card-body {
@@ -130,6 +129,9 @@
   /* Shared base for every IrisTransition layer div */
   .iris-layer {
     @apply absolute inset-0 pointer-events-none;
+    contain: paint;
+    transform: translateZ(0);
+    will-change: opacity, transform;
   }
 
   /* Base for all full-screen entrance overlay panels */

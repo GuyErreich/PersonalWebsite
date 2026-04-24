@@ -18,7 +18,9 @@
  * is correctly sized even before the first paint.
  */
 
+import { useInView } from "framer-motion";
 import { useEffect, useRef } from "react";
+import { useScrollContainer } from "../../../lib/ScrollContainerContext";
 import { buildGlProgram, hexToVec3 } from "../../../lib/webgl";
 
 interface NebulaEdgeProps {
@@ -264,8 +266,15 @@ export const NebulaEdge = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
+  const container = useScrollContainer();
+  const shouldRenderWebgl = useInView(wrapperRef, {
+    root: container ?? undefined,
+    margin: "30% 0px 30% 0px",
+  });
 
   useEffect(() => {
+    if (!shouldRenderWebgl) return;
+
     const canvas = canvasRef.current;
     const wrapper = wrapperRef.current;
     if (!canvas || !wrapper) return;
@@ -336,7 +345,7 @@ export const NebulaEdge = ({
       gl.deleteBuffer(buf);
       gl.deleteProgram(prog);
     };
-  }, [fillColor, waveAmp, waveFreq, stormAmp, stormFreq]);
+  }, [fillColor, waveAmp, waveFreq, stormAmp, stormFreq, shouldRenderWebgl]);
 
   const posClass = inverted ? "top-0 scale-y-[-1]" : "bottom-0";
 

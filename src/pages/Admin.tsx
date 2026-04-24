@@ -5,72 +5,16 @@
  */
 
 import { LogOut, Plus } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { DevOpsTechStackManager } from "../components/admin/DevOpsTechStackManager";
 import { ItemFormModal } from "../components/admin/ItemFormModal";
 import { ShowreelManager } from "../components/admin/ShowreelManager";
-import { supabase } from "../lib/supabase";
-
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 5 minutes
+import { useAdminAuth } from "../hooks/auth/useAdminAuth";
 
 export const Admin = () => {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const { loading, handleLogout } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<"gamedev" | "devops">("gamedev");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-      if (error || !session) {
-        navigate("/login");
-        return;
-      }
-      setLoading(false);
-    };
-    checkUser();
-  }, [navigate]);
-
-  const handleLogout = useCallback(async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error(error instanceof Error ? error.message : String(error));
-      return;
-    }
-    navigate("/");
-  }, [navigate]);
-
-  // Auto-logout on idle and on tab close
-  useEffect(() => {
-    if (loading) return;
-
-    const resetTimer = () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      idleTimer.current = setTimeout(() => void handleLogout(), IDLE_TIMEOUT_MS);
-    };
-
-    const handlePageHide = (e: PageTransitionEvent) => {
-      // persisted=true means the page went into the bfcache (back/forward nav), not a real close
-      if (!e.persisted) void supabase.auth.signOut();
-    };
-
-    const activityEvents = ["mousemove", "keydown", "pointerdown", "scroll"] as const;
-    for (const ev of activityEvents) window.addEventListener(ev, resetTimer, { passive: true });
-    window.addEventListener("pagehide", handlePageHide);
-
-    resetTimer();
-
-    return () => {
-      if (idleTimer.current) clearTimeout(idleTimer.current);
-      for (const ev of activityEvents) window.removeEventListener(ev, resetTimer);
-      window.removeEventListener("pagehide", handlePageHide);
-    };
-  }, [loading, handleLogout]);
 
   if (loading) {
     return (

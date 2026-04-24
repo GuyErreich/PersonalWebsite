@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # Lib Folder Agent Notes
 
 Use this folder for shared logic, utilities, orchestration, API clients, contexts, and other non-visual reusable modules.

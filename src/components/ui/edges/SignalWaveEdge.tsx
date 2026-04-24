@@ -17,7 +17,9 @@
  * ResizeObserver watches the wrapper div for correct DPR-aware sizing.
  */
 
+import { useInView } from "framer-motion";
 import { useEffect, useRef } from "react";
+import { useScrollContainer } from "../../../lib/ScrollContainerContext";
 import { buildGlProgram, hexToVec3 } from "../../../lib/webgl";
 
 interface SignalWaveEdgeProps {
@@ -173,8 +175,15 @@ export const SignalWaveEdge = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>(0);
+  const container = useScrollContainer();
+  const shouldRenderWebgl = useInView(wrapperRef, {
+    root: container ?? undefined,
+    margin: "30% 0px 30% 0px",
+  });
 
   useEffect(() => {
+    if (!shouldRenderWebgl) return;
+
     const canvas = canvasRef.current;
     const wrapper = wrapperRef.current;
     if (!canvas || !wrapper) return;
@@ -236,7 +245,7 @@ export const SignalWaveEdge = ({
       gl.deleteBuffer(buf);
       gl.deleteProgram(prog);
     };
-  }, [fillColor]);
+  }, [fillColor, shouldRenderWebgl]);
 
   const posClass = inverted ? "top-0 scale-y-[-1]" : "bottom-0";
 

@@ -11,16 +11,16 @@ jobs:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     environment:
       name: dev
-      url: ${{ steps.cloudflare.outputs.url }}
+      url: ${{ steps.cloudflare.outputs.alias || steps.cloudflare.outputs.url }}
     permissions:
       contents: read
       deployments: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: ".node-version"
           cache: "npm"
@@ -40,7 +40,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: "personal-website" # Update with your CF Pages project name
+          projectName: "portfolio-website" # Update with your CF Pages project name
           directory: "dist"
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.head_ref || github.ref_name }} # Deploys using branch name for preview URLs in CF
+          branch: dev

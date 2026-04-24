@@ -4,10 +4,12 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { useInView } from "framer-motion";
 import { memo, useState } from "react";
 import { useGameDevFilter } from "../hooks/gamedev/useGameDevFilter";
 import { useGameDevSectionData } from "../hooks/gamedev/useGameDevSectionData";
 import { useScrollReveal } from "../hooks/useScrollReveal";
+import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { GamingIconsBackground } from "./backgrounds/tsparticles/GamingIconsBackground";
 import { SectionEntranceOverlay } from "./ui/common/sections/SectionEntranceOverlay";
 import { SectionEdge } from "./ui/edges/SectionEdge";
@@ -35,6 +37,11 @@ export const GameDevSection = () => {
     setSortKey,
   } = useGameDevFilter(galleryItems);
   const { ref: sectionRef, motionStyle } = useScrollReveal();
+  const container = useScrollContainer();
+  const shouldRenderBackground = useInView(sectionRef, {
+    root: container ?? undefined,
+    margin: "30% 0px 30% 0px",
+  });
 
   return (
     <SectionEntranceOverlay theme="gamedev">
@@ -44,7 +51,11 @@ export const GameDevSection = () => {
         className="gamedev-section-shell section-desktop-offset snap-section"
       >
         <div className="gamedev-background-layer">
-          <MemoizedGamingIconsBackground id="gamedev-particles" />
+          {shouldRenderBackground ? (
+            <MemoizedGamingIconsBackground id="gamedev-particles" />
+          ) : (
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_25%,rgba(16,185,129,0.18),transparent_45%),radial-gradient(circle_at_75%_70%,rgba(59,130,246,0.14),transparent_48%),linear-gradient(to_bottom,#0f172a,#111827)]" />
+          )}
         </div>
 
         <GameDevSlidingPanels

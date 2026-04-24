@@ -85,6 +85,8 @@ Common category → fix mapping:
 | Supabase call missing error check                               | Check `error` field; surface with `setError(error.message); return;` |
 | Hook declared after useFrame / useEffect that references it     | Move the `useRef`/`useState` declaration above the hook that uses it |
 | docstring / comment inaccurate                                  | Fix the description to match the actual values                       |
+| Cross-field validation gap (e.g., MIME/extension pair mismatch) | Model pair constraints explicitly (e.g., `mimeTypeExtensions` map); validate pairs together, not independently |
+| Server/client contract drift (e.g., upload policies)             | Use MIME→extensions mapping in both client and server; keep duplication notice & link comments in sync |
 
 ---
 
@@ -110,6 +112,44 @@ git add -A
 git commit -m "fix: address PR review comments"
 git push
 ```
+
+---
+
+## Step 4B — Resolve comments with explanations (optional, when fix is not implemented)
+
+For threads that describe **valid concerns but intentionally not fixed** (e.g., out of scope, working as designed, or deferred to future work):
+
+1. Leave a **reply on the same review thread** (sub-comment), not a top-level PR comment.
+2. Include clear reasoning: "This is intentional because…", "Deferring to follow-up PR…", "Not applicable because…", etc.
+3. Use the comment URL from the thread to post your reply via GitHub CLI or UI.
+
+### Posting a thread reply (sub-comment)
+
+Use the review comment's numeric ID (`databaseId`) and reply directly to it.
+
+Example (MCP):
+```json
+{
+  "owner": "OWNER",
+  "repo": "REPO",
+  "pullNumber": PR_NUMBER,
+  "commentId": COMMENT_DATABASE_ID,
+  "body": "This is intentional because ..."
+}
+```
+
+Example (GraphQL via gh):
+```bash
+GH_PAGER=cat gh api graphql --raw-field query='mutation($id:ID!,$body:String!){addPullRequestReviewComment(input:{inReplyTo:$id,body:$body}){comment{id}}}' --raw-field id="REVIEW_COMMENT_NODE_ID" --raw-field body="This is intentional because ..."
+```
+
+Example (via CLI):
+```bash
+# Reply in-thread to a specific review comment on the PR (via MCP helper)
+# mcp_io_github_git_add_reply_to_pull_request_comment with commentId=<databaseId>
+```
+
+Then resolve the thread normally (Step 5) after posting the explanation.
 
 ---
 
@@ -159,3 +199,5 @@ Re-run the MCP fetch + Python filter from Step 1. The unresolved count must be 0
 - Use `includeIgnoredFiles: true` in grep searches when looking inside `.github/` or other gitignore-adjacent paths.
 - **Local changes do not resolve threads.** GitHub evaluates the pushed branch. Always commit and push before resolving.
 - **CI env vars:** If a build step requires env vars that are set as repo secrets, reference them as `${{ secrets.VAR_NAME }}` — the same pattern used in `deploy.yml`. Never use hardcoded placeholder values when the real secrets are already available.
+- **Explaining skipped fixes:** If a reviewer raises a valid concern that you intentionally don't fix (out of scope, design decision, working as intended), post an explanatory comment on the thread **before** resolving it. This keeps context in the PR history and prevents re-raising the same concern in future reviews.
+- **AI reviewer insights:** The review tables and mappings above capture patterns learned from prior PR reviews on this codebase. When encountering new categories of issues, consider updating the table to help future reviews catch the same class of problems earlier.

@@ -1,3 +1,9 @@
+<!--
+  ~ Copyright (c) 2026 Guy Erreich
+  ~
+  ~ SPDX-License-Identifier: MIT
+-->
+
 # DevOps UI Agent Notes
 
 Use this folder for DevOps-specific UI composition.
