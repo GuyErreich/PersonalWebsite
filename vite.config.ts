@@ -17,14 +17,6 @@ export default defineConfig({
 
           if (!normalizedId.includes(VENDOR_PATH)) return undefined;
 
-          if (
-            normalizedId.includes("/three/") ||
-            normalizedId.includes("/@react-three/fiber/") ||
-            normalizedId.includes("/@react-three/drei/")
-          ) {
-            return "three-vendor";
-          }
-
           if (normalizedId.includes("/framer-motion/") || normalizedId.includes("/gsap/")) {
             return "motion-vendor";
           }
