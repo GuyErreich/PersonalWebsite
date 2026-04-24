@@ -19,7 +19,7 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import { uploadToR2 } from "../../lib/storage/r2client";
@@ -87,6 +87,15 @@ const normalizeOptionalHttpsUrl = (value: string, fieldName: string): string | n
 };
 
 export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModalProps) => {
+  const formIdBase = useId();
+  const modalTitleId = `${formIdBase}-modal-title`;
+  const itemTitleId = `${formIdBase}-item-title`;
+  const itemDescriptionId = `${formIdBase}-item-description`;
+  const itemMediaId = `${formIdBase}-item-media`;
+  const itemThumbnailId = `${formIdBase}-item-thumbnail`;
+  const itemGithubUrlId = `${formIdBase}-item-github-url`;
+  const itemLiveUrlId = `${formIdBase}-item-live-url`;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -228,17 +237,22 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="modal-title"
+      aria-labelledby={modalTitleId}
       role="dialog"
       aria-modal="true"
     >
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         {/* Background overlay */}
-        <div
+        <button
+          type="button"
           className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
-          aria-hidden="true"
-          onClick={onClose}
-        ></div>
+          aria-label="Close dialog"
+          onMouseEnter={playHoverSound}
+          onClick={() => {
+            playClickSound();
+            onClose();
+          }}
+        ></button>
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
           &#8203;
@@ -248,7 +262,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
         <div className="relative inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full border border-gray-700">
           <form onSubmit={handleSubmit}>
             <div className="bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-              <h3 className="text-lg leading-6 font-medium text-white mb-4" id="modal-title">
+              <h3 className="text-lg leading-6 font-medium text-white mb-4" id={modalTitleId}>
                 Add New {type === "gamedev" ? "Game Dev Project" : "DevOps Project"}
               </h3>
 
@@ -290,11 +304,11 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                 </div>
 
                 <div>
-                  <label htmlFor="item-title" className="block text-sm font-medium text-gray-300">
+                  <label htmlFor={itemTitleId} className="block text-sm font-medium text-gray-300">
                     Title
                   </label>
                   <input
-                    id="item-title"
+                    id={itemTitleId}
                     type="text"
                     required
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
@@ -305,13 +319,13 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
 
                 <div>
                   <label
-                    htmlFor="item-description"
+                    htmlFor={itemDescriptionId}
                     className="block text-sm font-medium text-gray-300"
                   >
                     Description
                   </label>
                   <textarea
-                    id="item-description"
+                    id={itemDescriptionId}
                     required
                     rows={3}
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
@@ -324,13 +338,13 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                   <>
                     <div>
                       <label
-                        htmlFor="item-media"
+                        htmlFor={itemMediaId}
                         className="block text-sm font-medium text-gray-300"
                       >
                         Upload Media (Image or Video)
                       </label>
                       <input
-                        id="item-media"
+                        id={itemMediaId}
                         type="file"
                         accept={MEDIA_ACCEPT}
                         required
@@ -363,7 +377,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                     </div>
                     <div>
                       <label
-                        htmlFor="item-thumbnail"
+                        htmlFor={itemThumbnailId}
                         className="block text-sm font-medium text-gray-300"
                       >
                         Custom Thumbnail (Optional)
@@ -372,7 +386,7 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
                         If your media is a video, upload an image here to show before it plays.
                       </p>
                       <input
-                        id="item-thumbnail"
+                        id={itemThumbnailId}
                         type="file"
                         accept={THUMBNAIL_ACCEPT}
                         className="mt-1 block w-full text-white file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-600 file:text-white hover:file:bg-gray-500"
@@ -494,13 +508,13 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
 
                 <div>
                   <label
-                    htmlFor="item-github-url"
+                    htmlFor={itemGithubUrlId}
                     className="block text-sm font-medium text-gray-300"
                   >
                     GitHub URL (Optional)
                   </label>
                   <input
-                    id="item-github-url"
+                    id={itemGithubUrlId}
                     type="url"
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                     value={githubUrl}
@@ -510,13 +524,13 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
 
                 <div>
                   <label
-                    htmlFor="item-live-url"
+                    htmlFor={itemLiveUrlId}
                     className="block text-sm font-medium text-gray-300"
                   >
                     Live URL (Optional)
                   </label>
                   <input
-                    id="item-live-url"
+                    id={itemLiveUrlId}
                     type="url"
                     className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
                     value={liveUrl}
@@ -535,7 +549,11 @@ export const ItemFormModal = ({ isOpen, onClose, type, onSuccess }: ItemFormModa
               </button>
               <button
                 type="button"
-                onClick={onClose}
+                onMouseEnter={playHoverSound}
+                onClick={() => {
+                  playClickSound();
+                  onClose();
+                }}
                 disabled={loading}
                 className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-500 shadow-sm px-4 py-2 bg-transparent text-base font-medium text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
               >

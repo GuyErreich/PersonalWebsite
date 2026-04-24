@@ -34,6 +34,8 @@ export const GameDevOverviewMobileShort = ({
   const [activeTab, setActiveTab] = useState<Tab>("showreel");
   const [hasInteracted, setHasInteracted] = useState(false);
   const tabPanelIdBase = useId();
+  const showreelTabId = `${tabPanelIdBase}-tab-showreel`;
+  const projectsTabId = `${tabPanelIdBase}-tab-projects`;
   const showreelPanelId = `${tabPanelIdBase}-tab-panel-showreel`;
   const projectsPanelId = `${tabPanelIdBase}-tab-panel-projects`;
   const directionRef = useRef(1); // 1 = forward (showreel→projects), -1 = backward
@@ -74,10 +76,12 @@ export const GameDevOverviewMobileShort = ({
       {/* Tab strip */}
       <div className="gamedev-mobile-short-tabs" role="tablist">
         <motion.button
+          id={showreelTabId}
           type="button"
           role="tab"
           aria-selected={activeTab === "showreel"}
           aria-controls={showreelPanelId}
+          tabIndex={activeTab === "showreel" ? 0 : -1}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -89,10 +93,12 @@ export const GameDevOverviewMobileShort = ({
         </motion.button>
 
         <motion.button
+          id={projectsTabId}
           type="button"
           role="tab"
           aria-selected={activeTab === "projects"}
           aria-controls={projectsPanelId}
+          tabIndex={activeTab === "projects" ? 0 : -1}
           animate={pulseAnimation}
           transition={pulseTransition}
           whileHover={{ scale: 1.03 }}
@@ -114,6 +120,7 @@ export const GameDevOverviewMobileShort = ({
               key="showreel"
               role="tabpanel"
               id={showreelPanelId}
+              aria-labelledby={showreelTabId}
               custom={directionRef.current}
               variants={slideVariants}
               initial="enter"
@@ -129,6 +136,7 @@ export const GameDevOverviewMobileShort = ({
               key="projects"
               role="tabpanel"
               id={projectsPanelId}
+              aria-labelledby={projectsTabId}
               custom={directionRef.current}
               variants={slideVariants}
               initial="enter"
