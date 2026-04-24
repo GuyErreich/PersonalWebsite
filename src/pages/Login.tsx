@@ -41,7 +41,7 @@ export const Login = () => {
 
         setError("Admin access is required.");
       } catch {
-        // intentional — network failure on session check; user stays on login page
+        setError("Unable to validate your session. Please try signing in again.");
       }
     })();
   }, [navigate]);

@@ -135,7 +135,9 @@ export const uploadToR2 = async (
   });
 
   if (!uploadRes.ok) {
-    throw new Error(`Failed to upload to R2: ${uploadRes.statusText}`);
+    const errorText = await uploadRes.text().catch(() => "");
+    const message = errorText.trim() || uploadRes.statusText;
+    throw new Error(`Failed to upload to R2: ${message}`);
   }
 
   return publicUrl;

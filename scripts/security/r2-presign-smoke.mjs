@@ -235,6 +235,21 @@ const run = async () => {
           );
           continue;
         }
+
+        const mismatchPayload = Buffer.alloc(64, 1);
+        const mismatchUploadRes = await fetch(payload.signedUrl, {
+          method: "PUT",
+          headers: { "Content-Type": test.body.contentType },
+          body: mismatchPayload,
+        });
+
+        if (mismatchUploadRes.ok) {
+          failed += 1;
+          console.error(
+            `FAIL ${test.name}: signed URL accepted payload with mismatched size; expected rejection.`,
+          );
+          continue;
+        }
       }
 
       process.stdout.write(`PASS ${test.name}\n`);
