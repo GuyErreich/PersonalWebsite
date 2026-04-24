@@ -26,9 +26,9 @@ jobs:
       - name: Validate required security test secrets
         env:
           PRESIGN_URL: ${{ secrets.PRESIGN_URL }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || vars.ALLOWED_ORIGIN }}
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           missing=""
@@ -40,11 +40,13 @@ jobs:
 
           if [ -n "$missing" ]; then
             echo "Missing required secrets:$missing"
-            echo "Set them in repository or environment secrets before running this workflow."
-            echo "Accepted mappings:"
-            echo "- SUPABASE_URL: secrets.VITE_SUPABASE_URL or vars.VITE_SUPABASE_URL"
-            echo "- SUPABASE_ANON_KEY: secrets.VITE_SUPABASE_ANON_KEY or vars.VITE_SUPABASE_ANON_KEY"
-            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGIN or vars.ALLOWED_ORIGIN"
+            echo "Set the listed missing key(s) above as repository secrets before running this workflow."
+            echo "Required secret mappings:"
+            echo "- PRESIGN_URL: secrets.PRESIGN_URL"
+            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGIN"
+            echo "- SUPABASE_URL: secrets.VITE_SUPABASE_URL"
+            echo "- SUPABASE_ANON_KEY: secrets.VITE_SUPABASE_ANON_KEY"
+            echo "- SUPABASE_SERVICE_ROLE_KEY: secrets.SUPABASE_SERVICE_ROLE_KEY"
             exit 1
           fi
 
@@ -54,8 +56,8 @@ jobs:
       - name: Run r2-presign security smoke tests
         env:
           PRESIGN_URL: ${{ secrets.PRESIGN_URL }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || vars.ALLOWED_ORIGIN }}
-          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run security:test:r2-presign

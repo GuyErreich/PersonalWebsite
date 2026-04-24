@@ -34,7 +34,7 @@ jobs:
 
           if [ -n "$missing" ]; then
             echo "Missing required deploy configuration:$missing"
-            echo "Set CLOUDFLARE_PAGES_PROJECT_NAME as a repository secret."
+            echo "Set the listed missing key(s) above as repository secrets."
             exit 1
           fi
 
