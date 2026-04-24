@@ -273,6 +273,8 @@ Deno.serve(async (req: Request) => {
       Bucket: bucket,
       Key: key,
       ContentType: normalizedContentType,
+      // Bind expected byte size into the signature so a different payload size is rejected.
+      ContentLength: contentLength,
     });
 
     // Presigned URL valid for 15 minutes — enough for a video upload

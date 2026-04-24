@@ -6,7 +6,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Film, Layers } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
@@ -33,6 +33,9 @@ export const GameDevOverviewMobileShort = ({
 }: GameDevOverviewLayoutProps) => {
   const [activeTab, setActiveTab] = useState<Tab>("showreel");
   const [hasInteracted, setHasInteracted] = useState(false);
+  const tabPanelIdBase = useId();
+  const showreelPanelId = `${tabPanelIdBase}-tab-panel-showreel`;
+  const projectsPanelId = `${tabPanelIdBase}-tab-panel-projects`;
   const directionRef = useRef(1); // 1 = forward (showreel→projects), -1 = backward
   const TAB_ORDER: Tab[] = ["showreel", "projects"];
 
@@ -74,7 +77,7 @@ export const GameDevOverviewMobileShort = ({
           type="button"
           role="tab"
           aria-selected={activeTab === "showreel"}
-          aria-controls="tab-panel-showreel"
+          aria-controls={showreelPanelId}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -89,7 +92,7 @@ export const GameDevOverviewMobileShort = ({
           type="button"
           role="tab"
           aria-selected={activeTab === "projects"}
-          aria-controls="tab-panel-projects"
+          aria-controls={projectsPanelId}
           animate={pulseAnimation}
           transition={pulseTransition}
           whileHover={{ scale: 1.03 }}
@@ -110,7 +113,7 @@ export const GameDevOverviewMobileShort = ({
             <motion.div
               key="showreel"
               role="tabpanel"
-              id="tab-panel-showreel"
+              id={showreelPanelId}
               custom={directionRef.current}
               variants={slideVariants}
               initial="enter"
@@ -125,7 +128,7 @@ export const GameDevOverviewMobileShort = ({
             <motion.div
               key="projects"
               role="tabpanel"
-              id="tab-panel-projects"
+              id={projectsPanelId}
               custom={directionRef.current}
               variants={slideVariants}
               initial="enter"

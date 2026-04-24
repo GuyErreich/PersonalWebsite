@@ -372,6 +372,18 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
               onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
               onPlay={() => setIsPaused(false)}
               onPause={() => setIsPaused(true)}
+              onEnded={() => {
+                if (!videoRef.current) return;
+
+                videoRef.current.currentTime = 0;
+                setCurrentTime(0);
+                setIsPaused(true);
+                setIsPlaying(false);
+                setIsVolumePopupOpen(false);
+                setShowControls(true);
+
+                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+              }}
               className={`absolute inset-0 w-full h-full object-cover transition-all duration-700 ease-in-out ${
                 !isPlaying
                   ? "blur-[5px] brightness-[0.3] scale-[1.06]"
