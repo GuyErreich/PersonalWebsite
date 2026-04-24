@@ -45,6 +45,13 @@ export const useAdminIdleLogout = () => {
 
     const activityEvents = ["mousemove", "keydown", "pointerdown", "scroll"] as const;
 
+    const handlePageHide = (event: PageTransitionEvent) => {
+      if (event.persisted || !hasAdminSession) return;
+
+      clearIdleTracking();
+      void performIdleLogout();
+    };
+
     const startActivityTracking = () => {
       if (idleCheckIntervalId) return;
 
@@ -54,6 +61,7 @@ export const useAdminIdleLogout = () => {
 
       document.addEventListener("visibilitychange", checkIdleExpiry);
       window.addEventListener("focus", checkIdleExpiry);
+      window.addEventListener("pagehide", handlePageHide);
 
       idleCheckIntervalId = setInterval(checkIdleExpiry, IDLE_CHECK_INTERVAL_MS);
     };
@@ -65,6 +73,7 @@ export const useAdminIdleLogout = () => {
 
       document.removeEventListener("visibilitychange", checkIdleExpiry);
       window.removeEventListener("focus", checkIdleExpiry);
+      window.removeEventListener("pagehide", handlePageHide);
 
       if (!idleCheckIntervalId) return;
 

@@ -13,6 +13,7 @@ import {
   type PointerEvent,
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
 } from "react";
@@ -55,6 +56,7 @@ const formatTime = (s: number) => {
 
 export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const hasCookie = !!Cookies.get("hero_visited");
+  const volumePopupId = useId();
 
   // State
   const [isPlaying, setIsPlaying] = useState(false);
@@ -510,7 +512,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                     type="button"
                     aria-label={isMuted ? "Unmute" : "Mute"}
                     aria-expanded={isVolumePopupOpen}
-                    aria-controls="showreel-volume-popup"
+                    aria-controls={volumePopupId}
                     onClick={handleVolumeMute}
                     onMouseEnter={playHoverSound}
                     whileHover={{ scale: 1.05 }}
@@ -525,7 +527,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   </motion.button>
 
                   {isVolumePopupOpen && (
-                    <div id="showreel-volume-popup" className="showreel-volume-popup">
+                    <div id={volumePopupId} className="showreel-volume-popup">
                       <input
                         type="range"
                         aria-label="Volume"
