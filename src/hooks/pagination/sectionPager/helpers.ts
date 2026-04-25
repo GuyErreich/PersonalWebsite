@@ -102,8 +102,10 @@ export const canPageFromTarget = (
  * }
  */
 export const isInteractiveElement = (target: EventTarget | null) => {
-  const el = target as HTMLElement | null;
-  if (!el) return false;
+  const rawTarget = target;
+  if (!(rawTarget instanceof Element)) return false;
+
+  const el = rawTarget as HTMLElement;
 
   const interactiveAncestor = el.closest(
     "input, textarea, select, button, a, [contenteditable='true']",

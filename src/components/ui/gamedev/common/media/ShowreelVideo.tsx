@@ -79,6 +79,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
   const volumePopupRef = useRef<HTMLDivElement>(null);
   const timeUpdateRafRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
+  const pendingVideoReadyCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const touchQuery = window.matchMedia("(pointer: coarse)");
@@ -149,9 +151,14 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Cleanup hide timer on unmount
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
+
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
       if (timeUpdateRafRef.current !== null) cancelAnimationFrame(timeUpdateRafRef.current);
+
+      pendingVideoReadyCleanupRef.current?.();
+      pendingVideoReadyCleanupRef.current = null;
     };
   }, []);
 
@@ -173,6 +180,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     playClickSound();
     if (videoRef.current) {
       const syncDurationFromVideo = () => {
+        if (!isMountedRef.current) return;
+
         const rawDuration = videoRef.current?.duration ?? 0;
         const safeDuration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
         setDuration(safeDuration);
@@ -203,8 +212,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             video.removeEventListener("durationchange", handleDone);
             video.removeEventListener("canplay", handleDone);
             video.removeEventListener("error", handleDone);
+
+            if (pendingVideoReadyCleanupRef.current === cleanup) {
+              pendingVideoReadyCleanupRef.current = null;
+            }
           };
 
+          pendingVideoReadyCleanupRef.current = cleanup;
           timeoutId = window.setTimeout(handleDone, 1800);
 
           video.addEventListener("loadedmetadata", handleDone, { once: true });
