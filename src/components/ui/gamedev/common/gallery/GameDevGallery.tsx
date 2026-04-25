@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePaginatedNavigation } from "../../../../../hooks/pagination/usePaginatedNavigation";
 import { useMediaQuery } from "../../../../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
+import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import { GhostSlotRepeater } from "../../../common/pagination/GhostSlotRepeater";
 import { PaginatedSlideFrame } from "../../../common/pagination/PaginatedSlideFrame";
@@ -43,9 +44,10 @@ const GalleryInfoCard = ({
   return (
     <GameDevProjectCard
       title={item.title}
-      description={item.description}
+      description={item.summary ?? buildGameDevSummary(item.description)}
       tags={item.tags}
       link={item.github_url}
+      detailsLink={buildGameDevProjectPath(item.id)}
       icon={<ProjectIcon className="h-6 w-6 text-purple-300 drop-shadow-[0_0_4px_currentColor]" />}
       index={index}
       compact={compact}

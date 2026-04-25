@@ -14,6 +14,7 @@ import {
 import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevIconMap, GameDevItem } from "../../common/data/types";
@@ -656,7 +657,9 @@ export const GameDevHiveGallery = ({
                       </p>
                       <h4 className="gamedev-hive-focus-title">{activeItem.title}</h4>
 
-                      <p className="gamedev-hive-focus-description">{activeItem.description}</p>
+                      <p className="gamedev-hive-focus-description">
+                        {activeItem.summary ?? buildGameDevSummary(activeItem.description, 210)}
+                      </p>
 
                       {activeItem.tags?.length ? (
                         <div className="gamedev-hive-focus-tags">
@@ -682,6 +685,18 @@ export const GameDevHiveGallery = ({
             ? "Release to collapse the spread view."
             : "Swipe to spin the hive, tap any node to focus it, or hold to spread it."}
         </p>
+
+        <motion.a
+          href={buildGameDevProjectPath(activeItem.id)}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          onMouseEnter={playHoverSound}
+          onClick={playClickSound}
+          className="inline-flex items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
+        >
+          Open Project Page
+        </motion.a>
+
         <p className="gamedev-hive-count">{items.length} visible</p>
       </div>
     </div>

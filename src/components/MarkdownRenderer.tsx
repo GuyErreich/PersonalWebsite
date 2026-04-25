@@ -12,6 +12,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
+import { isVideoUrl } from "../lib/gamedev";
 
 // Initialize mermaid
 mermaid.initialize({
@@ -112,6 +113,33 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
                 className="text-blue-400 hover:text-blue-300 underline"
               />
             ),
+            img: ({ src, alt }) => {
+              const source = typeof src === "string" ? src : "";
+              if (!source) return null;
+
+              if (isVideoUrl(source)) {
+                return (
+                  <video
+                    src={source}
+                    controls
+                    loop
+                    playsInline
+                    preload="metadata"
+                    className="my-4 w-full rounded-lg border border-gray-700"
+                    aria-label={alt ?? "Embedded project video"}
+                  />
+                );
+              }
+
+              return (
+                <img
+                  src={source}
+                  alt={alt ?? "Embedded project media"}
+                  className="my-4 w-full rounded-lg border border-gray-700"
+                  loading="lazy"
+                />
+              );
+            },
             p: ({ ...props }) => <p {...props} className="mb-4 leading-relaxed text-gray-300" />,
             ul: ({ ...props }) => (
               <ul {...props} className="list-disc list-inside mb-4 space-y-1 text-gray-300" />

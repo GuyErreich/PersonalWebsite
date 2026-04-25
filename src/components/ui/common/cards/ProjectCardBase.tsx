@@ -23,6 +23,7 @@ interface ProjectCardBaseProps {
   description: string;
   tags?: string[];
   link?: string | null;
+  detailsLink?: string;
   icon: ReactNode;
   index: number;
   compact?: boolean;
@@ -35,6 +36,7 @@ export const ProjectCardBase = ({
   description,
   tags,
   link,
+  detailsLink,
   icon,
   index,
   compact = false,
@@ -53,10 +55,27 @@ export const ProjectCardBase = ({
         animate={isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
         transition={{ duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 }}
         whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
-        className={theme.containerClassName}
+        className={`relative ${theme.containerClassName}`}
       >
+        {detailsLink && (
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.005 }}
+            whileTap={{ scale: 0.995 }}
+            onMouseEnter={playHoverSound}
+            onClick={() => {
+              playClickSound();
+              window.location.assign(detailsLink);
+            }}
+            aria-label={`Open ${title} project page`}
+            className="absolute inset-0 z-10"
+          />
+        )}
+
         {hasThumbnail && (
-          <div className={`${compact ? "h-20 xl:h-24" : "h-32 xl:h-36"} shrink-0 overflow-hidden`}>
+          <div
+            className={`relative z-20 ${compact ? "h-20 xl:h-24" : "h-32 xl:h-36"} shrink-0 overflow-hidden`}
+          >
             <img
               src={thumbnailUrl}
               alt={title}
@@ -66,25 +85,46 @@ export const ProjectCardBase = ({
           </div>
         )}
 
-        <div className={`flex min-h-0 flex-col ${compact ? "gap-2 p-3" : "gap-2.5 p-5"}`}>
+        <div
+          className={`relative z-20 flex min-h-0 flex-col ${compact ? "gap-2 p-3" : "gap-2.5 p-5"}`}
+        >
           <div className="flex items-start justify-between gap-3">
             <div className={`${theme.iconShellClassName} ${compact ? "p-2" : "p-2.5"}`}>{icon}</div>
 
-            {link && (
-              <motion.a
-                whileHover={{ scale: 1.15, rotate: 8 }}
-                whileTap={{ scale: 0.9 }}
-                onMouseEnter={playHoverSound}
-                onClick={playClickSound}
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`View ${title} on GitHub`}
-                className="text-gray-400 transition-colors hover:text-white"
-              >
-                <GitHubIcon className={compact ? "h-5 w-5" : "h-6 w-6"} />
-              </motion.a>
-            )}
+            <div className="flex items-center gap-2">
+              {detailsLink && (
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={() => {
+                    playClickSound();
+                    window.location.assign(detailsLink);
+                  }}
+                  aria-label={`Open ${title} project page`}
+                  className="relative z-30 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-200 transition-colors hover:border-cyan-400/40 hover:text-cyan-100"
+                >
+                  Open
+                </motion.button>
+              )}
+
+              {link && (
+                <motion.a
+                  whileHover={{ scale: 1.15, rotate: 8 }}
+                  whileTap={{ scale: 0.9 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={playClickSound}
+                  href={link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`View ${title} on GitHub`}
+                  className="relative z-30 text-gray-400 transition-colors hover:text-white"
+                >
+                  <GitHubIcon className={compact ? "h-5 w-5" : "h-6 w-6"} />
+                </motion.a>
+              )}
+            </div>
           </div>
 
           <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>{title}</h3>

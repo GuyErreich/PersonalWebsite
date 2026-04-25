@@ -13,7 +13,10 @@ import {
   createSteppedSliderAnimator,
   type SteppedSliderAnimator,
 } from "../../lib/steppedSliderAnimator";
-import { uploadToR2 } from "../../lib/storage/r2client";
+import {
+  type MediaLibraryItem,
+  uploadOrReuseMediaLibraryItem,
+} from "../../lib/storage/mediaLibrary";
 import {
   getMimeTypesForFolder,
   R2_UPLOAD_FOLDERS,
@@ -30,7 +33,11 @@ const VOLUME_STEP_INTERVAL_MS = 12;
 export const ShowreelManager = () => {
   const [loading, setLoading] = useState(false);
   const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+  const [currentMediaLibraryId, setCurrentMediaLibraryId] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [libraryVideos, setLibraryVideos] = useState<MediaLibraryItem[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [isSelectingLibraryVideo, setIsSelectingLibraryVideo] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -96,10 +103,63 @@ export const ShowreelManager = () => {
     volumeAnimatorRef.current?.setImmediate(volumePercent);
   };
 
+  const loadLibraryVideos = async () => {
+    setIsLoadingLibrary(true);
+
+    const { data, error } = await supabase
+      .from("media_library")
+      .select("*")
+      .eq("media_type", "video")
+      .order("updated_at", { ascending: false });
+
+    setIsLoadingLibrary(false);
+
+    if (error) {
+      setMessage({ type: "error", text: error.message });
+      return;
+    }
+
+    setLibraryVideos((data ?? []) as MediaLibraryItem[]);
+  };
+
   useEffect(() => {
     let isMounted = true;
     const loadShowreel = async () => {
-      // We store the showreel in a generic settings table
+      const { data: idData, error: idError } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "showreel_media_library_id")
+        .single();
+
+      if (!isMounted) return;
+
+      const mediaLibraryId = !idError && idData ? idData.value : null;
+
+      if (mediaLibraryId) {
+        const { data: mediaData, error: mediaError } = await supabase
+          .from("media_library")
+          .select("id, media_url")
+          .eq("id", mediaLibraryId)
+          .eq("media_type", "video")
+          .single();
+
+        if (!isMounted) return;
+
+        if (!mediaError && mediaData) {
+          try {
+            const parsed = new URL(mediaData.media_url);
+            if (parsed.protocol === "https:") {
+              setCurrentUrl(parsed.href);
+              setCurrentMediaLibraryId(mediaData.id);
+              return;
+            }
+          } catch {
+            // intentional — fallback to legacy showreel_url setting
+          }
+        }
+      }
+
+      // Fallback for older data that still uses showreel_url.
       const { data, error } = await supabase
         .from("site_settings")
         .select("value")
@@ -115,6 +175,7 @@ export const ShowreelManager = () => {
             const parsed = new URL(value);
             if (parsed.protocol === "https:") {
               setCurrentUrl(parsed.href);
+              setCurrentMediaLibraryId(null);
             }
           } catch {
             // intentional — discard invalid or non-HTTPS URLs
@@ -122,11 +183,47 @@ export const ShowreelManager = () => {
         }
       }
     };
+
     void loadShowreel();
+    void loadLibraryVideos();
+
     return () => {
       isMounted = false;
     };
   }, []);
+
+  const setShowreelFromLibraryVideo = async (video: MediaLibraryItem) => {
+    setIsSelectingLibraryVideo(true);
+    setMessage(null);
+
+    try {
+      const parsed = new URL(video.media_url);
+      if (parsed.protocol !== "https:") {
+        throw new Error("Selected media has a non-HTTPS URL.");
+      }
+
+      const { error: settingsError } = await supabase.from("site_settings").upsert([
+        { key: "showreel_media_library_id", value: video.id },
+        { key: "showreel_url", value: parsed.href },
+      ]);
+
+      if (settingsError) {
+        throw settingsError;
+      }
+
+      setCurrentMediaLibraryId(video.id);
+      setCurrentUrl(parsed.href);
+      setMessage({ type: "success", text: `Showreel set to "${video.name}".` });
+    } catch (err) {
+      if (err instanceof Error) {
+        setMessage({ type: "error", text: err.message });
+      } else {
+        setMessage({ type: "error", text: "Unable to set showreel from library." });
+      }
+    } finally {
+      setIsSelectingLibraryVideo(false);
+    }
+  };
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,24 +233,31 @@ export const ShowreelManager = () => {
     setMessage(null);
 
     try {
-      // Upload directly to Cloudflare R2
-      const rawUrl = await uploadToR2(videoFile, R2_UPLOAD_FOLDERS.heroShowreel);
-      // Reconstruct via URL parser so the stored/displayed href is derived from
-      // parsed components, not the raw string (breaks static-analysis taint chain).
-      const parsedUpload = new URL(rawUrl);
-      if (parsedUpload.protocol !== "https:") throw new Error("Upload returned a non-HTTPS URL");
-      const url = parsedUpload.href;
+      const { item } = await uploadOrReuseMediaLibraryItem({
+        file: videoFile,
+        uploadFolder: R2_UPLOAD_FOLDERS.heroShowreel,
+        folderOrigin: R2_UPLOAD_FOLDERS.heroShowreel,
+      });
 
-      // Upsert the sanitized URL into the site settings table
-      const { error: dbError } = await supabase
-        .from("site_settings")
-        .upsert({ key: "showreel_url", value: url });
+      const selectedParsedUrl = new URL(item.media_url);
+      if (selectedParsedUrl.protocol !== "https:") {
+        throw new Error("Showreel URL must use HTTPS.");
+      }
 
-      if (dbError) throw dbError;
+      const { error: dbError } = await supabase.from("site_settings").upsert([
+        { key: "showreel_media_library_id", value: item.id },
+        { key: "showreel_url", value: selectedParsedUrl.href },
+      ]);
 
-      setCurrentUrl(url);
+      if (dbError) {
+        throw dbError;
+      }
+
+      setCurrentMediaLibraryId(item.id);
+      setCurrentUrl(selectedParsedUrl.href);
       setVideoFile(null);
       setMessage({ type: "success", text: "Showreel updated successfully!" });
+      await loadLibraryVideos();
     } catch (err) {
       if (err instanceof Error) {
         setMessage({ type: "error", text: err.message });
@@ -227,13 +331,17 @@ export const ShowreelManager = () => {
               }}
             />
 
-            <button
+            <motion.button
               type="submit"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
               disabled={loading || !videoFile}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
             >
               {loading ? "Uploading & Saving..." : "Update Showreel"}
-            </button>
+            </motion.button>
 
             {message && (
               <div
@@ -268,6 +376,87 @@ export const ShowreelManager = () => {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="mt-6 pt-6 border-t border-gray-700">
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h3 className="text-sm font-medium text-gray-400">Choose From Media Library</h3>
+
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onMouseEnter={playHoverSound}
+            onClick={() => {
+              playClickSound();
+              void loadLibraryVideos();
+            }}
+            disabled={isLoadingLibrary}
+            className="rounded-md border border-gray-600 px-3 py-1.5 text-xs text-gray-200 hover:border-cyan-400/60 hover:text-cyan-200 disabled:opacity-50"
+          >
+            {isLoadingLibrary ? "Refreshing..." : "Refresh"}
+          </motion.button>
+        </div>
+
+        {isLoadingLibrary ? (
+          <div className="rounded-lg border border-gray-700 bg-gray-900/30 p-3 text-sm text-gray-400">
+            Loading library videos...
+          </div>
+        ) : libraryVideos.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-gray-700 p-3 text-sm text-gray-500">
+            No videos found in media library yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            {libraryVideos.map((video) => {
+              const isCurrent = video.id === currentMediaLibraryId;
+
+              return (
+                <div
+                  key={video.id}
+                  className={`rounded-lg border p-3 ${
+                    isCurrent
+                      ? "border-cyan-500/70 bg-cyan-500/10"
+                      : "border-gray-700 bg-gray-900/30"
+                  }`}
+                >
+                  <div className="aspect-video overflow-hidden rounded bg-black">
+                    <video
+                      src={video.media_url}
+                      muted
+                      playsInline
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+
+                  <div className="mt-2 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-white">{video.name}</p>
+                      <p className="mt-0.5 text-xs text-gray-400">
+                        Updated {new Date(video.updated_at).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <motion.button
+                      type="button"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onMouseEnter={playHoverSound}
+                      onClick={() => {
+                        playClickSound();
+                        void setShowreelFromLibraryVideo(video);
+                      }}
+                      disabled={isSelectingLibraryVideo || isCurrent}
+                      className="rounded-md bg-cyan-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-cyan-600 disabled:opacity-50"
+                    >
+                      {isCurrent ? "Current" : "Use"}
+                    </motion.button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Default starting volume */}

@@ -27,6 +27,7 @@ interface Database {
           icon_name: string | null;
           github_url: string | null;
           live_url: string | null;
+          tags: string[];
           created_at: string;
         };
         Insert: {
@@ -38,6 +39,7 @@ interface Database {
           icon_name?: string | null;
           github_url?: string | null;
           live_url?: string | null;
+          tags?: string[];
           created_at?: string;
         };
         Update: {
@@ -49,7 +51,77 @@ interface Database {
           icon_name?: string | null;
           github_url?: string | null;
           live_url?: string | null;
+          tags?: string[];
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      gamedev_item_media: {
+        Row: {
+          id: string;
+          gamedev_item_id: string;
+          media_url: string;
+          thumbnail_url: string | null;
+          media_type: "video" | "image";
+          caption: string | null;
+          sort_order: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          gamedev_item_id: string;
+          media_url: string;
+          thumbnail_url?: string | null;
+          media_type?: "video" | "image";
+          caption?: string | null;
+          sort_order?: number | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          gamedev_item_id?: string;
+          media_url?: string;
+          thumbnail_url?: string | null;
+          media_type?: "video" | "image";
+          caption?: string | null;
+          sort_order?: number | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      media_library: {
+        Row: {
+          id: string;
+          name: string;
+          media_url: string;
+          media_type: "video" | "image";
+          content_hash: string;
+          folder_origin: string | null;
+          file_size_bytes: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          media_url: string;
+          media_type: "video" | "image";
+          content_hash: string;
+          folder_origin?: string | null;
+          file_size_bytes?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          media_url?: string;
+          media_type?: "video" | "image";
+          content_hash?: string;
+          folder_origin?: string | null;
+          file_size_bytes?: number | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };
