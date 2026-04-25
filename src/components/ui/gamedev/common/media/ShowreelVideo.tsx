@@ -207,9 +207,25 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
 
         await new Promise<void>((resolve) => {
           let timeoutId: number | null = null;
+          let isSettled = false;
 
           const handleDone = () => {
+            if (isSettled) {
+              return;
+            }
+
+            isSettled = true;
             syncDurationFromVideo();
+            cleanup();
+            resolve();
+          };
+
+          const handleAbort = () => {
+            if (isSettled) {
+              return;
+            }
+
+            isSettled = true;
             cleanup();
             resolve();
           };
@@ -228,7 +244,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             }
           };
 
-          pendingVideoReadyCleanupRef.current = cleanup;
+          pendingVideoReadyCleanupRef.current = handleAbort;
           timeoutId = window.setTimeout(handleDone, 1800);
 
           video.addEventListener("loadedmetadata", handleDone, { once: true });

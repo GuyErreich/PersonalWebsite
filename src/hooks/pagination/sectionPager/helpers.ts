@@ -131,5 +131,11 @@ export const hasActiveInteractiveElement = () => {
   const active = document.activeElement;
   if (!active) return false;
 
-  return isInteractiveElement(active);
+  return (
+    active.tagName === "INPUT" ||
+    active.tagName === "TEXTAREA" ||
+    active.tagName === "SELECT" ||
+    active.getAttribute("contenteditable") === "true" ||
+    (active as HTMLElement).isContentEditable
+  );
 };
