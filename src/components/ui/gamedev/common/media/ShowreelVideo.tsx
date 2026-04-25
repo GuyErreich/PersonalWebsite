@@ -49,6 +49,7 @@ const VOLUME_STEP_INTERVAL_MS = 12;
 const VOLUME_POPUP_CLOSE_DELAY_MS = 180;
 
 const formatTime = (s: number) => {
+  if (!Number.isFinite(s) || s <= 0) return "0:00";
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, "0")}`;
@@ -171,7 +172,46 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const handlePlay = async () => {
     playClickSound();
     if (videoRef.current) {
+      const waitForVideoReady = async (video: HTMLVideoElement) => {
+        if (video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0) {
+          return;
+        }
+
+        video.preload = "auto";
+        video.load();
+
+        await new Promise<void>((resolve) => {
+          const cleanup = () => {
+            window.clearTimeout(timeoutId);
+            video.removeEventListener("loadedmetadata", handleDone);
+            video.removeEventListener("durationchange", handleDone);
+            video.removeEventListener("canplay", handleDone);
+            video.removeEventListener("error", handleDone);
+          };
+
+          const handleDone = () => {
+            syncDurationFromVideo();
+            cleanup();
+            resolve();
+          };
+
+          const timeoutId = window.setTimeout(handleDone, 1800);
+
+          video.addEventListener("loadedmetadata", handleDone, { once: true });
+          video.addEventListener("durationchange", handleDone, { once: true });
+          video.addEventListener("canplay", handleDone, { once: true });
+          video.addEventListener("error", handleDone, { once: true });
+        });
+      };
+
+      const syncDurationFromVideo = () => {
+        const rawDuration = videoRef.current?.duration ?? 0;
+        const safeDuration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+        setDuration(safeDuration);
+      };
+
       videoRef.current.muted = false;
+      await waitForVideoReady(videoRef.current);
       videoRef.current.currentTime = 0;
       applyVolumeToGraph(sliderVolume, isMuted);
       try {
@@ -361,6 +401,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
               autoPlay={!isPlaying}
               loop={!isPlaying}
               muted={!isPlaying}
+              preload="metadata"
               playsInline
               onTimeUpdate={() => {
                 if (timeUpdateRafRef.current !== null) return;
@@ -369,7 +410,26 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   timeUpdateRafRef.current = null;
                 });
               }}
-              onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
+              onLoadedMetadata={() => {
+                const rawDuration = videoRef.current?.duration ?? 0;
+                const safeDuration =
+                  Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+                setDuration(safeDuration);
+              }}
+              onDurationChange={() => {
+                const rawDuration = videoRef.current?.duration ?? 0;
+                const safeDuration =
+                  Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+                setDuration(safeDuration);
+              }}
+              onCanPlay={() => {
+                const rawDuration = videoRef.current?.duration ?? 0;
+                const safeDuration =
+                  Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+                if (safeDuration > 0 && duration === 0) {
+                  setDuration(safeDuration);
+                }
+              }}
               onPlay={() => setIsPaused(false)}
               onPause={() => setIsPaused(true)}
               onEnded={() => {

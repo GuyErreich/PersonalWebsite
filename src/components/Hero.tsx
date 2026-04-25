@@ -166,6 +166,9 @@ export const Hero = () => {
         if (ctx.state === "suspended") void ctx.resume().catch(() => {}); // intentional
 
         const now = ctx.currentTime;
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.35, now);
+        master.connect(ctx.destination);
 
         const scheduleTone = (
           timeOffset: number,
@@ -180,45 +183,22 @@ export const Hero = () => {
           osc.type = type;
           osc.frequency.setValueAtTime(freq, now + timeOffset);
 
-          gain.gain.setValueAtTime(0, now + timeOffset);
+          gain.gain.setValueAtTime(0.0001, now + timeOffset);
           gain.gain.linearRampToValueAtTime(vol, now + timeOffset + Math.min(0.05, duration * 0.1));
-          gain.gain.exponentialRampToValueAtTime(0.001, now + timeOffset + duration);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + timeOffset + duration);
 
           osc.connect(gain);
-          gain.connect(ctx.destination);
+          gain.connect(master);
 
           osc.start(now + timeOffset);
           osc.stop(now + timeOffset + duration);
-        };
-
-        const scheduleNoise = (timeOffset: number, duration: number, vol: number) => {
-          if (!ctx) return;
-          const bufferSize = ctx.sampleRate * duration;
-          const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-          const data = buffer.getChannelData(0);
-          for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-
-          const noise = ctx.createBufferSource();
-          noise.buffer = buffer;
-          const gain = ctx.createGain();
-
-          gain.gain.setValueAtTime(0, now + timeOffset);
-          gain.gain.linearRampToValueAtTime(vol, now + timeOffset + duration * 0.1);
-          gain.gain.exponentialRampToValueAtTime(0.001, now + timeOffset + duration);
-
-          noise.connect(gain);
-          gain.connect(ctx.destination);
-
-          noise.start(now + timeOffset);
-          noise.stop(now + timeOffset + duration);
         };
 
         // UI Sounds Start Post-Background Animation
         const uiOffset = UI_DELAY_OFFSET;
 
         // 3. Big Title Stamp (13.0s)
-        scheduleTone(13.0 + uiOffset, 80, "square", 0.6, 0.2);
-        scheduleNoise(13.0 + uiOffset, 0.4, 0.1);
+        scheduleTone(13.0 + uiOffset, 90, "triangle", 0.55, 0.08);
 
         // 4. Shine Sweep (13.9s)
         scheduleTone(13.9 + uiOffset, 800, "sine", 1.2, 0.05);
@@ -233,43 +213,43 @@ export const Hero = () => {
           scheduleTone(
             14.7 + uiOffset + i * (1.8 / 25),
             600 + Math.random() * 100,
-            "square",
+            "triangle",
             0.03,
-            0.015,
+            0.009,
           );
         for (let i = 0; i < 15; i++)
           scheduleTone(
             16.7 + uiOffset + i * (1.2 / 15),
             600 + Math.random() * 100,
-            "square",
+            "triangle",
             0.03,
-            0.015,
+            0.009,
           );
         for (let i = 0; i < 20; i++)
           scheduleTone(
             18.1 + uiOffset + i * (1.6 / 20),
             600 + Math.random() * 100,
-            "square",
+            "triangle",
             0.03,
-            0.015,
+            0.009,
           );
 
         // 7. Badges Spawning
         for (let i = 0; i < 6; i++)
-          scheduleTone(19.8 + uiOffset + i * 0.07, 700 + i * 40, "sine", 0.15, 0.04);
+          scheduleTone(19.8 + uiOffset + i * 0.07, 700 + i * 40, "sine", 0.15, 0.025);
         for (let i = 0; i < 5; i++)
-          scheduleTone(20.3 + uiOffset + i * 0.07, 900 + i * 40, "sine", 0.15, 0.04);
+          scheduleTone(20.3 + uiOffset + i * 0.07, 900 + i * 40, "sine", 0.15, 0.025);
 
         // 8. Social Links popping in
-        scheduleTone(20.7 + uiOffset, 440, "sine", 2.0, 0.05); // A4
-        scheduleTone(20.7 + uiOffset, 554, "sine", 2.0, 0.05); // C#5
-        scheduleTone(20.7 + uiOffset, 659, "sine", 2.0, 0.05); // E5
+        scheduleTone(20.7 + uiOffset, 440, "sine", 2.0, 0.03); // A4
+        scheduleTone(20.7 + uiOffset, 554, "sine", 2.0, 0.03); // C#5
+        scheduleTone(20.7 + uiOffset, 659, "sine", 2.0, 0.03); // E5
 
         // 9. Chevron Down Arrow Ping
         scheduleTone(21.5 + uiOffset, 300, "triangle", 0.5, 0.04);
         scheduleTone(21.7 + uiOffset, 400, "triangle", 0.5, 0.04);
-      } catch (e) {
-        console.warn("Web audio not supported or blocked", e);
+      } catch {
+        // intentional — browsers may block auto-initialized audio
       }
     };
 
@@ -279,7 +259,7 @@ export const Hero = () => {
       isCancelled = true;
       clearTimeout(t);
       if (ctx && ctx.state !== "closed") {
-        ctx.close().catch(() => {});
+        void ctx.close().catch(() => {}); // intentional
       }
     };
   }, [isRewinding, skipIntro, animationKey]);

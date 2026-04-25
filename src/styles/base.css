@@ -27,6 +27,11 @@ html {
   scroll-behavior: smooth;
 }
 
+html,
+body {
+  overscroll-behavior-x: none;
+}
+
 body {
   @apply bg-gray-900 text-gray-100 font-sans antialiased;
 }
@@ -39,6 +44,14 @@ body {
 .viewport-pager {
   scroll-snap-type: y mandatory;
   overscroll-behavior-y: contain;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
+
+img,
+video {
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .viewport-scroll-hidden {

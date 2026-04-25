@@ -105,6 +105,14 @@ export const isInteractiveElement = (target: EventTarget | null) => {
   const el = target as HTMLElement | null;
   if (!el) return false;
 
+  const interactiveAncestor = el.closest(
+    "input, textarea, select, button, a, [contenteditable='true']",
+  );
+
+  if (interactiveAncestor) {
+    return true;
+  }
+
   return (
     el.tagName === "INPUT" ||
     el.tagName === "TEXTAREA" ||
@@ -113,4 +121,11 @@ export const isInteractiveElement = (target: EventTarget | null) => {
     el.tagName === "A" ||
     el.isContentEditable
   );
+};
+
+export const hasActiveInteractiveElement = () => {
+  const active = document.activeElement as HTMLElement | null;
+  if (!active) return false;
+
+  return isInteractiveElement(active);
 };

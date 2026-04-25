@@ -127,7 +127,7 @@ export const GameDevOverviewMobileShort = ({
               animate="center"
               exit="exit"
               transition={{ duration: 0.28, ease: "easeInOut" }}
-              className="gamedev-mobile-short-panel flex items-center justify-center pb-[30%]"
+              className="gamedev-mobile-short-panel"
             >
               <GameDevShowreelPanel showreelUrl={showreelUrl} />
             </motion.div>
