@@ -102,8 +102,20 @@ export const canPageFromTarget = (
  * }
  */
 export const isInteractiveElement = (target: EventTarget | null) => {
-  const el = target as HTMLElement | null;
+  const el =
+    target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+
   if (!el) return false;
+
+  const htmlEl = el as HTMLElement;
+
+  const interactiveAncestor = el.closest(
+    "input, textarea, select, button, a, [contenteditable='true']",
+  );
+
+  if (interactiveAncestor) {
+    return true;
+  }
 
   return (
     el.tagName === "INPUT" ||
@@ -111,6 +123,19 @@ export const isInteractiveElement = (target: EventTarget | null) => {
     el.tagName === "SELECT" ||
     el.tagName === "BUTTON" ||
     el.tagName === "A" ||
-    el.isContentEditable
+    htmlEl.isContentEditable
+  );
+};
+
+export const hasActiveInteractiveElement = () => {
+  const active = document.activeElement;
+  if (!active) return false;
+
+  return (
+    active.tagName === "INPUT" ||
+    active.tagName === "TEXTAREA" ||
+    active.tagName === "SELECT" ||
+    active.getAttribute("contenteditable") === "true" ||
+    (active as HTMLElement).isContentEditable
   );
 };

@@ -50,7 +50,7 @@
   }
 
   .gamedev-mobile-short-panel {
-    @apply h-full w-full overflow-y-auto;
+    @apply h-full w-full overflow-y-auto pt-2 pb-3;
     scrollbar-width: none;
     -ms-overflow-style: none;
   }

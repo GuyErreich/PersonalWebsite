@@ -328,7 +328,6 @@ export const StackFilterBar = ({
   const handleLetterTouchMove = (event: React.TouchEvent<HTMLDivElement>) => {
     if (!isMobile) return;
 
-    event.preventDefault();
     updateLetterFromTouch(event.touches[0]);
   };
 
@@ -603,7 +602,7 @@ export const StackFilterBar = ({
                     {letterIndex.size > 1 ? (
                       <div
                         ref={letterSidebarRef}
-                        className="relative flex flex-col items-center justify-center border-l border-white/5 px-1 py-1"
+                        className="relative flex touch-none flex-col items-center justify-center border-l border-white/5 px-1 py-1"
                         onTouchStart={handleLetterTouchStart}
                         onTouchMove={handleLetterTouchMove}
                         onTouchEnd={handleLetterTouchEnd}

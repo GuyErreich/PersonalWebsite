@@ -122,6 +122,8 @@ export const GameDevHiveGallery = ({
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pointerOriginRef = useRef<{ x: number; y: number } | null>(null);
   const spreadPointerOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const visualOffsetRef = useRef({ x: 0, y: 0 });
+  const visualOffsetFrameRef = useRef<number | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const centerNodeRef = useRef<HTMLButtonElement | null>(null);
   const initializedRef = useRef(false);
@@ -216,6 +218,56 @@ export const GameDevHiveGallery = ({
     longPressTimerRef.current = null;
   }, []);
 
+  const flushVisualOffset = useCallback(() => {
+    visualOffsetFrameRef.current = null;
+
+    setVisualOffset((current) => {
+      const next = visualOffsetRef.current;
+
+      if (current.x === next.x && current.y === next.y) {
+        return current;
+      }
+
+      return next;
+    });
+  }, []);
+
+  const queueVisualOffset = useCallback(
+    (nextX: number, nextY: number) => {
+      const queued = visualOffsetRef.current;
+
+      if (queued.x === nextX && queued.y === nextY) {
+        return;
+      }
+
+      visualOffsetRef.current = { x: nextX, y: nextY };
+
+      if (visualOffsetFrameRef.current !== null) {
+        return;
+      }
+
+      visualOffsetFrameRef.current = requestAnimationFrame(flushVisualOffset);
+    },
+    [flushVisualOffset],
+  );
+
+  const resetVisualOffset = useCallback(() => {
+    if (visualOffsetFrameRef.current !== null) {
+      cancelAnimationFrame(visualOffsetFrameRef.current);
+      visualOffsetFrameRef.current = null;
+    }
+
+    visualOffsetRef.current = { x: 0, y: 0 };
+
+    setVisualOffset((current) => {
+      if (current.x === 0 && current.y === 0) {
+        return current;
+      }
+
+      return { x: 0, y: 0 };
+    });
+  }, []);
+
   const releaseSpreadMode = useCallback(() => {
     clearLongPressTimer();
     pointerOriginRef.current = null;
@@ -253,11 +305,11 @@ export const GameDevHiveGallery = ({
   }, [cellHeight, cellWidth, clusterX, clusterY, focusIndex, gridDimension, items.length]);
 
   useMotionValueEvent(clusterX, "change", (latest) => {
-    setVisualOffset((current) => ({ ...current, x: latest }));
+    queueVisualOffset(latest, clusterY.get());
   });
 
   useMotionValueEvent(clusterY, "change", (latest) => {
-    setVisualOffset((current) => ({ ...current, y: latest }));
+    queueVisualOffset(clusterX.get(), latest);
   });
 
   const springClusterToCenter = useCallback(() => {
@@ -328,7 +380,7 @@ export const GameDevHiveGallery = ({
 
       clusterX.set(0);
       clusterY.set(0);
-      setVisualOffset({ x: 0, y: 0 });
+      resetVisualOffset();
       setFocusedIndex(index);
     };
 
@@ -358,12 +410,17 @@ export const GameDevHiveGallery = ({
     getSnapStateFromCurrentOffset,
     gridConfig.snapThresholdRatio,
     items,
+    resetVisualOffset,
     springClusterToCenter,
   ]);
 
   useEffect(() => {
     return () => {
       clearLongPressTimer();
+
+      if (visualOffsetFrameRef.current !== null) {
+        cancelAnimationFrame(visualOffsetFrameRef.current);
+      }
     };
   }, [clearLongPressTimer]);
 

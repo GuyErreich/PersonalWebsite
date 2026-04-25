@@ -5,7 +5,7 @@
  */
 
 import { TOUCH_DELTA_THRESHOLD, WHEEL_DELTA_THRESHOLD } from "./constants";
-import { isInteractiveElement } from "./helpers";
+import { hasActiveInteractiveElement, isInteractiveElement } from "./helpers";
 
 /**
  * Mutable state for tracking an active touch gesture across touchstart → touchmove → touchend.
@@ -71,6 +71,7 @@ export const createSectionPagerHandlers = ({
   const onWheel = (event: WheelEvent) => {
     if (event.ctrlKey) return;
     if (Math.abs(event.deltaY) < WHEEL_DELTA_THRESHOLD) return;
+    if (isInteractiveElement(event.target) || hasActiveInteractiveElement()) return;
 
     if (isHeroIntroScrollLocked()) {
       event.preventDefault();
@@ -85,12 +86,20 @@ export const createSectionPagerHandlers = ({
   };
 
   const onTouchStart = (event: TouchEvent) => {
+    if (isInteractiveElement(event.target) || hasActiveInteractiveElement()) {
+      touchState.touchStartTarget = null;
+      touchState.hasHandledTouchGesture = false;
+      return;
+    }
+
     touchState.touchStartY = event.touches[0]?.clientY ?? 0;
     touchState.touchStartTarget = event.target;
     touchState.hasHandledTouchGesture = false;
   };
 
   const onTouchMove = (event: TouchEvent) => {
+    if (isInteractiveElement(event.target) || hasActiveInteractiveElement()) return;
+
     if (isHeroIntroScrollLocked()) {
       if (event.cancelable) {
         event.preventDefault();
@@ -115,6 +124,12 @@ export const createSectionPagerHandlers = ({
   };
 
   const onTouchEnd = (event: TouchEvent) => {
+    if (isInteractiveElement(event.target) || hasActiveInteractiveElement()) {
+      touchState.hasHandledTouchGesture = false;
+      touchState.touchStartTarget = null;
+      return;
+    }
+
     if (touchState.hasHandledTouchGesture) {
       touchState.hasHandledTouchGesture = false;
       touchState.touchStartTarget = null;
@@ -139,7 +154,7 @@ export const createSectionPagerHandlers = ({
   };
 
   const onKeyDown = (event: KeyboardEvent) => {
-    if (isInteractiveElement(event.target)) return;
+    if (isInteractiveElement(event.target) || hasActiveInteractiveElement()) return;
     if (isHeroIntroScrollLocked()) return;
 
     if (["ArrowDown", "PageDown", " "].includes(event.key)) {

@@ -60,7 +60,13 @@ for n in unresolved:
         print(f"Body  : {c['body'][:300]}")
 ```
 
-Work through **every** item in `unresolved`. Do not skip threads that seem minor — resolve them all.
+Work through **every** item in `unresolved`. Do not silently skip any thread. Each thread must end in one of these states:
+
+1. fixed in code
+2. intentionally not fixed, with an in-thread explanation
+3. blocked, with the blocker clearly reported back to the user
+
+Every resolved thread must also have a **threaded reply** from the agent summarizing the resolution. Do not rely on chat-only summaries.
 
 ---
 
@@ -70,7 +76,12 @@ For every unresolved thread:
 
 1. Read the flagged file at the reported line (± 10 lines of context).
 2. Understand what the reviewer flagged — semantic issue, style, missing guard, etc.
-3. Apply the minimal fix that addresses the root cause. Do not refactor beyond what was asked.
+3. Decide whether the comment should be fixed in code:
+  - Fix it when it identifies a real bug, regression, safety issue, correctness issue, or meaningful maintainability issue.
+  - Do **not** change code for false positives, incorrect assumptions, non-issues, or comments that are technically valid but not worth changing in this PR.
+4. If you do fix it, apply the minimal root-cause fix. Do not refactor beyond what was asked.
+5. If you do **not** fix it, you must reply in-thread with a short justification before resolving or leaving it open.
+6. If you **do** fix it, you must still reply in-thread with a short resolution summary before or immediately after resolving the thread.
 
 Common category → fix mapping:
 
@@ -115,13 +126,35 @@ git push
 
 ---
 
-## Step 4B — Resolve comments with explanations (optional, when fix is not implemented)
+## Step 4B — Post a threaded reply on every resolved comment (mandatory)
 
-For threads that describe **valid concerns but intentionally not fixed** (e.g., out of scope, working as designed, or deferred to future work):
+For **every** thread you resolve, post a reply on the review thread itself. This is required whether the comment was fixed in code or intentionally not fixed.
+
+Use these reply styles:
+
+1. **Fixed in code:**
+  - "Fixed in <commit>. <one-sentence summary of what changed and why>."
+2. **Not fixed intentionally:**
+  - "Not fixed. <false-positive / out-of-scope / working-as-designed explanation>."
+3. **Blocked:**
+  - "Blocked by <specific reason>. Leaving unresolved until <next action>."
+
+Never substitute a top-level PR comment for a threaded reply when the goal is to explain the resolution of a specific review comment.
+
+If the environment cannot create a threaded reply because of permission or API limitations:
+
+1. stop before resolving further threads
+2. report the blocker clearly to the user
+3. do **not** pretend the review-comment explanation step is complete
+
+## Step 4C — Resolve comments with explanations when fix is not implemented
+
+For threads that are **not fixed in code** — including false positives, incorrect reviewer assumptions, out-of-scope suggestions, non-critical cleanup, working-as-designed behavior, or deferred work:
 
 1. Leave a **reply on the same review thread** (sub-comment), not a top-level PR comment.
-2. Include clear reasoning: "This is intentional because…", "Deferring to follow-up PR…", "Not applicable because…", etc.
+2. Include clear reasoning: "False positive because…", "Not applicable because…", "Working as designed because…", "Deferring to follow-up PR because…", etc.
 3. Use the comment URL from the thread to post your reply via GitHub CLI or UI.
+4. Only resolve the thread after that explanation is posted, unless the user explicitly wants the thread left open.
 
 ### Posting a thread reply (sub-comment)
 
@@ -145,8 +178,9 @@ GH_PAGER=cat gh api graphql --raw-field query='mutation($id:ID!,$body:String!){a
 
 Example (via CLI):
 ```bash
-# Reply in-thread to a specific review comment on the PR (via MCP helper)
-# mcp_io_github_git_add_reply_to_pull_request_comment with commentId=<databaseId>
+# Reply in-thread to a specific review comment on the PR via REST
+GH_PAGER=cat gh api repos/OWNER/REPO/pulls/PR_NUMBER/comments/COMMENT_DATABASE_ID/replies \
+  -f body="Fixed in abc1234. Moved the guard before the call so text-node targets cannot throw."
 ```
 
 Then resolve the thread normally (Step 5) after posting the explanation.
@@ -185,6 +219,29 @@ done
 
 Re-run the MCP fetch + Python filter from Step 1. The unresolved count must be 0. If any remain, fix and resolve them before declaring done.
 
+---
+
+## Step 7 — Summarize every thread for the user
+
+Before declaring the PR review work complete, provide the user with a concise per-thread resolution summary so they can review the decisions quickly.
+
+For each originally unresolved thread, report:
+
+1. file and line
+2. whether it was fixed in code or not fixed
+3. short rationale for the decision
+4. commit SHA if code changed
+5. whether an in-thread reply was posted
+
+Use a compact format like:
+
+```text
+- src/foo.ts:42 — fixed — moved guard before use to prevent runtime throw — commit abc1234
+- src/bar.ts:88 — not fixed — false positive; existing logic is safe because ... — replied in thread, no code change
+```
+
+Do not give only a high-level "resolved all comments" summary. The user should be able to audit each decision quickly.
+
 > **Note:** Threads flagged by GitHub Advanced Security (CodeQL) do not resolve via the GraphQL mutation — they require CodeQL to re-scan. If a thread persists after a re-scan, dismiss it on the Security tab with a written rationale.
 
 ---
@@ -199,5 +256,8 @@ Re-run the MCP fetch + Python filter from Step 1. The unresolved count must be 0
 - Use `includeIgnoredFiles: true` in grep searches when looking inside `.github/` or other gitignore-adjacent paths.
 - **Local changes do not resolve threads.** GitHub evaluates the pushed branch. Always commit and push before resolving.
 - **CI env vars:** If a build step requires env vars that are set as repo secrets, reference them as `${{ secrets.VAR_NAME }}` — the same pattern used in `deploy.yml`. Never use hardcoded placeholder values when the real secrets are already available.
-- **Explaining skipped fixes:** If a reviewer raises a valid concern that you intentionally don't fix (out of scope, design decision, working as intended), post an explanatory comment on the thread **before** resolving it. This keeps context in the PR history and prevents re-raising the same concern in future reviews.
+- **Explaining every resolution in-thread is mandatory:** If a reviewer comment is fixed, not fixed, or blocked, leave a reply on that specific review thread before considering the workflow complete.
+- **Never replace thread replies with a top-level PR comment:** A PR-level summary can be additive, but it is not a substitute for replying inside the actual review thread.
+- **If thread replies are impossible, stop and report it:** Do not silently skip the reply step and do not claim the review-resolution workflow is complete.
+- **Non-critical comments do not require code churn:** The goal is to resolve every thread, not to mechanically change code for every comment. If a comment is low-value, incorrect, or better deferred, explain that in-thread and summarize that decision to the user.
 - **AI reviewer insights:** The review tables and mappings above capture patterns learned from prior PR reviews on this codebase. When encountering new categories of issues, consider updating the table to help future reviews catch the same class of problems earlier.

@@ -49,6 +49,7 @@ const VOLUME_STEP_INTERVAL_MS = 12;
 const VOLUME_POPUP_CLOSE_DELAY_MS = 180;
 
 const formatTime = (s: number) => {
+  if (!Number.isFinite(s) || s <= 0) return "0:00";
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return `${m}:${sec.toString().padStart(2, "0")}`;
@@ -78,6 +79,9 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
   const volumePopupRef = useRef<HTMLDivElement>(null);
   const timeUpdateRafRef = useRef<number | null>(null);
+  const isMountedRef = useRef(true);
+  const pendingVideoReadyCleanupRef = useRef<(() => void) | null>(null);
+  const isStartingPlaybackRef = useRef(false);
 
   useEffect(() => {
     const touchQuery = window.matchMedia("(pointer: coarse)");
@@ -148,9 +152,14 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Cleanup hide timer on unmount
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
+
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       if (volumePopupCloseTimerRef.current) clearTimeout(volumePopupCloseTimerRef.current);
       if (timeUpdateRafRef.current !== null) cancelAnimationFrame(timeUpdateRafRef.current);
+
+      pendingVideoReadyCleanupRef.current?.();
+      pendingVideoReadyCleanupRef.current = null;
     };
   }, []);
 
@@ -169,9 +178,84 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handlePlay = async () => {
+    if (isStartingPlaybackRef.current || isPlaying) {
+      return;
+    }
+
+    isStartingPlaybackRef.current = true;
     playClickSound();
-    if (videoRef.current) {
+    try {
+      if (!videoRef.current) {
+        return;
+      }
+
+      const syncDurationFromVideo = () => {
+        if (!isMountedRef.current) return;
+
+        const rawDuration = videoRef.current?.duration ?? 0;
+        const safeDuration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+        setDuration(safeDuration);
+      };
+
+      const waitForVideoReady = async (video: HTMLVideoElement) => {
+        if (video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0) {
+          return;
+        }
+
+        video.preload = "auto";
+        video.load();
+
+        await new Promise<void>((resolve) => {
+          let timeoutId: number | null = null;
+          let isSettled = false;
+
+          const handleDone = () => {
+            if (isSettled) {
+              return;
+            }
+
+            isSettled = true;
+            syncDurationFromVideo();
+            cleanup();
+            resolve();
+          };
+
+          const handleAbort = () => {
+            if (isSettled) {
+              return;
+            }
+
+            isSettled = true;
+            cleanup();
+            resolve();
+          };
+
+          const cleanup = () => {
+            if (timeoutId !== null) {
+              window.clearTimeout(timeoutId);
+            }
+            video.removeEventListener("loadedmetadata", handleDone);
+            video.removeEventListener("durationchange", handleDone);
+            video.removeEventListener("canplay", handleDone);
+            video.removeEventListener("error", handleDone);
+
+            if (pendingVideoReadyCleanupRef.current === handleAbort) {
+              pendingVideoReadyCleanupRef.current = null;
+            }
+          };
+
+          pendingVideoReadyCleanupRef.current = handleAbort;
+          timeoutId = window.setTimeout(handleDone, 1800);
+
+          video.addEventListener("loadedmetadata", handleDone, { once: true });
+          video.addEventListener("durationchange", handleDone, { once: true });
+          video.addEventListener("canplay", handleDone, { once: true });
+          video.addEventListener("error", handleDone, { once: true });
+        });
+      };
+
       videoRef.current.muted = false;
+      await waitForVideoReady(videoRef.current);
       videoRef.current.currentTime = 0;
       applyVolumeToGraph(sliderVolume, isMuted);
       try {
@@ -180,7 +264,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         // intentional — leave UI in pre-play state on decode/format failure
         return;
       }
+    } finally {
+      isStartingPlaybackRef.current = false;
     }
+
     setIsPlaying(true);
     setIsVolumePopupOpen(false);
     setShowControls(true);
@@ -361,6 +448,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
               autoPlay={!isPlaying}
               loop={!isPlaying}
               muted={!isPlaying}
+              preload="metadata"
               playsInline
               onTimeUpdate={() => {
                 if (timeUpdateRafRef.current !== null) return;
@@ -369,7 +457,26 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
                   timeUpdateRafRef.current = null;
                 });
               }}
-              onLoadedMetadata={() => setDuration(videoRef.current?.duration ?? 0)}
+              onLoadedMetadata={() => {
+                const rawDuration = videoRef.current?.duration ?? 0;
+                const safeDuration =
+                  Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+                setDuration(safeDuration);
+              }}
+              onDurationChange={() => {
+                const rawDuration = videoRef.current?.duration ?? 0;
+                const safeDuration =
+                  Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+                setDuration(safeDuration);
+              }}
+              onCanPlay={() => {
+                const rawDuration = videoRef.current?.duration ?? 0;
+                const safeDuration =
+                  Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+                if (safeDuration > 0 && duration === 0) {
+                  setDuration(safeDuration);
+                }
+              }}
               onPlay={() => setIsPaused(false)}
               onPause={() => setIsPaused(true)}
               onEnded={() => {
