@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 const VENDOR_PATH = "/node_modules/";
+const EXPOSE_DEV_SERVER = process.env.VITE_DEV_SERVER_HOST === "true";
 
 const normalizeModuleId = (id: string) => id.replace(/\\/g, "/");
 
@@ -10,7 +11,7 @@ const normalizeModuleId = (id: string) => id.replace(/\\/g, "/");
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    host: true,
+    host: EXPOSE_DEV_SERVER ? true : "127.0.0.1",
     port: 5173,
     strictPort: true,
   },

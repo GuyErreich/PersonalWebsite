@@ -172,6 +172,12 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const handlePlay = async () => {
     playClickSound();
     if (videoRef.current) {
+      const syncDurationFromVideo = () => {
+        const rawDuration = videoRef.current?.duration ?? 0;
+        const safeDuration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
+        setDuration(safeDuration);
+      };
+
       const waitForVideoReady = async (video: HTMLVideoElement) => {
         if (video.readyState >= 1 && Number.isFinite(video.duration) && video.duration > 0) {
           return;
@@ -181,13 +187,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         video.load();
 
         await new Promise<void>((resolve) => {
-          const cleanup = () => {
-            window.clearTimeout(timeoutId);
-            video.removeEventListener("loadedmetadata", handleDone);
-            video.removeEventListener("durationchange", handleDone);
-            video.removeEventListener("canplay", handleDone);
-            video.removeEventListener("error", handleDone);
-          };
+          let timeoutId: number | null = null;
 
           const handleDone = () => {
             syncDurationFromVideo();
@@ -195,19 +195,23 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             resolve();
           };
 
-          const timeoutId = window.setTimeout(handleDone, 1800);
+          const cleanup = () => {
+            if (timeoutId !== null) {
+              window.clearTimeout(timeoutId);
+            }
+            video.removeEventListener("loadedmetadata", handleDone);
+            video.removeEventListener("durationchange", handleDone);
+            video.removeEventListener("canplay", handleDone);
+            video.removeEventListener("error", handleDone);
+          };
+
+          timeoutId = window.setTimeout(handleDone, 1800);
 
           video.addEventListener("loadedmetadata", handleDone, { once: true });
           video.addEventListener("durationchange", handleDone, { once: true });
           video.addEventListener("canplay", handleDone, { once: true });
           video.addEventListener("error", handleDone, { once: true });
         });
-      };
-
-      const syncDurationFromVideo = () => {
-        const rawDuration = videoRef.current?.duration ?? 0;
-        const safeDuration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : 0;
-        setDuration(safeDuration);
       };
 
       videoRef.current.muted = false;
