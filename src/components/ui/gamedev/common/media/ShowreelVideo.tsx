@@ -239,7 +239,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             video.removeEventListener("canplay", handleDone);
             video.removeEventListener("error", handleDone);
 
-            if (pendingVideoReadyCleanupRef.current === cleanup) {
+            if (pendingVideoReadyCleanupRef.current === handleAbort) {
               pendingVideoReadyCleanupRef.current = null;
             }
           };
