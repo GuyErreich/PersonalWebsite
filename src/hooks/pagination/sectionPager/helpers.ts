@@ -102,10 +102,12 @@ export const canPageFromTarget = (
  * }
  */
 export const isInteractiveElement = (target: EventTarget | null) => {
-  const rawTarget = target;
-  if (!(rawTarget instanceof Element)) return false;
+  const el =
+    target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
 
-  const el = rawTarget as HTMLElement;
+  if (!el) return false;
+
+  const htmlEl = el as HTMLElement;
 
   const interactiveAncestor = el.closest(
     "input, textarea, select, button, a, [contenteditable='true']",
@@ -121,12 +123,12 @@ export const isInteractiveElement = (target: EventTarget | null) => {
     el.tagName === "SELECT" ||
     el.tagName === "BUTTON" ||
     el.tagName === "A" ||
-    el.isContentEditable
+    htmlEl.isContentEditable
   );
 };
 
 export const hasActiveInteractiveElement = () => {
-  const active = document.activeElement as HTMLElement | null;
+  const active = document.activeElement;
   if (!active) return false;
 
   return isInteractiveElement(active);

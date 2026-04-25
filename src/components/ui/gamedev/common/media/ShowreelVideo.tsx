@@ -81,6 +81,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const timeUpdateRafRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
   const pendingVideoReadyCleanupRef = useRef<(() => void) | null>(null);
+  const isStartingPlaybackRef = useRef(false);
 
   useEffect(() => {
     const touchQuery = window.matchMedia("(pointer: coarse)");
@@ -177,8 +178,17 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   };
 
   const handlePlay = async () => {
+    if (isStartingPlaybackRef.current || isPlaying) {
+      return;
+    }
+
+    isStartingPlaybackRef.current = true;
     playClickSound();
-    if (videoRef.current) {
+    try {
+      if (!videoRef.current) {
+        return;
+      }
+
       const syncDurationFromVideo = () => {
         if (!isMountedRef.current) return;
 
@@ -238,7 +248,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         // intentional — leave UI in pre-play state on decode/format failure
         return;
       }
+    } finally {
+      isStartingPlaybackRef.current = false;
     }
+
     setIsPlaying(true);
     setIsVolumePopupOpen(false);
     setShowControls(true);
