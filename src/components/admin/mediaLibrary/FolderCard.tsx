@@ -6,6 +6,7 @@
 
 import { motion } from "framer-motion";
 import { FolderOpen } from "lucide-react";
+import type { MouseEvent } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { FolderEntry } from "./types";
 
@@ -13,14 +14,20 @@ interface Props {
   entry: FolderEntry;
   onNavigate: (path: string) => void;
   onClearSearch: () => void;
+  onContextMenu: (e: MouseEvent<HTMLButtonElement>) => void;
 }
 
-export const FolderCard = ({ entry, onNavigate, onClearSearch }: Props) => (
+export const FolderCard = ({ entry, onNavigate, onClearSearch, onContextMenu }: Props) => (
   <motion.button
     type="button"
     whileHover={{ scale: 1.03, y: -2 }}
     whileTap={{ scale: 0.97 }}
     onMouseEnter={playHoverSound}
+    onContextMenu={(e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onContextMenu(e);
+    }}
     onClick={() => {
       playClickSound();
       onNavigate(entry.path);

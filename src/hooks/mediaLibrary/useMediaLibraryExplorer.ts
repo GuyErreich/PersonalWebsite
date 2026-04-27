@@ -14,7 +14,6 @@ import type {
   SortOption,
   StatusMessage,
 } from "../../components/admin/mediaLibrary/types";
-import { inferMediaTypeFromFile } from "../../lib/gamedev";
 import {
   buildPathLevels,
   getParentPath,
@@ -31,7 +30,6 @@ import {
   getMimeTypesForFolder,
   R2_UPLOAD_FOLDERS,
   R2_UPLOAD_POLICIES,
-  type R2UploadFolder,
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 
@@ -41,11 +39,6 @@ export interface MediaLibraryExplorerState {
   uploading: boolean;
   message: StatusMessage | null;
   setMessage: (msg: StatusMessage | null) => void;
-
-  uploadFolder: R2UploadFolder;
-  setUploadFolder: (folder: R2UploadFolder) => void;
-  libraryFolderLabel: string;
-  setLibraryFolderLabel: (label: string) => void;
 
   currentPath: string;
   setCurrentPath: (path: string) => void;
@@ -64,7 +57,10 @@ export interface MediaLibraryExplorerState {
   loadItems: () => Promise<void>;
   handleUploadFiles: (files: FileList | null) => Promise<void>;
   handleRename: (id: string, name: string) => Promise<void>;
-  handleMoveFolder: (id: string, folder: string) => Promise<void>;
+  handleCreateFolder: (name: string) => void;
+  handleDeleteMedia: (id: string) => Promise<void>;
+  handleDeleteFolder: (folderPath: string) => Promise<void>;
+  handleRenameFolder: (folderPath: string, newName: string) => Promise<void>;
 }
 
 export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
@@ -72,9 +68,6 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState<StatusMessage | null>(null);
-
-  const [uploadFolder, setUploadFolder] = useState<R2UploadFolder>(R2_UPLOAD_FOLDERS.media);
-  const [libraryFolderLabel, setLibraryFolderLabel] = useState("general");
 
   const [currentPath, setCurrentPath] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -228,8 +221,9 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
   const handleUploadFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
-    const allowedMimeTypes = new Set(getMimeTypesForFolder(uploadFolder));
-    const maxBytes = R2_UPLOAD_POLICIES[uploadFolder].maxBytes;
+    const folder = R2_UPLOAD_FOLDERS.media;
+    const allowedMimeTypes = new Set(getMimeTypesForFolder(folder));
+    const maxBytes = R2_UPLOAD_POLICIES[folder].maxBytes;
 
     setUploading(true);
     setMessage(null);
@@ -240,7 +234,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
 
       for (const file of Array.from(files)) {
         if (!allowedMimeTypes.has(file.type.toLowerCase())) {
-          throw new Error(`File type not allowed for ${uploadFolder}: ${file.name}`);
+          throw new Error(`File type not allowed: ${file.name}`);
         }
 
         if (file.size <= 0 || file.size > maxBytes) {
@@ -248,23 +242,15 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
           throw new Error(`File is empty or exceeds ${maxMB}MB: ${file.name}`);
         }
 
-        const mediaType = inferMediaTypeFromFile(file);
-        if (uploadFolder === R2_UPLOAD_FOLDERS.heroShowreel && mediaType !== "video") {
-          throw new Error(`Hero showreel folder accepts videos only: ${file.name}`);
-        }
-
         const { reused } = await uploadOrReuseMediaLibraryItem({
           file,
-          uploadFolder,
+          uploadFolder: folder,
           preferredName: stripFileExtension(file.name),
-          folderOrigin: libraryFolderLabel.trim() || uploadFolder,
+          folderOrigin: currentPath || folder,
         });
 
-        if (reused) {
-          reusedCount += 1;
-        } else {
-          uploadedCount += 1;
-        }
+        if (reused) reusedCount += 1;
+        else uploadedCount += 1;
       }
 
       setMessage({
@@ -304,28 +290,109 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     );
   };
 
-  const handleMoveFolder = async (itemId: string, nextFolder: string) => {
-    const normalizedFolder = nextFolder.trim();
-    if (!normalizedFolder) {
-      setMessage({ type: "error", text: "Folder name cannot be empty." });
-      return;
-    }
+  const handleCreateFolder = (name: string) => {
+    const safeName = name
+      .trim()
+      .replace(/[^a-z0-9_-]/gi, "-")
+      .toLowerCase();
+    setCurrentPath(currentPath ? `${currentPath}/${safeName}` : safeName);
+  };
 
-    const { error } = await supabase
-      .from("media_library")
-      .update({ folder_origin: normalizedFolder })
-      .eq("id", itemId);
+  const handleDeleteMedia = async (itemId: string) => {
+    const { error } = await supabase.from("media_library").delete().eq("id", itemId);
 
     if (error) {
       setMessage({ type: "error", text: error.message });
       return;
     }
 
+    setItems((prev) => prev.filter((item) => item.id !== itemId));
+  };
+
+  const handleDeleteFolder = async (folderPath: string) => {
+    const normalized = normalizeFolderPath(folderPath);
+
+    const { error: errExact } = await supabase
+      .from("media_library")
+      .delete()
+      .eq("folder_origin", normalized);
+
+    if (errExact) {
+      setMessage({ type: "error", text: errExact.message });
+      return;
+    }
+
+    const { error: errSub } = await supabase
+      .from("media_library")
+      .delete()
+      .filter("folder_origin", "like", `${normalized}/%`);
+
+    if (errSub) {
+      setMessage({ type: "error", text: errSub.message });
+      return;
+    }
+
     setItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, folder_origin: normalizedFolder } : item,
-      ),
+      prev.filter((item) => {
+        const itemPath = normalizeFolderPath(item.folder_origin);
+        return itemPath !== normalized && !itemPath.startsWith(`${normalized}/`);
+      }),
     );
+
+    if (currentPath === normalized || currentPath.startsWith(`${normalized}/`)) {
+      setCurrentPath(getParentPath(normalized));
+    }
+  };
+
+  const handleRenameFolder = async (folderPath: string, newName: string) => {
+    const safeName = newName.trim();
+    if (!safeName) {
+      setMessage({ type: "error", text: "Folder name cannot be empty." });
+      return;
+    }
+
+    const parentPath = getParentPath(folderPath);
+    const newPath = parentPath ? `${parentPath}/${safeName}` : safeName;
+
+    const { data: exactRows, error: e1 } = await supabase
+      .from("media_library")
+      .select("id, folder_origin")
+      .eq("folder_origin", folderPath);
+
+    const { data: subRows, error: e2 } = await supabase
+      .from("media_library")
+      .select("id, folder_origin")
+      .filter("folder_origin", "like", `${folderPath}/%`);
+
+    if (e1 ?? e2) {
+      setMessage({ type: "error", text: (e1 ?? e2)!.message });
+      return;
+    }
+
+    const allRows = [
+      ...((exactRows ?? []) as Array<{ id: string; folder_origin: string | null }>),
+      ...((subRows ?? []) as Array<{ id: string; folder_origin: string | null }>),
+    ];
+
+    for (const row of allRows) {
+      if (!row.folder_origin) continue;
+      const updatedOrigin = row.folder_origin.replace(folderPath, newPath);
+      const { error: updateErr } = await supabase
+        .from("media_library")
+        .update({ folder_origin: updatedOrigin })
+        .eq("id", row.id);
+
+      if (updateErr) {
+        setMessage({ type: "error", text: updateErr.message });
+        return;
+      }
+    }
+
+    if (currentPath === folderPath || currentPath.startsWith(`${folderPath}/`)) {
+      setCurrentPath(currentPath.replace(folderPath, newPath));
+    }
+
+    await loadItems();
   };
 
   return {
@@ -334,10 +401,6 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     uploading,
     message,
     setMessage,
-    uploadFolder,
-    setUploadFolder,
-    libraryFolderLabel,
-    setLibraryFolderLabel,
     currentPath,
     setCurrentPath,
     searchQuery,
@@ -353,6 +416,9 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     loadItems,
     handleUploadFiles,
     handleRename,
-    handleMoveFolder,
+    handleCreateFolder,
+    handleDeleteMedia,
+    handleDeleteFolder,
+    handleRenameFolder,
   };
 };

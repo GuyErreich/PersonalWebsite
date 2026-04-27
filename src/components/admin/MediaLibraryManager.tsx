@@ -4,26 +4,41 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { motion } from "framer-motion";
-import { FolderOpen } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Eye, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 import { useMediaLibraryExplorer } from "../../hooks/mediaLibrary/useMediaLibraryExplorer";
-import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+  playMenuOpenSound,
+} from "../../lib/sound/interactionSounds";
+import { ActionDialog } from "./mediaLibrary/ActionDialog";
+import { ContextMenu, type ContextMenuItem } from "./mediaLibrary/ContextMenu";
 import { ExplorerBreadcrumbs } from "./mediaLibrary/ExplorerBreadcrumbs";
 import { ExplorerToolbar } from "./mediaLibrary/ExplorerToolbar";
 import { FolderCard } from "./mediaLibrary/FolderCard";
 import { MediaCard } from "./mediaLibrary/MediaCard";
 import { MediaPreviewModal } from "./mediaLibrary/MediaPreviewModal";
-import { MediaUploadPanel } from "./mediaLibrary/MediaUploadPanel";
+import type { FolderEntry, MediaEntry } from "./mediaLibrary/types";
+
+type ContextTarget =
+  | { kind: "canvas" }
+  | { kind: "folder"; entry: FolderEntry }
+  | { kind: "media"; entry: MediaEntry };
+
+type PendingAction =
+  | { kind: "new-folder" }
+  | { kind: "rename-folder"; entry: FolderEntry }
+  | { kind: "rename-media"; entry: MediaEntry }
+  | null;
 
 export const MediaLibraryManager = () => {
   const {
     loading,
     uploading,
     message,
-    uploadFolder,
-    setUploadFolder,
-    libraryFolderLabel,
-    setLibraryFolderLabel,
     currentPath,
     setCurrentPath,
     searchQuery,
@@ -39,8 +54,95 @@ export const MediaLibraryManager = () => {
     loadItems,
     handleUploadFiles,
     handleRename,
-    handleMoveFolder,
+    handleRenameFolder,
+    handleCreateFolder,
+    handleDeleteMedia,
+    handleDeleteFolder,
   } = useMediaLibraryExplorer();
+
+  const [ctxMenu, setCtxMenu] = useState<{
+    x: number;
+    y: number;
+    target: ContextTarget;
+  } | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const openCtxMenu = (
+    e: { clientX: number; clientY: number; preventDefault(): void; stopPropagation(): void },
+    target: ContextTarget,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    playMenuOpenSound();
+    setCtxMenu({ x: e.clientX, y: e.clientY, target });
+  };
+
+  const buildMenuItems = (target: ContextTarget): ContextMenuItem[] => {
+    if (target.kind === "canvas") {
+      return [
+        {
+          label: "New Folder",
+          icon: <FolderPlus className="h-3.5 w-3.5" />,
+          onClick: () => setPendingAction({ kind: "new-folder" }),
+        },
+        {
+          label: "Upload File",
+          icon: <Upload className="h-3.5 w-3.5" />,
+          onClick: () => fileInputRef.current?.click(),
+        },
+      ];
+    }
+
+    if (target.kind === "folder") {
+      const { entry } = target;
+      return [
+        {
+          label: "Open",
+          icon: <FolderOpen className="h-3.5 w-3.5" />,
+          onClick: () => {
+            setCurrentPath(entry.path);
+            setSearchQuery("");
+          },
+        },
+        {
+          label: "Rename",
+          icon: <Pencil className="h-3.5 w-3.5" />,
+          onClick: () => setPendingAction({ kind: "rename-folder", entry }),
+        },
+        {
+          label: "Delete",
+          icon: <Trash2 className="h-3.5 w-3.5" />,
+          danger: true,
+          onClick: () => {
+            void handleDeleteFolder(entry.path);
+          },
+        },
+      ];
+    }
+
+    const { entry } = target;
+    return [
+      {
+        label: "Preview",
+        icon: <Eye className="h-3.5 w-3.5" />,
+        onClick: () => setPreviewItem(entry.item),
+      },
+      {
+        label: "Rename",
+        icon: <Pencil className="h-3.5 w-3.5" />,
+        onClick: () => setPendingAction({ kind: "rename-media", entry }),
+      },
+      {
+        label: "Delete",
+        icon: <Trash2 className="h-3.5 w-3.5" />,
+        danger: true,
+        onClick: () => {
+          void handleDeleteMedia(entry.id);
+        },
+      },
+    ];
+  };
 
   return (
     <div className="rounded-xl border border-gray-700 bg-gray-800 p-6">
@@ -65,16 +167,6 @@ export const MediaLibraryManager = () => {
           {loading ? "Refreshing..." : "Refresh"}
         </motion.button>
       </div>
-
-      <MediaUploadPanel
-        uploadFolder={uploadFolder}
-        setUploadFolder={setUploadFolder}
-        libraryFolderLabel={libraryFolderLabel}
-        setLibraryFolderLabel={setLibraryFolderLabel}
-        onUpload={(files) => {
-          void handleUploadFiles(files);
-        }}
-      />
 
       {message && (
         <div
@@ -106,38 +198,103 @@ export const MediaLibraryManager = () => {
 
       {loading ? (
         <p className="py-8 text-center text-sm text-gray-400">Loading explorer...</p>
-      ) : explorerEntries.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-700 p-8 text-center text-sm text-gray-500">
-          No folders or media match your current search/filter.
-        </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {explorerEntries.map((entry) =>
-            entry.kind === "folder" ? (
-              <FolderCard
-                key={entry.id}
-                entry={entry}
-                onNavigate={setCurrentPath}
-                onClearSearch={() => setSearchQuery("")}
-              />
-            ) : (
-              <MediaCard
-                key={entry.id}
-                entry={entry}
-                onPreview={setPreviewItem}
-                onRename={(id, name) => {
-                  void handleRename(id, name);
-                }}
-                onMoveFolder={(id, folder) => {
-                  void handleMoveFolder(id, folder);
-                }}
-              />
-            ),
+        <section
+          aria-label="File explorer"
+          className="grid min-h-48 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+          onContextMenu={(e) => openCtxMenu(e, { kind: "canvas" })}
+        >
+          {explorerEntries.length === 0 ? (
+            <p className="col-span-full py-8 text-center text-sm text-gray-500">
+              Empty — right-click to upload a file or create a subfolder.
+            </p>
+          ) : (
+            explorerEntries.map((entry) =>
+              entry.kind === "folder" ? (
+                <FolderCard
+                  key={entry.id}
+                  entry={entry}
+                  onNavigate={setCurrentPath}
+                  onClearSearch={() => setSearchQuery("")}
+                  onContextMenu={(e) => openCtxMenu(e, { kind: "folder", entry })}
+                />
+              ) : (
+                <MediaCard
+                  key={entry.id}
+                  entry={entry}
+                  onPreview={setPreviewItem}
+                  onContextMenu={(e) => openCtxMenu(e, { kind: "media", entry })}
+                />
+              ),
+            )
           )}
-        </div>
+        </section>
       )}
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,video/*"
+        className="hidden"
+        onChange={(e) => {
+          void handleUploadFiles(e.currentTarget.files);
+          e.currentTarget.value = "";
+        }}
+      />
+
       {previewItem && <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />}
+
+      <AnimatePresence>
+        {ctxMenu && (
+          <ContextMenu
+            key="ctx"
+            x={ctxMenu.x}
+            y={ctxMenu.y}
+            items={buildMenuItems(ctxMenu.target)}
+            onClose={() => {
+              playMenuCloseSound();
+              setCtxMenu(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {pendingAction?.kind === "new-folder" && (
+          <ActionDialog
+            key="dlg-new"
+            title="New Folder"
+            placeholder="folder-name"
+            onConfirm={(name) => handleCreateFolder(name)}
+            onClose={() => setPendingAction(null)}
+          />
+        )}
+
+        {pendingAction?.kind === "rename-folder" && (
+          <ActionDialog
+            key="dlg-rf"
+            title={`Rename "${pendingAction.entry.name}"`}
+            defaultValue={pendingAction.entry.name}
+            onConfirm={(name) => {
+              void handleRenameFolder(pendingAction.entry.path, name);
+            }}
+            onClose={() => setPendingAction(null)}
+          />
+        )}
+
+        {pendingAction?.kind === "rename-media" && (
+          <ActionDialog
+            key="dlg-rm"
+            title={`Rename "${pendingAction.entry.name}"`}
+            defaultValue={pendingAction.entry.name}
+            onConfirm={(name) => {
+              void handleRename(pendingAction.entry.id, name);
+            }}
+            onClose={() => setPendingAction(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
