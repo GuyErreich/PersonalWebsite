@@ -69,7 +69,7 @@ const FOLDER_POLICIES: Record<
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
-    maxBytes: 100 * 1024 * 1024,
+    maxBytes: 2 * 1024 * 1024 * 1024,
   },
   "hero-showreel": {
     mimeTypeExtensions: {
@@ -78,7 +78,7 @@ const FOLDER_POLICIES: Record<
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
-    maxBytes: 200 * 1024 * 1024,
+    maxBytes: 2 * 1024 * 1024 * 1024,
   },
   "gamedev-assets": {
     mimeTypeExtensions: {
@@ -92,7 +92,7 @@ const FOLDER_POLICIES: Record<
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
-    maxBytes: 100 * 1024 * 1024,
+    maxBytes: 2 * 1024 * 1024 * 1024,
   },
   "gamedev-thumbnails": {
     mimeTypeExtensions: {
@@ -102,7 +102,7 @@ const FOLDER_POLICIES: Record<
       "image/gif": ["gif"],
       "image/avif": ["avif"],
     },
-    maxBytes: 5 * 1024 * 1024,
+    maxBytes: 50 * 1024 * 1024,
   },
 };
 

@@ -34,7 +34,7 @@ export const R2_UPLOAD_POLICIES: Record<R2UploadFolder, R2UploadPolicy> = {
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
-    maxBytes: 100 * 1024 * 1024,
+    maxBytes: 2 * 1024 * 1024 * 1024,
   },
   [R2_UPLOAD_FOLDERS.heroShowreel]: {
     mimeTypeExtensions: {
@@ -43,7 +43,7 @@ export const R2_UPLOAD_POLICIES: Record<R2UploadFolder, R2UploadPolicy> = {
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
-    maxBytes: 200 * 1024 * 1024,
+    maxBytes: 2 * 1024 * 1024 * 1024,
   },
   [R2_UPLOAD_FOLDERS.gameDevAssets]: {
     mimeTypeExtensions: {
@@ -57,7 +57,7 @@ export const R2_UPLOAD_POLICIES: Record<R2UploadFolder, R2UploadPolicy> = {
       "video/ogg": ["ogg"],
       "video/quicktime": ["mov"],
     },
-    maxBytes: 100 * 1024 * 1024,
+    maxBytes: 2 * 1024 * 1024 * 1024,
   },
   [R2_UPLOAD_FOLDERS.gameDevThumbnails]: {
     mimeTypeExtensions: {
@@ -67,7 +67,7 @@ export const R2_UPLOAD_POLICIES: Record<R2UploadFolder, R2UploadPolicy> = {
       "image/gif": ["gif"],
       "image/avif": ["avif"],
     },
-    maxBytes: 5 * 1024 * 1024,
+    maxBytes: 50 * 1024 * 1024,
   },
 };
 

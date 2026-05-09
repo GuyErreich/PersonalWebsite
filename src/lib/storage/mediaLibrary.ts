@@ -37,6 +37,19 @@ export const hashFileSha256 = async (file: File): Promise<string> => {
   return toHexString(new Uint8Array(digest));
 };
 
+export const findDuplicateByHash = async (file: File): Promise<MediaLibraryItem | null> => {
+  const contentHash = await hashFileSha256(file);
+
+  const { data, error } = await supabase
+    .from("media_library")
+    .select("*")
+    .eq("content_hash", contentHash)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data ? (data as MediaLibraryItem) : null;
+};
+
 interface UploadOrReuseMediaLibraryItemArgs {
   file: File;
   uploadFolder: R2UploadFolder;
