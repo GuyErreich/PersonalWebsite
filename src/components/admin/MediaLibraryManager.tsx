@@ -15,6 +15,7 @@ import {
   playMenuOpenSound,
 } from "../../lib/sound/interactionSounds";
 import { ActionDialog } from "./mediaLibrary/ActionDialog";
+import { ConfirmDialog } from "./mediaLibrary/ConfirmDialog";
 import { ContextMenu, type ContextMenuItem } from "./mediaLibrary/ContextMenu";
 import { ExplorerBreadcrumbs } from "./mediaLibrary/ExplorerBreadcrumbs";
 import { ExplorerToolbar } from "./mediaLibrary/ExplorerToolbar";
@@ -58,6 +59,8 @@ export const MediaLibraryManager = () => {
     handleCreateFolder,
     handleDeleteMedia,
     handleDeleteFolder,
+    pendingDuplicate,
+    respondDuplicate,
   } = useMediaLibraryExplorer();
 
   const [ctxMenu, setCtxMenu] = useState<{
@@ -201,7 +204,7 @@ export const MediaLibraryManager = () => {
       ) : (
         <section
           aria-label="File explorer"
-          className="grid min-h-48 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+          className="grid min-h-48 grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
           onContextMenu={(e) => openCtxMenu(e, { kind: "canvas" })}
         >
           {explorerEntries.length === 0 ? (
@@ -292,6 +295,18 @@ export const MediaLibraryManager = () => {
               void handleRename(pendingAction.entry.id, name);
             }}
             onClose={() => setPendingAction(null)}
+          />
+        )}
+
+        {pendingDuplicate && (
+          <ConfirmDialog
+            key="dlg-dup"
+            title="Duplicate detected"
+            description={`"${pendingDuplicate.file.name}" already exists in the library as "${pendingDuplicate.existing.name}". Use the existing item or skip this file?`}
+            confirmLabel="Use Existing"
+            cancelLabel="Skip"
+            onConfirm={() => respondDuplicate("use")}
+            onCancel={() => respondDuplicate("skip")}
           />
         )}
       </AnimatePresence>
