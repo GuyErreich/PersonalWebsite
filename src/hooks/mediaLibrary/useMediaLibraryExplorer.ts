@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   EntryTypeFilter,
   ExplorerEntry,
@@ -22,6 +22,7 @@ import {
   splitPath,
 } from "../../lib/mediaLibraryPaths";
 import {
+  findDuplicateByHash,
   type MediaLibraryItem,
   stripFileExtension,
   uploadOrReuseMediaLibraryItem,
@@ -61,6 +62,9 @@ export interface MediaLibraryExplorerState {
   handleDeleteMedia: (id: string) => Promise<void>;
   handleDeleteFolder: (folderPath: string) => Promise<void>;
   handleRenameFolder: (folderPath: string, newName: string) => Promise<void>;
+
+  pendingDuplicate: { file: File; existing: MediaLibraryItem } | null;
+  respondDuplicate: (action: "use" | "skip") => void;
 }
 
 export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
@@ -74,6 +78,24 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
   const [entryTypeFilter, setEntryTypeFilter] = useState<EntryTypeFilter>("all");
   const [sortOption, setSortOption] = useState<SortOption>("updated-desc");
   const [previewItem, setPreviewItem] = useState<MediaLibraryItem | null>(null);
+
+  const [pendingDuplicate, setPendingDuplicate] = useState<{
+    file: File;
+    existing: MediaLibraryItem;
+  } | null>(null);
+  const duplicateResolveRef = useRef<((action: "use" | "skip") => void) | null>(null);
+
+  const askDuplicate = (file: File, existing: MediaLibraryItem): Promise<"use" | "skip"> =>
+    new Promise((resolve) => {
+      duplicateResolveRef.current = resolve;
+      setPendingDuplicate({ file, existing });
+    });
+
+  const respondDuplicate = (action: "use" | "skip") => {
+    setPendingDuplicate(null);
+    duplicateResolveRef.current?.(action);
+    duplicateResolveRef.current = null;
+  };
 
   const loadItems = async () => {
     setLoading(true);
@@ -240,6 +262,13 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
         if (file.size <= 0 || file.size > maxBytes) {
           const maxMB = Math.round(maxBytes / (1024 * 1024));
           throw new Error(`File is empty or exceeds ${maxMB}MB: ${file.name}`);
+        }
+
+        const duplicate = await findDuplicateByHash(file);
+        if (duplicate) {
+          const action = await askDuplicate(file, duplicate);
+          if (action === "skip") continue;
+          // "use" — fall through to uploadOrReuseMediaLibraryItem which reuses the hash
         }
 
         const { reused } = await uploadOrReuseMediaLibraryItem({
@@ -420,5 +449,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     handleDeleteMedia,
     handleDeleteFolder,
     handleRenameFolder,
+    pendingDuplicate,
+    respondDuplicate,
   };
 };
