@@ -5,8 +5,8 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { ExternalLink, Eye, FolderOpen, FolderPlus, Pencil, Trash2, Upload } from "lucide-react";
+import { type DragEvent, useRef, useState } from "react";
 import { useMediaLibraryExplorer } from "../../hooks/mediaLibrary/useMediaLibraryExplorer";
 import {
   playClickSound,
@@ -23,6 +23,7 @@ import { FolderCard } from "./mediaLibrary/FolderCard";
 import { MediaCard } from "./mediaLibrary/MediaCard";
 import { MediaPreviewModal } from "./mediaLibrary/MediaPreviewModal";
 import type { FolderEntry, MediaEntry } from "./mediaLibrary/types";
+import { UploadProgressModal } from "./mediaLibrary/UploadProgressModal";
 
 type ContextTarget =
   | { kind: "canvas" }
@@ -36,6 +37,14 @@ type PendingAction =
   | null;
 
 export const MediaLibraryManager = () => {
+  const supabaseProjectRef = import.meta.env.VITE_SUPABASE_URL?.match(
+    /^https:\/\/([^.]+)\.supabase\.co$/i,
+  )?.[1];
+
+  const supabaseDashboardUrl = supabaseProjectRef
+    ? `https://supabase.com/dashboard/project/${supabaseProjectRef}`
+    : null;
+
   const {
     loading,
     uploading,
@@ -52,12 +61,17 @@ export const MediaLibraryManager = () => {
     setPreviewItem,
     breadcrumbs,
     explorerEntries,
+    uploadProgressItems,
+    isUploadProgressOpen,
+    closeUploadProgress,
     loadItems,
     handleUploadFiles,
     handleRename,
     handleRenameFolder,
     handleCreateFolder,
     handleDeleteMedia,
+    handleMoveMediaToFolder,
+    handleMoveFolderToFolder,
     handleDeleteFolder,
     pendingDuplicate,
     respondDuplicate,
@@ -69,7 +83,12 @@ export const MediaLibraryManager = () => {
     target: ContextTarget;
   } | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [isExternalDropActive, setIsExternalDropActive] = useState(false);
+  const externalDragDepthRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isExternalFileDrag = (e: DragEvent<HTMLElement>): boolean =>
+    Array.from(e.dataTransfer.types).includes("Files");
 
   const openCtxMenu = (
     e: { clientX: number; clientY: number; preventDefault(): void; stopPropagation(): void },
@@ -155,20 +174,39 @@ export const MediaLibraryManager = () => {
           <h2 className="text-xl font-bold text-white">Media Library</h2>
         </div>
 
-        <motion.button
-          type="button"
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.95 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => {
-            playClickSound();
-            void loadItems();
-          }}
-          disabled={loading}
-          className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:border-cyan-500/40 hover:text-cyan-200 disabled:opacity-50"
-        >
-          {loading ? "Refreshing..." : "Refresh"}
-        </motion.button>
+        <div className="flex items-center gap-2">
+          {supabaseDashboardUrl && (
+            <motion.a
+              href={supabaseDashboardUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:border-cyan-500/40 hover:text-cyan-200"
+              aria-label="Open Supabase dashboard"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open Supabase
+            </motion.a>
+          )}
+
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.95 }}
+            onMouseEnter={playHoverSound}
+            onClick={() => {
+              playClickSound();
+              void loadItems();
+            }}
+            disabled={loading}
+            className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 hover:border-cyan-500/40 hover:text-cyan-200 disabled:opacity-50"
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </motion.button>
+        </div>
       </div>
 
       {message && (
@@ -204,9 +242,47 @@ export const MediaLibraryManager = () => {
       ) : (
         <section
           aria-label="File explorer"
-          className="grid min-h-48 grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          className={`relative grid min-h-48 grid-cols-2 gap-6 rounded-lg p-2 transition-colors sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 ${
+            isExternalDropActive ? "bg-cyan-500/10 ring-2 ring-cyan-300/60" : ""
+          }`}
+          onDragOver={(e) => {
+            if (!isExternalFileDrag(e)) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "copy";
+            setIsExternalDropActive(true);
+          }}
+          onDragEnter={(e) => {
+            if (!isExternalFileDrag(e)) return;
+            externalDragDepthRef.current += 1;
+            setIsExternalDropActive(true);
+          }}
+          onDragLeave={(e) => {
+            if (!isExternalFileDrag(e)) return;
+            externalDragDepthRef.current = Math.max(0, externalDragDepthRef.current - 1);
+            if (externalDragDepthRef.current === 0) {
+              setIsExternalDropActive(false);
+            }
+          }}
+          onDrop={(e) => {
+            if (!isExternalFileDrag(e)) return;
+            e.preventDefault();
+            externalDragDepthRef.current = 0;
+            setIsExternalDropActive(false);
+
+            if (e.dataTransfer.files.length > 0) {
+              void handleUploadFiles(e.dataTransfer.files);
+            }
+          }}
           onContextMenu={(e) => openCtxMenu(e, { kind: "canvas" })}
         >
+          {isExternalDropActive && (
+            <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-lg border border-dashed border-cyan-200/70 bg-cyan-500/10">
+              <p className="rounded-md border border-cyan-200/80 bg-cyan-500/25 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-cyan-50">
+                Drop Files To Upload
+              </p>
+            </div>
+          )}
+
           {explorerEntries.length === 0 ? (
             <p className="col-span-full py-8 text-center text-sm text-gray-500">
               Empty — right-click to upload a file or create a subfolder.
@@ -219,6 +295,15 @@ export const MediaLibraryManager = () => {
                   entry={entry}
                   onNavigate={setCurrentPath}
                   onClearSearch={() => setSearchQuery("")}
+                  onDropExternalFiles={(files, folderPath) => {
+                    void handleUploadFiles(files, folderPath);
+                  }}
+                  onDropMedia={(itemId, folderPath) => {
+                    void handleMoveMediaToFolder(itemId, folderPath);
+                  }}
+                  onDropFolder={(folderPath, targetFolderPath) => {
+                    void handleMoveFolderToFolder(folderPath, targetFolderPath);
+                  }}
                   onContextMenu={(e) => openCtxMenu(e, { kind: "folder", entry })}
                 />
               ) : (
@@ -247,6 +332,14 @@ export const MediaLibraryManager = () => {
       />
 
       {previewItem && <MediaPreviewModal item={previewItem} onClose={() => setPreviewItem(null)} />}
+
+      {isUploadProgressOpen && (
+        <UploadProgressModal
+          items={uploadProgressItems}
+          uploading={uploading}
+          onClose={closeUploadProgress}
+        />
+      )}
 
       <AnimatePresence>
         {ctxMenu && (

@@ -26,7 +26,12 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
       role="option"
       aria-selected={false}
       tabIndex={0}
+      draggable
       className="rounded-lg border border-gray-700 bg-gray-900/30 p-3"
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("application/x-media-item-id", entry.id);
+      }}
       onContextMenu={(e) => {
         e.preventDefault();
         e.stopPropagation();

@@ -88,19 +88,30 @@ export const uploadToR2 = async (
   }
 
   // Ask the edge function to generate a presigned URL (credentials stay server-side)
-  const presignRes = await fetch(PRESIGN_FUNCTION_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({
-      contentType: file.type,
-      contentLength: file.size,
-      fileExt,
-      folderPath,
-    }),
-  });
+  let presignRes: Response;
+  try {
+    presignRes = await fetch(PRESIGN_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        contentType: file.type,
+        contentLength: file.size,
+        fileExt,
+        folderPath,
+      }),
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown browser network error while calling presign endpoint.";
+    throw new Error(
+      `Cannot reach upload presign service. Check network/CORS and Supabase function availability (${PRESIGN_FUNCTION_URL}). ${message}`,
+    );
+  }
 
   if (!presignRes.ok) {
     let body: unknown = {};
@@ -128,11 +139,22 @@ export const uploadToR2 = async (
   const publicUrl = publicUrlParsed.href;
 
   // Upload the file directly to R2 using the short-lived presigned URL
-  const uploadRes = await fetch(signedUrl, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type },
-  });
+  let uploadRes: Response;
+  try {
+    uploadRes = await fetch(signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown browser network error while uploading to R2.";
+    throw new Error(
+      `Upload request failed before reaching R2. Check browser/network policy for presigned PUT URL. ${message}`,
+    );
+  }
 
   if (!uploadRes.ok) {
     const errorText = await uploadRes.text().catch(() => "");

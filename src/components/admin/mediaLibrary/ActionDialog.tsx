@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   playClickSound,
   playMenuCloseSound,
@@ -16,7 +16,7 @@ interface Props {
   title: string;
   placeholder?: string;
   defaultValue?: string;
-  onConfirm: (value: string) => void;
+  onConfirm: (value: string) => void | Promise<void>;
   onClose: () => void;
 }
 
@@ -28,6 +28,7 @@ export const ActionDialog = ({
   onClose,
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     playMenuOpenSound();
@@ -48,11 +49,13 @@ export const ActionDialog = ({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     const value = inputRef.current?.value.trim() ?? "";
     if (!value) return;
+    setIsSubmitting(true);
     playClickSound();
-    onConfirm(value);
+    await Promise.resolve(onConfirm(value));
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -98,7 +101,8 @@ export const ActionDialog = ({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleBackdropClick}
-            className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200"
+            disabled={isSubmitting}
+            className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </motion.button>
@@ -108,9 +112,10 @@ export const ActionDialog = ({
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleConfirm}
-            className="rounded-md bg-cyan-600 px-3 py-1.5 text-sm text-white hover:bg-cyan-500"
+            disabled={isSubmitting}
+            className="rounded-md bg-cyan-600 px-3 py-1.5 text-sm text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Confirm
+            {isSubmitting ? "Creating..." : "Confirm"}
           </motion.button>
         </div>
       </motion.div>

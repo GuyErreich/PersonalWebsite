@@ -11,14 +11,23 @@ export type SortOption = "updated-desc" | "created-desc" | "name-asc" | "size-de
 
 export type EntryTypeFilter = "all" | "folders" | "image" | "video";
 
+export interface FolderRecord {
+  id: string;
+  name: string;
+  path: string;
+  parentPath: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface FolderNode {
   path: string;
   name: string;
   parentPath: string;
   itemCount: number;
   latestUpdatedAt: string;
-  coverMediaUrl: string;
-  coverMediaType: "image" | "video";
+  coverMediaUrl: string | null;
+  coverMediaType: "image" | "video" | null;
 }
 
 export interface FolderEntry {
@@ -29,8 +38,8 @@ export interface FolderEntry {
   parentPath: string;
   itemCount: number;
   latestUpdatedAt: string;
-  coverMediaUrl: string;
-  coverMediaType: "image" | "video";
+  coverMediaUrl: string | null;
+  coverMediaType: "image" | "video" | null;
 }
 
 export interface MediaEntry {

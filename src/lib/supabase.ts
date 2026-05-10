@@ -125,6 +125,33 @@ interface Database {
         };
         Relationships: [];
       };
+      media_library_folders: {
+        Row: {
+          id: string;
+          name: string;
+          path: string;
+          parent_path: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          path: string;
+          parent_path?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          path?: string;
+          parent_path?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       devops_projects: {
         Row: {
           id: string;
