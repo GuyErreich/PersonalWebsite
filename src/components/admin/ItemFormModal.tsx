@@ -457,6 +457,11 @@ export const ItemFormModal = ({
           finalMediaUrl = item.media_url;
         }
 
+        if (!isEditingGameDev && finalMediaUrl.trim().length === 0) {
+          setError("Feature media is required when creating a Game Dev project.");
+          return;
+        }
+
         if (isEditingGameDev && sourceGameDev) {
           const { error: updateError } = await supabase
             .from("gamedev_items")
@@ -1190,13 +1195,17 @@ export const ItemFormModal = ({
             </div>
 
             <div className="border-t border-gray-600 bg-gray-700 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-              <button
+              <motion.button
                 type="submit"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onMouseEnter={playHoverSound}
+                onClick={playClickSound}
                 disabled={loading}
                 className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 sm:ml-3 sm:w-auto sm:text-sm"
               >
                 {loading ? "Saving..." : isEditing ? "Update Item" : "Save Item"}
-              </button>
+              </motion.button>
               <button
                 type="button"
                 onMouseEnter={playHoverSound}

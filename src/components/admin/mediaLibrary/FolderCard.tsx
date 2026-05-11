@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import { Folder } from "lucide-react";
-import { type DragEvent, type MouseEvent, useRef, useState } from "react";
+import { type DragEvent, type MouseEvent, useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { FolderEntry } from "./types";
 
@@ -34,6 +34,14 @@ export const FolderCard = ({
   const [isClickAnimating, setIsClickAnimating] = useState(false);
   const dragDepthRef = useRef(0);
   const clickAnimationTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (clickAnimationTimeoutRef.current !== null) {
+        window.clearTimeout(clickAnimationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const triggerClickAnimation = () => {
     if (clickAnimationTimeoutRef.current !== null) {

@@ -22,22 +22,12 @@ import { createClient } from "npm:@supabase/supabase-js@2.102.1";
 // Set it to a comma-separated list, e.g.:
 //   supabase secrets set ALLOWED_ORIGINS="https://abc.pages.dev,https://yourdomain.com"
 const rawOrigins = Deno.env.get("ALLOWED_ORIGINS") ?? "";
-const DEV_FALLBACK_ORIGINS = new Set([
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-  "http://localhost:4173",
-  "http://127.0.0.1:4173",
-]);
 const ALLOWED_ORIGINS = new Set(
   rawOrigins
     .split(",")
     .map((o: string) => o.trim())
     .filter(Boolean),
 );
-
-for (const origin of DEV_FALLBACK_ORIGINS) {
-  ALLOWED_ORIGINS.add(origin);
-}
 
 // UPLOAD POLICY DUPLICATION NOTICE:
 // This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:

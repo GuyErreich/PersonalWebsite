@@ -69,18 +69,21 @@ export const ActionDialog = ({
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-      onClick={handleBackdropClick}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") handleBackdropClick();
-      }}
+      className="fixed inset-0 z-50 flex items-center justify-center"
     >
+      <motion.button
+        type="button"
+        aria-label="Close dialog"
+        className="absolute inset-0 bg-black/60"
+        onClick={handleBackdropClick}
+      />
+
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.15 }}
-        className="w-80 rounded-xl border border-gray-700 bg-gray-900 p-5 shadow-2xl"
+        className="relative w-80 rounded-xl border border-gray-700 bg-gray-900 p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-3 text-sm font-semibold text-white">{title}</h3>

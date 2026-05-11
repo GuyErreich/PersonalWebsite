@@ -15,7 +15,6 @@ import {
   playMenuOpenSound,
 } from "../../lib/sound/interactionSounds";
 import { ActionDialog } from "./mediaLibrary/ActionDialog";
-import { ConfirmDialog } from "./mediaLibrary/ConfirmDialog";
 import { ContextMenu, type ContextMenuItem } from "./mediaLibrary/ContextMenu";
 import { ExplorerBreadcrumbs } from "./mediaLibrary/ExplorerBreadcrumbs";
 import { ExplorerToolbar } from "./mediaLibrary/ExplorerToolbar";
@@ -73,8 +72,6 @@ export const MediaLibraryManager = () => {
     handleMoveMediaToFolder,
     handleMoveFolderToFolder,
     handleDeleteFolder,
-    pendingDuplicate,
-    respondDuplicate,
   } = useMediaLibraryExplorer();
 
   const [ctxMenu, setCtxMenu] = useState<{
@@ -388,18 +385,6 @@ export const MediaLibraryManager = () => {
               void handleRename(pendingAction.entry.id, name);
             }}
             onClose={() => setPendingAction(null)}
-          />
-        )}
-
-        {pendingDuplicate && (
-          <ConfirmDialog
-            key="dlg-dup"
-            title="Duplicate detected"
-            description={`"${pendingDuplicate.file.name}" already exists in the library as "${pendingDuplicate.existing.name}". Use the existing item or skip this file?`}
-            confirmLabel="Use Existing"
-            cancelLabel="Skip"
-            onConfirm={() => respondDuplicate("use")}
-            onCancel={() => respondDuplicate("skip")}
           />
         )}
       </AnimatePresence>

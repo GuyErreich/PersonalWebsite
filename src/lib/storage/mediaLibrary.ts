@@ -31,7 +31,16 @@ const toHexString = (bytes: Uint8Array): string =>
     .map((byteValue) => byteValue.toString(16).padStart(2, "0"))
     .join("");
 
+const MAX_CLIENT_HASH_BYTES = 200 * 1024 * 1024;
+
 export const hashFileSha256 = async (file: File): Promise<string> => {
+  if (file.size > MAX_CLIENT_HASH_BYTES) {
+    const maxMegabytes = Math.round(MAX_CLIENT_HASH_BYTES / (1024 * 1024));
+    throw new Error(
+      `File is too large for client-side hashing (${maxMegabytes}MB max). Please use a smaller file.`,
+    );
+  }
+
   const fileBuffer = await file.arrayBuffer();
   const digest = await crypto.subtle.digest("SHA-256", fileBuffer);
   return toHexString(new Uint8Array(digest));

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   EntryTypeFilter,
   ExplorerEntry,
@@ -23,7 +23,6 @@ import {
   splitPath,
 } from "../../lib/mediaLibraryPaths";
 import {
-  findDuplicateByHash,
   type MediaLibraryItem,
   stripFileExtension,
   uploadOrReuseMediaLibraryItem,
@@ -75,9 +74,6 @@ export interface MediaLibraryExplorerState {
   handleMoveFolderToFolder: (folderPath: string, targetFolderPath: string) => Promise<void>;
   handleDeleteFolder: (folderPath: string) => Promise<void>;
   handleRenameFolder: (folderPath: string, newName: string) => Promise<void>;
-
-  pendingDuplicate: { file: File; existing: MediaLibraryItem } | null;
-  respondDuplicate: (action: "use" | "skip") => void;
 }
 
 export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
@@ -111,18 +107,6 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     }>
   >([]);
   const [isUploadProgressOpen, setIsUploadProgressOpen] = useState(false);
-
-  const [pendingDuplicate, setPendingDuplicate] = useState<{
-    file: File;
-    existing: MediaLibraryItem;
-  } | null>(null);
-  const duplicateResolveRef = useRef<((action: "use" | "skip") => void) | null>(null);
-
-  const respondDuplicate = (action: "use" | "skip") => {
-    setPendingDuplicate(null);
-    duplicateResolveRef.current?.(action);
-    duplicateResolveRef.current = null;
-  };
 
   const closeUploadProgress = () => {
     setIsUploadProgressOpen(false);
@@ -384,11 +368,6 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
 
         let reused = false;
         try {
-          const duplicate = await findDuplicateByHash(file);
-          if (duplicate) {
-            reused = true;
-          }
-
           const result = await uploadOrReuseMediaLibraryItem({
             file,
             uploadFolder: folder,
@@ -410,7 +389,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
         }
       };
 
-      const settled = await Promise.allSettled(
+      await Promise.all(
         filesToUpload.map(async (file, index) => {
           try {
             await runUpload(file, index);
@@ -424,11 +403,6 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
           }
         }),
       );
-
-      const hasRejected = settled.some((result) => result.status === "rejected");
-      if (hasRejected) {
-        failedCount += settled.filter((result) => result.status === "rejected").length;
-      }
 
       setMessage(
         failedCount > 0
@@ -710,6 +684,12 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       }),
     );
 
+    setFolders((prev) =>
+      prev.filter(
+        (folder) => folder.path !== normalized && !folder.path.startsWith(`${normalized}/`),
+      ),
+    );
+
     if (currentPath === normalized || currentPath.startsWith(`${normalized}/`)) {
       setCurrentPath(getParentPath(normalized));
     }
@@ -722,8 +702,30 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       return;
     }
 
+    const safePathSegment = safeName.replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
+    if (!safePathSegment) {
+      setMessage({ type: "error", text: "Folder name must include letters or numbers." });
+      return;
+    }
+
     const parentPath = getParentPath(folderPath);
-    const newPath = parentPath ? `${parentPath}/${safeName}` : safeName;
+    const newPath = parentPath ? `${parentPath}/${safePathSegment}` : safePathSegment;
+
+    const { data: existingDestination, error: destinationLookupError } = await supabase
+      .from("media_library_folders")
+      .select("id")
+      .eq("path", newPath)
+      .maybeSingle();
+
+    if (destinationLookupError) {
+      setMessage({ type: "error", text: destinationLookupError.message });
+      return;
+    }
+
+    if (existingDestination && newPath !== folderPath) {
+      setMessage({ type: "error", text: "A folder with that name already exists." });
+      return;
+    }
 
     const [
       { data: exactRows, error: e1 },
@@ -842,7 +844,5 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     handleMoveFolderToFolder,
     handleDeleteFolder,
     handleRenameFolder,
-    pendingDuplicate,
-    respondDuplicate,
   };
 };
