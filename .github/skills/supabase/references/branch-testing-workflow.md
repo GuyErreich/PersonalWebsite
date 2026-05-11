@@ -34,12 +34,7 @@ Use the Supabase CLI if MCP branch coverage is missing.
 
 ## Localhost-only CORS guidance
 Use a temporary branch secret for localhost origins instead of adding localhost to production.
-
-Example branch-only value:
-
-```text
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
-```
+Use the canonical value from [Localhost Origins Source](./localhost-origins.md).
 
 ## Cleanup checklist
 - Remove branch-only secrets.
