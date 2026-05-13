@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import { Play } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { formatVolumePercent } from "../../lib/format";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
 import {
@@ -103,7 +103,7 @@ export const ShowreelManager = () => {
     volumeAnimatorRef.current?.setImmediate(volumePercent);
   };
 
-  const loadLibraryVideos = async () => {
+  const loadLibraryVideos = useCallback(async () => {
     setIsLoadingLibrary(true);
 
     const { data, error } = await supabase
@@ -120,7 +120,7 @@ export const ShowreelManager = () => {
     }
 
     setLibraryVideos((data ?? []) as MediaLibraryItem[]);
-  };
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -190,7 +190,7 @@ export const ShowreelManager = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadLibraryVideos]);
 
   const setShowreelFromLibraryVideo = async (video: MediaLibraryItem) => {
     setIsSelectingLibraryVideo(true);

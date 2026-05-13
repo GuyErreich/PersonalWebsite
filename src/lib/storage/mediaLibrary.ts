@@ -86,31 +86,6 @@ export const uploadOrReuseMediaLibraryItem = async ({
 
   if (existingLibraryItem) {
     const existingItem = existingLibraryItem as MediaLibraryItem;
-    const normalizedName = (preferredName ?? "").trim();
-    const normalizedFolderOrigin = folderOrigin?.trim() ?? null;
-
-    const shouldPatchName = normalizedName.length > 0 && normalizedName !== existingItem.name;
-    const shouldPatchFolder =
-      normalizedFolderOrigin !== null && normalizedFolderOrigin !== existingItem.folder_origin;
-
-    if (shouldPatchName || shouldPatchFolder) {
-      const { data: updatedItem, error: updateError } = await supabase
-        .from("media_library")
-        .update({
-          name: shouldPatchName ? normalizedName : existingItem.name,
-          folder_origin: shouldPatchFolder ? normalizedFolderOrigin : existingItem.folder_origin,
-        })
-        .eq("id", existingItem.id)
-        .select("*")
-        .single();
-
-      if (updateError || !updatedItem) {
-        throw new Error(updateError?.message ?? "Unable to update existing media library item.");
-      }
-
-      return { item: updatedItem as MediaLibraryItem, reused: true };
-    }
-
     return { item: existingItem, reused: true };
   }
 
@@ -128,7 +103,8 @@ export const uploadOrReuseMediaLibraryItem = async ({
         media_url: parsedUpload.href,
         media_type: inferMediaTypeFromFile(file),
         content_hash: contentHash,
-        folder_origin: folderOrigin?.trim() || uploadFolder,
+        folder_origin:
+          folderOrigin === undefined || folderOrigin === null ? uploadFolder : folderOrigin.trim(),
         file_size_bytes: file.size,
       },
     ])

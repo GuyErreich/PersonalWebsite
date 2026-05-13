@@ -26,6 +26,7 @@ export const ExplorerToolbar = ({
 }: Props) => (
   <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-4">
     <label className="relative md:col-span-2 lg:col-span-2">
+      <span className="sr-only">Search folders and media</span>
       <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
       <input
         value={searchQuery}

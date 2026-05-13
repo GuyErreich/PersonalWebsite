@@ -68,6 +68,7 @@ export const ProjectCardBase = ({
               window.location.assign(detailsLink);
             }}
             aria-label={`Open ${title} project page`}
+            tabIndex={-1}
             className="absolute inset-0 z-10"
           />
         )}

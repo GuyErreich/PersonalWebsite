@@ -6,7 +6,12 @@
 
 import { motion } from "framer-motion";
 import { AlertTriangle, CheckCircle2, Loader2, XCircle } from "lucide-react";
-import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
+import { useId } from "react";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+} from "../../../lib/sound/interactionSounds";
 
 interface UploadProgressItem {
   id: string;
@@ -39,11 +44,17 @@ const getStatusIcon = (status: UploadProgressItem["status"]) => {
 };
 
 export const UploadProgressModal = ({ items, uploading, onClose }: Props) => {
+  const dialogTitleId = useId();
   const completeCount = items.filter((item) => item.status === "success").length;
   const errorCount = items.filter((item) => item.status === "error").length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={dialogTitleId}
+    >
       <motion.div
         initial={{ opacity: 0, y: 12, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -52,7 +63,9 @@ export const UploadProgressModal = ({ items, uploading, onClose }: Props) => {
       >
         <div className="mb-3 flex items-center justify-between gap-3 border-b border-gray-700 pb-3">
           <div>
-            <h3 className="text-sm font-semibold text-white">Upload Queue</h3>
+            <h3 id={dialogTitleId} className="text-sm font-semibold text-white">
+              Upload Queue
+            </h3>
             <p className="mt-1 text-xs text-gray-400">
               {uploading
                 ? `Uploading ${items.length} file${items.length === 1 ? "" : "s"} in parallel...`
@@ -67,6 +80,7 @@ export const UploadProgressModal = ({ items, uploading, onClose }: Props) => {
             onMouseEnter={playHoverSound}
             onClick={() => {
               playClickSound();
+              playMenuCloseSound();
               onClose();
             }}
             disabled={uploading}

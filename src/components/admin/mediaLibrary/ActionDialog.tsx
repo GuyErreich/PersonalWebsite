@@ -56,6 +56,7 @@ export const ActionDialog = ({
     playClickSound();
     await Promise.resolve(onConfirm(value));
     setIsSubmitting(false);
+    playMenuCloseSound();
     onClose();
   };
 

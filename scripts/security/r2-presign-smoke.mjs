@@ -154,7 +154,7 @@ const buildTests = ({ adminJwt, userJwt }) => [
     headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
     body: {
       contentType: "image/png",
-      contentLength: 10 * 1024 * 1024,
+      contentLength: 60 * 1024 * 1024,
       fileExt: "png",
       folderPath: "gamedev-thumbnails",
     },

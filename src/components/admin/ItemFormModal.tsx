@@ -19,7 +19,7 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { buildGameDevStoredContent, parseGameDevStoredContent } from "../../lib/gamedev";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
@@ -174,7 +174,7 @@ export const ItemFormModal = ({
     return `Add New ${type === "gamedev" ? "Game Dev Project" : "DevOps Project"}`;
   }, [isEditing, type]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setTitle("");
     setDescription("");
     setBody("");
@@ -192,7 +192,7 @@ export const ItemFormModal = ({
     setActiveBodyTab("write");
     setUploadedBodyMedia([]);
     setError(null);
-  };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) {
@@ -228,7 +228,7 @@ export const ItemFormModal = ({
       setSelectedStacks(devOpsItem.tech_stack ?? []);
       setSelectedGameTags([]);
     }
-  }, [editingItem, isOpen, type]);
+  }, [editingItem, isOpen, resetForm, type]);
 
   useEffect(() => {
     if (!isOpen || type !== "gamedev") {
@@ -276,10 +276,13 @@ export const ItemFormModal = ({
 
       setTitle(seed.title);
       setDescription(seed.description);
-      setBody(seed.readme || "");
+      if (type === "gamedev") {
+        setBody(seed.readme || "");
+        setSelectedGameTags(seed.tags);
+      }
+
       setGithubUrl(seed.githubUrl);
       setLiveUrl(seed.liveUrl ?? "");
-      setSelectedGameTags(seed.tags);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -469,7 +472,7 @@ export const ItemFormModal = ({
               title: normalizedTitle,
               description: storedDescription,
               media_url: finalMediaUrl,
-              thumbnail_url: null,
+              thumbnail_url: sourceGameDev.thumbnail_url ?? null,
               icon_name: selectedIcon,
               github_url: normalizedGithubUrl,
               live_url: normalizedLiveUrl,
@@ -870,11 +873,11 @@ export const ItemFormModal = ({
                         htmlFor={itemMediaId}
                         className="block text-sm font-medium text-gray-300"
                       >
-                        Feature Media (Optional)
+                        Feature Media
                       </label>
                       <p className="mb-1 text-xs text-gray-500">
-                        Use this for the small top media section on the project page. Leave empty
-                        for a blank section.
+                        Required when creating a project. Used for the top media section on the
+                        project page.
                       </p>
 
                       {selectedFeatureMediaUrl && !mediaFile && (
@@ -1130,7 +1133,7 @@ export const ItemFormModal = ({
                         Import from GitHub Repository
                       </label>
                       <p className="mt-1 text-xs text-gray-500">
-                        Prefills title, short description, body (README), repo URL, and tags.
+                        Prefills title, short description, and repo URL.
                       </p>
                       <div className="mt-2 flex gap-2">
                         <input
@@ -1206,8 +1209,10 @@ export const ItemFormModal = ({
               >
                 {loading ? "Saving..." : isEditing ? "Update Item" : "Save Item"}
               </motion.button>
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 onMouseEnter={playHoverSound}
                 onClick={() => {
                   playClickSound();
@@ -1217,7 +1222,7 @@ export const ItemFormModal = ({
                 className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-500 bg-transparent px-4 py-2 text-base font-medium text-gray-300 shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:ml-3 sm:mt-0 sm:w-auto sm:text-sm"
               >
                 Cancel
-              </button>
+              </motion.button>
             </div>
           </form>
         </div>

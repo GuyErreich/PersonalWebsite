@@ -16,7 +16,7 @@ import {
   RefreshCw,
   Server,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DevOpsTechStackManager } from "../components/admin/DevOpsTechStackManager";
 import { ItemFormModal } from "../components/admin/ItemFormModal";
 import { ManagedProjectsList } from "../components/admin/ManagedProjectsList";
@@ -51,7 +51,7 @@ export const Admin = () => {
     null,
   );
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     setIsFetching(true);
     setFetchError(null);
 
@@ -82,11 +82,11 @@ export const Admin = () => {
     } finally {
       setIsFetching(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadProjects();
-  }, []);
+  }, [loadProjects]);
 
   const gameDevListItems = useMemo<AdminProjectListItem[]>(
     () =>
@@ -173,9 +173,16 @@ export const Admin = () => {
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <h1 className="text-xl font-bold">Portfolio Management</h1>
           <div className="flex items-center space-x-4">
-            <a href="/" className="text-sm text-gray-400 hover:text-white">
+            <motion.a
+              href="/"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.95 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
+              className="text-sm text-gray-400 hover:text-white"
+            >
               View Site
-            </a>
+            </motion.a>
             <motion.button
               type="button"
               whileHover={{ scale: 1.04 }}
@@ -241,6 +248,7 @@ export const Admin = () => {
                     playClickSound();
                     setActiveSection(item.id);
                   }}
+                  aria-label={isSidebarCollapsed ? item.label : undefined}
                   className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                     isActive
                       ? "border border-cyan-500/40 bg-cyan-500/15 text-cyan-200"

@@ -165,12 +165,20 @@ export const FolderCard = ({
           onNavigate(entry.path);
           onClearSearch();
         }}
+        onKeyDown={(event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+
+          event.preventDefault();
+          playClickSound();
+          onNavigate(entry.path);
+          onClearSearch();
+        }}
         className={`relative flex h-36 w-44 items-center justify-center overflow-hidden rounded-xl border text-left transition-all ${
           isDropActive
             ? "border-cyan-300/80 bg-cyan-400/15 shadow-[0_0_0_2px_rgba(103,232,249,0.45),0_0_26px_rgba(34,211,238,0.28)]"
             : "border-transparent hover:border-amber-300/30 hover:bg-amber-200/5"
         }`}
-        aria-label={`Double click to open folder: ${entry.name}`}
+        aria-label={`Open folder: ${entry.name}`}
       >
         <Folder
           className={`h-24 w-24 drop-shadow-[0_8px_14px_rgba(0,0,0,0.5)] ${

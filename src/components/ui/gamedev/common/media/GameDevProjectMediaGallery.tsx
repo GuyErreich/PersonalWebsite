@@ -92,12 +92,22 @@ export const GameDevProjectMediaGallery = ({
                 aria-label={`Open media ${index + 1}`}
               >
                 <div className="aspect-video">
-                  <img
-                    src={previewSrc}
-                    alt={item.caption ?? `${projectTitle} media thumbnail ${index + 1}`}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
+                  {mediaType === "video" && !item.thumbnail_url ? (
+                    <video
+                      src={item.media_url}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <img
+                      src={previewSrc}
+                      alt={item.caption ?? `${projectTitle} media thumbnail ${index + 1}`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  )}
                 </div>
 
                 <div className="pointer-events-none absolute right-2 top-2 rounded-md bg-black/60 px-1.5 py-1 text-white">

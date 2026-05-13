@@ -95,6 +95,7 @@ export const ConfirmDialog = ({
             whileTap={{ scale: 0.97 }}
             onClick={() => {
               playClickSound();
+              playMenuCloseSound();
               onConfirm();
             }}
             className={`rounded-md px-3 py-1.5 text-sm text-white ${

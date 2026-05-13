@@ -61,64 +61,80 @@ export const GameDevProject = () => {
     void (async () => {
       setState({ project: null, mediaItems: [], isLoading: true, error: null });
 
-      const { data: projectData, error: projectError } = await supabase
-        .from("gamedev_items")
-        .select("*")
-        .eq("id", id)
-        .single();
+      try {
+        const { data: projectData, error: projectError } = await supabase
+          .from("gamedev_items")
+          .select("*")
+          .eq("id", id)
+          .single();
 
-      if (projectError || !projectData) {
-        const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
-        if (!fallback) {
+        if (projectError || !projectData) {
+          const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
+          if (!fallback) {
+            setState({
+              project: null,
+              mediaItems: [],
+              isLoading: false,
+              error: "Project not found.",
+            });
+            return;
+          }
+
           setState({
-            project: null,
-            mediaItems: [],
+            project: fallback,
+            mediaItems: buildFallbackMedia(fallback),
             isLoading: false,
-            error: "Project not found.",
+            error: null,
           });
           return;
         }
 
-        setState({
-          project: fallback,
-          mediaItems: buildFallbackMedia(fallback),
-          isLoading: false,
-          error: null,
+        const typedProject = projectData as GameDevItem;
+
+        const { data: mediaData, error: mediaError } = await supabase
+          .from("gamedev_item_media")
+          .select("*")
+          .eq("gamedev_item_id", id)
+          .order("sort_order", { ascending: true, nullsFirst: false })
+          .order("created_at", { ascending: true });
+
+        if (mediaError) {
+          setState({
+            project: typedProject,
+            mediaItems: buildFallbackMedia(typedProject),
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
+
+        const normalizedMedia = (mediaData ?? []).map((item) => {
+          const typedItem = item as GameDevMediaItem;
+          return {
+            ...typedItem,
+            media_type: typedItem.media_type ?? inferMediaTypeFromUrl(typedItem.media_url),
+          };
         });
-        return;
+
+        const mediaItems =
+          normalizedMedia.length > 0 ? normalizedMedia : buildFallbackMedia(typedProject);
+
+        setState({ project: typedProject, mediaItems, isLoading: false, error: null });
+      } catch {
+        const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
+
+        if (fallback) {
+          setState({
+            project: fallback,
+            mediaItems: buildFallbackMedia(fallback),
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
+
+        setState({ project: null, mediaItems: [], isLoading: false, error: "Project not found." });
       }
-
-      const typedProject = projectData as GameDevItem;
-
-      const { data: mediaData, error: mediaError } = await supabase
-        .from("gamedev_item_media")
-        .select("*")
-        .eq("gamedev_item_id", id)
-        .order("sort_order", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: true });
-
-      if (mediaError) {
-        setState({
-          project: typedProject,
-          mediaItems: buildFallbackMedia(typedProject),
-          isLoading: false,
-          error: null,
-        });
-        return;
-      }
-
-      const normalizedMedia = (mediaData ?? []).map((item) => {
-        const typedItem = item as GameDevMediaItem;
-        return {
-          ...typedItem,
-          media_type: typedItem.media_type ?? inferMediaTypeFromUrl(typedItem.media_url),
-        };
-      });
-
-      const mediaItems =
-        normalizedMedia.length > 0 ? normalizedMedia : buildFallbackMedia(typedProject);
-
-      setState({ project: typedProject, mediaItems, isLoading: false, error: null });
     })();
   }, [id]);
 

@@ -15,6 +15,7 @@ import {
   playMenuOpenSound,
 } from "../../lib/sound/interactionSounds";
 import { ActionDialog } from "./mediaLibrary/ActionDialog";
+import { ConfirmDialog } from "./mediaLibrary/ConfirmDialog";
 import { ContextMenu, type ContextMenuItem } from "./mediaLibrary/ContextMenu";
 import { ExplorerBreadcrumbs } from "./mediaLibrary/ExplorerBreadcrumbs";
 import { ExplorerToolbar } from "./mediaLibrary/ExplorerToolbar";
@@ -33,6 +34,8 @@ type PendingAction =
   | { kind: "new-folder" }
   | { kind: "rename-folder"; entry: FolderEntry }
   | { kind: "rename-media"; entry: MediaEntry }
+  | { kind: "confirm-delete-folder"; entry: FolderEntry }
+  | { kind: "confirm-delete-media"; entry: MediaEntry }
   | null;
 
 export const MediaLibraryManager = () => {
@@ -130,11 +133,11 @@ export const MediaLibraryManager = () => {
           onClick: () => setPendingAction({ kind: "rename-folder", entry }),
         },
         {
-          label: "Delete",
+          label: "Remove From Library",
           icon: <Trash2 className="h-3.5 w-3.5" />,
           danger: true,
           onClick: () => {
-            void handleDeleteFolder(entry.path);
+            setPendingAction({ kind: "confirm-delete-folder", entry });
           },
         },
       ];
@@ -153,11 +156,11 @@ export const MediaLibraryManager = () => {
         onClick: () => setPendingAction({ kind: "rename-media", entry }),
       },
       {
-        label: "Delete",
+        label: "Remove From Library",
         icon: <Trash2 className="h-3.5 w-3.5" />,
         danger: true,
         onClick: () => {
-          void handleDeleteMedia(entry.id);
+          setPendingAction({ kind: "confirm-delete-media", entry });
         },
       },
     ];
@@ -385,6 +388,38 @@ export const MediaLibraryManager = () => {
               void handleRename(pendingAction.entry.id, name);
             }}
             onClose={() => setPendingAction(null)}
+          />
+        )}
+
+        {pendingAction?.kind === "confirm-delete-folder" && (
+          <ConfirmDialog
+            key="dlg-delete-folder"
+            title={`Remove "${pendingAction.entry.name}" from library?`}
+            description="This removes the folder and nested items from the media library index. Stored files are not deleted from remote object storage."
+            confirmLabel="Remove"
+            cancelLabel="Cancel"
+            danger
+            onConfirm={() => {
+              void handleDeleteFolder(pendingAction.entry.path);
+              setPendingAction(null);
+            }}
+            onCancel={() => setPendingAction(null)}
+          />
+        )}
+
+        {pendingAction?.kind === "confirm-delete-media" && (
+          <ConfirmDialog
+            key="dlg-delete-media"
+            title={`Remove "${pendingAction.entry.name}" from library?`}
+            description="This removes only the media library record. The original object in remote storage is not deleted."
+            confirmLabel="Remove"
+            cancelLabel="Cancel"
+            danger
+            onConfirm={() => {
+              void handleDeleteMedia(pendingAction.entry.id);
+              setPendingAction(null);
+            }}
+            onCancel={() => setPendingAction(null)}
           />
         )}
       </AnimatePresence>

@@ -24,6 +24,7 @@ interface Props {
 
 export const ContextMenu = ({ x, y, items, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
+  const firstItemRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -42,6 +43,10 @@ export const ContextMenu = ({ x, y, items, onClose }: Props) => {
     };
   }, [onClose]);
 
+  useEffect(() => {
+    firstItemRef.current?.focus();
+  }, []);
+
   return (
     <motion.div
       ref={ref}
@@ -50,12 +55,16 @@ export const ContextMenu = ({ x, y, items, onClose }: Props) => {
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.1 }}
       style={{ top: y, left: x }}
+      role="menu"
+      aria-label="Context menu"
       className="fixed z-50 min-w-[168px] overflow-hidden rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-2xl"
     >
-      {items.map((item) => (
+      {items.map((item, index) => (
         <motion.button
           key={item.label}
+          ref={index === 0 ? firstItemRef : undefined}
           type="button"
+          role="menuitem"
           whileHover={{ x: 2 }}
           onMouseEnter={playHoverSound}
           onClick={() => {

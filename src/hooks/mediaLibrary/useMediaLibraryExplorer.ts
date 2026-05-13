@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   EntryTypeFilter,
   ExplorerEntry,
@@ -112,7 +112,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     setIsUploadProgressOpen(false);
   };
 
-  const loadItems = async () => {
+  const loadItems = useCallback(async () => {
     setLoading(true);
 
     const [{ data: mediaData, error: mediaError }, { data: folderData, error: folderError }] =
@@ -147,11 +147,11 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
         updated_at: folder.updated_at,
       })),
     );
-  };
+  }, []);
 
   useEffect(() => {
     void loadItems();
-  }, []);
+  }, [loadItems]);
 
   const folderNodes = useMemo<FolderNode[]>(() => {
     const map = new Map<string, FolderNode>();
@@ -372,7 +372,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
             file,
             uploadFolder: folder,
             preferredName: stripFileExtension(file.name),
-            folderOrigin: uploadDestination || folder,
+            folderOrigin: uploadDestination,
           });
 
           reused = result.reused;
@@ -389,20 +389,27 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
         }
       };
 
-      await Promise.all(
-        filesToUpload.map(async (file, index) => {
-          try {
-            await runUpload(file, index);
-          } catch (error) {
-            failedCount += 1;
-            updateProgress(index, {
-              status: "error",
-              progress: 100,
-              detail: error instanceof Error ? error.message : "Upload failed",
-            });
-          }
-        }),
-      );
+      const maxConcurrentUploads = 2;
+      for (let index = 0; index < filesToUpload.length; index += maxConcurrentUploads) {
+        const chunk = filesToUpload.slice(index, index + maxConcurrentUploads);
+
+        await Promise.all(
+          chunk.map(async (file, chunkIndex) => {
+            const absoluteIndex = index + chunkIndex;
+
+            try {
+              await runUpload(file, absoluteIndex);
+            } catch (error) {
+              failedCount += 1;
+              updateProgress(absoluteIndex, {
+                status: "error",
+                progress: 100,
+                detail: error instanceof Error ? error.message : "Upload failed",
+              });
+            }
+          }),
+        );
+      }
 
       setMessage(
         failedCount > 0
@@ -591,19 +598,24 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       ...((subMediaRows ?? []) as Array<{ id: string; folder_origin: string | null }>),
     ];
 
-    for (const row of mediaRows) {
-      if (!row.folder_origin) continue;
+    const mediaUpdateErrors = await Promise.all(
+      mediaRows.map(async (row) => {
+        if (!row.folder_origin) return null;
 
-      const updatedOrigin = row.folder_origin.replace(normalizedSource, destinationPath);
-      const { error: updateError } = await supabase
-        .from("media_library")
-        .update({ folder_origin: updatedOrigin })
-        .eq("id", row.id);
+        const updatedOrigin = row.folder_origin.replace(normalizedSource, destinationPath);
+        const { error: updateError } = await supabase
+          .from("media_library")
+          .update({ folder_origin: updatedOrigin })
+          .eq("id", row.id);
 
-      if (updateError) {
-        setMessage({ type: "error", text: updateError.message });
-        return;
-      }
+        return updateError;
+      }),
+    );
+
+    const firstMediaUpdateError = mediaUpdateErrors.find((error) => error !== null);
+    if (firstMediaUpdateError) {
+      setMessage({ type: "error", text: firstMediaUpdateError.message });
+      return;
     }
 
     const folderRows = [
@@ -611,19 +623,27 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       ...((subFolderRows ?? []) as Array<{ id: string; path: string; parent_path: string }>),
     ];
 
-    for (const row of folderRows) {
-      const updatedPath = row.path.replace(normalizedSource, destinationPath);
-      const updatedParentPath = row.parent_path.replace(normalizedSource, destinationPath);
+    const folderUpdateErrors = await Promise.all(
+      folderRows.map(async (row) => {
+        const updatedPath = row.path.replace(normalizedSource, destinationPath);
+        const updatedParentPath =
+          row.path === normalizedSource
+            ? normalizedTarget
+            : row.parent_path.replace(normalizedSource, destinationPath);
 
-      const { error: updateError } = await supabase
-        .from("media_library_folders")
-        .update({ path: updatedPath, parent_path: updatedParentPath })
-        .eq("id", row.id);
+        const { error: updateError } = await supabase
+          .from("media_library_folders")
+          .update({ path: updatedPath, parent_path: updatedParentPath })
+          .eq("id", row.id);
 
-      if (updateError) {
-        setMessage({ type: "error", text: updateError.message });
-        return;
-      }
+        return updateError;
+      }),
+    );
+
+    const firstFolderUpdateError = folderUpdateErrors.find((error) => error !== null);
+    if (firstFolderUpdateError) {
+      setMessage({ type: "error", text: firstFolderUpdateError.message });
+      return;
     }
 
     if (currentPath === normalizedSource || currentPath.startsWith(`${normalizedSource}/`)) {
@@ -758,18 +778,24 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       ...((subRows ?? []) as Array<{ id: string; folder_origin: string | null }>),
     ];
 
-    for (const row of allRows) {
-      if (!row.folder_origin) continue;
-      const updatedOrigin = row.folder_origin.replace(folderPath, newPath);
-      const { error: updateErr } = await supabase
-        .from("media_library")
-        .update({ folder_origin: updatedOrigin })
-        .eq("id", row.id);
+    const mediaRenameErrors = await Promise.all(
+      allRows.map(async (row) => {
+        if (!row.folder_origin) return null;
 
-      if (updateErr) {
-        setMessage({ type: "error", text: updateErr.message });
-        return;
-      }
+        const updatedOrigin = row.folder_origin.replace(folderPath, newPath);
+        const { error: updateErr } = await supabase
+          .from("media_library")
+          .update({ folder_origin: updatedOrigin })
+          .eq("id", row.id);
+
+        return updateErr;
+      }),
+    );
+
+    const firstMediaRenameError = mediaRenameErrors.find((error) => error !== null);
+    if (firstMediaRenameError) {
+      setMessage({ type: "error", text: firstMediaRenameError.message });
+      return;
     }
 
     const folderRowsToUpdate = [
@@ -787,23 +813,28 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       }>),
     ];
 
-    for (const row of folderRowsToUpdate) {
-      const updatedPath = row.path.replace(folderPath, newPath);
-      const updatedParentPath = row.parent_path.replace(folderPath, newPath);
+    const folderRenameErrors = await Promise.all(
+      folderRowsToUpdate.map(async (row) => {
+        const updatedPath = row.path.replace(folderPath, newPath);
+        const updatedParentPath = row.parent_path.replace(folderPath, newPath);
 
-      const { error: updateErr } = await supabase
-        .from("media_library_folders")
-        .update({
-          name: updatedPath === newPath ? safeName : row.name,
-          path: updatedPath,
-          parent_path: updatedParentPath,
-        })
-        .eq("id", row.id);
+        const { error: updateErr } = await supabase
+          .from("media_library_folders")
+          .update({
+            name: updatedPath === newPath ? safeName : row.name,
+            path: updatedPath,
+            parent_path: updatedParentPath,
+          })
+          .eq("id", row.id);
 
-      if (updateErr) {
-        setMessage({ type: "error", text: updateErr.message });
-        return;
-      }
+        return updateErr;
+      }),
+    );
+
+    const firstFolderRenameError = folderRenameErrors.find((error) => error !== null);
+    if (firstFolderRenameError) {
+      setMessage({ type: "error", text: firstFolderRenameError.message });
+      return;
     }
 
     if (currentPath === folderPath || currentPath.startsWith(`${folderPath}/`)) {

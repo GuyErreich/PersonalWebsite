@@ -82,7 +82,9 @@ const decodeReadme = (data: GitHubReadmeResponse): string => {
   if (data.encoding !== "base64") return "";
 
   try {
-    return atob(data.content.replace(/\n/g, "")).trim();
+    const binary = atob(data.content.replace(/\n/g, ""));
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes).trim();
   } catch {
     return "";
   }
