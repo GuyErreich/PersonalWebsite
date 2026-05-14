@@ -29,6 +29,7 @@ export const ActionDialog = ({
 }: Props) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     playMenuOpenSound();
@@ -52,12 +53,20 @@ export const ActionDialog = ({
   const handleConfirm = async () => {
     const value = inputRef.current?.value.trim() ?? "";
     if (!value) return;
+
+    setSubmitError(null);
     setIsSubmitting(true);
     playClickSound();
-    await Promise.resolve(onConfirm(value));
-    setIsSubmitting(false);
-    playMenuCloseSound();
-    onClose();
+
+    try {
+      await Promise.resolve(onConfirm(value));
+      playMenuCloseSound();
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Action failed. Please retry.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleBackdropClick = () => {
@@ -98,6 +107,8 @@ export const ActionDialog = ({
           }}
           className="w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
         />
+
+        {submitError && <p className="mt-2 text-xs text-red-300">{submitError}</p>}
 
         <div className="mt-3 flex justify-end gap-2">
           <motion.button

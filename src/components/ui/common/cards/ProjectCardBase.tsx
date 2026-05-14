@@ -57,22 +57,6 @@ export const ProjectCardBase = ({
         whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
         className={`relative ${theme.containerClassName}`}
       >
-        {detailsLink && (
-          <motion.button
-            type="button"
-            whileHover={{ scale: 1.005 }}
-            whileTap={{ scale: 0.995 }}
-            onMouseEnter={playHoverSound}
-            onClick={() => {
-              playClickSound();
-              window.location.assign(detailsLink);
-            }}
-            aria-label={`Open ${title} project page`}
-            tabIndex={-1}
-            className="absolute inset-0 z-10"
-          />
-        )}
-
         {hasThumbnail && (
           <div
             className={`relative z-20 ${compact ? "h-20 xl:h-24" : "h-32 xl:h-36"} shrink-0 overflow-hidden`}

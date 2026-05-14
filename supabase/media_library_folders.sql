@@ -38,9 +38,12 @@ execute function public.touch_media_library_folders_updated_at();
 
 alter table public.media_library_folders enable row level security;
 
-create policy "Public can read media library folders"
+create policy "Admins can read media library folders"
   on public.media_library_folders for select
-  using (true);
+  using (
+    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
+    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
+  );
 
 create policy "Admins can insert media library folders"
   on public.media_library_folders for insert

@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { playHoverSound, playMenuCloseSound } from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 
@@ -19,6 +19,8 @@ export const MediaPreviewModal = ({ item, onClose }: Props) => (
 );
 
 const MediaPreviewModalContent = ({ item, onClose }: Props) => {
+  const titleId = useId();
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -36,6 +38,7 @@ const MediaPreviewModalContent = ({ item, onClose }: Props) => {
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
+      aria-labelledby={titleId}
     >
       <motion.button
         type="button"
@@ -57,7 +60,9 @@ const MediaPreviewModalContent = ({ item, onClose }: Props) => {
         className="relative z-10 w-full max-w-5xl rounded-xl border border-gray-700 bg-gray-900 p-3"
       >
         <div className="mb-2 flex items-center justify-between gap-2">
-          <p className="truncate text-sm font-medium text-white">{item.name}</p>
+          <p id={titleId} className="truncate text-sm font-medium text-white">
+            {item.name}
+          </p>
 
           <motion.button
             type="button"

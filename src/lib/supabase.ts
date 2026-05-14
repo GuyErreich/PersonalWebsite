@@ -187,7 +187,20 @@ interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      media_library_move_folder_recursive: {
+        Args: { p_source_path: string; p_target_parent_path: string };
+        Returns: undefined;
+      };
+      media_library_rename_folder_recursive: {
+        Args: { p_folder_path: string; p_new_name: string; p_new_path_segment: string };
+        Returns: undefined;
+      };
+      media_library_delete_folder_recursive: {
+        Args: { p_folder_path: string };
+        Returns: undefined;
+      };
+    };
     Enums: Record<string, never>;
   };
 }

@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { motion } from "framer-motion";
 import { Image as ImageIcon, Video } from "lucide-react";
 import type { MouseEvent } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
@@ -15,19 +14,22 @@ import { seekThumbnailToVideoCenter } from "./videoThumbnail";
 interface Props {
   entry: MediaEntry;
   onPreview: (item: MediaLibraryItem) => void;
-  onContextMenu: (e: MouseEvent<HTMLDivElement>) => void;
+  onContextMenu: (e: MouseEvent<HTMLButtonElement>) => void;
 }
 
 export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
   const { item } = entry;
 
   return (
-    <div
-      role="option"
-      aria-selected={false}
-      tabIndex={0}
+    <button
+      type="button"
       draggable
       className="rounded-lg border border-gray-700 bg-gray-900/30 p-3"
+      onMouseEnter={playHoverSound}
+      onClick={() => {
+        playClickSound();
+        onPreview(item);
+      }}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("application/x-media-item-id", entry.id);
@@ -37,18 +39,11 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
         e.stopPropagation();
         onContextMenu(e);
       }}
+      aria-label={`Media item: ${item.name}`}
     >
-      <motion.button
-        type="button"
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
-        onMouseEnter={playHoverSound}
-        onClick={() => {
-          playClickSound();
-          onPreview(item);
-        }}
+      <div
         className="mb-2 block aspect-video w-full overflow-hidden rounded bg-black"
-        aria-label={`Preview ${item.name}`}
+        aria-hidden="true"
       >
         {item.media_type === "video" ? (
           <video
@@ -67,7 +62,7 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
             className="h-full w-full object-cover"
           />
         )}
-      </motion.button>
+      </div>
 
       <div className="flex items-center gap-2 text-xs text-gray-400">
         {item.media_type === "video" ? (
@@ -82,6 +77,6 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
         {item.file_size_bytes ? `${Math.round(item.file_size_bytes / (1024 * 1024))}MB` : "\u2014"}{" "}
         • {new Date(item.updated_at).toLocaleDateString()}
       </p>
-    </div>
+    </button>
   );
 };

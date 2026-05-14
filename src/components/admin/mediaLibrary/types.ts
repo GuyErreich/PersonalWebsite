@@ -24,6 +24,7 @@ export interface FolderNode {
   path: string;
   name: string;
   parentPath: string;
+  createdAt: string;
   itemCount: number;
   latestUpdatedAt: string;
   coverMediaUrl: string | null;
@@ -36,6 +37,7 @@ export interface FolderEntry {
   name: string;
   path: string;
   parentPath: string;
+  createdAt: string;
   itemCount: number;
   latestUpdatedAt: string;
   coverMediaUrl: string | null;

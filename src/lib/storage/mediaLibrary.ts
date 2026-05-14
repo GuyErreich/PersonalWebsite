@@ -112,6 +112,22 @@ export const uploadOrReuseMediaLibraryItem = async ({
     .single();
 
   if (insertError || !insertedItem) {
+    if (insertError?.code === "23505") {
+      const { data: conflictExisting, error: conflictLookupError } = await supabase
+        .from("media_library")
+        .select("*")
+        .eq("content_hash", contentHash)
+        .maybeSingle();
+
+      if (conflictLookupError) {
+        throw new Error(conflictLookupError.message);
+      }
+
+      if (conflictExisting) {
+        return { item: conflictExisting as MediaLibraryItem, reused: true };
+      }
+    }
+
     throw new Error(insertError?.message ?? "Unable to store media in library.");
   }
 

@@ -284,9 +284,43 @@ export const MediaLibraryManager = () => {
           )}
 
           {explorerEntries.length === 0 ? (
-            <p className="col-span-full py-8 text-center text-sm text-gray-500">
-              Empty — right-click to upload a file or create a subfolder.
-            </p>
+            <div className="col-span-full py-8 text-center">
+              <p className="text-sm text-gray-500">
+                Empty — use Upload or New Folder to start organizing your library.
+              </p>
+
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={() => {
+                    playClickSound();
+                    fileInputRef.current?.click();
+                  }}
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-xs text-gray-100 hover:border-cyan-500/40"
+                >
+                  <Upload className="h-3.5 w-3.5" />
+                  Upload Files
+                </motion.button>
+
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={() => {
+                    playClickSound();
+                    setPendingAction({ kind: "new-folder" });
+                  }}
+                  className="inline-flex items-center gap-2 rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-xs text-gray-100 hover:border-cyan-500/40"
+                >
+                  <FolderPlus className="h-3.5 w-3.5" />
+                  New Folder
+                </motion.button>
+              </div>
+            </div>
           ) : (
             explorerEntries.map((entry) =>
               entry.kind === "folder" ? (

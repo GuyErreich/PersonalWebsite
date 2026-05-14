@@ -10,7 +10,7 @@ create table if not exists public.gamedev_items (
   icon_name text,
   github_url text,
   live_url text,
-  tags text[] default '{}',
+  tags text[] not null default '{}',
   created_at timestamptz not null default now()
 );
 

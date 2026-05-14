@@ -37,6 +37,7 @@ export const ExplorerToolbar = ({
     </label>
 
     <select
+      aria-label="Filter media explorer entries"
       value={entryTypeFilter}
       onChange={(e) => setEntryTypeFilter(e.target.value as EntryTypeFilter)}
       className="rounded-md border border-gray-600 bg-gray-900/40 px-3 py-2 text-sm text-white"
@@ -48,6 +49,7 @@ export const ExplorerToolbar = ({
     </select>
 
     <select
+      aria-label="Sort media explorer entries"
       value={sortOption}
       onChange={(e) => setSortOption(e.target.value as SortOption)}
       className="rounded-md border border-gray-600 bg-gray-900/40 px-3 py-2 text-sm text-white"

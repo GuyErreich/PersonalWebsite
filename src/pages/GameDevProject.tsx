@@ -53,13 +53,30 @@ export const GameDevProject = () => {
   });
 
   useEffect(() => {
+    let isCurrent = true;
+
+    const safeSetState = (nextState: ProjectState) => {
+      if (!isCurrent) {
+        return;
+      }
+
+      setState(nextState);
+    };
+
     if (!id) {
-      setState({ project: null, mediaItems: [], isLoading: false, error: "Missing project id." });
-      return;
+      safeSetState({
+        project: null,
+        mediaItems: [],
+        isLoading: false,
+        error: "Missing project id.",
+      });
+      return () => {
+        isCurrent = false;
+      };
     }
 
     void (async () => {
-      setState({ project: null, mediaItems: [], isLoading: true, error: null });
+      safeSetState({ project: null, mediaItems: [], isLoading: true, error: null });
 
       try {
         const { data: projectData, error: projectError } = await supabase
@@ -71,7 +88,7 @@ export const GameDevProject = () => {
         if (projectError || !projectData) {
           const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
           if (!fallback) {
-            setState({
+            safeSetState({
               project: null,
               mediaItems: [],
               isLoading: false,
@@ -80,7 +97,7 @@ export const GameDevProject = () => {
             return;
           }
 
-          setState({
+          safeSetState({
             project: fallback,
             mediaItems: buildFallbackMedia(fallback),
             isLoading: false,
@@ -99,7 +116,7 @@ export const GameDevProject = () => {
           .order("created_at", { ascending: true });
 
         if (mediaError) {
-          setState({
+          safeSetState({
             project: typedProject,
             mediaItems: buildFallbackMedia(typedProject),
             isLoading: false,
@@ -119,12 +136,12 @@ export const GameDevProject = () => {
         const mediaItems =
           normalizedMedia.length > 0 ? normalizedMedia : buildFallbackMedia(typedProject);
 
-        setState({ project: typedProject, mediaItems, isLoading: false, error: null });
+        safeSetState({ project: typedProject, mediaItems, isLoading: false, error: null });
       } catch {
         const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
 
         if (fallback) {
-          setState({
+          safeSetState({
             project: fallback,
             mediaItems: buildFallbackMedia(fallback),
             isLoading: false,
@@ -133,9 +150,18 @@ export const GameDevProject = () => {
           return;
         }
 
-        setState({ project: null, mediaItems: [], isLoading: false, error: "Project not found." });
+        safeSetState({
+          project: null,
+          mediaItems: [],
+          isLoading: false,
+          error: "Project not found.",
+        });
       }
     })();
+
+    return () => {
+      isCurrent = false;
+    };
   }, [id]);
 
   const content = useMemo(() => {

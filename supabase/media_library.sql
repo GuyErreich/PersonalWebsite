@@ -42,10 +42,13 @@ execute function public.touch_media_library_updated_at();
 -- Enable Row Level Security
 alter table public.media_library enable row level security;
 
--- Public can read all media library items
-create policy "Public can read media library"
+-- Only admins can read media library items
+create policy "Admins can read media library"
   on public.media_library for select
-  using (true);
+  using (
+    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
+    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
+  );
 
 -- Only admins can insert
 create policy "Admins can insert media library"
