@@ -27,6 +27,7 @@ import { supabase } from "../../lib/supabase";
 const ALLOWED_SHOWREEL_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel));
 const MAX_SHOWREEL_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.heroShowreel].maxBytes;
 const SHOWREEL_ACCEPT_TYPES = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.heroShowreel).join(",");
+const SHOWREEL_LIBRARY_LIMIT = 60;
 const VOLUME_STEP = 1;
 const VOLUME_STEP_INTERVAL_MS = 12;
 
@@ -52,6 +53,13 @@ export const ShowreelManager = () => {
 
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     volumeAnimatorRef.current = createSteppedSliderAnimator({
@@ -110,7 +118,12 @@ export const ShowreelManager = () => {
       .from("media_library")
       .select("*")
       .eq("media_type", "video")
+      .limit(SHOWREEL_LIBRARY_LIMIT)
       .order("updated_at", { ascending: false });
+
+    if (!isMountedRef.current) {
+      return;
+    }
 
     setIsLoadingLibrary(false);
 

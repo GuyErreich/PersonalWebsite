@@ -43,7 +43,20 @@ export const Home = () => {
     }
 
     const runScroll = () => {
-      const target = document.querySelector<HTMLElement>(hash);
+      const rawId = hash.startsWith("#") ? hash.slice(1) : hash;
+      let decodedId = "";
+
+      try {
+        decodedId = decodeURIComponent(rawId);
+      } catch {
+        return;
+      }
+
+      if (!decodedId) {
+        return;
+      }
+
+      const target = document.getElementById(decodedId);
       if (!target) {
         return;
       }

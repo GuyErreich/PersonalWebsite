@@ -9,6 +9,26 @@ const VIDEO_EXTENSIONS = [".mp4", ".webm", ".ogg", ".mov"];
 const IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"];
 const GAMEDEV_BODY_MARKER = "\n\n[//]: # (BODY)\n\n";
 
+const getMediaExtension = (url: string): string => {
+  const normalized = url.trim().toLowerCase();
+  if (!normalized) {
+    return "";
+  }
+
+  try {
+    const parsed = new URL(normalized, "https://placeholder.local");
+    const pathname = parsed.pathname;
+    const lastDot = pathname.lastIndexOf(".");
+    if (lastDot < 0) {
+      return "";
+    }
+
+    return pathname.slice(lastDot);
+  } catch {
+    return "";
+  }
+};
+
 export const buildGameDevProjectPath = (id: string) =>
   `/gamedev/projects/${encodeURIComponent(id)}`;
 
@@ -72,13 +92,13 @@ export const buildGameDevSummary = (content: string, maxLength = 180): string =>
 };
 
 export const isVideoUrl = (url: string): boolean => {
-  const normalized = url.toLowerCase();
-  return VIDEO_EXTENSIONS.some((ext) => normalized.includes(ext));
+  const extension = getMediaExtension(url);
+  return VIDEO_EXTENSIONS.includes(extension);
 };
 
 export const isImageUrl = (url: string): boolean => {
-  const normalized = url.toLowerCase();
-  return IMAGE_EXTENSIONS.some((ext) => normalized.includes(ext));
+  const extension = getMediaExtension(url);
+  return IMAGE_EXTENSIONS.includes(extension);
 };
 
 export const inferMediaTypeFromUrl = (url: string): "video" | "image" => {

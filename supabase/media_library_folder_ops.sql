@@ -39,6 +39,10 @@ begin
     else v_target_parent_path || '/' || v_source_name
   end;
 
+  if v_destination_path = v_source_path then
+    return;
+  end if;
+
   if exists (select 1 from public.media_library_folders where path = v_destination_path) then
     raise exception 'A folder with that name already exists in target';
   end if;
@@ -82,6 +86,14 @@ begin
 
   if v_new_name = '' or v_new_segment = '' then
     raise exception 'New folder name is required';
+  end if;
+
+  if v_new_segment like '%/%' or v_new_segment like '%\\%' then
+    raise exception 'New folder path segment is invalid';
+  end if;
+
+  if v_new_segment !~ '^[a-z0-9_-]+$' then
+    raise exception 'New folder path segment is invalid';
   end if;
 
   if not exists (select 1 from public.media_library_folders where path = v_folder_path) then
