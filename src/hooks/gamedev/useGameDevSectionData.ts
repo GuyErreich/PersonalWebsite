@@ -10,8 +10,6 @@ import type { GameDevItem } from "../../components/ui/gamedev/common/data/types"
 import { buildGameDevSummary } from "../../lib/gamedev";
 import { supabase } from "../../lib/supabase";
 
-const MIN_REAL_ITEMS = fallbackGameDevItems.length;
-
 const withSummary = (items: GameDevItem[]): GameDevItem[] =>
   items.map((item) => ({
     ...item,
@@ -43,10 +41,8 @@ export const useGameDevSectionData = () => {
 
         if (itemsError) {
           setGalleryItems(withSummary(fallbackGameDevItems));
-        } else if (items && items.length >= MIN_REAL_ITEMS) {
-          setGalleryItems(withSummary(items as GameDevItem[]));
         } else {
-          setGalleryItems(withSummary(fallbackGameDevItems));
+          setGalleryItems(withSummary((items ?? []) as GameDevItem[]));
         }
       } catch {
         setGalleryItems(withSummary(fallbackGameDevItems));

@@ -19,7 +19,7 @@ import {
   Terminal,
   Wrench,
 } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { buildGameDevStoredContent, parseGameDevStoredContent } from "../../lib/gamedev";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
@@ -74,6 +74,7 @@ const MAX_MEDIA_SIZE_MB = Math.round(MAX_MEDIA_SIZE_BYTES / (1024 * 1024));
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 50000;
 const MAX_STACK_LENGTH = 40;
+const MEDIA_LIBRARY_PICKER_LIMIT = 48;
 const GAMEDEV_BODY_TEMPLATE = [
   "## Overview",
   "",
@@ -100,6 +101,14 @@ const GAMEDEV_BODY_TEMPLATE = [
 ].join("\n");
 
 type BodyEditorTab = "write" | "preview";
+
+const ROOT_MEDIA_FOLDER = "Root";
+
+const normalizeMediaFolderOrigin = (value: string | null | undefined) =>
+  value && value.trim().length > 0 ? value.trim() : ROOT_MEDIA_FOLDER;
+
+const escapeMarkdownImageLabel = (value: string) =>
+  value.replace(/\\/g, "\\\\").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
 
 const normalizeOptionalHttpsUrl = (value: string, fieldName: string): string | null => {
   const trimmed = value.trim();
@@ -137,6 +146,9 @@ export const ItemFormModal = ({
   const itemGithubUrlId = `${formIdBase}-item-github-url`;
   const itemLiveUrlId = `${formIdBase}-item-live-url`;
   const itemRepoUrlId = `${formIdBase}-item-repo-url`;
+  const customGameTagInputId = `${formIdBase}-custom-game-tag-input`;
+  const customStackInputId = `${formIdBase}-custom-stack-input`;
+  const bodyAssetInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -243,6 +255,8 @@ export const ItemFormModal = ({
         .select("*")
         .order("updated_at", { ascending: false });
 
+      const limitedData = (data ?? []).slice(0, MEDIA_LIBRARY_PICKER_LIMIT);
+
       setIsLoadingMediaLibrary(false);
 
       if (error) {
@@ -250,7 +264,7 @@ export const ItemFormModal = ({
         return;
       }
 
-      setMediaLibraryItems((data ?? []) as MediaLibraryItem[]);
+      setMediaLibraryItems(limitedData as MediaLibraryItem[]);
     })();
   }, [isOpen, type]);
 
@@ -306,11 +320,11 @@ export const ItemFormModal = ({
     libraryFilterFolder === "all"
       ? mediaLibraryItems
       : mediaLibraryItems.filter(
-          (item) => (item.folder_origin ?? "unfiled") === libraryFilterFolder,
+          (item) => normalizeMediaFolderOrigin(item.folder_origin) === libraryFilterFolder,
         );
 
   const mediaLibraryFolders = Array.from(
-    new Set(mediaLibraryItems.map((item) => item.folder_origin ?? "unfiled")),
+    new Set(mediaLibraryItems.map((item) => normalizeMediaFolderOrigin(item.folder_origin))),
   ).sort((a, b) => a.localeCompare(b));
 
   const handleBodyAssetUpload = async (files: FileList | null) => {
@@ -320,9 +334,9 @@ export const ItemFormModal = ({
     setIsUploadingBodyAsset(true);
 
     try {
-      const newMedia: Array<{ url: string; alt: string }> = [];
+      const selectedFiles = Array.from(files);
 
-      for (const file of Array.from(files)) {
+      for (const file of selectedFiles) {
         if (!ALLOWED_MEDIA_MIME_TYPES.has(file.type.toLowerCase())) {
           throw new Error("One or more body media files have unsupported types.");
         }
@@ -330,7 +344,11 @@ export const ItemFormModal = ({
         if (file.size <= 0 || file.size > MAX_MEDIA_SIZE_BYTES) {
           throw new Error(`One or more body media files exceed ${MAX_MEDIA_SIZE_MB}MB.`);
         }
+      }
 
+      const newMedia: Array<{ url: string; alt: string }> = [];
+
+      for (const file of selectedFiles) {
         const { item } = await uploadOrReuseMediaLibraryItem({
           file,
           uploadFolder: R2_UPLOAD_FOLDERS.gameDevAssets,
@@ -370,11 +388,11 @@ export const ItemFormModal = ({
   };
 
   const insertUploadedMedia = (mediaUrl: string, mediaAlt: string) => {
-    appendToBody(`![${mediaAlt}](${mediaUrl})`);
+    appendToBody(`![${escapeMarkdownImageLabel(mediaAlt)}](${mediaUrl})`);
   };
 
   const insertLibraryMedia = (item: MediaLibraryItem) => {
-    appendToBody(`![${item.name}](${item.media_url})`);
+    appendToBody(`![${escapeMarkdownImageLabel(item.name)}](${item.media_url})`);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -579,6 +597,10 @@ export const ItemFormModal = ({
           aria-label="Close dialog"
           onMouseEnter={playHoverSound}
           onClick={() => {
+            if (loading) {
+              return;
+            }
+
             playClickSound();
             closeModal();
           }}
@@ -690,17 +712,26 @@ export const ItemFormModal = ({
                           Insert Starter Template
                         </motion.button>
 
-                        <label
-                          htmlFor={itemBodyAssetUploadId}
-                          className="cursor-pointer rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-white/30 hover:bg-white/10"
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.96 }}
+                          onMouseEnter={playHoverSound}
+                          onClick={() => {
+                            playClickSound();
+                            bodyAssetInputRef.current?.click();
+                          }}
+                          className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-white/30 hover:bg-white/10"
                         >
                           {isUploadingBodyAsset ? "Uploading Media..." : "Upload Media Into Body"}
-                        </label>
+                        </motion.button>
                         <input
                           id={itemBodyAssetUploadId}
                           type="file"
                           accept={MEDIA_ACCEPT}
                           multiple
+                          ref={bodyAssetInputRef}
+                          aria-label="Upload media into body markdown"
                           className="hidden"
                           onChange={(e) => {
                             void handleBodyAssetUpload(e.currentTarget.files);
@@ -831,7 +862,9 @@ export const ItemFormModal = ({
 
                       <div className="flex gap-2">
                         <input
+                          id={customGameTagInputId}
                           type="text"
+                          aria-label="Game Dev tag entry"
                           placeholder="Add tag (e.g. VFX, Unreal, C++)"
                           value={customGameTagInput}
                           onChange={(e) => setCustomGameTagInput(e.target.value)}
@@ -1088,7 +1121,9 @@ export const ItemFormModal = ({
 
                       <div className="flex gap-2">
                         <input
+                          id={customStackInputId}
                           type="text"
+                          aria-label="Tech stack entry"
                           placeholder="Custom tag (one-off)…"
                           value={customStackInput}
                           onChange={(e) => setCustomStackInput(e.target.value)}
