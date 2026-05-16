@@ -246,10 +246,18 @@ export const MediaLibraryManager = () => {
             isExternalDropActive ? "bg-cyan-500/10 ring-2 ring-cyan-300/60" : ""
           }`}
           onDragOver={(e) => {
-            if (!isExternalFileDrag(e)) return;
+            const dragTypes = Array.from(e.dataTransfer.types);
+            const isInternalDrag =
+              dragTypes.includes("application/x-media-item-id") ||
+              dragTypes.includes("application/x-folder-path");
+
+            if (!isExternalFileDrag(e) && !isInternalDrag) return;
             e.preventDefault();
-            e.dataTransfer.dropEffect = "copy";
-            setIsExternalDropActive(true);
+            e.dataTransfer.dropEffect = isExternalFileDrag(e) ? "copy" : "move";
+
+            if (isExternalFileDrag(e)) {
+              setIsExternalDropActive(true);
+            }
           }}
           onDragEnter={(e) => {
             if (!isExternalFileDrag(e)) return;
@@ -264,13 +272,26 @@ export const MediaLibraryManager = () => {
             }
           }}
           onDrop={(e) => {
-            if (!isExternalFileDrag(e)) return;
             e.preventDefault();
-            externalDragDepthRef.current = 0;
-            setIsExternalDropActive(false);
+            if (isExternalFileDrag(e)) {
+              externalDragDepthRef.current = 0;
+              setIsExternalDropActive(false);
 
-            if (e.dataTransfer.files.length > 0) {
-              void handleUploadFiles(e.dataTransfer.files);
+              if (e.dataTransfer.files.length > 0) {
+                void handleUploadFiles(e.dataTransfer.files);
+              }
+              return;
+            }
+
+            const movedItemId = e.dataTransfer.getData("application/x-media-item-id");
+            if (movedItemId) {
+              void handleMoveMediaToFolder(movedItemId, currentPath);
+              return;
+            }
+
+            const movedFolderPath = e.dataTransfer.getData("application/x-folder-path");
+            if (movedFolderPath) {
+              void handleMoveFolderToFolder(movedFolderPath, currentPath);
             }
           }}
           onContextMenu={(e) => openCtxMenu(e, { kind: "canvas" })}
@@ -396,7 +417,9 @@ export const MediaLibraryManager = () => {
             key="dlg-new"
             title="New Folder"
             placeholder="folder-name"
-            onConfirm={(name) => handleCreateFolder(name)}
+            onConfirm={async (name) => {
+              await handleCreateFolder(name);
+            }}
             onClose={() => setPendingAction(null)}
           />
         )}
@@ -406,8 +429,8 @@ export const MediaLibraryManager = () => {
             key="dlg-rf"
             title={`Rename "${pendingAction.entry.name}"`}
             defaultValue={pendingAction.entry.name}
-            onConfirm={(name) => {
-              void handleRenameFolder(pendingAction.entry.path, name);
+            onConfirm={async (name) => {
+              await handleRenameFolder(pendingAction.entry.path, name);
             }}
             onClose={() => setPendingAction(null)}
           />
@@ -418,8 +441,8 @@ export const MediaLibraryManager = () => {
             key="dlg-rm"
             title={`Rename "${pendingAction.entry.name}"`}
             defaultValue={pendingAction.entry.name}
-            onConfirm={(name) => {
-              void handleRename(pendingAction.entry.id, name);
+            onConfirm={async (name) => {
+              await handleRename(pendingAction.entry.id, name);
             }}
             onClose={() => setPendingAction(null)}
           />

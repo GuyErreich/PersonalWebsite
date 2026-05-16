@@ -24,6 +24,8 @@ const renderMainMedia = (item: GameDevMediaItem, projectTitle: string) => {
       <video
         src={item.media_url}
         poster={item.thumbnail_url ?? undefined}
+        aria-label={item.caption ?? `${projectTitle} video`}
+        title={item.caption ?? `${projectTitle} video`}
         className="h-full w-full object-cover"
         controls
         preload="metadata"

@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 
 export interface ContextMenuItem {
@@ -25,6 +25,7 @@ interface Props {
 export const ContextMenu = ({ x, y, items, onClose }: Props) => {
   const ref = useRef<HTMLDivElement>(null);
   const firstItemRef = useRef<HTMLButtonElement>(null);
+  const [position, setPosition] = useState({ left: x, top: y });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,6 +48,27 @@ export const ContextMenu = ({ x, y, items, onClose }: Props) => {
     firstItemRef.current?.focus();
   }, []);
 
+  useEffect(() => {
+    const menuNode = ref.current;
+    if (!menuNode) {
+      setPosition({ left: x, top: y });
+      return;
+    }
+
+    const viewportPadding = 8;
+    const menuRect = menuNode.getBoundingClientRect();
+    const maxLeft = Math.max(viewportPadding, window.innerWidth - menuRect.width - viewportPadding);
+    const maxTop = Math.max(
+      viewportPadding,
+      window.innerHeight - menuRect.height - viewportPadding,
+    );
+
+    setPosition({
+      left: Math.min(Math.max(viewportPadding, x), maxLeft),
+      top: Math.min(Math.max(viewportPadding, y), maxTop),
+    });
+  }, [x, y, items.length]);
+
   return (
     <motion.div
       ref={ref}
@@ -54,7 +76,7 @@ export const ContextMenu = ({ x, y, items, onClose }: Props) => {
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.1 }}
-      style={{ top: y, left: x }}
+      style={{ top: position.top, left: position.left }}
       role="menu"
       aria-label="Context menu"
       className="fixed z-50 min-w-[168px] overflow-hidden rounded-lg border border-gray-700 bg-gray-900 py-1 shadow-2xl"

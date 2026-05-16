@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { motion } from "framer-motion";
 import { Image as ImageIcon, Video } from "lucide-react";
 import type { MouseEvent } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
@@ -21,8 +22,10 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
   const { item } = entry;
 
   return (
-    <button
+    <motion.button
       type="button"
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       draggable
       className="rounded-lg border border-gray-700 bg-gray-900/30 p-3"
       onMouseEnter={playHoverSound}
@@ -30,7 +33,7 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
         playClickSound();
         onPreview(item);
       }}
-      onDragStart={(e) => {
+      onDragStartCapture={(e) => {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("application/x-media-item-id", entry.id);
       }}
@@ -77,6 +80,6 @@ export const MediaCard = ({ entry, onPreview, onContextMenu }: Props) => {
         {item.file_size_bytes ? `${Math.round(item.file_size_bytes / (1024 * 1024))}MB` : "\u2014"}{" "}
         • {new Date(item.updated_at).toLocaleDateString()}
       </p>
-    </button>
+    </motion.button>
   );
 };

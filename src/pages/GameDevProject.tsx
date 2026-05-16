@@ -7,7 +7,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, ExternalLink, Github, Layers3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { fallbackGameDevItems } from "../components/ui/gamedev/common/data/items";
 import type { GameDevItem, GameDevMediaItem } from "../components/ui/gamedev/common/data/types";
@@ -44,6 +44,7 @@ const buildFallbackMedia = (item: GameDevItem): GameDevMediaItem[] => {
 };
 
 export const GameDevProject = () => {
+  const MotionLink = motion(Link);
   const { id } = useParams();
   const [state, setState] = useState<ProjectState>({
     project: null,
@@ -191,20 +192,17 @@ export const GameDevProject = () => {
           <p className="mt-3 text-slate-300">
             {state.error ?? "This project could not be loaded."}
           </p>
-          <motion.button
-            type="button"
+          <MotionLink
+            to="/#gamedev"
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
             onMouseEnter={playHoverSound}
-            onClick={() => {
-              playClickSound();
-              window.location.assign("/#gamedev");
-            }}
+            onClick={playClickSound}
             className="mt-6 inline-flex items-center gap-2 rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-100 hover:border-cyan-300"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Gallery
-          </motion.button>
+          </MotionLink>
         </div>
       </div>
     );
@@ -216,20 +214,17 @@ export const GameDevProject = () => {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.18),transparent_42%),radial-gradient(circle_at_70%_80%,rgba(14,165,233,0.14),transparent_42%),linear-gradient(to_bottom,#030712,#0f172a)] text-slate-100">
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <motion.button
-            type="button"
+          <MotionLink
+            to="/#gamedev"
             whileHover={{ x: -3 }}
             whileTap={{ scale: 0.97 }}
             onMouseEnter={playHoverSound}
-            onClick={() => {
-              playClickSound();
-              window.location.assign("/#gamedev");
-            }}
+            onClick={playClickSound}
             className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90 hover:border-cyan-300/40"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to GameDev
-          </motion.button>
+          </MotionLink>
 
           <div className="flex items-center gap-2">
             {project.github_url ? (

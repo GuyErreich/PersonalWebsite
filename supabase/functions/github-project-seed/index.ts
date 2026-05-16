@@ -189,28 +189,37 @@ Deno.serve(async (req: Request) => {
     ...authTokenHeader,
   };
 
-  const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
-    headers: githubHeaders,
-  });
+  let repoData: GitHubRepoResponse;
+  let readmeMarkdown = "";
 
-  if (!repoResponse.ok) {
-    if (repoResponse.status === 404) {
-      return json({ error: "Repository not found or not accessible with configured token." }, 404);
+  try {
+    const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+      headers: githubHeaders,
+    });
+
+    if (!repoResponse.ok) {
+      if (repoResponse.status === 404) {
+        return json(
+          { error: "Repository not found or not accessible with configured token." },
+          404,
+        );
+      }
+
+      return json({ error: "Failed to fetch repository metadata from GitHub." }, 502);
     }
 
+    repoData = (await repoResponse.json()) as GitHubRepoResponse;
+
+    const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+      headers: githubHeaders,
+    });
+
+    if (readmeResponse.ok) {
+      const readmeData = (await readmeResponse.json()) as GitHubReadmeResponse;
+      readmeMarkdown = decodeReadme(readmeData);
+    }
+  } catch {
     return json({ error: "Failed to fetch repository metadata from GitHub." }, 502);
-  }
-
-  const repoData = (await repoResponse.json()) as GitHubRepoResponse;
-
-  const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-    headers: githubHeaders,
-  });
-
-  let readmeMarkdown = "";
-  if (readmeResponse.ok) {
-    const readmeData = (await readmeResponse.json()) as GitHubReadmeResponse;
-    readmeMarkdown = decodeReadme(readmeData);
   }
 
   const title = repoData.name

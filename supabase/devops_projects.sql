@@ -5,12 +5,16 @@ create table if not exists public.devops_projects (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text not null,
-  tech_stack text[] default '{}',
+  tech_stack text[] not null default '{}',
   github_url text,
   live_url text,
   icon_name text,
   created_at timestamptz not null default now()
 );
+
+alter table public.devops_projects
+  alter column tech_stack set default '{}',
+  alter column tech_stack set not null;
 
 create index if not exists devops_projects_created_at_idx
   on public.devops_projects (created_at desc);

@@ -72,7 +72,7 @@ interface Database {
           gamedev_item_id: string;
           media_url: string;
           thumbnail_url?: string | null;
-          media_type?: "video" | "image";
+          media_type: "video" | "image";
           caption?: string | null;
           sort_order?: number | null;
           created_at?: string;

@@ -1,6 +1,19 @@
 -- Copyright (c) 2026 Guy Erreich
 -- SPDX-License-Identifier: MIT
 
+create table if not exists public.gamedev_items (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null,
+  media_url text not null,
+  thumbnail_url text,
+  icon_name text,
+  github_url text,
+  live_url text,
+  tags text[] not null default '{}',
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.gamedev_item_media (
   id uuid primary key default gen_random_uuid(),
   gamedev_item_id uuid not null references public.gamedev_items(id) on delete cascade,

@@ -6,15 +6,14 @@
 
 import { supabase } from "../supabase";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-if (!supabaseUrl) {
-  throw new Error("VITE_SUPABASE_URL is not set. Check your .env configuration.");
-}
+const getGitHubSeedFunctionUrl = (): string => {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!supabaseUrl) {
+    throw new Error("VITE_SUPABASE_URL is not set. Check your .env configuration.");
+  }
 
-const GITHUB_SEED_FUNCTION_URL = new URL(
-  "/functions/v1/github-project-seed",
-  supabaseUrl.replace(/\/$/, ""),
-).toString();
+  return new URL("/functions/v1/github-project-seed", supabaseUrl.replace(/\/$/, "")).toString();
+};
 
 export interface GitHubProjectSeedResponse {
   repoFullName: string;
@@ -32,6 +31,8 @@ export interface GitHubProjectSeedResponse {
 export const fetchGitHubProjectSeed = async (
   repoUrl: string,
 ): Promise<GitHubProjectSeedResponse> => {
+  const githubSeedFunctionUrl = getGitHubSeedFunctionUrl();
+
   const {
     data: { session },
     error: sessionError,
@@ -41,7 +42,7 @@ export const fetchGitHubProjectSeed = async (
     throw new Error("You must be logged in as admin to import project data.");
   }
 
-  const response = await fetch(GITHUB_SEED_FUNCTION_URL, {
+  const response = await fetch(githubSeedFunctionUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

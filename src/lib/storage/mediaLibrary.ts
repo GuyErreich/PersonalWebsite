@@ -73,6 +73,10 @@ export const uploadOrReuseMediaLibraryItem = async ({
   preferredName,
 }: UploadOrReuseMediaLibraryItemArgs): Promise<{ item: MediaLibraryItem; reused: boolean }> => {
   const contentHash = await hashFileSha256(file);
+  const normalizedName = (preferredName ?? "").trim() || stripFileExtension(file.name);
+  const normalizedFolderOrigin =
+    folderOrigin === undefined || folderOrigin === null ? uploadFolder : folderOrigin.trim();
+  const inferredMediaType = inferMediaTypeFromFile(file);
 
   const { data: existingLibraryItem, error: existingItemError } = await supabase
     .from("media_library")
@@ -89,30 +93,23 @@ export const uploadOrReuseMediaLibraryItem = async ({
     return { item: existingItem, reused: true };
   }
 
-  const uploadedUrl = await uploadToR2(file, uploadFolder);
-  const parsedUpload = new URL(uploadedUrl);
-  if (parsedUpload.protocol !== "https:") {
-    throw new Error("Upload returned a non-HTTPS URL.");
-  }
-
-  const { data: insertedItem, error: insertError } = await supabase
+  const { data: reservedItem, error: reserveError } = await supabase
     .from("media_library")
     .insert([
       {
-        name: (preferredName ?? "").trim() || stripFileExtension(file.name),
-        media_url: parsedUpload.href,
-        media_type: inferMediaTypeFromFile(file),
+        name: normalizedName,
+        media_url: `https://pending-upload.local/${crypto.randomUUID()}`,
+        media_type: inferredMediaType,
         content_hash: contentHash,
-        folder_origin:
-          folderOrigin === undefined || folderOrigin === null ? uploadFolder : folderOrigin.trim(),
+        folder_origin: normalizedFolderOrigin,
         file_size_bytes: file.size,
       },
     ])
     .select("*")
     .single();
 
-  if (insertError || !insertedItem) {
-    if (insertError?.code === "23505") {
+  if (reserveError || !reservedItem) {
+    if (reserveError?.code === "23505") {
       const { data: conflictExisting, error: conflictLookupError } = await supabase
         .from("media_library")
         .select("*")
@@ -126,6 +123,59 @@ export const uploadOrReuseMediaLibraryItem = async ({
       if (conflictExisting) {
         return { item: conflictExisting as MediaLibraryItem, reused: true };
       }
+    }
+
+    throw new Error(reserveError?.message ?? "Unable to reserve media library record.");
+  }
+
+  let parsedUpload: URL;
+
+  try {
+    const uploadedUrl = await uploadToR2(file, uploadFolder);
+    parsedUpload = new URL(uploadedUrl);
+  } catch (uploadError) {
+    const { error: cleanupError } = await supabase
+      .from("media_library")
+      .delete()
+      .eq("id", reservedItem.id)
+      .eq("content_hash", contentHash);
+
+    if (cleanupError) {
+      const uploadMessage = uploadError instanceof Error ? uploadError.message : "Upload failed.";
+      throw new Error(`${uploadMessage} Cleanup failed: ${cleanupError.message}`);
+    }
+
+    throw uploadError;
+  }
+
+  if (parsedUpload.protocol !== "https:") {
+    const { error: cleanupError } = await supabase
+      .from("media_library")
+      .delete()
+      .eq("id", reservedItem.id);
+    if (cleanupError) {
+      throw new Error(`Upload returned a non-HTTPS URL. Cleanup failed: ${cleanupError.message}`);
+    }
+
+    throw new Error("Upload returned a non-HTTPS URL.");
+  }
+
+  const { data: insertedItem, error: insertError } = await supabase
+    .from("media_library")
+    .update({ media_url: parsedUpload.href })
+    .eq("id", reservedItem.id)
+    .select("*")
+    .single();
+
+  if (insertError || !insertedItem) {
+    const { error: cleanupError } = await supabase
+      .from("media_library")
+      .delete()
+      .eq("id", reservedItem.id);
+    if (cleanupError) {
+      throw new Error(
+        `${insertError?.message ?? "Unable to store media in library."} Cleanup failed: ${cleanupError.message}`,
+      );
     }
 
     throw new Error(insertError?.message ?? "Unable to store media in library.");

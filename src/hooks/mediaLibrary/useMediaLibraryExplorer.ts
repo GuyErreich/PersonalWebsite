@@ -442,8 +442,9 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
   const handleRename = async (itemId: string, nextName: string) => {
     const normalizedName = nextName.trim();
     if (!normalizedName) {
-      setMessage({ type: "error", text: "Name cannot be empty." });
-      return;
+      const errorMessage = "Name cannot be empty.";
+      setMessage({ type: "error", text: errorMessage });
+      throw new Error(errorMessage);
     }
 
     const { error } = await supabase
@@ -453,7 +454,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
 
     if (error) {
       setMessage({ type: "error", text: error.message });
-      return;
+      throw new Error(error.message);
     }
 
     setItems((prev) =>
@@ -466,8 +467,9 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
       const folderName = name.trim();
 
       if (!folderName) {
-        setMessage({ type: "error", text: "Folder name cannot be empty." });
-        return;
+        const errorMessage = "Folder name cannot be empty.";
+        setMessage({ type: "error", text: errorMessage });
+        throw new Error(errorMessage);
       }
 
       const safePathSegment = folderName.replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
@@ -483,7 +485,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
 
       if (error) {
         setMessage({ type: "error", text: error.message });
-        return;
+        throw new Error(error.message);
       }
 
       setMessage({ type: "success", text: `Created folder "${folderName}".` });
@@ -535,7 +537,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     const normalizedSource = normalizeFolderPath(folderPath);
     const normalizedTarget = normalizeFolderPath(targetFolderPath);
 
-    if (!normalizedSource || !normalizedTarget) {
+    if (!normalizedSource) {
       setMessage({ type: "error", text: "Invalid folder move target." });
       return;
     }
@@ -548,7 +550,9 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
     }
 
     const sourceFolderName = getPathName(normalizedSource);
-    const destinationPath = `${normalizedTarget}/${sourceFolderName}`;
+    const destinationPath = normalizedTarget
+      ? `${normalizedTarget}/${sourceFolderName}`
+      : sourceFolderName;
 
     const { error } = await supabase.rpc("media_library_move_folder_recursive", {
       p_source_path: normalizedSource,
@@ -601,14 +605,16 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
   const handleRenameFolder = async (folderPath: string, newName: string) => {
     const safeName = newName.trim();
     if (!safeName) {
-      setMessage({ type: "error", text: "Folder name cannot be empty." });
-      return;
+      const errorMessage = "Folder name cannot be empty.";
+      setMessage({ type: "error", text: errorMessage });
+      throw new Error(errorMessage);
     }
 
     const safePathSegment = safeName.replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
     if (!safePathSegment) {
-      setMessage({ type: "error", text: "Folder name must include letters or numbers." });
-      return;
+      const errorMessage = "Folder name must include letters or numbers.";
+      setMessage({ type: "error", text: errorMessage });
+      throw new Error(errorMessage);
     }
 
     const parentPath = getParentPath(folderPath);
@@ -622,7 +628,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
 
     if (error) {
       setMessage({ type: "error", text: error.message });
-      return;
+      throw new Error(error.message);
     }
 
     if (currentPath === folderPath || currentPath.startsWith(`${folderPath}/`)) {

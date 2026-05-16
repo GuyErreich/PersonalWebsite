@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import {
   playClickSound,
   playMenuCloseSound,
@@ -27,6 +27,8 @@ export const ActionDialog = ({
   onConfirm,
   onClose,
 }: Props) => {
+  const inputId = useId();
+  const inputLabelId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -98,10 +100,16 @@ export const ActionDialog = ({
       >
         <h3 className="mb-3 text-sm font-semibold text-white">{title}</h3>
 
+        <label id={inputLabelId} htmlFor={inputId} className="sr-only">
+          {title}
+        </label>
+
         <input
+          id={inputId}
           ref={inputRef}
           defaultValue={defaultValue}
           placeholder={placeholder}
+          aria-labelledby={inputLabelId}
           onKeyDown={(e) => {
             if (e.key === "Enter") handleConfirm();
           }}

@@ -7,6 +7,7 @@
 import { motion, useInView } from "framer-motion";
 import type { ReactNode } from "react";
 import { useContext, useRef } from "react";
+import { Link } from "react-router-dom";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
 import { GitHubIcon } from "../icons/BrandIcons";
 import { SectionRevealContext } from "../sections/sectionRevealContext";
@@ -43,6 +44,7 @@ export const ProjectCardBase = ({
   thumbnailUrl,
   theme,
 }: ProjectCardBaseProps) => {
+  const MotionLink = motion(Link);
   const isRevealed = useContext(SectionRevealContext);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true });
@@ -78,20 +80,17 @@ export const ProjectCardBase = ({
 
             <div className="flex items-center gap-2">
               {detailsLink && (
-                <motion.button
-                  type="button"
+                <MotionLink
+                  to={detailsLink}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onMouseEnter={playHoverSound}
-                  onClick={() => {
-                    playClickSound();
-                    window.location.assign(detailsLink);
-                  }}
+                  onClick={playClickSound}
                   aria-label={`Open ${title} project page`}
                   className="relative z-30 rounded-md border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-cyan-200 transition-colors hover:border-cyan-400/40 hover:text-cyan-100"
                 >
                   Open
-                </motion.button>
+                </MotionLink>
               )}
 
               {link && (
