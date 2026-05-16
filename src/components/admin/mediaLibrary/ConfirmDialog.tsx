@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import {
   playClickSound,
   playHoverSound,
@@ -32,8 +32,17 @@ export const ConfirmDialog = ({
   onCancel,
   danger = false,
 }: Props) => {
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+
   useEffect(() => {
     playMenuOpenSound();
+    previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    cancelButtonRef.current?.focus();
+
+    return () => {
+      previouslyFocusedElementRef.current?.focus();
+    };
   }, []);
 
   useEffect(() => {
@@ -84,6 +93,7 @@ export const ConfirmDialog = ({
             type="button"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            ref={cancelButtonRef}
             onMouseEnter={playHoverSound}
             onClick={handleBackdropClick}
             className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200"

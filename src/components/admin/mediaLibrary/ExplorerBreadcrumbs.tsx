@@ -63,6 +63,7 @@ export const ExplorerBreadcrumbs = ({
                 ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-200"
                 : "border-gray-600 text-gray-200 hover:border-cyan-500/40"
             }`}
+            aria-current={crumb.path === currentPath ? "location" : undefined}
           >
             {crumb.label}
           </motion.button>

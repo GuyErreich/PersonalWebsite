@@ -42,6 +42,8 @@ execute function public.touch_site_settings_updated_at();
 alter table public.site_settings enable row level security;
 
 -- Public can read only safe client-facing settings
+drop policy if exists "Public can read site settings" on public.site_settings;
+
 create policy "Public can read site settings"
   on public.site_settings for select
   using (key in ('showreel_url', 'showreel_default_volume'));

@@ -125,7 +125,14 @@ const uploadToPresignedUrl = async (file: File, signedUrl: string): Promise<void
   }
 
   if (!uploadRes.ok) {
-    const errorText = await uploadRes.text().catch(() => "");
+    let errorText = "";
+
+    try {
+      errorText = await uploadRes.text();
+    } catch {
+      errorText = "";
+    }
+
     const message = errorText.trim() || uploadRes.statusText;
     throw new Error(`Failed to upload to R2: ${message}`);
   }

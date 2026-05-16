@@ -92,6 +92,7 @@ export const GameDevProjectMediaGallery = ({
                     : "border-white/10 hover:border-white/30"
                 }`}
                 aria-label={`Open media ${index + 1}`}
+                aria-pressed={isActive}
               >
                 <div className="aspect-video">
                   {mediaType === "video" && !item.thumbnail_url ? (

@@ -239,7 +239,14 @@ Deno.serve(async (req: Request) => {
         return json({ error: "publicUrl path is not allowed" }, 400);
       }
 
-      const objectKey = decodeURIComponent(objectPath.slice(basePath.length + 1));
+      let objectKey: string;
+
+      try {
+        objectKey = decodeURIComponent(objectPath.slice(basePath.length + 1));
+      } catch {
+        return json({ error: "Invalid public URL" }, 400);
+      }
+
       const objectFolder = objectKey.split("/")[0] ?? "";
       if (!ALLOWED_FOLDERS.includes(objectFolder)) {
         return json({ error: "Object folder is not allowed" }, 400);

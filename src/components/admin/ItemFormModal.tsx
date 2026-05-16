@@ -253,9 +253,8 @@ export const ItemFormModal = ({
       const { data, error } = await supabase
         .from("media_library")
         .select("*")
-        .order("updated_at", { ascending: false });
-
-      const limitedData = (data ?? []).slice(0, MEDIA_LIBRARY_PICKER_LIMIT);
+        .order("updated_at", { ascending: false })
+        .limit(MEDIA_LIBRARY_PICKER_LIMIT);
 
       setIsLoadingMediaLibrary(false);
 
@@ -264,7 +263,7 @@ export const ItemFormModal = ({
         return;
       }
 
-      setMediaLibraryItems(limitedData as MediaLibraryItem[]);
+      setMediaLibraryItems((data ?? []) as MediaLibraryItem[]);
     })();
   }, [isOpen, type]);
 
