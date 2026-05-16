@@ -46,16 +46,18 @@ export const ActionDialog = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        playMenuCloseSound();
-        onClose();
+      if (e.key !== "Escape" || isSubmitting) {
+        return;
       }
+
+      playMenuCloseSound();
+      onClose();
     };
 
     document.addEventListener("keydown", handleKeyDown);
 
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
+  }, [isSubmitting, onClose]);
 
   const handleConfirm = async () => {
     const value = inputRef.current?.value.trim() ?? "";
@@ -77,6 +79,10 @@ export const ActionDialog = ({
   };
 
   const handleBackdropClick = () => {
+    if (isSubmitting) {
+      return;
+    }
+
     playMenuCloseSound();
     onClose();
   };
