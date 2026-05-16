@@ -18,7 +18,8 @@ begin
     raise exception 'Source path is required';
   end if;
 
-  if v_target_parent_path = v_source_path or v_target_parent_path like v_source_path || '/%' then
+  if v_target_parent_path = v_source_path
+    or left(v_target_parent_path, length(v_source_path) + 1) = v_source_path || '/' then
     raise exception 'Cannot move a folder into itself or its descendant';
   end if;
 
@@ -46,7 +47,7 @@ begin
   set folder_origin =
     v_destination_path || substring(folder_origin from length(v_source_path) + 1)
   where folder_origin = v_source_path
-    or folder_origin like v_source_path || '/%';
+    or left(folder_origin, length(v_source_path) + 1) = v_source_path || '/';
 
   update public.media_library_folders
   set
@@ -56,7 +57,7 @@ begin
       else v_destination_path || substring(parent_path from length(v_source_path) + 1)
     end
   where path = v_source_path
-    or path like v_source_path || '/%';
+    or left(path, length(v_source_path) + 1) = v_source_path || '/';
 end;
 $$;
 
@@ -106,7 +107,7 @@ begin
   update public.media_library
   set folder_origin = v_new_path || substring(folder_origin from length(v_folder_path) + 1)
   where folder_origin = v_folder_path
-    or folder_origin like v_folder_path || '/%';
+    or left(folder_origin, length(v_folder_path) + 1) = v_folder_path || '/';
 
   update public.media_library_folders
   set
@@ -117,7 +118,7 @@ begin
       else v_new_path || substring(parent_path from length(v_folder_path) + 1)
     end
   where path = v_folder_path
-    or path like v_folder_path || '/%';
+    or left(path, length(v_folder_path) + 1) = v_folder_path || '/';
 end;
 $$;
 
@@ -136,10 +137,10 @@ begin
 
   delete from public.media_library
   where folder_origin = v_folder_path
-    or folder_origin like v_folder_path || '/%';
+    or left(folder_origin, length(v_folder_path) + 1) = v_folder_path || '/';
 
   delete from public.media_library_folders
   where path = v_folder_path
-    or path like v_folder_path || '/%';
+    or left(path, length(v_folder_path) + 1) = v_folder_path || '/';
 end;
 $$;

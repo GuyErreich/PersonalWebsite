@@ -12,6 +12,10 @@ create table if not exists public.devops_projects (
   created_at timestamptz not null default now()
 );
 
+update public.devops_projects
+set tech_stack = '{}'
+where tech_stack is null;
+
 alter table public.devops_projects
   alter column tech_stack set default '{}',
   alter column tech_stack set not null;

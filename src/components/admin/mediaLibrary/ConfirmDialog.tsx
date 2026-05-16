@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 import {
   playClickSound,
+  playHoverSound,
   playMenuCloseSound,
   playMenuOpenSound,
 } from "../../../lib/sound/interactionSounds";
@@ -83,6 +84,7 @@ export const ConfirmDialog = ({
             type="button"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onMouseEnter={playHoverSound}
             onClick={handleBackdropClick}
             className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200"
           >
@@ -93,6 +95,7 @@ export const ConfirmDialog = ({
             type="button"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onMouseEnter={playHoverSound}
             onClick={() => {
               playClickSound();
               playMenuCloseSound();

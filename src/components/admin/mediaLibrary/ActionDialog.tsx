@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   playClickSound,
+  playHoverSound,
   playMenuCloseSound,
   playMenuOpenSound,
 } from "../../../lib/sound/interactionSounds";
@@ -16,6 +17,8 @@ interface Props {
   title: string;
   placeholder?: string;
   defaultValue?: string;
+  confirmLabel?: string;
+  submittingLabel?: string;
   onConfirm: (value: string) => void | Promise<void>;
   onClose: () => void;
 }
@@ -24,6 +27,8 @@ export const ActionDialog = ({
   title,
   placeholder,
   defaultValue = "",
+  confirmLabel = "Confirm",
+  submittingLabel = "Saving...",
   onConfirm,
   onClose,
 }: Props) => {
@@ -123,6 +128,7 @@ export const ActionDialog = ({
             type="button"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onMouseEnter={playHoverSound}
             onClick={handleBackdropClick}
             disabled={isSubmitting}
             className="rounded-md px-3 py-1.5 text-sm text-gray-400 hover:text-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -134,11 +140,12 @@ export const ActionDialog = ({
             type="button"
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
+            onMouseEnter={playHoverSound}
             onClick={handleConfirm}
             disabled={isSubmitting}
             className="rounded-md bg-cyan-600 px-3 py-1.5 text-sm text-white hover:bg-cyan-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? "Creating..." : "Confirm"}
+            {isSubmitting ? submittingLabel : confirmLabel}
           </motion.button>
         </div>
       </motion.div>

@@ -14,7 +14,7 @@
 //   ALLOWED_ORIGINS  — comma-separated list of allowed frontend origins
 //                      e.g. "https://abc.pages.dev,https://yourdomain.com"
 
-import { PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
+import { DeleteObjectCommand, PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1026.0";
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
 
@@ -108,7 +108,7 @@ function corsHeaders(origin: string): Record<string, string> | null {
   return {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
     "Access-Control-Max-Age": "86400",
   };
 }
@@ -137,7 +137,7 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: CORS });
   }
 
-  if (req.method !== "POST") {
+  if (req.method !== "POST" && req.method !== "DELETE") {
     return json({ error: "Method not allowed" }, 405);
   }
 
@@ -187,6 +187,74 @@ Deno.serve(async (req: Request) => {
     }
 
     const bodyRecord = body as Record<string, unknown>;
+    // --- Build presigned URL using server-side R2 credentials ---
+    const accountId = Deno.env.get("R2_ACCOUNT_ID") ?? "";
+    const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID") ?? "";
+    const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY") ?? "";
+    const bucket = Deno.env.get("R2_BUCKET_NAME") ?? "portfolio-media";
+    const publicUrl = Deno.env.get("R2_PUBLIC_URL");
+
+    if (!accountId || !accessKeyId || !secretAccessKey) {
+      return json({ error: "R2 credentials not configured on server" }, 500);
+    }
+    if (!publicUrl) {
+      return json({ error: "R2_PUBLIC_URL is not configured on server" }, 500);
+    }
+
+    const ALLOWED_FOLDERS = Object.keys(FOLDER_POLICIES);
+
+    const r2 = new S3Client({
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: { accessKeyId, secretAccessKey },
+    });
+
+    if (req.method === "DELETE") {
+      if (
+        typeof body !== "object" ||
+        body === null ||
+        typeof bodyRecord.publicUrl !== "string" ||
+        bodyRecord.publicUrl.trim().length === 0
+      ) {
+        return json({ error: "publicUrl must be a non-empty string" }, 400);
+      }
+
+      let parsedObjectUrl: URL;
+      let parsedPublicBaseUrl: URL;
+
+      try {
+        parsedObjectUrl = new URL(bodyRecord.publicUrl);
+        parsedPublicBaseUrl = new URL(publicUrl);
+      } catch {
+        return json({ error: "Invalid public URL" }, 400);
+      }
+
+      if (parsedObjectUrl.origin !== parsedPublicBaseUrl.origin) {
+        return json({ error: "publicUrl origin is not allowed" }, 400);
+      }
+
+      const basePath = parsedPublicBaseUrl.pathname.replace(/\/+$/, "");
+      const objectPath = parsedObjectUrl.pathname;
+      if (!objectPath.startsWith(`${basePath}/`)) {
+        return json({ error: "publicUrl path is not allowed" }, 400);
+      }
+
+      const objectKey = decodeURIComponent(objectPath.slice(basePath.length + 1));
+      const objectFolder = objectKey.split("/")[0] ?? "";
+      if (!ALLOWED_FOLDERS.includes(objectFolder)) {
+        return json({ error: "Object folder is not allowed" }, 400);
+      }
+
+      await r2.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: objectKey,
+        }),
+      );
+
+      return json({ ok: true });
+    }
+
     if (
       typeof body !== "object" ||
       body === null ||
@@ -211,16 +279,12 @@ Deno.serve(async (req: Request) => {
       folderPath?: string;
     };
 
-    // Whitelist allowed folder prefixes to prevent path traversal.
-    // Use FOLDER_POLICIES as the canonical source to avoid drift.
-    const ALLOWED_FOLDERS = Object.keys(FOLDER_POLICIES);
     const rawFolder = folderPath ?? "media";
     if (!ALLOWED_FOLDERS.includes(rawFolder)) {
       return json({ error: `Folder "${rawFolder}" is not allowed` }, 400);
     }
     const folder = rawFolder as keyof typeof FOLDER_POLICIES;
 
-    // Normalise fileExt: strip leading dots, allow only alphanumeric chars
     const rawExt = fileExt ?? "";
     const safeExt = rawExt.replace(/^\.+/, "").replace(/[^a-zA-Z0-9]/g, "");
     if (safeExt.length > 10) {
@@ -234,7 +298,6 @@ Deno.serve(async (req: Request) => {
       return json({ error: "File is empty or exceeds allowed size for this upload target" }, 400);
     }
 
-    // Validate MIME type and ensure extension is allowed for that specific MIME type
     if (!Object.hasOwn(policy.mimeTypeExtensions, normalizedContentType)) {
       return json({ error: "File type not allowed" }, 400);
     }
@@ -245,26 +308,6 @@ Deno.serve(async (req: Request) => {
 
     const ext = extNoDot.length > 0 ? `.${extNoDot}` : "";
     const key = `${folder}/${crypto.randomUUID()}${ext}`;
-
-    // --- Build presigned URL using server-side R2 credentials ---
-    const accountId = Deno.env.get("R2_ACCOUNT_ID") ?? "";
-    const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID") ?? "";
-    const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY") ?? "";
-    const bucket = Deno.env.get("R2_BUCKET_NAME") ?? "portfolio-media";
-    const publicUrl = Deno.env.get("R2_PUBLIC_URL");
-
-    if (!accountId || !accessKeyId || !secretAccessKey) {
-      return json({ error: "R2 credentials not configured on server" }, 500);
-    }
-    if (!publicUrl) {
-      return json({ error: "R2_PUBLIC_URL is not configured on server" }, 500);
-    }
-
-    const r2 = new S3Client({
-      region: "auto",
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    });
 
     const command = new PutObjectCommand({
       Bucket: bucket,

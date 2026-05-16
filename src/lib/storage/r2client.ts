@@ -31,6 +31,106 @@ interface PresignResponse {
   publicUrl: string;
 }
 
+const getAuthSessionToken = async (): Promise<string> => {
+  const {
+    data: { session },
+    error: sessionError,
+  } = await supabase.auth.getSession();
+
+  if (sessionError || !session) {
+    throw new Error("You must be logged in to upload files.");
+  }
+
+  return session.access_token;
+};
+
+const requestPresignedUpload = async (
+  file: File,
+  folderPath: R2UploadFolder,
+): Promise<PresignResponse> => {
+  const fileExt = assertAllowedUpload(file, folderPath);
+  const accessToken = await getAuthSessionToken();
+
+  let presignRes: Response;
+  try {
+    presignRes = await fetch(PRESIGN_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        contentType: file.type,
+        contentLength: file.size,
+        fileExt,
+        folderPath,
+      }),
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown browser network error while calling presign endpoint.";
+    throw new Error(
+      `Cannot reach upload presign service. Check network/CORS and Supabase function availability (${PRESIGN_FUNCTION_URL}). ${message}`,
+    );
+  }
+
+  if (!presignRes.ok) {
+    let body: unknown = {};
+    try {
+      body = await presignRes.json();
+    } catch {
+      /* intentional — body may be empty on error responses */
+    }
+
+    const msg =
+      typeof body === "object" && body !== null && "error" in body
+        ? String((body as Record<string, unknown>).error)
+        : presignRes.statusText;
+    throw new Error(`Failed to get presigned URL: ${msg}`);
+  }
+
+  const presignBody = (await presignRes.json()) as PresignResponse;
+  const signedUrlParsed = new URL(presignBody.signedUrl);
+  const publicUrlParsed = new URL(presignBody.publicUrl);
+
+  if (signedUrlParsed.protocol !== "https:" || publicUrlParsed.protocol !== "https:") {
+    throw new Error("Presign function returned a non-HTTPS URL.");
+  }
+
+  return {
+    signedUrl: signedUrlParsed.href,
+    publicUrl: publicUrlParsed.href,
+  };
+};
+
+const uploadToPresignedUrl = async (file: File, signedUrl: string): Promise<void> => {
+  let uploadRes: Response;
+
+  try {
+    uploadRes = await fetch(signedUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown browser network error while uploading to R2.";
+    throw new Error(
+      `Upload request failed before reaching R2. Check browser/network policy for presigned PUT URL. ${message}`,
+    );
+  }
+
+  if (!uploadRes.ok) {
+    const errorText = await uploadRes.text().catch(() => "");
+    const message = errorText.trim() || uploadRes.statusText;
+    throw new Error(`Failed to upload to R2: ${message}`);
+  }
+};
+
 const getNormalizedExtension = (fileName: string): string => {
   const dotIndex = fileName.lastIndexOf(".");
   if (dotIndex <= 0) return "";
@@ -76,91 +176,48 @@ export const uploadToR2 = async (
   file: File,
   folderPath: R2UploadFolder = R2_UPLOAD_FOLDERS.media,
 ): Promise<string> => {
-  const fileExt = assertAllowedUpload(file, folderPath);
+  const { signedUrl, publicUrl } = await requestPresignedUpload(file, folderPath);
+  await uploadToPresignedUrl(file, signedUrl);
 
-  // Get the caller's current session token to authenticate with the edge function
-  const {
-    data: { session },
-    error: sessionError,
-  } = await supabase.auth.getSession();
-  if (sessionError || !session) {
-    throw new Error("You must be logged in to upload files.");
+  return publicUrl;
+};
+
+export const deleteFromR2 = async (publicUrl: string): Promise<void> => {
+  const parsedPublicUrl = new URL(publicUrl);
+  if (parsedPublicUrl.protocol !== "https:") {
+    throw new Error("R2 delete URL must be HTTPS.");
   }
 
-  // Ask the edge function to generate a presigned URL (credentials stay server-side)
-  let presignRes: Response;
+  const accessToken = await getAuthSessionToken();
+
+  let deleteResponse: Response;
   try {
-    presignRes = await fetch(PRESIGN_FUNCTION_URL, {
-      method: "POST",
+    deleteResponse = await fetch(PRESIGN_FUNCTION_URL, {
+      method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
       },
-      body: JSON.stringify({
-        contentType: file.type,
-        contentLength: file.size,
-        fileExt,
-        folderPath,
-      }),
+      body: JSON.stringify({ publicUrl: parsedPublicUrl.href }),
     });
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unknown browser network error while calling presign endpoint.";
-    throw new Error(
-      `Cannot reach upload presign service. Check network/CORS and Supabase function availability (${PRESIGN_FUNCTION_URL}). ${message}`,
-    );
+    const message = error instanceof Error ? error.message : "Unknown browser network error.";
+    throw new Error(`Failed to reach R2 cleanup endpoint. ${message}`);
   }
 
-  if (!presignRes.ok) {
-    let body: unknown = {};
+  if (!deleteResponse.ok) {
+    let responseBody: unknown = {};
     try {
-      body = await presignRes.json();
+      responseBody = await deleteResponse.json();
     } catch {
       /* intentional — body may be empty on error responses */
     }
-    const msg =
-      typeof body === "object" && body !== null && "error" in body
-        ? String((body as Record<string, unknown>).error)
-        : presignRes.statusText;
-    throw new Error(`Failed to get presigned URL: ${msg}`);
-  }
 
-  const presignBody = (await presignRes.json()) as PresignResponse;
-  const signedUrlParsed = new URL(presignBody.signedUrl);
-  const publicUrlParsed = new URL(presignBody.publicUrl);
-
-  if (signedUrlParsed.protocol !== "https:" || publicUrlParsed.protocol !== "https:") {
-    throw new Error("Presign function returned a non-HTTPS URL.");
-  }
-
-  const signedUrl = signedUrlParsed.href;
-  const publicUrl = publicUrlParsed.href;
-
-  // Upload the file directly to R2 using the short-lived presigned URL
-  let uploadRes: Response;
-  try {
-    uploadRes = await fetch(signedUrl, {
-      method: "PUT",
-      body: file,
-      headers: { "Content-Type": file.type },
-    });
-  } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Unknown browser network error while uploading to R2.";
-    throw new Error(
-      `Upload request failed before reaching R2. Check browser/network policy for presigned PUT URL. ${message}`,
-    );
-  }
+      typeof responseBody === "object" && responseBody !== null && "error" in responseBody
+        ? String((responseBody as Record<string, unknown>).error)
+        : deleteResponse.statusText;
 
-  if (!uploadRes.ok) {
-    const errorText = await uploadRes.text().catch(() => "");
-    const message = errorText.trim() || uploadRes.statusText;
-    throw new Error(`Failed to upload to R2: ${message}`);
+    throw new Error(`Failed to delete R2 object: ${message}`);
   }
-
-  return publicUrl;
 };

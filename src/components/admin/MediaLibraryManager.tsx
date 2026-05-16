@@ -51,6 +51,7 @@ export const MediaLibraryManager = () => {
     loading,
     uploading,
     message,
+    setMessage,
     currentPath,
     setCurrentPath,
     searchQuery,
@@ -128,15 +129,33 @@ export const MediaLibraryManager = () => {
           },
         },
         {
-          label: "Rename",
+          label: entry.isVirtual ? "Rename (Unavailable)" : "Rename",
           icon: <Pencil className="h-3.5 w-3.5" />,
-          onClick: () => setPendingAction({ kind: "rename-folder", entry }),
+          onClick: () => {
+            if (entry.isVirtual) {
+              setMessage({
+                type: "error",
+                text: "This folder is virtual and cannot be renamed until it is explicitly created.",
+              });
+              return;
+            }
+
+            setPendingAction({ kind: "rename-folder", entry });
+          },
         },
         {
-          label: "Remove From Library",
+          label: entry.isVirtual ? "Remove (Unavailable)" : "Remove From Library",
           icon: <Trash2 className="h-3.5 w-3.5" />,
           danger: true,
           onClick: () => {
+            if (entry.isVirtual) {
+              setMessage({
+                type: "error",
+                text: "This virtual folder cannot be removed directly. Remove contained media items instead.",
+              });
+              return;
+            }
+
             setPendingAction({ kind: "confirm-delete-folder", entry });
           },
         },
@@ -417,6 +436,8 @@ export const MediaLibraryManager = () => {
             key="dlg-new"
             title="New Folder"
             placeholder="folder-name"
+            confirmLabel="Create"
+            submittingLabel="Creating..."
             onConfirm={async (name) => {
               await handleCreateFolder(name);
             }}
@@ -429,6 +450,8 @@ export const MediaLibraryManager = () => {
             key="dlg-rf"
             title={`Rename "${pendingAction.entry.name}"`}
             defaultValue={pendingAction.entry.name}
+            confirmLabel="Rename"
+            submittingLabel="Renaming..."
             onConfirm={async (name) => {
               await handleRenameFolder(pendingAction.entry.path, name);
             }}
@@ -441,6 +464,8 @@ export const MediaLibraryManager = () => {
             key="dlg-rm"
             title={`Rename "${pendingAction.entry.name}"`}
             defaultValue={pendingAction.entry.name}
+            confirmLabel="Rename"
+            submittingLabel="Renaming..."
             onConfirm={async (name) => {
               await handleRename(pendingAction.entry.id, name);
             }}

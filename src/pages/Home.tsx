@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { DevOpsSection } from "../components/DevOpsSection";
 import { Footer } from "../components/Footer";
 import { GameDevSection } from "../components/GameDevSection";
@@ -35,6 +35,30 @@ import { ScrollContainerContext } from "../lib/ScrollContainerContext";
 export const Home = () => {
   const mainRef = useRef<HTMLElement>(null);
   useSectionPager({ mainRef });
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash) {
+      return;
+    }
+
+    const runScroll = () => {
+      const target = document.querySelector<HTMLElement>(hash);
+      if (!target) {
+        return;
+      }
+
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    const frame = window.requestAnimationFrame(() => {
+      runScroll();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
 
   return (
     <ScrollContainerContext.Provider value={mainRef}>

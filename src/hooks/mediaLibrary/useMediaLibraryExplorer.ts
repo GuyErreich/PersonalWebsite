@@ -161,6 +161,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
         path: folder.path,
         name: folder.name,
         parentPath: folder.parentPath,
+        isVirtual: false,
         createdAt: folder.created_at,
         itemCount: 0,
         latestUpdatedAt: folder.updated_at,
@@ -181,6 +182,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
             path: levelPath,
             name: getPathName(levelPath),
             parentPath: getParentPath(levelPath),
+            isVirtual: true,
             createdAt: item.created_at,
             itemCount: 1,
             latestUpdatedAt: item.updated_at,
@@ -199,6 +201,7 @@ export const useMediaLibraryExplorer = (): MediaLibraryExplorerState => {
 
         map.set(levelPath, {
           ...existing,
+          isVirtual: existing.isVirtual,
           createdAt: isOlderCreation ? item.created_at : existing.createdAt,
           itemCount: existing.itemCount + 1,
           latestUpdatedAt: isNewer ? item.updated_at : existing.latestUpdatedAt,

@@ -24,6 +24,7 @@ export interface FolderNode {
   path: string;
   name: string;
   parentPath: string;
+  isVirtual: boolean;
   createdAt: string;
   itemCount: number;
   latestUpdatedAt: string;
@@ -37,6 +38,7 @@ export interface FolderEntry {
   name: string;
   path: string;
   parentPath: string;
+  isVirtual: boolean;
   createdAt: string;
   itemCount: number;
   latestUpdatedAt: string;

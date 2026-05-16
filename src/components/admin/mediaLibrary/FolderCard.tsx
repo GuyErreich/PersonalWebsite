@@ -83,6 +83,11 @@ export const FolderCard = ({
       return;
     }
 
+    if (entry.isVirtual) {
+      setDropLabel("Move Here");
+      return;
+    }
+
     e.preventDefault();
     e.stopPropagation();
     dragDepthRef.current = 0;
@@ -100,8 +105,13 @@ export const FolderCard = ({
         animate={isClickAnimating ? { scale: [1, 0.97, 1], y: [0, 1, 0] } : { scale: 1, y: 0 }}
         transition={{ duration: 0.14, ease: "easeOut" }}
         onMouseEnter={playHoverSound}
-        draggable
+        draggable={!entry.isVirtual}
         onDragStartCapture={(e) => {
+          if (entry.isVirtual) {
+            e.preventDefault();
+            return;
+          }
+
           e.dataTransfer.effectAllowed = "move";
           e.dataTransfer.setData("application/x-folder-path", entry.path);
         }}
@@ -122,6 +132,10 @@ export const FolderCard = ({
             setDropLabel("Move Item Here");
             setIsDropActive(true);
           } else if (e.dataTransfer.types.includes("application/x-folder-path")) {
+            if (entry.isVirtual) {
+              return;
+            }
+
             e.preventDefault();
             e.dataTransfer.dropEffect = "move";
             setDropLabel("Move Folder Here");
@@ -138,6 +152,10 @@ export const FolderCard = ({
             setDropLabel("Move Item Here");
             setIsDropActive(true);
           } else if (e.dataTransfer.types.includes("application/x-folder-path")) {
+            if (entry.isVirtual) {
+              return;
+            }
+
             dragDepthRef.current += 1;
             setDropLabel("Move Folder Here");
             setIsDropActive(true);

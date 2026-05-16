@@ -14,6 +14,7 @@ import {
 import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { Link } from "react-router-dom";
 import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
@@ -111,6 +112,7 @@ export const GameDevHiveGallery = ({
   isLoading = false,
   emptyMessage = "No projects added yet.",
 }: GameDevHiveGalleryProps) => {
+  const MotionLink = motion(Link);
   const scrollContainer = useScrollContainer();
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [isSpreadMode, setIsSpreadMode] = useState(false);
@@ -686,8 +688,8 @@ export const GameDevHiveGallery = ({
             : "Swipe to spin the hive, tap any node to focus it, or hold to spread it."}
         </p>
 
-        <motion.a
-          href={buildGameDevProjectPath(activeItem.id)}
+        <MotionLink
+          to={buildGameDevProjectPath(activeItem.id)}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -695,7 +697,7 @@ export const GameDevHiveGallery = ({
           className="inline-flex items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
         >
           Open Project Page
-        </motion.a>
+        </MotionLink>
 
         <p className="gamedev-hive-count">{items.length} visible</p>
       </div>
