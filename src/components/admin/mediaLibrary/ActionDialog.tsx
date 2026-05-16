@@ -70,15 +70,20 @@ export const ActionDialog = ({
     setSubmitError(null);
     setIsSubmitting(true);
     playClickSound();
+    let shouldClose = false;
 
     try {
       await Promise.resolve(onConfirm(value));
       playMenuCloseSound();
-      onClose();
+      shouldClose = true;
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Action failed. Please retry.");
     } finally {
       setIsSubmitting(false);
+
+      if (shouldClose) {
+        onClose();
+      }
     }
   };
 

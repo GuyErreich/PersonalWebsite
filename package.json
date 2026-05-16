@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint . && biome check .",
     "security:test:r2-presign": "node scripts/security/r2-presign-smoke.mjs",
+    "security:test:github-seed": "node scripts/security/github-project-seed-smoke.mjs",
     "format": "biome format --write .",
     "preview": "vite preview"
   },

@@ -109,6 +109,8 @@ const run = async () => {
     });
     createdUserIds.push(regularUserId);
 
+    const missingRepoUrl = `https://github.com/octocat/repo-does-not-exist-${randomSuffix()}`;
+
     const tests = [
       {
         name: "rejects non-POST method",
@@ -158,6 +160,13 @@ const run = async () => {
         expectedStatus: 200,
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: { repoUrl: GITHUB_SEED_TEST_REPO_URL },
+      },
+      {
+        name: "maps nonexistent GitHub repository to 404",
+        method: "POST",
+        expectedStatus: 404,
+        headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
+        body: { repoUrl: missingRepoUrl },
       },
     ];
 

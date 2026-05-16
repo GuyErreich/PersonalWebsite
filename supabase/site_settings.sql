@@ -7,6 +7,17 @@ create table if not exists public.site_settings (
   updated_at timestamptz not null default now()
 );
 
+alter table public.site_settings
+  add column if not exists updated_at timestamptz;
+
+update public.site_settings
+set updated_at = now()
+where updated_at is null;
+
+alter table public.site_settings
+  alter column updated_at set default now(),
+  alter column updated_at set not null;
+
 create index if not exists site_settings_updated_at_idx
   on public.site_settings (updated_at desc);
 
@@ -34,6 +45,14 @@ alter table public.site_settings enable row level security;
 create policy "Public can read site settings"
   on public.site_settings for select
   using (key in ('showreel_url', 'showreel_default_volume'));
+
+-- Admins can read all settings
+create policy "Admins can read site settings"
+  on public.site_settings for select
+  using (
+    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
+    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
+  );
 
 -- Only admins can insert
 create policy "Admins can insert site settings"

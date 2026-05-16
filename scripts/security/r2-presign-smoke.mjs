@@ -210,7 +210,12 @@ const buildDeleteTests = ({ adminJwt, userJwt, validPublicUrl }) => [
     method: "DELETE",
     expectedStatus: 400,
     headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
-    body: { publicUrl: validPublicUrl.replace("/media/", "/unknown-folder/") },
+    body: {
+      publicUrl: validPublicUrl.replace(
+        /(\/)(media|hero-showreel|gamedev-assets|gamedev-thumbnails)(\/)/,
+        "$1unknown-folder$3",
+      ),
+    },
   },
   {
     name: "delete allows admin request with valid payload",

@@ -84,6 +84,8 @@ export const FolderCard = ({
     }
 
     if (entry.isVirtual) {
+      e.preventDefault();
+      e.stopPropagation();
       setDropLabel("Move Here");
       return;
     }
