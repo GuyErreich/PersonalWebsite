@@ -22,6 +22,9 @@ create index if not exists media_library_created_at_idx
 create index if not exists media_library_updated_at_idx
   on public.media_library (updated_at desc);
 
+create index if not exists media_library_folder_origin_idx
+  on public.media_library (folder_origin);
+
 create or replace function public.touch_media_library_updated_at()
 returns trigger
 language plpgsql

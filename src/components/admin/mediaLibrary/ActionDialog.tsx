@@ -60,6 +60,10 @@ export const ActionDialog = ({
   }, [isSubmitting, onClose]);
 
   const handleConfirm = async () => {
+    if (isSubmitting) {
+      return;
+    }
+
     const value = inputRef.current?.value.trim() ?? "";
     if (!value) return;
 
@@ -122,7 +126,9 @@ export const ActionDialog = ({
           placeholder={placeholder}
           aria-labelledby={inputLabelId}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleConfirm();
+            if (e.key === "Enter" && !isSubmitting) {
+              void handleConfirm();
+            }
           }}
           className="w-full rounded-md border border-gray-600 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-cyan-500"
         />
