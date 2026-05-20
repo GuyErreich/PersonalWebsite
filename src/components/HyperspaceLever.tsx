@@ -33,6 +33,8 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+  const activateTimeoutRef = useRef<number | null>(null);
+  const resetTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -44,8 +46,19 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
 
     return () => {
       stopSound();
+
+      if (activateTimeoutRef.current !== null) {
+        window.clearTimeout(activateTimeoutRef.current);
+        activateTimeoutRef.current = null;
+      }
+
+      if (resetTimeoutRef.current !== null) {
+        window.clearTimeout(resetTimeoutRef.current);
+        resetTimeoutRef.current = null;
+      }
+
       if (audioContextRef.current) {
-        audioContextRef.current.close().catch(() => {}); // intentional
+        void audioContextRef.current.close().catch(() => {}); // intentional
       }
     };
   }, []);
@@ -136,16 +149,29 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
   }, [dragY, maxPull]);
 
   const handleDragEnd = () => {
+    if (activateTimeoutRef.current !== null) {
+      window.clearTimeout(activateTimeoutRef.current);
+      activateTimeoutRef.current = null;
+    }
+
+    if (resetTimeoutRef.current !== null) {
+      window.clearTimeout(resetTimeoutRef.current);
+      resetTimeoutRef.current = null;
+    }
+
     if (energy > 0.85) {
       playJumpSound();
       dragY.set(maxPull);
       setEnergy(1);
 
-      setTimeout(() => {
+      activateTimeoutRef.current = window.setTimeout(() => {
+        activateTimeoutRef.current = null;
         onActivate();
-        setTimeout(() => {
+
+        resetTimeoutRef.current = window.setTimeout(() => {
           dragY.set(0);
           setEnergy(0);
+          resetTimeoutRef.current = null;
         }, 3000);
       }, 300);
     } else {

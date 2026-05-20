@@ -90,7 +90,7 @@ export const useStarsSound = (skipIntro: boolean, orchestrator: AnimationOrchest
   useEffect(() => {
     return () => {
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
-        audioCtxRef.current.close().catch(() => {});
+        void audioCtxRef.current.close().catch(() => {}); // intentional
       }
     };
   }, []);

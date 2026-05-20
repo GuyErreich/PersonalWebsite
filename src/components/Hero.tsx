@@ -281,6 +281,13 @@ export const Hero = () => {
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.2);
+
+      const closeDelayMs = 260;
+      window.setTimeout(() => {
+        if (ctx.state !== "closed") {
+          void ctx.close().catch(() => {}); // intentional
+        }
+      }, closeDelayMs);
     } catch {
       // ignore
     }
