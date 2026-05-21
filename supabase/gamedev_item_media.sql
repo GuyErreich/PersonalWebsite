@@ -1,19 +1,6 @@
 -- Copyright (c) 2026 Guy Erreich
 -- SPDX-License-Identifier: MIT
 
-create table if not exists public.gamedev_items (
-  id uuid primary key default gen_random_uuid(),
-  title text not null,
-  description text not null,
-  media_url text not null,
-  thumbnail_url text,
-  icon_name text,
-  github_url text,
-  live_url text,
-  tags text[] not null default '{}',
-  created_at timestamptz not null default now()
-);
-
 create table if not exists public.gamedev_item_media (
   id uuid primary key default gen_random_uuid(),
   gamedev_item_id uuid not null references public.gamedev_items(id) on delete cascade,
@@ -33,9 +20,13 @@ create index if not exists gamedev_item_media_sort_order_idx
 
 alter table public.gamedev_item_media enable row level security;
 
+drop policy if exists "Public can read gamedev item media" on public.gamedev_item_media;
+
 create policy "Public can read gamedev item media"
   on public.gamedev_item_media for select
   using (true);
+
+drop policy if exists "Admins can insert gamedev item media" on public.gamedev_item_media;
 
 create policy "Admins can insert gamedev item media"
   on public.gamedev_item_media for insert
@@ -44,12 +35,16 @@ create policy "Admins can insert gamedev item media"
     auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
   );
 
+drop policy if exists "Admins can update gamedev item media" on public.gamedev_item_media;
+
 create policy "Admins can update gamedev item media"
   on public.gamedev_item_media for update
   using (
     auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
     auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
   );
+
+drop policy if exists "Admins can delete gamedev item media" on public.gamedev_item_media;
 
 create policy "Admins can delete gamedev item media"
   on public.gamedev_item_media for delete

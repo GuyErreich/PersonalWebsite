@@ -46,6 +46,8 @@ execute function public.touch_media_library_updated_at();
 alter table public.media_library enable row level security;
 
 -- Only admins can read media library items
+drop policy if exists "Admins can read media library" on public.media_library;
+
 create policy "Admins can read media library"
   on public.media_library for select
   using (
@@ -54,6 +56,8 @@ create policy "Admins can read media library"
   );
 
 -- Only admins can insert
+drop policy if exists "Admins can insert media library" on public.media_library;
+
 create policy "Admins can insert media library"
   on public.media_library for insert
   with check (
@@ -62,6 +66,8 @@ create policy "Admins can insert media library"
   );
 
 -- Only admins can update
+drop policy if exists "Admins can update media library" on public.media_library;
+
 create policy "Admins can update media library"
   on public.media_library for update
   using (
@@ -70,6 +76,8 @@ create policy "Admins can update media library"
   );
 
 -- Only admins can delete
+drop policy if exists "Admins can delete media library" on public.media_library;
+
 create policy "Admins can delete media library"
   on public.media_library for delete
   using (

@@ -49,6 +49,8 @@ create policy "Public can read site settings"
   using (key in ('showreel_url', 'showreel_default_volume'));
 
 -- Admins can read all settings
+drop policy if exists "Admins can read site settings" on public.site_settings;
+
 create policy "Admins can read site settings"
   on public.site_settings for select
   using (
@@ -57,6 +59,8 @@ create policy "Admins can read site settings"
   );
 
 -- Only admins can insert
+drop policy if exists "Admins can insert site settings" on public.site_settings;
+
 create policy "Admins can insert site settings"
   on public.site_settings for insert
   with check (
@@ -65,6 +69,8 @@ create policy "Admins can insert site settings"
   );
 
 -- Only admins can update
+drop policy if exists "Admins can update site settings" on public.site_settings;
+
 create policy "Admins can update site settings"
   on public.site_settings for update
   using (
@@ -73,6 +79,8 @@ create policy "Admins can update site settings"
   );
 
 -- Only admins can delete
+drop policy if exists "Admins can delete site settings" on public.site_settings;
+
 create policy "Admins can delete site settings"
   on public.site_settings for delete
   using (

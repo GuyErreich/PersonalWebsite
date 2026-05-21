@@ -27,11 +27,15 @@ create index if not exists devops_projects_created_at_idx
 alter table public.devops_projects enable row level security;
 
 -- Public can read all projects
+drop policy if exists "Public can read devops projects" on public.devops_projects;
+
 create policy "Public can read devops projects"
   on public.devops_projects for select
   using (true);
 
 -- Only admins can insert
+drop policy if exists "Admins can insert devops projects" on public.devops_projects;
+
 create policy "Admins can insert devops projects"
   on public.devops_projects for insert
   with check (
@@ -40,6 +44,8 @@ create policy "Admins can insert devops projects"
   );
 
 -- Only admins can update
+drop policy if exists "Admins can update devops projects" on public.devops_projects;
+
 create policy "Admins can update devops projects"
   on public.devops_projects for update
   using (
@@ -48,6 +54,8 @@ create policy "Admins can update devops projects"
   );
 
 -- Only admins can delete
+drop policy if exists "Admins can delete devops projects" on public.devops_projects;
+
 create policy "Admins can delete devops projects"
   on public.devops_projects for delete
   using (

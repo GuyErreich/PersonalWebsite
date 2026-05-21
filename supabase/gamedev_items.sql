@@ -21,11 +21,15 @@ create index if not exists gamedev_items_created_at_idx
 alter table public.gamedev_items enable row level security;
 
 -- Public can read all items
+drop policy if exists "Public can read gamedev items" on public.gamedev_items;
+
 create policy "Public can read gamedev items"
   on public.gamedev_items for select
   using (true);
 
 -- Only admins can insert
+drop policy if exists "Admins can insert gamedev items" on public.gamedev_items;
+
 create policy "Admins can insert gamedev items"
   on public.gamedev_items for insert
   with check (
@@ -34,6 +38,8 @@ create policy "Admins can insert gamedev items"
   );
 
 -- Only admins can update
+drop policy if exists "Admins can update gamedev items" on public.gamedev_items;
+
 create policy "Admins can update gamedev items"
   on public.gamedev_items for update
   using (
@@ -42,6 +48,8 @@ create policy "Admins can update gamedev items"
   );
 
 -- Only admins can delete
+drop policy if exists "Admins can delete gamedev items" on public.gamedev_items;
+
 create policy "Admins can delete gamedev items"
   on public.gamedev_items for delete
   using (

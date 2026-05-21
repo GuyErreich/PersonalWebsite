@@ -6,7 +6,11 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
-import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+} from "../../../lib/sound/interactionSounds";
 
 export interface ContextMenuItem {
   label: string;
@@ -29,10 +33,16 @@ export const ContextMenu = ({ x, y, items, onClose }: Props) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        playMenuCloseSound();
+        onClose();
+      }
     };
     const handlePointerDown = (e: PointerEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        playMenuCloseSound();
+        onClose();
+      }
     };
 
     document.addEventListener("keydown", handleKeyDown);
