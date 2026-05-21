@@ -6,7 +6,11 @@
 
 import { motion } from "framer-motion";
 import { useEffect, useId } from "react";
-import { playHoverSound, playMenuCloseSound } from "../../../lib/sound/interactionSounds";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+} from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 
 interface Props {
@@ -46,6 +50,7 @@ const MediaPreviewModalContent = ({ item, onClose }: Props) => {
         whileTap={{ opacity: 0.95 }}
         onMouseEnter={playHoverSound}
         onClick={() => {
+          playClickSound();
           playMenuCloseSound();
           onClose();
         }}
@@ -70,6 +75,7 @@ const MediaPreviewModalContent = ({ item, onClose }: Props) => {
             whileTap={{ scale: 0.96 }}
             onMouseEnter={playHoverSound}
             onClick={() => {
+              playClickSound();
               playMenuCloseSound();
               onClose();
             }}

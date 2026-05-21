@@ -39,6 +39,11 @@ interface GitHubReadmeResponse {
   encoding: "base64" | string;
 }
 
+const MAX_REPO_URL_LENGTH = 2048;
+const GITHUB_OWNER_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const GITHUB_REPO_PATTERN = /^[A-Za-z0-9._-]{1,100}$/;
+const GITHUB_API_TIMEOUT_MS = 10_000;
+
 const parseRepoCoordinates = (repoUrl: string): { owner: string; repo: string } => {
   let parsedUrl: URL;
   try {
@@ -65,6 +70,10 @@ const parseRepoCoordinates = (repoUrl: string): { owner: string; repo: string } 
 
   if (!owner || !repo) {
     throw new Error("Repository URL must include owner and repository name.");
+  }
+
+  if (!GITHUB_OWNER_PATTERN.test(owner) || !GITHUB_REPO_PATTERN.test(repo)) {
+    throw new Error("Repository URL contains unsupported owner or repository characters.");
   }
 
   return { owner, repo };
@@ -170,6 +179,10 @@ Deno.serve(async (req: Request) => {
     return json({ error: "repoUrl is required" }, 400);
   }
 
+  if (body.repoUrl.length > MAX_REPO_URL_LENGTH) {
+    return json({ error: "repoUrl exceeds maximum allowed length" }, 400);
+  }
+
   let owner = "";
   let repo = "";
   try {
@@ -192,10 +205,17 @@ Deno.serve(async (req: Request) => {
   let repoData: GitHubRepoResponse;
   let readmeMarkdown = "";
 
-  try {
-    const repoResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+  const fetchGitHub = async (url: string): Promise<Response> => {
+    const timeoutSignal = AbortSignal.timeout(GITHUB_API_TIMEOUT_MS);
+    return await fetch(url, {
       headers: githubHeaders,
+      signal: timeoutSignal,
     });
+  };
+
+  try {
+    const repoApiUrl = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
+    const repoResponse = await fetchGitHub(repoApiUrl);
 
     if (!repoResponse.ok) {
       if (repoResponse.status === 404) {
@@ -210,9 +230,8 @@ Deno.serve(async (req: Request) => {
 
     repoData = (await repoResponse.json()) as GitHubRepoResponse;
 
-    const readmeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
-      headers: githubHeaders,
-    });
+    const readmeApiUrl = `${repoApiUrl}/readme`;
+    const readmeResponse = await fetchGitHub(readmeApiUrl);
 
     if (readmeResponse.ok) {
       const readmeData = (await readmeResponse.json()) as GitHubReadmeResponse;

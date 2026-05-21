@@ -92,6 +92,7 @@ export const ActionDialog = ({
       return;
     }
 
+    playClickSound();
     playMenuCloseSound();
     onClose();
   };
@@ -106,6 +107,9 @@ export const ActionDialog = ({
       <motion.button
         type="button"
         aria-label="Close dialog"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onMouseEnter={playHoverSound}
         className="absolute inset-0 bg-black/60"
         onClick={handleBackdropClick}
       />
@@ -143,8 +147,8 @@ export const ActionDialog = ({
         <div className="mt-3 flex justify-end gap-2">
           <motion.button
             type="button"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onMouseEnter={playHoverSound}
             onClick={handleBackdropClick}
             disabled={isSubmitting}
@@ -155,8 +159,8 @@ export const ActionDialog = ({
 
           <motion.button
             type="button"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onMouseEnter={playHoverSound}
             onClick={handleConfirm}
             disabled={isSubmitting}

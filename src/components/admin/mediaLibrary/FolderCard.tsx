@@ -99,8 +99,6 @@ export const FolderCard = ({
   };
 
   const openFolder = () => {
-    playClickSound();
-    triggerClickAnimation();
     onNavigate(entry.path);
     onClearSearch();
   };
@@ -183,11 +181,19 @@ export const FolderCard = ({
           e.stopPropagation();
           onContextMenu(e);
         }}
-        onClick={openFolder}
+        onClick={() => {
+          playClickSound();
+          triggerClickAnimation();
+        }}
+        onDoubleClick={() => {
+          playClickSound();
+          openFolder();
+        }}
         onKeyDown={(event) => {
           if (event.key !== "Enter" && event.key !== " ") return;
 
           event.preventDefault();
+          playClickSound();
           openFolder();
         }}
         className={`relative flex h-36 w-44 items-center justify-center overflow-hidden rounded-xl border text-left transition-all ${

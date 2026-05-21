@@ -279,15 +279,15 @@ export const Hero = () => {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.2);
 
-      const closeDelayMs = 260;
-      window.setTimeout(() => {
+      osc.onended = () => {
         if (ctx.state !== "closed") {
           void ctx.close().catch(() => {}); // intentional
         }
-      }, closeDelayMs);
+      };
+
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.2);
     } catch {
       // ignore
     }
@@ -834,12 +834,26 @@ export const Hero = () => {
               transition={{ delay: getDelay(21.5), duration: 1 }}
               className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce z-10 hidden md:block"
             >
-              <a
-                href="#gamedev"
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onMouseEnter={playTagHoverSound}
+                onClick={() => {
+                  playTagClickSound();
+                  const target = document.getElementById("gamedev");
+                  if (!target) return;
+
+                  target.scrollIntoView({ behavior: "smooth", block: "start" });
+                  if (window.location.hash !== "#gamedev") {
+                    window.history.pushState(null, "", "#gamedev");
+                  }
+                }}
                 className="text-gray-400 hover:text-white bg-gray-800/80 rounded-full p-2 block"
+                aria-label="Scroll to Game Dev section"
               >
                 <ChevronDown className="w-6 h-6" />
-              </a>
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>

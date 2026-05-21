@@ -102,6 +102,16 @@ export const GameDevGallery = ({
   const compactWheelHandlerRef = useRef<(e: WheelEvent) => void>(() => {});
   // Smooth scroll: fire at most one step per 200 ms regardless of scroll speed
   const compactWheelCooldownRef = useRef(false);
+  const compactWheelCooldownTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (compactWheelCooldownTimeoutRef.current !== null) {
+        window.clearTimeout(compactWheelCooldownTimeoutRef.current);
+        compactWheelCooldownTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!compact || !isDesktop) return;
@@ -192,8 +202,12 @@ export const GameDevGallery = ({
       e.preventDefault();
       if (compactWheelCooldownRef.current) return;
       compactWheelCooldownRef.current = true;
-      setTimeout(() => {
+      if (compactWheelCooldownTimeoutRef.current !== null) {
+        window.clearTimeout(compactWheelCooldownTimeoutRef.current);
+      }
+      compactWheelCooldownTimeoutRef.current = window.setTimeout(() => {
         compactWheelCooldownRef.current = false;
+        compactWheelCooldownTimeoutRef.current = null;
       }, 200);
       if (e.deltaY > 0 && canNext) {
         playClickSound();

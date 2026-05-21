@@ -59,6 +59,7 @@ export const ConfirmDialog = ({
   }, [onCancel]);
 
   const handleBackdropClick = () => {
+    playClickSound();
     playMenuCloseSound();
     onCancel();
   };
@@ -73,6 +74,9 @@ export const ConfirmDialog = ({
       <motion.button
         type="button"
         aria-label="Close dialog"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onMouseEnter={playHoverSound}
         className="absolute inset-0 bg-black/60"
         onClick={handleBackdropClick}
       />
@@ -91,8 +95,8 @@ export const ConfirmDialog = ({
         <div className="flex justify-end gap-2">
           <motion.button
             type="button"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             ref={cancelButtonRef}
             onMouseEnter={playHoverSound}
             onClick={handleBackdropClick}
@@ -103,8 +107,8 @@ export const ConfirmDialog = ({
 
           <motion.button
             type="button"
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             onMouseEnter={playHoverSound}
             onClick={() => {
               playClickSound();

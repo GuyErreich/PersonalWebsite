@@ -28,10 +28,39 @@ export interface GitHubProjectSeedResponse {
   stars: number;
 }
 
+const SEED_REQUEST_TIMEOUT_MS = 15_000;
+
+const isGitHubProjectSeedResponse = (value: unknown): value is GitHubProjectSeedResponse => {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const record = value as Record<string, unknown>;
+
+  return (
+    typeof record.repoFullName === "string" &&
+    typeof record.title === "string" &&
+    typeof record.description === "string" &&
+    typeof record.readme === "string" &&
+    Array.isArray(record.tags) &&
+    record.tags.every((tag) => typeof tag === "string") &&
+    typeof record.githubUrl === "string" &&
+    (record.liveUrl === null || typeof record.liveUrl === "string") &&
+    (record.language === null || typeof record.language === "string") &&
+    (record.license === null || typeof record.license === "string") &&
+    typeof record.stars === "number" &&
+    Number.isFinite(record.stars)
+  );
+};
+
 export const fetchGitHubProjectSeed = async (
   repoUrl: string,
 ): Promise<GitHubProjectSeedResponse> => {
   const githubSeedFunctionUrl = getGitHubSeedFunctionUrl();
+  const abortController = new AbortController();
+  const timeoutId = window.setTimeout(() => {
+    abortController.abort();
+  }, SEED_REQUEST_TIMEOUT_MS);
 
   const {
     data: { session },
@@ -42,14 +71,26 @@ export const fetchGitHubProjectSeed = async (
     throw new Error("You must be logged in as admin to import project data.");
   }
 
-  const response = await fetch(githubSeedFunctionUrl, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${session.access_token}`,
-    },
-    body: JSON.stringify({ repoUrl }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(githubSeedFunctionUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ repoUrl }),
+      signal: abortController.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("GitHub import request timed out. Please try again.");
+    }
+
+    throw new Error(error instanceof Error ? error.message : "GitHub import failed.");
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 
   let responseBody: unknown = {};
   try {
@@ -67,5 +108,9 @@ export const fetchGitHubProjectSeed = async (
     throw new Error(message);
   }
 
-  return responseBody as GitHubProjectSeedResponse;
+  if (!isGitHubProjectSeedResponse(responseBody)) {
+    throw new Error("GitHub import returned an invalid response payload.");
+  }
+
+  return responseBody;
 };

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { motion } from "framer-motion";
 import mermaid from "mermaid";
 import { useEffect, useRef } from "react";
 import type { Components } from "react-markdown";
@@ -13,6 +14,7 @@ import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
 import { isVideoUrl } from "../lib/gamedev";
+import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";
 
 // Initialize mermaid
 mermaid.initialize({
@@ -105,13 +107,20 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
               );
             },
             // Customize other elements if needed
-            a: ({ ...props }) => (
-              <a
-                {...props}
+            a: ({ node: _node, href, title, children }) => (
+              <motion.a
+                href={href}
+                title={title}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onMouseEnter={playHoverSound}
+                onClick={playClickSound}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-blue-400 hover:text-blue-300 underline"
-              />
+              >
+                {children}
+              </motion.a>
             ),
             img: ({ src, alt }) => {
               const source = typeof src === "string" ? src : "";

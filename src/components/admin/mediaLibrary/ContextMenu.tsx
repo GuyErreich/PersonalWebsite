@@ -87,7 +87,8 @@ export const ContextMenu = ({ x, y, items, onClose }: Props) => {
           ref={index === 0 ? firstItemRef : undefined}
           type="button"
           role="menuitem"
-          whileHover={{ x: 2 }}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           onMouseEnter={playHoverSound}
           onClick={() => {
             playClickSound();

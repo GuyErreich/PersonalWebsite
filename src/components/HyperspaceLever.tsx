@@ -41,7 +41,7 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
       const AudioCtx = getAudioContextClass();
       if (AudioCtx) audioContextRef.current = new AudioCtx();
     } catch (e) {
-      console.warn("Web Audio API not supported", e);
+      console.warn("Web Audio API not supported:", e instanceof Error ? e.message : String(e));
     }
 
     return () => {
