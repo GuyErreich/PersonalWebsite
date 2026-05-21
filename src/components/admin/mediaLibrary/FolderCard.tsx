@@ -181,18 +181,9 @@ export const FolderCard = ({
           e.stopPropagation();
           onContextMenu(e);
         }}
-        onClick={(event) => {
+        onClick={() => {
           playClickSound();
           triggerClickAnimation();
-
-          // Assistive technologies can dispatch click with detail=0.
-          // Keep mouse behavior as double-click to open while allowing AT activation.
-          if (event.detail === 0) {
-            openFolder();
-          }
-        }}
-        onDoubleClick={() => {
-          playClickSound();
           openFolder();
         }}
         onKeyDown={(event) => {
