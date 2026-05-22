@@ -38,7 +38,7 @@ const getAuthSessionToken = async (): Promise<string> => {
   } = await supabase.auth.getSession();
 
   if (sessionError || !session) {
-    throw new Error("You must be logged in to upload files.");
+    throw new Error("You must be logged in to perform this action.");
   }
 
   return session.access_token;
