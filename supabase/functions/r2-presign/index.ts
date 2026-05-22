@@ -28,6 +28,7 @@ const ALLOWED_ORIGINS = new Set(
     .map((o: string) => o.trim())
     .filter(Boolean),
 );
+const HAS_ALLOWED_ORIGINS = ALLOWED_ORIGINS.size > 0;
 
 // UPLOAD POLICY DUPLICATION NOTICE:
 // This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:
@@ -113,8 +114,28 @@ function corsHeaders(origin: string): Record<string, string> | null {
   };
 }
 
+function errorCorsHeaders(origin: string): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, DELETE, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin") ?? "";
+
+  if (!HAS_ALLOWED_ORIGINS) {
+    return new Response(
+      JSON.stringify({ error: "Server misconfigured: ALLOWED_ORIGINS secret is missing or empty" }),
+      {
+        status: 500,
+        headers: { ...errorCorsHeaders(origin), "Content-Type": "application/json" },
+      },
+    );
+  }
+
   const CORS = corsHeaders(origin);
 
   // Reject requests from origins not in the allowlist.
