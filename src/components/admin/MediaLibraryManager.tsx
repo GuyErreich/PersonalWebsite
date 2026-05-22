@@ -11,7 +11,6 @@ import { useMediaLibraryExplorer } from "../../hooks/mediaLibrary/useMediaLibrar
 import {
   playClickSound,
   playHoverSound,
-  playMenuCloseSound,
   playMenuOpenSound,
 } from "../../lib/sound/interactionSounds";
 import { ActionDialog } from "./mediaLibrary/ActionDialog";
@@ -423,7 +422,6 @@ export const MediaLibraryManager = () => {
             y={ctxMenu.y}
             items={buildMenuItems(ctxMenu.target)}
             onClose={() => {
-              playMenuCloseSound();
               setCtxMenu(null);
             }}
           />
