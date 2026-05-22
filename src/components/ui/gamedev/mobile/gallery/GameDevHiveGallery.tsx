@@ -20,6 +20,8 @@ import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevIconMap, GameDevItem } from "../../common/data/types";
 
+const MotionLink = motion(Link);
+
 interface GameDevHiveGalleryProps {
   items: GameDevItem[];
   iconMap: GameDevIconMap;
@@ -112,7 +114,6 @@ export const GameDevHiveGallery = ({
   isLoading = false,
   emptyMessage = "No projects added yet.",
 }: GameDevHiveGalleryProps) => {
-  const MotionLink = motion(Link);
   const scrollContainer = useScrollContainer();
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [isSpreadMode, setIsSpreadMode] = useState(false);

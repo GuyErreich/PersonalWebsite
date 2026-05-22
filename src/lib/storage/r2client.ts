@@ -31,14 +31,14 @@ interface PresignResponse {
   publicUrl: string;
 }
 
-const getAuthSessionToken = async (): Promise<string> => {
+const getAuthSessionToken = async (actionDescription = "perform this action"): Promise<string> => {
   const {
     data: { session },
     error: sessionError,
   } = await supabase.auth.getSession();
 
   if (sessionError || !session) {
-    throw new Error("You must be logged in to perform this action.");
+    throw new Error(`You must be logged in to ${actionDescription}.`);
   }
 
   return session.access_token;
@@ -49,7 +49,7 @@ const requestPresignedUpload = async (
   folderPath: R2UploadFolder,
 ): Promise<PresignResponse> => {
   const fileExt = assertAllowedUpload(file, folderPath);
-  const accessToken = await getAuthSessionToken();
+  const accessToken = await getAuthSessionToken("upload files");
 
   let presignRes: Response;
   try {
@@ -195,7 +195,7 @@ export const deleteFromR2 = async (publicUrl: string): Promise<void> => {
     throw new Error("R2 delete URL must be HTTPS.");
   }
 
-  const accessToken = await getAuthSessionToken();
+  const accessToken = await getAuthSessionToken("perform this action");
 
   let deleteResponse: Response;
   try {

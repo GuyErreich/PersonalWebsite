@@ -12,6 +12,8 @@ import { playClickSound, playHoverSound } from "../../../../lib/sound/interactio
 import { GitHubIcon } from "../icons/BrandIcons";
 import { SectionRevealContext } from "../sections/sectionRevealContext";
 
+const MotionLink = motion(Link);
+
 interface ProjectCardTheme {
   containerClassName: string;
   iconShellClassName: string;
@@ -44,7 +46,6 @@ export const ProjectCardBase = ({
   thumbnailUrl,
   theme,
 }: ProjectCardBaseProps) => {
-  const MotionLink = motion(Link);
   const isRevealed = useContext(SectionRevealContext);
   const ref = useRef<HTMLDivElement>(null);
   const isInView = useInView(ref, { once: true });

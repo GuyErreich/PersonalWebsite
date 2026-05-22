@@ -7,16 +7,13 @@
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
 
 const rawOrigins = Deno.env.get("ALLOWED_ORIGINS") ?? "";
-if (!rawOrigins) {
-  throw new Error("ALLOWED_ORIGINS secret is not set");
-}
-
 const ALLOWED_ORIGINS = new Set(
   rawOrigins
     .split(",")
     .map((origin: string) => origin.trim())
     .filter(Boolean),
 );
+const HAS_ALLOWED_ORIGINS = ALLOWED_ORIGINS.size > 0;
 
 interface RepoSeedBody {
   repoUrl: string;
@@ -110,8 +107,28 @@ function corsHeaders(origin: string): Record<string, string> | null {
   };
 }
 
+function errorCorsHeaders(origin: string): Record<string, string> {
+  return {
+    "Access-Control-Allow-Origin": origin || "*",
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Max-Age": "86400",
+  };
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("Origin") ?? "";
+
+  if (!HAS_ALLOWED_ORIGINS) {
+    return new Response(
+      JSON.stringify({ error: "Server misconfigured: ALLOWED_ORIGINS secret is missing or empty" }),
+      {
+        status: 500,
+        headers: { ...errorCorsHeaders(origin), "Content-Type": "application/json" },
+      },
+    );
+  }
+
   const CORS = corsHeaders(origin);
 
   if (!CORS) {

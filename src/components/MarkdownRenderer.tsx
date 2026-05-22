@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import mermaid from "mermaid";
-import { useEffect, useRef } from "react";
+import { type ComponentPropsWithoutRef, useEffect, useRef } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -60,6 +60,21 @@ interface MarkdownRendererProps {
   content: string;
 }
 
+type MarkdownAnchorProps = Omit<
+  ComponentPropsWithoutRef<"a">,
+  | "onAnimationStart"
+  | "onAnimationEnd"
+  | "onDrag"
+  | "onDragStart"
+  | "onDragEnd"
+  | "onDragEnter"
+  | "onDragLeave"
+  | "onDragOver"
+  | "onDrop"
+> & {
+  node?: unknown;
+};
+
 export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   // Pre-process text to replace :iconName: with a special marker if needed,
   // but remark-emoji handles standard emojis.
@@ -107,21 +122,43 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
               );
             },
             // Customize other elements if needed
-            a: ({ node: _node, href, title, children }) => (
-              <motion.a
-                href={href}
-                title={title}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onMouseEnter={playHoverSound}
-                onClick={playClickSound}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              >
-                {children}
-              </motion.a>
-            ),
+            a: ({
+              node: _node,
+              href,
+              title,
+              children,
+              className,
+              ...anchorProps
+            }: MarkdownAnchorProps) => {
+              const mergedClassName = ["text-blue-400 hover:text-blue-300 underline", className]
+                .filter(Boolean)
+                .join(" ");
+
+              if (typeof href !== "string" || href.length === 0) {
+                return (
+                  <span title={title} className={mergedClassName}>
+                    {children}
+                  </span>
+                );
+              }
+
+              return (
+                <motion.a
+                  {...anchorProps}
+                  href={href}
+                  title={title}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={playClickSound}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={mergedClassName}
+                >
+                  {children}
+                </motion.a>
+              );
+            },
             img: ({ src, alt }) => {
               const source = typeof src === "string" ? src : "";
               if (!source) return null;

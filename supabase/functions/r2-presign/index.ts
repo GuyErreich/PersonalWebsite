@@ -212,11 +212,14 @@ Deno.serve(async (req: Request) => {
     const accountId = Deno.env.get("R2_ACCOUNT_ID") ?? "";
     const accessKeyId = Deno.env.get("R2_ACCESS_KEY_ID") ?? "";
     const secretAccessKey = Deno.env.get("R2_SECRET_ACCESS_KEY") ?? "";
-    const bucket = Deno.env.get("R2_BUCKET_NAME") ?? "portfolio-media";
+    const bucket = Deno.env.get("R2_BUCKET_NAME");
     const publicUrl = Deno.env.get("R2_PUBLIC_URL");
 
     if (!accountId || !accessKeyId || !secretAccessKey) {
       return json({ error: "R2 credentials not configured on server" }, 500);
+    }
+    if (!bucket) {
+      return json({ error: "R2_BUCKET_NAME is not configured on server" }, 500);
     }
     if (!publicUrl) {
       return json({ error: "R2_PUBLIC_URL is not configured on server" }, 500);
