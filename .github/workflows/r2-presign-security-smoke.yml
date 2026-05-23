@@ -1,9 +1,7 @@
 name: R2 Presign Security Smoke Tests
 
 "on":
-  workflow_dispatch:
-  push:
-    branches: ["dev"]
+  workflow_call:
 
 jobs:
   smoke-test:
