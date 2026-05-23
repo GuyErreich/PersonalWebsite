@@ -77,6 +77,7 @@ if (!resolvedAllowedOrigin) {
 
 const headersBase = {
   "Content-Type": "application/json",
+  apikey: SUPABASE_ANON_KEY,
   ...(resolvedAllowedOrigin ? { Origin: resolvedAllowedOrigin } : {}),
 };
 
