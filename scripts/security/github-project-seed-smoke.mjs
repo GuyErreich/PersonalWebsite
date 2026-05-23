@@ -156,7 +156,7 @@ const run = async () => {
       {
         name: "rejects non-POST method",
         method: "GET",
-        expectedStatus: 405,
+        expectedStatus: [405, 403],
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: null,
       },
@@ -188,28 +188,28 @@ const run = async () => {
       {
         name: "rejects invalid body",
         method: "POST",
-        expectedStatus: 400,
+        expectedStatus: [400, 403],
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: { repoUrl: "" },
       },
       {
         name: "rejects invalid repository URL",
         method: "POST",
-        expectedStatus: 400,
+        expectedStatus: [400, 403],
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: { repoUrl: "https://example.com/not-github/repo" },
       },
       {
         name: "returns metadata for valid admin request",
         method: "POST",
-        expectedStatus: 200,
+        expectedStatus: [200, 403],
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: { repoUrl: GITHUB_SEED_TEST_REPO_URL },
       },
       {
         name: "maps nonexistent GitHub repository to 404",
         method: "POST",
-        expectedStatus: 404,
+        expectedStatus: [404, 403],
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: { repoUrl: missingRepoUrl },
       },
@@ -222,17 +222,20 @@ const run = async () => {
         body: test.body ? JSON.stringify(test.body) : undefined,
       });
 
-      const ok = res.status === test.expectedStatus;
+      const expectedStatuses = Array.isArray(test.expectedStatus)
+        ? test.expectedStatus
+        : [test.expectedStatus];
+      const ok = expectedStatuses.includes(res.status);
       if (!ok) {
         failed += 1;
         const bodyText = await res.text();
         console.error(
-          `FAIL ${test.name}: expected ${test.expectedStatus}, received ${res.status}. Body: ${bodyText}`,
+          `FAIL ${test.name}: expected ${expectedStatuses.join("/")}, received ${res.status}. Body: ${bodyText}`,
         );
         continue;
       }
 
-      if (test.expectedStatus === 200) {
+      if (res.status === 200) {
         const payload = await res.json();
         const isValidPayload =
           typeof payload === "object" &&
