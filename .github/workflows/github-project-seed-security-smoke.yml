@@ -39,18 +39,13 @@ jobs:
             raw_origins="${ALLOWED_ORIGINS:-}"
             allowed_origin=""
 
-            IFS=',' read -r -a origin_candidates <<< "$raw_origins"
-            for candidate in "${origin_candidates[@]}"; do
-              normalized="$(printf '%s' "$candidate" | xargs)"
-              normalized="${normalized%\"}"
-              normalized="${normalized#\"}"
-              normalized="${normalized%\'}"
-              normalized="${normalized#\'}"
-              if [[ "$normalized" =~ ^https?:// ]]; then
-                allowed_origin="$normalized"
-                break
-              fi
-            done
+            # Extract first URL from common formats: comma list, newline list, or JSON-like array.
+            allowed_origin="$(
+              printf '%s' "$raw_origins" \
+                | tr '\n' ',' \
+                | grep -Eo 'https?://[^",[:space:]\]]+' \
+                | head -n 1
+            )"
           fi
 
           {
