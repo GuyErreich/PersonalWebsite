@@ -116,14 +116,18 @@ const run = async () => {
         name: "rejects non-POST method",
         method: "GET",
         expectedStatus: 405,
-        headers: headersBase,
+        headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: null,
       },
       {
         name: "rejects disallowed origin",
         method: "POST",
         expectedStatus: 403,
-        headers: { ...headersBase, Origin: "https://invalid-origin.example" },
+        headers: {
+          ...headersBase,
+          Origin: "https://invalid-origin.example",
+          Authorization: `Bearer ${adminJwt}`,
+        },
         body: { repoUrl: GITHUB_SEED_TEST_REPO_URL },
       },
       {

@@ -35,11 +35,22 @@ jobs:
 
           allowed_origin="${ALLOWED_ORIGIN:-}"
           if [ -z "$allowed_origin" ]; then
-            allowed_origin="${ALLOWED_ORIGINS:-}"
-          fi
+            raw_origins="${ALLOWED_ORIGINS:-}"
+            allowed_origin=""
 
-          # ALLOWED_ORIGINS may be comma-separated; smoke tests need one concrete origin value.
-          allowed_origin="$(printf '%s' "$allowed_origin" | cut -d',' -f1 | xargs)"
+            IFS=',' read -r -a origin_candidates <<< "$raw_origins"
+            for candidate in "${origin_candidates[@]}"; do
+              normalized="$(printf '%s' "$candidate" | xargs)"
+              normalized="${normalized%\"}"
+              normalized="${normalized#\"}"
+              normalized="${normalized%\'}"
+              normalized="${normalized#\'}"
+              if [[ "$normalized" =~ ^https?:// ]]; then
+                allowed_origin="$normalized"
+                break
+              fi
+            done
+          fi
 
           {
             echo "GITHUB_SEED_URL=$seed_url"
