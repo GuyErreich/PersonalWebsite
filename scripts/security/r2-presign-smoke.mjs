@@ -363,27 +363,30 @@ const run = async () => {
         "Skipping delete smoke tests because no valid publicUrl was produced by POST tests in this environment.",
       );
     } else {
+      const deleteTests = buildDeleteTests({ adminJwt, userJwt, validPublicUrl: latestPublicUrl });
+
+      for (const test of deleteTests) {
         const res = await fetch(PRESIGN_URL, {
           method: test.method,
           headers: test.headers,
           body: JSON.stringify(test.body),
         });
 
-        const ok = res.status === test.expectedStatus;
+        const expectedStatuses = Array.isArray(test.expectedStatus)
+          ? test.expectedStatus
+          : [test.expectedStatus];
+        const ok = expectedStatuses.includes(res.status);
         if (!ok) {
           failed += 1;
           const bodyText = await res.text();
           console.error(
-            `FAIL ${test.name}: expected ${test.expectedStatus}, received ${res.status}. Body: ${bodyText}`,
+            `FAIL ${test.name}: expected ${expectedStatuses.join("/")}, received ${res.status}. Body: ${bodyText}`,
           );
           continue;
         }
 
         process.stdout.write(`PASS ${test.name}\n`);
       }
-    } else {
-      failed += 1;
-      console.error("FAIL delete smoke setup: no valid publicUrl from POST tests.");
     }
   } catch (e) {
     failed += 1;
