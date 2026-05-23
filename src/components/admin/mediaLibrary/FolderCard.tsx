@@ -186,13 +186,6 @@ export const FolderCard = ({
           triggerClickAnimation();
           openFolder();
         }}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-
-          event.preventDefault();
-          playClickSound();
-          openFolder();
-        }}
         className={`relative flex h-36 w-44 items-center justify-center overflow-hidden rounded-xl border text-left transition-all ${
           isDropActive
             ? "border-cyan-300/80 bg-cyan-400/15 shadow-[0_0_0_2px_rgba(103,232,249,0.45),0_0_26px_rgba(34,211,238,0.28)]"
