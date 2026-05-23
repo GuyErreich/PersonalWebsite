@@ -44,12 +44,27 @@ const resolveAllowedOrigin = (singleOrigin, originList) => {
     return undefined;
   }
 
-  const candidates = originList.match(/https?:\/\/[^",\s\]]+/g);
-  if (!candidates || candidates.length === 0) {
+  const normalizedList = originList.replace(/\\\//g, "/");
+
+  const urlCandidates = normalizedList.match(/https?:\/\/[^",\s\]]+/g);
+  if (urlCandidates && urlCandidates.length > 0) {
+    return urlCandidates[0];
+  }
+
+  const domainCandidates = normalizedList.match(
+    /(?:\*\.)?(?:localhost|[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)(?::\d{2,5})?/g,
+  );
+
+  if (!domainCandidates || domainCandidates.length === 0) {
     return undefined;
   }
 
-  return candidates[0];
+  const firstDomain = domainCandidates[0].replace(/^\*\./, "");
+  if (firstDomain.startsWith("localhost")) {
+    return `http://${firstDomain}`;
+  }
+
+  return `https://${firstDomain}`;
 };
 
 const resolvedAllowedOrigin = resolveAllowedOrigin(ALLOWED_ORIGIN, ALLOWED_ORIGINS);
