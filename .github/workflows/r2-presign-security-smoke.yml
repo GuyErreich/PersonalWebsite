@@ -21,10 +21,35 @@ jobs:
           node-version-file: ".node-version"
           cache: "npm"
 
+      - name: Resolve smoke test endpoint and allowed origin
+        env:
+          PRESIGN_URL: ${{ secrets.PRESIGN_URL }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+        run: |
+          presign_url="${PRESIGN_URL:-}"
+          if [ -z "$presign_url" ] && [ -n "${VITE_SUPABASE_URL:-}" ]; then
+            presign_url="${VITE_SUPABASE_URL%/}/functions/v1/r2-presign"
+          fi
+
+          allowed_origin="${ALLOWED_ORIGIN:-}"
+          if [ -z "$allowed_origin" ]; then
+            allowed_origin="${ALLOWED_ORIGINS:-}"
+          fi
+
+          # ALLOWED_ORIGINS may be comma-separated; smoke tests need one concrete origin value.
+          allowed_origin="$(printf '%s' "$allowed_origin" | cut -d',' -f1 | xargs)"
+
+          {
+            echo "PRESIGN_URL=$presign_url"
+            echo "ALLOWED_ORIGIN=$allowed_origin"
+          } >> "$GITHUB_ENV"
+
       - name: Validate required security test secrets
         env:
-          PRESIGN_URL: ${{ secrets.PRESIGN_URL || format('{0}/functions/v1/r2-presign', secrets.VITE_SUPABASE_URL) }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || secrets.ALLOWED_ORIGINS }}
+          PRESIGN_URL: ${{ env.PRESIGN_URL }}
+          ALLOWED_ORIGIN: ${{ env.ALLOWED_ORIGIN }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -40,8 +65,8 @@ jobs:
             echo "Missing required secrets:$missing"
             echo "Set the listed missing key(s) above as repository secrets before running this workflow."
             echo "Required secret mappings:"
-            echo "- PRESIGN_URL: secrets.PRESIGN_URL (or derived from secrets.VITE_SUPABASE_URL)"
-            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGIN (fallback: secrets.ALLOWED_ORIGINS)"
+            echo "- PRESIGN_URL env: secrets.PRESIGN_URL (fallback: secrets.VITE_SUPABASE_URL + /functions/v1/r2-presign)"
+            echo "- ALLOWED_ORIGIN env: secrets.ALLOWED_ORIGIN (fallback: first value from secrets.ALLOWED_ORIGINS)"
             echo "- SUPABASE_URL: secrets.VITE_SUPABASE_URL"
             echo "- SUPABASE_ANON_KEY: secrets.VITE_SUPABASE_ANON_KEY"
             echo "- SUPABASE_SERVICE_ROLE_KEY: secrets.SUPABASE_SERVICE_ROLE_KEY"
@@ -53,8 +78,8 @@ jobs:
 
       - name: Run r2-presign security smoke tests
         env:
-          PRESIGN_URL: ${{ secrets.PRESIGN_URL || format('{0}/functions/v1/r2-presign', secrets.VITE_SUPABASE_URL) }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || secrets.ALLOWED_ORIGINS }}
+          PRESIGN_URL: ${{ env.PRESIGN_URL }}
+          ALLOWED_ORIGIN: ${{ env.ALLOWED_ORIGIN }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
