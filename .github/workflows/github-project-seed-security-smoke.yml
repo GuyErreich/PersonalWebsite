@@ -29,9 +29,11 @@ jobs:
           ALLOWED_ORIGINS: ${{ secrets.ALLOWED_ORIGINS }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
         run: |
-          seed_url="${PROJECT_SEED_URL:-}"
-          if [ -z "$seed_url" ] && [ -n "${VITE_SUPABASE_URL:-}" ]; then
+          seed_url=""
+          if [ -n "${VITE_SUPABASE_URL:-}" ]; then
             seed_url="${VITE_SUPABASE_URL%/}/functions/v1/github-project-seed"
+          else
+            seed_url="${PROJECT_SEED_URL:-}"
           fi
 
           allowed_origin="${ALLOWED_ORIGIN:-}"
