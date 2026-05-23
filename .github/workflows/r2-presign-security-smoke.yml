@@ -23,8 +23,8 @@ jobs:
 
       - name: Validate required security test secrets
         env:
-          PRESIGN_URL: ${{ secrets.PRESIGN_URL }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          PRESIGN_URL: ${{ secrets.PRESIGN_URL || format('{0}/functions/v1/r2-presign', secrets.VITE_SUPABASE_URL) }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || secrets.ALLOWED_ORIGINS }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -40,8 +40,8 @@ jobs:
             echo "Missing required secrets:$missing"
             echo "Set the listed missing key(s) above as repository secrets before running this workflow."
             echo "Required secret mappings:"
-            echo "- PRESIGN_URL: secrets.PRESIGN_URL"
-            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGIN"
+            echo "- PRESIGN_URL: secrets.PRESIGN_URL (or derived from secrets.VITE_SUPABASE_URL)"
+            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGIN (fallback: secrets.ALLOWED_ORIGINS)"
             echo "- SUPABASE_URL: secrets.VITE_SUPABASE_URL"
             echo "- SUPABASE_ANON_KEY: secrets.VITE_SUPABASE_ANON_KEY"
             echo "- SUPABASE_SERVICE_ROLE_KEY: secrets.SUPABASE_SERVICE_ROLE_KEY"
@@ -53,8 +53,8 @@ jobs:
 
       - name: Run r2-presign security smoke tests
         env:
-          PRESIGN_URL: ${{ secrets.PRESIGN_URL }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          PRESIGN_URL: ${{ secrets.PRESIGN_URL || format('{0}/functions/v1/r2-presign', secrets.VITE_SUPABASE_URL) }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN || secrets.ALLOWED_ORIGINS }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

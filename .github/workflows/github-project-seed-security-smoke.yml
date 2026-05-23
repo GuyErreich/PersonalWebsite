@@ -23,8 +23,8 @@ jobs:
 
       - name: Validate required security test secrets
         env:
-          GITHUB_SEED_URL: ${{ secrets.GITHUB_SEED_URL }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          GITHUB_SEED_URL: ${{ secrets.PROJECT_SEED_URL }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGINS }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -40,8 +40,8 @@ jobs:
             echo "Missing required secrets:$missing"
             echo "Set the listed missing key(s) above as repository secrets before running this workflow."
             echo "Required secret mappings:"
-            echo "- GITHUB_SEED_URL: secrets.GITHUB_SEED_URL"
-            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGIN"
+            echo "- GITHUB_SEED_URL env: secrets.PROJECT_SEED_URL"
+            echo "- ALLOWED_ORIGIN: secrets.ALLOWED_ORIGINS"
             echo "- SUPABASE_URL: secrets.VITE_SUPABASE_URL"
             echo "- SUPABASE_ANON_KEY: secrets.VITE_SUPABASE_ANON_KEY"
             echo "- SUPABASE_SERVICE_ROLE_KEY: secrets.SUPABASE_SERVICE_ROLE_KEY"
@@ -53,8 +53,8 @@ jobs:
 
       - name: Run github-project-seed security smoke tests
         env:
-          GITHUB_SEED_URL: ${{ secrets.GITHUB_SEED_URL }}
-          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGIN }}
+          GITHUB_SEED_URL: ${{ secrets.PROJECT_SEED_URL }}
+          ALLOWED_ORIGIN: ${{ secrets.ALLOWED_ORIGINS }}
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
