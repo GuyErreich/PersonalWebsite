@@ -1,0 +1,47 @@
+name: Supabase Migration Guard
+
+'on':
+  pull_request:
+    branches: ["master", "dev"]
+    paths:
+      - "supabase/**/*.sql"
+      - ".github/workflows/supabase-*.yml"
+
+jobs:
+  require-migration:
+    name: Require migration for schema SQL changes
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify migration file exists when schema SQL changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          base_ref="${{ github.base_ref }}"
+          if [[ -z "$base_ref" ]]; then
+            base_ref="dev"
+          fi
+
+          git fetch origin "$base_ref" --depth=1
+
+          changed_files="$(git diff --name-only "origin/$base_ref...HEAD")"
+
+          schema_changes="$(printf '%s\n' "$changed_files" | grep -E '^supabase/[^/]+\.sql$' || true)"
+          migration_changes="$(printf '%s\n' "$changed_files" | grep -E '^supabase/migrations/.+\.sql$' || true)"
+
+          if [[ -n "$schema_changes" && -z "$migration_changes" ]]; then
+            echo "Schema SQL files changed without a migration file update:"
+            echo "$schema_changes"
+            echo
+            echo "Add at least one file under supabase/migrations/*.sql in this PR."
+            exit 1
+          fi
+
+          echo "Migration guard passed."

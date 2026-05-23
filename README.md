@@ -206,6 +206,17 @@ For GitHub Actions automation, add these repository or environment secrets:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
+For Supabase migration automation, add these secrets (recommended in the `dev` environment):
+
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_DB_URL`
+- `SUPABASE_PROJECT_ID` (optional, enables post-migration advisor checks)
+
+Migration workflows:
+
+- [Migration Guard](.github/workflows/supabase-migration-guard.yml): Fails PRs that change top-level schema SQL in [supabase](supabase/) without adding at least one migration in [supabase/migrations](supabase/migrations/).
+- Migrations are applied via Supabase GitHub Integration (recommended single deployment path).
+
 ## Code Style & Conventions
 
 This project enforces strict code quality standards. Refer to [.github/copilot-instructions.md](.github/copilot-instructions.md) for complete architecture guidelines. Key rules:
