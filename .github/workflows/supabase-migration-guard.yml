@@ -20,13 +20,20 @@ jobs:
           fetch-depth: 0
 
       - name: Verify migration file exists when schema SQL changes
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
         shell: bash
         run: |
           set -euo pipefail
 
-          base_ref="${{ github.base_ref }}"
+          base_ref="${PR_BASE_REF:-}"
           if [[ -z "$base_ref" ]]; then
             base_ref="dev"
+          fi
+
+          if [[ ! "$base_ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
+            echo "Invalid base ref value."
+            exit 1
           fi
 
           git fetch origin "$base_ref" --depth=1
