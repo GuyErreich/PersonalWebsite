@@ -1,7 +1,0 @@
-title = "PersonalWebsite Gitleaks Configuration"
-
-[allowlist]
-description = "Global allowlist kept intentionally minimal"
-regexes = []
-paths = []
-commits = []

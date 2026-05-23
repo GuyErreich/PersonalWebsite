@@ -35,7 +35,7 @@ jobs:
 
           git fetch origin "$base_ref" --depth=1
 
-          changed_files="$(git diff --name-only "origin/$base_ref...HEAD")"
+          changed_files="$(git diff --name-only --diff-filter=ACMR "origin/$base_ref...HEAD")"
 
           schema_changes="$(printf '%s\n' "$changed_files" | grep -E '^supabase/[^/]+\.sql$' || true)"
           migration_changes="$(printf '%s\n' "$changed_files" | grep -E '^supabase/migrations/.+\.sql$' || true)"
