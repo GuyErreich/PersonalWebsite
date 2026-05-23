@@ -5,7 +5,41 @@ on:
     branches: ["dev"] # Triggers on dev branch
 
 jobs:
+  github-project-seed-smoke-test:
+    uses: ./.github/workflows/github-project-seed-security-smoke.yml
+    secrets: inherit
+
+  r2-presign-smoke-test:
+    uses: ./.github/workflows/r2-presign-security-smoke.yml
+    secrets: inherit
+
+  smoke-tests-gate:
+    needs: [github-project-seed-smoke-test, r2-presign-smoke-test]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Summarize smoke test results
+        env:
+          GITHUB_PROJECT_SEED_RESULT: ${{ needs.github-project-seed-smoke-test.result }}
+          R2_PRESIGN_RESULT: ${{ needs.r2-presign-smoke-test.result }}
+        run: |
+          echo "Smoke result: github-project-seed=$GITHUB_PROJECT_SEED_RESULT"
+          echo "Smoke result: r2-presign=$R2_PRESIGN_RESULT"
+
+          if [ "$GITHUB_PROJECT_SEED_RESULT" != "success" ]; then
+            echo "First failed smoke job: github-project-seed-smoke-test"
+            exit 1
+          fi
+
+          if [ "$R2_PRESIGN_RESULT" != "success" ]; then
+            echo "First failed smoke job: r2-presign-smoke-test"
+            exit 1
+          fi
+
+          echo "All smoke jobs passed."
+
   deploy:
+    needs: [smoke-tests-gate]
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
