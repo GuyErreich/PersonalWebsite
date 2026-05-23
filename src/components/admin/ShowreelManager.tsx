@@ -437,6 +437,7 @@ export const ShowreelManager = () => {
                     <video
                       src={video.media_url}
                       muted
+                      preload="metadata"
                       playsInline
                       className="h-full w-full object-cover"
                     />

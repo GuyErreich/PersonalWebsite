@@ -27,6 +27,8 @@ interface ProjectState {
   error: string | null;
 }
 
+const MotionLink = motion(Link);
+
 const buildFallbackMedia = (item: GameDevItem): GameDevMediaItem[] => {
   if (!item.media_url) return [];
 
@@ -44,7 +46,6 @@ const buildFallbackMedia = (item: GameDevItem): GameDevMediaItem[] => {
 };
 
 export const GameDevProject = () => {
-  const MotionLink = motion(Link);
   const { id } = useParams();
   const [state, setState] = useState<ProjectState>({
     project: null,
