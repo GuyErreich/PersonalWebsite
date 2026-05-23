@@ -62,7 +62,7 @@ export const useRewindSound = (skipIntro: boolean, orchestrator: AnimationOrches
   useEffect(() => {
     return () => {
       if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
-        audioCtxRef.current.close().catch(() => {});
+        void audioCtxRef.current.close().catch(() => {}); // intentional
       }
     };
   }, []);

@@ -4,14 +4,17 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { motion } from "framer-motion";
 import mermaid from "mermaid";
-import { useEffect, useRef } from "react";
+import { type ComponentPropsWithoutRef, useEffect, useRef } from "react";
 import type { Components } from "react-markdown";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import remarkEmoji from "remark-emoji";
 import remarkGfm from "remark-gfm";
+import { isVideoUrl } from "../lib/gamedev";
+import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";
 
 // Initialize mermaid
 mermaid.initialize({
@@ -56,6 +59,21 @@ const MermaidDiagram = ({ chart }: { chart: string }) => {
 interface MarkdownRendererProps {
   content: string;
 }
+
+type MarkdownAnchorProps = Omit<
+  ComponentPropsWithoutRef<"a">,
+  | "onAnimationStart"
+  | "onAnimationEnd"
+  | "onDrag"
+  | "onDragStart"
+  | "onDragEnd"
+  | "onDragEnter"
+  | "onDragLeave"
+  | "onDragOver"
+  | "onDrop"
+> & {
+  node?: unknown;
+};
 
 export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
   // Pre-process text to replace :iconName: with a special marker if needed,
@@ -104,14 +122,70 @@ export const MarkdownRenderer = ({ content }: MarkdownRendererProps) => {
               );
             },
             // Customize other elements if needed
-            a: ({ ...props }) => (
-              <a
-                {...props}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline"
-              />
-            ),
+            a: ({
+              node: _node,
+              href,
+              title,
+              children,
+              className,
+              ...anchorProps
+            }: MarkdownAnchorProps) => {
+              const mergedClassName = ["text-blue-400 hover:text-blue-300 underline", className]
+                .filter(Boolean)
+                .join(" ");
+
+              if (typeof href !== "string" || href.length === 0) {
+                return (
+                  <span title={title} className={mergedClassName}>
+                    {children}
+                  </span>
+                );
+              }
+
+              return (
+                <motion.a
+                  {...anchorProps}
+                  href={href}
+                  title={title}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={playClickSound}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={mergedClassName}
+                >
+                  {children}
+                </motion.a>
+              );
+            },
+            img: ({ src, alt }) => {
+              const source = typeof src === "string" ? src : "";
+              if (!source) return null;
+
+              if (isVideoUrl(source)) {
+                return (
+                  <video
+                    src={source}
+                    controls
+                    loop
+                    playsInline
+                    preload="metadata"
+                    className="my-4 w-full rounded-lg border border-gray-700"
+                    aria-label={alt ?? "Embedded project video"}
+                  />
+                );
+              }
+
+              return (
+                <img
+                  src={source}
+                  alt={alt ?? "Embedded project media"}
+                  className="my-4 w-full rounded-lg border border-gray-700"
+                  loading="lazy"
+                />
+              );
+            },
             p: ({ ...props }) => <p {...props} className="mb-4 leading-relaxed text-gray-300" />,
             ul: ({ ...props }) => (
               <ul {...props} className="list-disc list-inside mb-4 space-y-1 text-gray-300" />

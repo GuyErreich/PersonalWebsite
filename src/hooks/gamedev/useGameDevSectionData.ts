@@ -7,9 +7,14 @@
 import { useEffect, useState } from "react";
 import { fallbackGameDevItems } from "../../components/ui/gamedev/common/data/items";
 import type { GameDevItem } from "../../components/ui/gamedev/common/data/types";
+import { buildGameDevSummary } from "../../lib/gamedev";
 import { supabase } from "../../lib/supabase";
 
-const MIN_REAL_ITEMS = fallbackGameDevItems.length;
+const withSummary = (items: GameDevItem[]): GameDevItem[] =>
+  items.map((item) => ({
+    ...item,
+    summary: item.summary ?? buildGameDevSummary(item.description),
+  }));
 
 export const useGameDevSectionData = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
@@ -35,14 +40,12 @@ export const useGameDevSectionData = () => {
           .order("created_at", { ascending: false });
 
         if (itemsError) {
-          setGalleryItems(fallbackGameDevItems);
-        } else if (items && items.length >= MIN_REAL_ITEMS) {
-          setGalleryItems(items as GameDevItem[]);
+          setGalleryItems(withSummary(fallbackGameDevItems));
         } else {
-          setGalleryItems(fallbackGameDevItems);
+          setGalleryItems(withSummary((items ?? []) as GameDevItem[]));
         }
       } catch {
-        setGalleryItems(fallbackGameDevItems);
+        setGalleryItems(withSummary(fallbackGameDevItems));
       } finally {
         setIsLoading(false);
       }

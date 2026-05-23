@@ -81,7 +81,7 @@ const createUserAndToken = async ({ email, password, appMetadata }) => {
   };
 };
 
-const buildTests = ({ adminJwt, userJwt }) => [
+const buildPostTests = ({ adminJwt, userJwt }) => [
   {
     name: "rejects missing authorization",
     expectedStatus: 401,
@@ -154,7 +154,7 @@ const buildTests = ({ adminJwt, userJwt }) => [
     headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
     body: {
       contentType: "image/png",
-      contentLength: 10 * 1024 * 1024,
+      contentLength: 60 * 1024 * 1024,
       fileExt: "png",
       folderPath: "gamedev-thumbnails",
     },
@@ -169,6 +169,60 @@ const buildTests = ({ adminJwt, userJwt }) => [
       fileExt: "mp4",
       folderPath: "hero-showreel",
     },
+  },
+];
+
+const buildDeleteTests = ({ adminJwt, userJwt, validPublicUrl }) => [
+  {
+    name: "delete rejects missing authorization",
+    method: "DELETE",
+    expectedStatus: 401,
+    headers: headersBase,
+    body: { publicUrl: validPublicUrl },
+  },
+  {
+    name: "delete rejects non-admin authenticated user",
+    method: "DELETE",
+    expectedStatus: 403,
+    headers: { ...headersBase, Authorization: `Bearer ${userJwt}` },
+    body: { publicUrl: validPublicUrl },
+  },
+  {
+    name: "delete rejects disallowed origin",
+    method: "DELETE",
+    expectedStatus: 403,
+    headers: {
+      ...headersBase,
+      Origin: "https://invalid-origin.example",
+      Authorization: `Bearer ${adminJwt}`,
+    },
+    body: { publicUrl: validPublicUrl },
+  },
+  {
+    name: "delete rejects invalid origin URL",
+    method: "DELETE",
+    expectedStatus: 400,
+    headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
+    body: { publicUrl: "https://example.com/media/file.mp4" },
+  },
+  {
+    name: "delete rejects disallowed folder",
+    method: "DELETE",
+    expectedStatus: 400,
+    headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
+    body: {
+      publicUrl: validPublicUrl.replace(
+        /(\/)(media|hero-showreel|gamedev-assets|gamedev-thumbnails)(\/)/,
+        "$1unknown-folder$3",
+      ),
+    },
+  },
+  {
+    name: "delete allows admin request with valid payload",
+    method: "DELETE",
+    expectedStatus: 200,
+    headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
+    body: { publicUrl: validPublicUrl },
   },
 ];
 
@@ -196,7 +250,8 @@ const run = async () => {
     });
     createdUserIds.push(regularUserId);
 
-    const tests = buildTests({ adminJwt, userJwt });
+    const tests = buildPostTests({ adminJwt, userJwt });
+    let latestPublicUrl = "";
 
     for (const test of tests) {
       const res = await fetch(PRESIGN_URL, {
@@ -228,6 +283,10 @@ const run = async () => {
           typeof payload.publicUrl === "string" &&
           payload.publicUrl.startsWith("https://");
 
+        if (hasHttpsPublicUrl) {
+          latestPublicUrl = payload.publicUrl;
+        }
+
         if (!hasHttpsSignedUrl || !hasHttpsPublicUrl) {
           failed += 1;
           console.error(
@@ -253,6 +312,33 @@ const run = async () => {
       }
 
       process.stdout.write(`PASS ${test.name}\n`);
+    }
+
+    if (latestPublicUrl) {
+      const deleteTests = buildDeleteTests({ adminJwt, userJwt, validPublicUrl: latestPublicUrl });
+
+      for (const test of deleteTests) {
+        const res = await fetch(PRESIGN_URL, {
+          method: test.method,
+          headers: test.headers,
+          body: JSON.stringify(test.body),
+        });
+
+        const ok = res.status === test.expectedStatus;
+        if (!ok) {
+          failed += 1;
+          const bodyText = await res.text();
+          console.error(
+            `FAIL ${test.name}: expected ${test.expectedStatus}, received ${res.status}. Body: ${bodyText}`,
+          );
+          continue;
+        }
+
+        process.stdout.write(`PASS ${test.name}\n`);
+      }
+    } else {
+      failed += 1;
+      console.error("FAIL delete smoke setup: no valid publicUrl from POST tests.");
     }
   } catch (e) {
     failed += 1;

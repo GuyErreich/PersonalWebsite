@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePaginatedNavigation } from "../../../../../hooks/pagination/usePaginatedNavigation";
 import { useMediaQuery } from "../../../../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
+import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import { GhostSlotRepeater } from "../../../common/pagination/GhostSlotRepeater";
 import { PaginatedSlideFrame } from "../../../common/pagination/PaginatedSlideFrame";
@@ -43,9 +44,10 @@ const GalleryInfoCard = ({
   return (
     <GameDevProjectCard
       title={item.title}
-      description={item.description}
+      description={item.summary ?? buildGameDevSummary(item.description)}
       tags={item.tags}
       link={item.github_url}
+      detailsLink={buildGameDevProjectPath(item.id)}
       icon={<ProjectIcon className="h-6 w-6 text-purple-300 drop-shadow-[0_0_4px_currentColor]" />}
       index={index}
       compact={compact}
@@ -100,6 +102,16 @@ export const GameDevGallery = ({
   const compactWheelHandlerRef = useRef<(e: WheelEvent) => void>(() => {});
   // Smooth scroll: fire at most one step per 200 ms regardless of scroll speed
   const compactWheelCooldownRef = useRef(false);
+  const compactWheelCooldownTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (compactWheelCooldownTimeoutRef.current !== null) {
+        window.clearTimeout(compactWheelCooldownTimeoutRef.current);
+        compactWheelCooldownTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!compact || !isDesktop) return;
@@ -190,8 +202,12 @@ export const GameDevGallery = ({
       e.preventDefault();
       if (compactWheelCooldownRef.current) return;
       compactWheelCooldownRef.current = true;
-      setTimeout(() => {
+      if (compactWheelCooldownTimeoutRef.current !== null) {
+        window.clearTimeout(compactWheelCooldownTimeoutRef.current);
+      }
+      compactWheelCooldownTimeoutRef.current = window.setTimeout(() => {
         compactWheelCooldownRef.current = false;
+        compactWheelCooldownTimeoutRef.current = null;
       }, 200);
       if (e.deltaY > 0 && canNext) {
         playClickSound();

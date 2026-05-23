@@ -19,6 +19,11 @@ const Admin = lazy(async () => {
 
   return { default: module.Admin };
 });
+const GameDevProject = lazy(async () => {
+  const module = await import("./pages/GameDevProject");
+
+  return { default: module.GameDevProject };
+});
 
 function App() {
   useAdminIdleLogout();
@@ -42,6 +47,14 @@ function App() {
           element={
             <Suspense fallback={routeFallback}>
               <Admin />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/gamedev/projects/:id"
+          element={
+            <Suspense fallback={routeFallback}>
+              <GameDevProject />
             </Suspense>
           }
         />
