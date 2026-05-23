@@ -26,10 +26,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          base_ref="${PR_BASE_REF:-}"
-          if [[ -z "$base_ref" ]]; then
-            base_ref="dev"
-          fi
+          base_ref="${PR_BASE_REF}"
 
           if [[ ! "$base_ref" =~ ^[A-Za-z0-9._/-]+$ ]]; then
             echo "Invalid base ref value."
