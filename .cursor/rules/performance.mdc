@@ -1,0 +1,25 @@
+---
+description: Memory cleanup and render optimization for effects, WebGL, and audio
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Performance & Memory
+
+Apply when creating effects, listeners, timers, Three.js resources, or AudioContext:
+
+## Cleanup (Mandatory)
+
+Every `useEffect` with side effects must return cleanup:
+
+- **AudioContext:** `void audioCtx.close().catch(() => {})` in cleanup
+- **Three.js:** `.dispose()` on every geometry and material created in scope
+- **Listeners/timers:** `removeEventListener`, `clearInterval`, `clearTimeout`
+- **Fetch:** `AbortController` and abort on unmount
+
+## Render Loop
+
+- No allocations inside `useFrame` or animation `onUpdate` callbacks.
+- Prefer `InstancedMesh`; use ref mutation for per-frame values, not `setState`.
+
+Load `.cursor/skills/quality/performance/SKILL.md` for optimization patterns and checklists.

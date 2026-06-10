@@ -1,0 +1,28 @@
+---
+description: UI reuse, folder structure, and viewport layout conventions
+globs: "src/components/**/*.{tsx,css},src/hooks/**/*.{ts,tsx},src/styles/**/*.css"
+alwaysApply: false
+---
+
+# UI Architecture
+
+Apply when designing or refactoring UI structure:
+
+## Reuse-First
+
+- Search before creating components, hooks, or CSS classes.
+- Extract when the same JSX shell, state/effects, or utility-class chain appears 2+ times.
+
+## Folder Structure
+
+- Feature folders: `common/`, `desktop/`, `mobile/` with a thin root selector.
+- Base primitives in `src/components/ui/common/`; section wrappers in section `common/`.
+- Hooks in `src/hooks/<responsibility>/`; repeated styles in `src/styles/components/`.
+
+## Viewport Layout (Mandatory)
+
+- Sections are viewport slots only: `height: 100svh; position: relative; overflow: hidden` — no nav-clearing padding.
+- Visible content lives in `.section-frame` with `top: var(--section-frame-top, var(--nav-h))`.
+- Card height uses `max-height: calc(100svh - var(--nav-h) - var(--section-content-gap))`, not percentages.
+
+Load `.cursor/skills/frontend/ui-architecture/SKILL.md` for the full layout model and extraction rules.

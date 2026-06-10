@@ -1,0 +1,28 @@
+---
+description: Interactive UI patterns — motion, sound, and accessibility
+globs: "src/components/**/*.tsx"
+alwaysApply: false
+---
+
+# UI Interactions
+
+Apply when building buttons, menus, cards, or any interactive UI:
+
+## Reuse
+
+- Search for existing shared primitives, hooks, or CSS classes before creating new ones.
+- Extract repeated interaction logic into a shared component or hook.
+
+## Motion & Sound
+
+- Use `<motion.button>` / `<motion.a>` with `whileHover={{ scale: 1.05 }}` and `whileTap={{ scale: 0.95 }}`.
+- Import sounds from `src/lib/sound/interactionSounds.ts` — no external audio assets.
+- Wire `playHoverSound` on `onMouseEnter`, `playClickSound` on `onClick`.
+- Fire `playMenuCloseSound` on every menu/modal dismiss path (close button, backdrop, nav links).
+
+## Accessibility
+
+- Never put `onClick` on `<div>` or `<span>` — use semantic `<button>` or `<a>`.
+- Add `aria-label` to icon-only buttons.
+
+Load `.cursor/skills/frontend/ui-interactions/SKILL.md` for implementation examples.

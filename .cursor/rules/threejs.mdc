@@ -1,0 +1,28 @@
+---
+description: React Three Fiber performance and typing rules for 3D backgrounds
+globs: "src/components/backgrounds/three/**/*.tsx"
+alwaysApply: false
+---
+
+# React Three Fiber & 3D
+
+Apply when editing files under `src/components/backgrounds/three/`:
+
+## Performance
+
+- Never allocate inside `useFrame` (`new THREE.Vector3()`, etc.) — use `useMemo`/`useRef`.
+- Prefer `InstancedMesh` for many identical geometries.
+- Mutate refs/uniforms per frame — do not drive continuous animation via React state.
+
+## Stack
+
+- Use `@react-three/drei` helpers and `useFrame` — never raw `requestAnimationFrame`.
+- Sync with UI via `AnimationOrchestrator` / `useOrchestrator()` from `src/lib/`.
+
+## Typing
+
+- Type refs: `useRef<THREE.Mesh>(null)`.
+- Cast materials: `mesh.material as THREE.ShaderMaterial` before uniform access.
+- Named prop interfaces — no `any[]`; no `@ts-nocheck`.
+
+Load `.cursor/skills/frontend/threejs/SKILL.md` for shader, cleanup, and audio patterns.

@@ -1,0 +1,40 @@
+---
+description: TypeScript and ESLint standards for lint/build validation
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Code Quality
+
+Apply when validating, fixing, or writing TypeScript:
+
+## TypeScript
+
+- Never use `any`. Use specific types or named interfaces.
+- Type refs exactly; extend `Window` inline for vendor APIs.
+- Cast Three.js materials to concrete types before accessing uniforms.
+
+## Lint & Build
+
+- Must pass `npm run lint` and `npm run build` with zero errors before committing.
+- Prefix unused vars with `_`; never use `@ts-nocheck`.
+- Use `catch {}` (no binding) for intentional suppression, or log and re-throw.
+- Only `console.error`/`console.warn` for unrecoverable browser-API failures.
+- Include every referenced variable in hook dependency arrays.
+- Async/await only — never `.then()/.catch()` chains.
+
+## Examples
+
+```typescript
+// ❌ BAD
+const ref = useRef<any>(null);
+} catch (e) {}
+
+// ✅ GOOD
+const ref = useRef<THREE.Mesh>(null);
+} catch {
+  // intentional — AudioContext not supported
+}
+```
+
+Load `.cursor/skills/quality/code-quality/SKILL.md` for full patterns and checklists.
