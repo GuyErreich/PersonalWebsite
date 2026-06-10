@@ -64,6 +64,43 @@ const mat = meshRef.current.material as THREE.ShaderMaterial;
 mat.uniforms.uOpacity.value = 0.5;
 ```
 
+### Type packages & canonical types
+
+Prefer official `@types/*` packages and canonical type names. Do not use workaround typings when a proper type exists.
+
+| Priority | Action |
+|---|---|
+| 1 | Add `@types/<package>` as a direct devDependency when DefinitelyTyped (or the library) provides it |
+| 2 | Enable the type package in the correct tsconfig (`tsconfig.app.json` for `src/`, `tsconfig.node.json` for Vite/scripts) |
+| 3 | Use the canonical exported type — not `ReturnType<typeof …>` or raw `number` when a named type exists |
+| 4 | Add project-owned types in `src/types/` when semantics need a stable name (thin aliases over package types are fine) |
+
+**Forbidden workarounds:**
+
+```ts
+const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+const cooldownRef = useRef<number | null>(null); // when storing a setTimeout handle
+```
+
+**Correct — timer handles (`@types/node` required in `tsconfig.app.json`):**
+
+```ts
+import type { TimeoutHandle } from '../types/handles';
+
+const timerRef = useRef<TimeoutHandle | null>(null);
+const timers: TimeoutHandle[] = [];
+```
+
+**Correct — requestAnimationFrame (DOM API; no `@types` package):**
+
+```ts
+import type { AnimationFrameHandle } from '../types/handles';
+
+const rafRef = useRef<AnimationFrameHandle | null>(null);
+```
+
+Shared aliases live in [`src/types/handles.ts`](../../../src/types/handles.ts).
+
 ---
 
 ## 2. Never Use `@ts-nocheck`

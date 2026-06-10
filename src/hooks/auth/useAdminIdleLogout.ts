@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { hasAdminRoleFromMetadata } from "../../lib/auth/roles";
 import { supabase } from "../../lib/supabase";
+import type { TimeoutHandle } from "../../types/handles";
 
 const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
 const IDLE_CHECK_INTERVAL_MS = 30_000;
@@ -25,12 +26,12 @@ const IDLE_CHECK_INTERVAL_MS = 30_000;
  *  5. Supabase auth state changes update the hasAdminSession flag.
  */
 export const useAdminIdleLogout = () => {
-  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const idleTimerRef = useRef<TimeoutHandle | null>(null);
   const idleDeadlineRef = useRef<number | null>(null);
 
   useEffect(() => {
     let hasAdminSession = false;
-    let idleCheckIntervalId: ReturnType<typeof setInterval> | null = null;
+    let idleCheckIntervalId: TimeoutHandle | null = null;
 
     const clearIdleTimer = () => {
       if (!idleTimerRef.current) return;

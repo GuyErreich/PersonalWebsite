@@ -9,6 +9,7 @@ import { Rocket } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playHoverSound } from "../lib/sound/interactionSounds";
+import type { TimeoutHandle } from "../types/handles";
 
 interface RocketReplayButtonProps {
   onReplay: () => void;
@@ -18,7 +19,7 @@ export const RocketReplayButton = ({ onReplay }: RocketReplayButtonProps) => {
   const [isMobileLaunching, setIsMobileLaunching] = useState(false);
   const [isMobileHovering, setIsMobileHovering] = useState(false);
   const launchCtxRef = useRef<AudioContext | null>(null);
-  const timeoutRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const timeoutRefs = useRef<TimeoutHandle[]>([]);
 
   useEffect(() => {
     const timeouts = timeoutRefs.current;

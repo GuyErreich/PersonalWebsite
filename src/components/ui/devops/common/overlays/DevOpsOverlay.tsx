@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 import { playDevOpsBeeps } from "../../../../../lib/sound/entranceSounds";
+import type { TimeoutHandle } from "../../../../../types/handles";
 import { Scanlines } from "../../../common/visuals/Scanlines";
 
 interface DevOpsOverlayProps {
@@ -25,7 +26,7 @@ export const DevOpsOverlay = ({ onDone }: DevOpsOverlayProps) => {
 
   useEffect(() => {
     playDevOpsBeeps();
-    const timers: ReturnType<typeof setTimeout>[] = [];
+    const timers: TimeoutHandle[] = [];
     TERMINAL_LINES.forEach((_, i) => {
       timers.push(setTimeout(() => setVisibleLines((p) => p + 1), i * 480 + 150));
     });

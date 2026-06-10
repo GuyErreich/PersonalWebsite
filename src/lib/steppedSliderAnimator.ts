@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+import type { TimeoutHandle } from "../types/handles";
+
 interface SteppedSliderAnimatorOptions {
   initialValue: number;
   min: number;
@@ -62,7 +64,7 @@ export const createSteppedSliderAnimator = ({
 
   let current = clamp(roundToStep(initialValue, step), min, max);
   let target = current;
-  let timer: ReturnType<typeof setTimeout> | null = null;
+  let timer: TimeoutHandle | null = null;
   const baseIntervalMs = Math.max(1, intervalMs);
   let currentIntervalMs = baseIntervalMs;
 

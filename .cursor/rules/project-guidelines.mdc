@@ -34,6 +34,7 @@ npm run build  # tsc -b && vite build
 
 - No duplication — extract to `src/lib/` or shared components/hooks/CSS
 - No `any`, `@ts-nocheck`, bare `catch (e) {}`, or silent failures
+- No workaround typings when `@types/*` or canonical package types exist — use `src/types/` aliases when needed
 - No `console.log/debug/info` — only `console.error/warn` for system failures
 - Unused vars → prefix `_` or remove; complete hook dependency arrays
 - Async/await only — never `.then()/.catch()` chains

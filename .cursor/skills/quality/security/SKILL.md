@@ -429,7 +429,7 @@ const query = `SELECT * FROM projects ORDER BY ${sortBy} ${direction}`;
 
 ```ts
 // Logs contain sensitive data — if logs are breached, attacker has passwords
-console.log('User login:', { email, password, apiToken });
+console.warn('User login:', { email, password, apiToken });
 ```
 
 **SECURE:**

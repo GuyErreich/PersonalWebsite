@@ -6,6 +6,7 @@
 
 import { type RefObject, useEffect } from "react";
 import { isMidTierOrConstrainedDevice } from "../../lib/performance";
+import type { TimeoutHandle } from "../../types/handles";
 import { PAGE_SCROLL_DURATION_MS, PAGE_SCROLL_LOCK_MS } from "./sectionPager/constants";
 import { createSectionPagerHandlers } from "./sectionPager/handlers";
 import {
@@ -69,7 +70,7 @@ export const useSectionPager = ({ mainRef }: UseSectionPagerOptions) => {
     const main = mainRef.current;
     if (!main) return;
 
-    let pagingTimeoutId: number | null = null;
+    let pagingTimeoutId: TimeoutHandle | null = null;
     let pagingRafId: number | null = null;
     let restoreSnapRafId: number | null = null;
     let isPaging = false;
@@ -113,7 +114,7 @@ export const useSectionPager = ({ mainRef }: UseSectionPagerOptions) => {
         window.clearTimeout(pagingTimeoutId);
       }
 
-      pagingTimeoutId = window.setTimeout(() => {
+      pagingTimeoutId = setTimeout(() => {
         isPaging = false;
       }, delayMs);
     };

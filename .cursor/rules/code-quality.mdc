@@ -13,6 +13,8 @@ Apply when validating, fixing, or writing TypeScript:
 - Never use `any`. Use specific types or named interfaces.
 - Type refs exactly; extend `Window` inline for vendor APIs.
 - Cast Three.js materials to concrete types before accessing uniforms.
+- Prefer `@types/*` packages and canonical types — no `ReturnType<typeof setTimeout>` or raw `number` for timer handles; use `TimeoutHandle` from `src/types/handles.ts`.
+- Add `src/types/` aliases when a stable project name helps; enable new `@types` in the matching tsconfig.
 
 ## Lint & Build
 

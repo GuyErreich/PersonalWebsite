@@ -497,9 +497,14 @@ useEffect(() => {
 
 If you listen to scroll, resize, or mousemove, throttle the callback to avoid 100+ calls/second.
 
+Requires `@types/node` in devDependencies and `"types": ["node"]` in `tsconfig.app.json` (see `code-quality` skill).
+
 ```tsx
+import { useEffect, useRef } from 'react';
+import type { TimeoutHandle } from '../types/handles';
+
 function useThrottledResize(callback: () => void, delay = 100) {
-  const timeout = useRef<NodeJS.Timeout | null>(null);
+  const timeout = useRef<TimeoutHandle | null>(null);
 
   useEffect(() => {
     const handleResize = () => {

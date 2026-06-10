@@ -12,6 +12,7 @@ import { useMediaQuery } from "../../../../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
 import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
+import type { TimeoutHandle } from "../../../../../types/handles";
 import { GhostSlotRepeater } from "../../../common/pagination/GhostSlotRepeater";
 import { PaginatedSlideFrame } from "../../../common/pagination/PaginatedSlideFrame";
 import { VerticalOffsetFrame } from "../../../common/pagination/VerticalOffsetFrame";
@@ -102,7 +103,7 @@ export const GameDevGallery = ({
   const compactWheelHandlerRef = useRef<(e: WheelEvent) => void>(() => {});
   // Smooth scroll: fire at most one step per 200 ms regardless of scroll speed
   const compactWheelCooldownRef = useRef(false);
-  const compactWheelCooldownTimeoutRef = useRef<number | null>(null);
+  const compactWheelCooldownTimeoutRef = useRef<TimeoutHandle | null>(null);
 
   useEffect(() => {
     return () => {
@@ -205,7 +206,7 @@ export const GameDevGallery = ({
       if (compactWheelCooldownTimeoutRef.current !== null) {
         window.clearTimeout(compactWheelCooldownTimeoutRef.current);
       }
-      compactWheelCooldownTimeoutRef.current = window.setTimeout(() => {
+      compactWheelCooldownTimeoutRef.current = setTimeout(() => {
         compactWheelCooldownRef.current = false;
         compactWheelCooldownTimeoutRef.current = null;
       }, 200);
