@@ -272,9 +272,13 @@ For form submissions, issue a token that must be validated on the server:
 ```tsx
 // Frontend: Get CSRF token on page load
 useEffect(() => {
-  fetch('/api/csrf-token')
-    .then(r => r.json())
-    .then(data => setCSRFToken(data.token));
+  async function loadCSRFToken() {
+    const response = await fetch('/api/csrf-token');
+    const data = await response.json();
+    setCSRFToken(data.token);
+  }
+
+  void loadCSRFToken();
 }, []);
 
 // Include token in form submission
@@ -585,7 +589,9 @@ const ExternalDataSchema = z.object({
   email: z.string().email(),
 });
 
-const response = await fetch('https://api.external.com/data', { timeout: 5000 });
+const response = await fetch('https://api.external.com/data', {
+  signal: AbortSignal.timeout(5000),
+});
 if (!response.ok) {
   throw new Error(`API returned ${response.status}`);
 }
@@ -654,22 +660,21 @@ app.post('/api/login', loginLimiter, (req, res) => {
 ### Timeout Long-Running Requests
 
 ```ts
-app.post('/api/process', (req, res) => {
+app.post('/api/process', async (req, res) => {
   // Kill request if it takes > 30 seconds
   const timeout = setTimeout(() => {
     res.status(408).json({ error: 'Request timeout' });
   }, 30000);
 
-  processLongTask(req.body)
-    .then(result => {
-      clearTimeout(timeout);
-      res.json(result);
-    })
-    .catch(e => {
-      clearTimeout(timeout);
-      console.error(e instanceof Error ? e.message : String(e));
-      res.status(500).json({ error: 'Processing failed' });
-    });
+  try {
+    const result = await processLongTask(req.body);
+    clearTimeout(timeout);
+    res.json(result);
+  } catch (e) {
+    clearTimeout(timeout);
+    console.error(e instanceof Error ? e.message : String(e));
+    res.status(500).json({ error: 'Processing failed' });
+  }
 });
 ```
 

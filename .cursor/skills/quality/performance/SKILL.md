@@ -108,7 +108,9 @@ Event listeners stay in memory until explicitly removed. Use `addEventListener` 
 
 ```tsx
 function useWindowResize() {
-  const handleResize = () => console.log(window.innerWidth);
+  const handleResize = () => {
+    // respond to resize
+  };
   window.addEventListener('resize', handleResize);
   // BUG: listener never removed — stays in memory for lifetime of page
 }
@@ -118,8 +120,10 @@ function useWindowResize() {
 
 ```tsx
 function useWindowResize() {
+  const [, setWidth] = useState(window.innerWidth);
+
   useEffect(() => {
-    const handleResize = () => console.log(window.innerWidth);
+    const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener('resize', handleResize);
 
     return () => {

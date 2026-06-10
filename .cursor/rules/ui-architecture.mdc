@@ -1,6 +1,9 @@
 ---
 description: UI reuse, folder structure, and viewport layout conventions
-globs: "src/components/**/*.{tsx,css},src/hooks/**/*.{ts,tsx},src/styles/**/*.css"
+globs:
+  - "src/components/**/*.{tsx,css}"
+  - "src/hooks/**/*.{ts,tsx}"
+  - "src/styles/**/*.css"
 alwaysApply: false
 ---
 
