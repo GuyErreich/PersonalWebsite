@@ -1,0 +1,127 @@
+name: Cleanup Old Dev Deployments
+
+"on":
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cleanup-dev-deployments
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete stale dev deployments
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: ".node-version"
+          cache: "npm"
+
+      - name: Validate Cloudflare cleanup configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          missing=""
+          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PAGES_PROJECT_NAME; do
+            if [ -z "${!key}" ]; then
+              missing="$missing $key"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "Missing required Cloudflare cleanup configuration:$missing"
+            echo "Set the listed missing key(s) above as repository secrets before running this workflow."
+            exit 1
+          fi
+
+      - name: Delete stale dev deployments with Wrangler
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          node --input-type=module <<'EOF'
+          import { execFileSync } from "node:child_process";
+
+          const projectName = process.env.CLOUDFLARE_PAGES_PROJECT_NAME;
+          const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+          const listOutput = execFileSync(
+            "npx",
+            ["--yes", "wrangler", "pages", "deployment", "list", "--project-name", projectName, "--json"],
+            {
+              encoding: "utf8",
+              env: process.env,
+            },
+          );
+
+          let deployments = [];
+          try {
+            const parsed = JSON.parse(listOutput);
+            if (Array.isArray(parsed)) {
+              deployments = parsed;
+            } else if (Array.isArray(parsed?.result)) {
+              deployments = parsed.result;
+            } else if (Array.isArray(parsed?.deployments)) {
+              deployments = parsed.deployments;
+            }
+          } catch (error) {
+            throw new Error(`Failed to parse Wrangler deployment list output: ${error instanceof Error ? error.message : String(error)}`);
+          }
+
+          const staleDeployments = deployments.filter((deployment) => {
+            const createdAtValue = deployment.created_at ?? deployment.createdAt ?? deployment.created_on ?? deployment.createdOn;
+            const createdAt = new Date(createdAtValue).getTime();
+            return Number.isFinite(createdAt) && createdAt < cutoffMs;
+          });
+
+          console.log(
+            `Found ${deployments.length} Cloudflare Pages deployments; ${staleDeployments.length} are older than 7 days.`,
+          );
+
+          for (const deployment of staleDeployments) {
+            const deploymentId = deployment.id ?? deployment.deployment_id ?? deployment.deploymentId;
+            if (!deploymentId) {
+              console.warn("Skipping a stale deployment with no ID field in Wrangler output.");
+              continue;
+            }
+
+            console.log(`Deleting deployment ${deploymentId}`);
+            execFileSync(
+              "npx",
+              [
+                "--yes",
+                "wrangler",
+                "pages",
+                "deployment",
+                "delete",
+                String(deploymentId),
+                "--project-name",
+                projectName,
+                "--force",
+              ],
+              {
+                encoding: "utf8",
+                env: process.env,
+                stdio: "inherit",
+              },
+            );
+          }
+
+          if (staleDeployments.length === 0) {
+            console.log("No stale dev deployments found.");
+          }
+          EOF
