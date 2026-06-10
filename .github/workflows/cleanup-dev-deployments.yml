@@ -61,7 +61,18 @@ jobs:
 
           const listOutput = execFileSync(
             "npx",
-            ["--yes", "wrangler", "pages", "deployment", "list", "--project-name", projectName, "--json"],
+            [
+              "--yes",
+              "wrangler",
+              "pages",
+              "deployment",
+              "list",
+              "--project-name",
+              projectName,
+              "--environment",
+              "preview",
+              "--json",
+            ],
             {
               encoding: "utf8",
               env: process.env,
@@ -82,14 +93,23 @@ jobs:
             throw new Error(`Failed to parse Wrangler deployment list output: ${error instanceof Error ? error.message : String(error)}`);
           }
 
+          const isPreviewDeployment = (deployment) => {
+            const environment = deployment.environment ?? deployment.Environment;
+            return typeof environment === "string" && environment.toLowerCase() === "preview";
+          };
+
           const staleDeployments = deployments.filter((deployment) => {
+            if (!isPreviewDeployment(deployment)) {
+              return false;
+            }
+
             const createdAtValue = deployment.created_at ?? deployment.createdAt ?? deployment.created_on ?? deployment.createdOn;
             const createdAt = new Date(createdAtValue).getTime();
             return Number.isFinite(createdAt) && createdAt < cutoffMs;
           });
 
           console.log(
-            `Found ${deployments.length} Cloudflare Pages deployments; ${staleDeployments.length} are older than 7 days.`,
+            `Found ${deployments.length} preview Cloudflare Pages deployments; ${staleDeployments.length} are older than 7 days.`,
           );
 
           for (const deployment of staleDeployments) {
