@@ -18,5 +18,5 @@ Use this folder for reusable hooks only.
 
 ## Skill Usage
 
-- Use `ui-architecture` when deciding whether repeated component logic should become a hook.
-- Use `code-quality` for dependency-array correctness, type cleanup, async patterns, and general hook safety.
+- Use `code/web/libs/react` when deciding whether repeated component logic should become a hook, and for dependency-array correctness.
+- Use `code/languages/nodejs` for type cleanup, async patterns, and general hook safety.

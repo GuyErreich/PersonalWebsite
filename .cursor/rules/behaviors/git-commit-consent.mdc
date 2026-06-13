@@ -1,0 +1,26 @@
+---
+description: Never commit without explicit user consent
+alwaysApply: true
+---
+
+# Git Commit Consent
+
+**Never run `git commit` without the user's explicit request.**
+
+## What counts as consent
+
+Explicit approval only — for example "commit", "commit this", "create a commit", "commit with message ...".
+
+These do **not** count as commit consent on their own:
+
+- Approving a code or review plan
+- Finishing fixes or passing lint/build
+- Asking to push or open a PR (confirm the commit step explicitly)
+
+## Workflow when committing is requested
+
+1. Run the commit workflow (`.cursor/skills/code/ci/commit/SKILL.md`): consent confirmed, review at change tier, draft message, commit.
+2. Do not stage files likely to contain secrets (`.env`, credentials, local MCP config). Warn if asked.
+3. Do not push afterward — pushing needs separate explicit consent (`git-push-consent.mdc`).
+
+If a commit is rejected by a pre-commit check, fix the issue and create a new commit — do not amend a rejected commit.

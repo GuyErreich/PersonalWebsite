@@ -1,0 +1,14 @@
+---
+description: Use the reviewer skill for any code review, self-review, or pre-milestone inspection
+alwaysApply: false
+---
+
+# Reviewer
+
+When the user asks to review code, self-review changes, or inspect a diff before a commit/PR/push milestone:
+
+- Load `.cursor/skills/code/review/reviewer/SKILL.md`.
+- It routes to engineering + matching domain skills by changed files and reads the `AGENT.md` chain.
+- Load its `references/` only when a phase needs them.
+
+The reviewer reports findings; it does not fix them unless the user asks. See `.cursor/rules/behaviors/code-review-gate.mdc` for milestone wiring.

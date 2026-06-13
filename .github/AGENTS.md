@@ -1,33 +1,53 @@
 # Agent Context (Migrated to Cursor)
 
-GitHub Copilot agent definitions and instructions have been migrated to Cursor format.
+GitHub Copilot agent definitions and instructions have been migrated to Cursor, then restructured into a portable agent plugin plus a project overlay. See `.cursor/PLUGIN.md` for the portable-vs-project split.
 
 ## Canonical locations
 
 | Former path | New path |
 |---|---|
-| `.github/copilot-instructions.md` | `.cursor/rules/project-guidelines.mdc` (+ this file for Copilot) |
-| `.github/instructions/*.instructions.md` | `.cursor/rules/*.mdc` |
-| `.github/skills/*/SKILL.md` | `.cursor/skills/<domain>/*/SKILL.md` |
-| `.github/agents/default.agent.md` | merged into `project-guidelines.mdc` + rules |
-| `.github/agents/animation-reviewer.agent.md` | `.cursor/skills/review/animation-review/SKILL.md` |
-| `.github/instructions/pr-review.instructions.md` | `.cursor/skills/review/pr-review/SKILL.md` |
-| `.github/prompts/create-r3f-component.prompt.md` | `.cursor/skills/frontend/create-r3f-component/SKILL.md` |
+| `.github/copilot-instructions.md` | `.cursor/rules/project/project-guidelines.mdc` + the `AGENT.md` chain |
+| `.github/instructions/*.instructions.md` | `.cursor/rules/code/**/*.mdc` + `.cursor/rules/behaviors/*.mdc` |
+| `.github/skills/*/SKILL.md` | `.cursor/skills/code/**/SKILL.md` + `.cursor/skills/project/**/SKILL.md` |
+| `.github/agents/default.agent.md` | merged into `project/project-guidelines.mdc` + the rules tree |
+| `.github/agents/animation-reviewer.agent.md` | removed — folded into `code/web/libs/threejs`, `code/quality/performance`, and `src/lib/AGENT.md` |
+| `.github/instructions/pr-review.instructions.md` | `.cursor/skills/code/review/pr-resolver/SKILL.md` |
+| `.github/prompts/create-r3f-component.prompt.md` | `.cursor/skills/code/web/libs/threejs/assets/r3f-component-template.tsx` |
 
 ## Skill layout
 
 ```
 .cursor/skills/
-├── frontend/     ui-architecture, ui-interactions, threejs, create-r3f-component
-├── quality/      code-quality, performance, security
-├── review/       code-review, pr-review, animation-review
-├── platform/     supabase (+ references/), supabase-branch-testing
-└── meta/         improvement-protocol
+├── code/                       PORTABLE plugin core
+│   ├── foundations/engineering   universal base (all code skills extend it)
+│   ├── languages/nodejs          TypeScript / JS syntax + tooling
+│   ├── web/ui                    UI structure, reuse, accessibility
+│   ├── web/libs/react            hooks, components, GSAP
+│   ├── web/libs/threejs          R3F, shaders, disposal (+ component template asset)
+│   ├── quality/performance       memory + render performance
+│   ├── quality/security          vulnerability prevention
+│   ├── review/reviewer           single-pass code reviewer
+│   ├── review/pr-resolver        controlled PR-thread resolution loop
+│   └── ci/{commit,pr,push,local-review-loop}
+├── meta/improvement-protocol   skill/rule maintenance
+└── project/                    PROJECT overlay (not exported)
+    ├── ui-interactions           Framer Motion + generative sound
+    └── platform/                 supabase, supabase-branch-testing
+```
+
+## Rules layout
+
+```
+.cursor/rules/
+├── behaviors/   git-push-consent, git-commit-consent, code-review-gate (always apply)
+├── code/        glob rules mirroring the code skill tree (load matching skills)
+└── project/     project-guidelines, project ui-interactions
 ```
 
 ## Usage in Cursor
 
-- **Rules** apply automatically based on file globs or `alwaysApply: true`.
-- **Skills** load on demand — attach or `@`-mention them (e.g. `@code-review`, `@supabase`).
+- **Rules** apply automatically based on file globs or `alwaysApply: true`; `code/foundations/engineering.mdc` always applies.
+- **Skills** load on demand — attach or `@`-mention them (for example `@reviewer`, `@pr-resolver`, `@supabase`).
+- **`AGENT.md`** files carry project context; read the nearest one (leaf → root) when working in a folder.
 
 The `.github/skills/` and `.github/instructions/` directories are retained for GitHub Copilot compatibility but are no longer the source of truth.

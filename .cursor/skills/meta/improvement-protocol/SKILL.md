@@ -44,6 +44,13 @@ When a new improvement is discovered during development or review, flag it for d
 
 ## Target Files
 
-- `.cursor/rules/*.mdc` — ambient rules
-- `.cursor/skills/<domain>/*/SKILL.md` — deep domain workflows (`frontend/`, `quality/`, `review/`, `platform/`, `meta/`)
+- `.cursor/rules/behaviors/*.mdc` — always-applied behaviors (consent, review gate)
+- `.cursor/rules/code/**/*.mdc` — glob rules that load matching code skills
+- `.cursor/rules/project/*.mdc` — project guidelines and project glob rules
+- `.cursor/skills/code/**/SKILL.md` — portable domain skills (`foundations/`, `languages/`, `web/`, `quality/`, `review/`, `ci/`)
+- `.cursor/skills/project/**/SKILL.md` — project-specific skills
+- `.cursor/skills/meta/*/SKILL.md` — skill/rule maintenance
+- `AGENT.md` chain — project context and conventions
 - `.github/workflows/` — CI only (not agent context)
+
+Keep portable `code/**` and `meta/**` skills free of project paths and commands; project-specific guidance belongs in `project/**` or the `AGENT.md` chain (see `.cursor/PLUGIN.md`).

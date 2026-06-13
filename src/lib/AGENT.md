@@ -28,3 +28,9 @@ Use this folder for shared logic, utilities, orchestration, API clients, context
 - Repeated orchestration/state machine logic -> shared helper or orchestrator
 - Repeated API/client access pattern -> shared client wrapper or helper
 - Repeated browser capability detection -> shared helper
+
+## AnimationOrchestrator & AnimationContext
+
+- Complex multi-step animation sequences must use `AnimationOrchestrator` from this folder, not ad-hoc `setTimeout` chains.
+- Shared animation state belongs in `AnimationContext` (consume via `useOrchestrator()`), not prop-drilled booleans.
+- 3D components read the orchestrator phase directly inside `useFrame`; never drive synchronization through React state updates from inside the render loop.

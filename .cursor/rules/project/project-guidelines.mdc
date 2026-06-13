@@ -1,0 +1,33 @@
+---
+description: Project index — stack, skill map, and where project context lives
+alwaysApply: true
+---
+
+# Project Guidelines
+
+This is a React + TypeScript + Vite portfolio using Tailwind v4, Three.js (R3F), GSAP, Framer Motion, and Supabase.
+
+Deep conventions live in two places — read them rather than duplicating here:
+
+- **Project context and validate commands:** the `AGENT.md` chain. Start at the repository-root `AGENT.md`; when working in a folder with its own `AGENT.md`, follow it too (leaf → root).
+- **Engineering and domain rules:** the portable skill library under `.cursor/skills/code/**`, loaded by the glob rules in `.cursor/rules/code/**` and the always-applied engineering foundation.
+
+## Skill map
+
+| Area | Skill |
+|---|---|
+| Universal principles | `code/foundations/engineering` (always applied) |
+| TypeScript / JS | `code/languages/nodejs` |
+| Web UI structure & a11y | `code/web/ui` |
+| React | `code/web/libs/react` |
+| Three.js / R3F | `code/web/libs/threejs` |
+| Performance & security | `code/quality/performance`, `code/quality/security` |
+| Review & PR resolution | `code/review/reviewer`, `code/review/pr-resolver` |
+| Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop}` |
+| Project tactile UI | `project/ui-interactions` |
+| Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing` |
+| Skill/rule maintenance | `meta/improvement-protocol` |
+
+## Behaviors
+
+Commit, push, and review gating are governed by `.cursor/rules/behaviors/`. Never commit or push without explicit consent. See `.cursor/PLUGIN.md` for what is portable vs project-specific.

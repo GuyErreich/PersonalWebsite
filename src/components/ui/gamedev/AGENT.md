@@ -21,6 +21,6 @@ Use this folder for GameDev-specific UI composition.
 
 ## Skill Usage
 
-- Use `ui-architecture` for folder structure, common/desktop/mobile boundaries, panel extraction, and selector thinning.
-- Use `ui-interactions` for panel buttons, motion feedback, and sound behavior.
-- Use `code-quality` for duplication removal, type cleanup, and validation during refactors.
+- Use `code/web/ui` for folder structure, common/desktop/mobile boundaries, panel extraction, and selector thinning.
+- Use `project/ui-interactions` for panel buttons, motion feedback, and sound behavior.
+- Use `code/foundations/engineering` for duplication removal and `code/languages/nodejs` for type cleanup and validation during refactors.
