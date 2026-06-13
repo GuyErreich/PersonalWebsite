@@ -6,6 +6,10 @@ disable-model-invocation: true
 
 # Supabase Branch Testing Router Skill
 
+## Extends
+
+Load `.cursor/skills/code/foundations/engineering/SKILL.md` first, then the `supabase` router. This project skill adds stricter rules, never weaker ones.
+
 This skill is intentionally thin. It routes to one reference at a time and stops loading context when enough signal exists.
 
 ## Outcome
