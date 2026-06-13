@@ -26,8 +26,12 @@ hooks:
     #   from: .claude     # Claude AI context
     #   to: .claude
     - type: copy
-      from: .cursor/    # Cursor IDE settings
-      to: .cursor/
+      from: .cursor/rules/
+      to: .cursor/rules/
+
+    - type: copy
+      from: .cursor/skills/
+      to: .cursor/skills/
 
     # Share directories with symlinks:
     # - type: symlink
