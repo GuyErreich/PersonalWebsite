@@ -48,6 +48,8 @@ Skills live under `.cursor/skills/` by domain:
 | `frontend/` | `ui-architecture`, `ui-interactions`, `threejs`, `create-r3f-component` |
 | `quality/` | `code-quality`, `performance`, `security` |
 | `review/` | `code-review`, `pr-review`, `animation-review` |
+
+Pre-commit / PR / push: follow `.cursor/rules/code-review-gate.mdc` (lockfile dedup via `scripts/review-lock.py`).
 | `platform/` | `supabase`, `supabase-branch-testing` |
 | `meta/` | `improvement-protocol` |
 
