@@ -1,18 +1,22 @@
 ---
 name: pr-resolver
-description: Controlled loop that resolves GitHub PR review threads — review, post findings, fetch threads, Plan-mode triage table, implement only approved fixes, re-review until clean. No auto commit or push. Use to read, resolve, or address PR review comments. Extends engineering.
+description: Controlled loop that resolves GitHub PR review threads — review, post findings, fetch threads, Plan-mode triage table, implement approved fixes, commit, push, reply, resolve, re-review until clean. Use to read, resolve, or address PR review comments. Extends engineering.
 disable-model-invocation: true
 ---
 
 # PR Resolver
 
-A controlled loop for resolving Copilot or human review comments on a pull request. Runs the reviewer, triages every thread with the user in Plan mode, fixes only what is approved, and repeats until no unresolved issues remain — without ever committing or pushing on its own.
+A controlled loop for resolving Copilot or human review comments on a pull request. Runs the reviewer, triages every thread with the user in Plan mode, fixes only what is approved, commits and pushes to the PR branch, replies on threads, and repeats until no unresolved issues remain.
 
 ## Extends
 
 Load `.cursor/skills/code/foundations/engineering/SKILL.md` first. Load `.cursor/skills/code/review/reviewer/SKILL.md` when you need project-convention context to judge a thread.
 
 **Hard stop:** Do not edit code, commit, push, post replies, or resolve threads until the user explicitly approves the plan from the triage step.
+
+## Scoped consent
+
+Approving the resolver plan **or** an explicit request to resolve PR comments counts as consent to **commit and push only the approved fix commits** on the current PR branch. This scoped consent does not apply to unrelated work outside the approved plan.
 
 ## Loop
 
@@ -23,7 +27,10 @@ reviewer(pr) on the branch diff
   → SwitchMode → plan: present triage table (fix | by design | blocked)
   → wait for explicit user approval
   → implement ONLY approved "fix" rows (minimal, root-cause)
+  → post fix summary in chat (see Step 4)
   → validate (lint/build from AGENT.md)
+  → commit (change-tier review — ci/commit) when code changed
+  → push (PR-tier review — ci/push) so CI and reviewers see the fix
   → post threaded replies; resolve threads per the rules below
   → re-review → repeat until unresolved count is 0
 ```
@@ -63,7 +70,7 @@ Then stop and wait. Do not proceed until the user explicitly approves or revises
 
 Apply only what was approved; follow any user override. Fix threads get minimal root-cause changes. By-design and blocked threads get a prepared in-thread reply, no code change.
 
-After code changes, **always** post a fix summary in the chat session (not on GitHub) before validating or replying on threads:
+After code changes, **always** post a fix summary in the chat session (not on GitHub) before validating, committing, or replying on threads:
 
 ```markdown
 ## PR Resolver — Fix summary
@@ -73,23 +80,32 @@ After code changes, **always** post a fix summary in the chat session (not on Gi
 | 1 | path/to/file | one-line reviewer ask | one-line concrete fix |
 ```
 
-One row per approved **Fix** thread. For **By design** / **Blocked**, add a short **Replies only** subsection with file and the rationale you will post on GitHub. Include commit SHA once committed.
+One row per approved **Fix** thread. For **By design** / **Blocked**, add a short **Replies only** subsection with file and the rationale you will post on GitHub. Update with commit SHA after commit and remote SHA after push.
 
 ## Step 5 — Validate
 
-Run the project's lint and build (see the repo `AGENT.md`) when the approved plan changed code. Skip when there were no code changes.
+Run the project's lint and build (see the repo `AGENT.md`) when the approved plan changed code. Skip when there were no code changes. Do not commit or push until validation passes.
 
-## Step 6 — Reply & resolve
+## Step 6 — Commit & push
+
+When the approved plan changed code:
+
+1. **Commit** — follow `.cursor/skills/code/ci/commit/SKILL.md` (change-tier review). Scoped consent from Step 3 applies.
+2. **Push** — follow `.cursor/skills/code/ci/push/SKILL.md` (PR-tier review), then `git push -u origin HEAD` if needed. Scoped consent from Step 3 applies.
+
+Skip commit and push when the plan was replies-only (by design / blocked only). If push fails, stop: post replies noting the blocker, leave fix threads unresolved, and report in chat.
+
+## Step 7 — Reply & resolve
 
 Post a threaded reply on every approved thread. Resolution rules:
 
 | Outcome | Resolve when |
 |---|---|
-| Fix (code changed) | only after the fix is on the remote PR branch — which requires explicit push consent and a successful push |
+| Fix (code changed) | after the fix is pushed to the remote PR branch and the reply cites the remote commit SHA |
 | By design / Blocked (no code change) | after posting the in-thread reply |
 
-If fixes are committed locally but not pushed, leave those threads unresolved and say so. **Never commit or push without explicit user consent** (`git-commit-consent.mdc`, `git-push-consent.mdc`).
+Never resolve a fix thread while the fix exists only locally.
 
-## Step 7 — Re-review
+## Step 8 — Re-review
 
-Re-run the loop until the unresolved count is 0. End the session with a brief chat recap: unresolved count, commit SHA(s), push status, and any threads left open because fixes are not yet on the remote branch.
+Re-run the loop until the unresolved count is 0. End the session with a brief chat recap: unresolved count, commit SHA(s), push confirmation, and CI status if available.
