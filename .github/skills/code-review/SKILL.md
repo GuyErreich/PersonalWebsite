@@ -4,8 +4,6 @@ description: "Use when: reviewing code before committing, performing PR self-rev
 argument-hint: "Optionally specify: a file path, component name, or area to focus on (e.g. 'src/components/Hero.tsx', 'Three.js backgrounds', 'admin panel')"
 ---
 
-> **Canonical:** [`.cursor/skills/code/review/reviewer/SKILL.md`](../../.cursor/skills/code/review/reviewer/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
-
 # Code Review Skill
 
 Systematically reviews code in this React + TypeScript + Vite project across **six phases**. Each phase maps to an existing skill — load it only if issues are found in that phase.

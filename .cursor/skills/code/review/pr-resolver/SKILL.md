@@ -63,6 +63,18 @@ Then stop and wait. Do not proceed until the user explicitly approves or revises
 
 Apply only what was approved; follow any user override. Fix threads get minimal root-cause changes. By-design and blocked threads get a prepared in-thread reply, no code change.
 
+After code changes, **always** post a fix summary in the chat session (not on GitHub) before validating or replying on threads:
+
+```markdown
+## PR Resolver — Fix summary
+
+| # | File | Finding | What changed |
+|---|---|---|---|
+| 1 | path/to/file | one-line reviewer ask | one-line concrete fix |
+```
+
+One row per approved **Fix** thread. For **By design** / **Blocked**, add a short **Replies only** subsection with file and the rationale you will post on GitHub. Include commit SHA once committed.
+
 ## Step 5 — Validate
 
 Run the project's lint and build (see the repo `AGENT.md`) when the approved plan changed code. Skip when there were no code changes.
@@ -80,4 +92,4 @@ If fixes are committed locally but not pushed, leave those threads unresolved an
 
 ## Step 7 — Re-review
 
-Re-run the loop until the unresolved count is 0. Report per thread: file, line, outcome, rationale, commit SHA (if any), reply posted.
+Re-run the loop until the unresolved count is 0. End the session with a brief chat recap: unresolved count, commit SHA(s), push status, and any threads left open because fixes are not yet on the remote branch.

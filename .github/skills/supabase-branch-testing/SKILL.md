@@ -4,8 +4,6 @@ description: "Use when: creating and validating temporary Supabase branch enviro
 argument-hint: "What should be tested in the temporary branch environment?"
 ---
 
-> **Canonical:** [`.cursor/skills/project/platform/supabase-branch-testing/SKILL.md`](../../.cursor/skills/project/platform/supabase-branch-testing/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
-
 # Supabase Branch Testing Router Skill
 
 This skill is intentionally thin. It routes to one reference at a time and stops loading context when enough signal exists.

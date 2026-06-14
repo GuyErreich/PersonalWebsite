@@ -3,8 +3,6 @@ name: "ui-interactions"
 description: "Use when: adding, editing, or refactoring UI components that need to respond to user interactions (hover, click, menus) with animations and sounds."
 ---
 
-> **Canonical:** [`.cursor/skills/project/ui-interactions/SKILL.md`](../../.cursor/skills/project/ui-interactions/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
-
 # UI Interactions & Feedback Skill
 
 Everything should feel interactive and tactile in this project. Apply this skill whenever you are making UI components, buttons, menus, or interactive cards.

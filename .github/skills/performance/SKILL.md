@@ -3,8 +3,6 @@ name: "performance"
 description: "Use when: optimizing components, reducing memory usage, preventing memory leaks, profiling performance, or ensuring zero-leak audio/WebGL/Three.js resource cleanup. Triggers on useEffect cleanup, canvas, AudioContext, event listeners, ref management, bundle size, render optimization."
 ---
 
-> **Canonical:** [`.cursor/skills/code/quality/performance/SKILL.md`](../../.cursor/skills/code/quality/performance/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
-
 # Performance & Memory Management Skill
 
 This project runs complex 3D scenes, animations, and interactive components that demand zero memory leaks and optimal performance. Apply this skill whenever you create components with Three.js, AudioContext, event listeners, animations, or any resource that requires cleanup.
