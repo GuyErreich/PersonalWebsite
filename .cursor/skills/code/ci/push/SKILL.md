@@ -14,7 +14,7 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first.
 
 ## Workflow
 
-1. **Require explicit push consent.** Never push without it (see `.cursor/rules/behaviors/git-push-consent.mdc`). Approving a plan, asking to commit, or finishing fixes does not count.
+1. **Require explicit push consent.** Never push without it (see `.cursor/rules/behaviors/git-push-consent.mdc`). General work still needs an explicit "push" request. **Exception:** when running `code/review/pr-resolver`, approving the resolver plan (or an explicit "resolve comments" request) grants scoped commit+push consent for approved fix commits only — see pr-resolver `## Scoped consent`.
 2. **Review at PR tier.** Run the reviewer (tier: pr). Require a clean verdict or an explicit skip.
 3. **Check for an open PR** on the current branch:
 
@@ -22,8 +22,8 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first.
 gh pr view --json number,url,state 2>/dev/null
 ```
 
-4. **If an open PR exists**, fetch its review threads (see `code/review/pr-resolver` graphql reference). If there are unresolved human/bot threads, stop and recommend running the pr-resolver loop before pushing more changes.
-5. **If no open PR** (or no unresolved threads) and the local review passed, push.
+4. **If an open PR exists**, fetch its review threads (see `code/review/pr-resolver` graphql reference). If there are unresolved threads, stop and hand off to pr-resolver — do not push unrelated changes on top. **Exception:** pr-resolver may push after validation when executing an approved fix plan (its Step 6).
+5. **If no open PR** (or no unresolved threads outside an active resolver fix push) and the local review passed, push.
 
 ```bash
 git push        # only after explicit consent and a clean/again-skipped review

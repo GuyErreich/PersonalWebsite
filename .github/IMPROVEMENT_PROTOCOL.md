@@ -10,8 +10,8 @@ Whenever a new improvement is discovered during development or code review, it *
 
 ## Target Files
 
-- `.cursor/rules/*.mdc` — ambient Cursor rules
-- `.cursor/skills/<domain>/*/SKILL.md` — deep domain workflows
+- `.cursor/rules/**/*.mdc` — ambient Cursor rules (`behaviors/`, `code/`, `project/`)
+- `.cursor/skills/**/SKILL.md` — deep domain workflows (`code/`, `project/`, `meta/`)
 - `.github/copilot-instructions.md` — Copilot compatibility layer
 - `.github/workflows/` — CI only
 
@@ -50,5 +50,5 @@ The parallel session reads target files, drafts, implements, validates, and repo
 ## See Also
 
 - [`.cursor/skills/meta/improvement-protocol/SKILL.md`](../.cursor/skills/meta/improvement-protocol/SKILL.md) — full protocol
-- [`.cursor/rules/project-guidelines.mdc`](../.cursor/rules/project-guidelines.mdc) — always-on project context
+- [`.cursor/rules/project/project-guidelines.mdc`](../.cursor/rules/project/project-guidelines.mdc) — always-on project context
 - [`.cursor/skills/`](../.cursor/skills/) — domain skills (`code/`, `project/`, `meta/`)
