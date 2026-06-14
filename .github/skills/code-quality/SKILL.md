@@ -3,6 +3,8 @@ name: "code-quality"
 description: "Use when: fixing lint errors, TypeScript type issues, removing any types, removing ts-nocheck, fixing unused variables, fixing empty catch blocks, or validating code quality before committing."
 ---
 
+> **Canonical:** [`.cursor/skills/code/languages/nodejs/SKILL.md`](../../.cursor/skills/code/languages/nodejs/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
+
 # Code Quality Skill
 
 This project enforces strict TypeScript and ESLint standards. Apply this skill whenever validating, fixing, or writing code that needs to pass `npm run lint` and `npm run build` with zero errors.

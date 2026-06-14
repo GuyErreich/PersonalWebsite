@@ -3,6 +3,8 @@ name: "ui-architecture"
 description: "Use when: designing, refactoring, or reviewing UI structure for reuse, responsive variants, and maintainability."
 ---
 
+> **Canonical:** [`.cursor/skills/code/web/ui/SKILL.md`](../../.cursor/skills/code/web/ui/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
+
 # UI Architecture & Reuse Workflow
 
 Use this skill when building or refactoring UI architecture, not just visual details.

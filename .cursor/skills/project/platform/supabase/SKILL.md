@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 ## Extends
 
-Load `.cursor/skills/code/foundations/engineering/SKILL.md` first; for query/client code also `code/languages/nodejs` and `code/quality/security`. This project skill adds stricter backend rules, never weaker ones.
+Load `.cursor/skills/code/foundations/engineering/SKILL.md` first; for query/client code also `.cursor/skills/code/languages/nodejs/SKILL.md` and `.cursor/skills/code/quality/security/SKILL.md`. This project skill adds stricter backend rules, never weaker ones.
 
 Use this skill as a thin router. It should classify intent, load one small reference, execute, and stop.
 

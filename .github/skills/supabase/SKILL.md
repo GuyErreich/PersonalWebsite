@@ -4,6 +4,8 @@ description: "Use when: working with Supabase via MCP tools, planning schema cha
 argument-hint: "What Supabase task should this skill handle?"
 ---
 
+> **Canonical:** [`.cursor/skills/project/platform/supabase/SKILL.md`](../../.cursor/skills/project/platform/supabase/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
+
 # Supabase Skill Router
 
 Use this skill as a thin router. It should classify intent, load one small reference, execute, and stop.

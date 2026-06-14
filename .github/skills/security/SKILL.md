@@ -3,6 +3,8 @@ name: "security"
 description: "Use when: reviewing or fixing security vulnerabilities, preventing injection attacks, hardening authentication, validating inputs, protecting sensitive data, or performing zero-trust audits. Triggers on SQL, XSS, CSRF, auth, injection, Supabase, API keys, tokens, CORS, secrets."
 ---
 
+> **Canonical:** [`.cursor/skills/code/quality/security/SKILL.md`](../../.cursor/skills/code/quality/security/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
+
 # Security & Vulnerability Prevention Skill
 
 This project handles user authentication, database queries, and external API integrations. Apply this skill whenever you write code that touches user input, API routes, authentication, or sensitive data. **Target: zero vulnerabilities, zero penetration paths.**

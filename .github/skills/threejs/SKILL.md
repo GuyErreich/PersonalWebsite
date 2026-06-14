@@ -3,6 +3,8 @@ name: "threejs"
 description: "Use when: creating, editing, or reviewing Three.js, React Three Fiber (R3F), or 3D background components. Triggers on useFrame, THREE, R3F, ShaderMaterial, particle systems, orbit tracks, implosion, galaxy, hyperspace, canvas, WebGL."
 ---
 
+> **Canonical:** [`.cursor/skills/code/web/libs/threejs/SKILL.md`](../../.cursor/skills/code/web/libs/threejs/SKILL.md) — this copy is retained for GitHub Copilot compatibility only.
+
 # React Three Fiber & 3D Skill
 
 Apply every rule below when writing or reviewing any file under `src/components/backgrounds/three/`.

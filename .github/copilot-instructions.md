@@ -42,12 +42,12 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - Complex visual code lives in respective subdirectories (e.g., Three.js → `components/backgrounds/three/`)
 
 **UI & Architecture:**
-- See [`.cursor/skills/frontend/ui-architecture/SKILL.md`](../.cursor/skills/frontend/ui-architecture/SKILL.md) for reuse boundaries, responsive patterns, and component extraction
+- See [`.cursor/skills/code/web/ui/SKILL.md`](../.cursor/skills/code/web/ui/SKILL.md) for reuse boundaries, responsive patterns, and component extraction
 - Leverage `AnimationOrchestrator` / `AnimationContext` (`src/lib/`) for complex sequences
 - Block separation: logical groups separated by blank lines (config → state → derived → effects → handlers → return)
 
 **Code Quality & TypeScript:**
-- See [`.cursor/skills/quality/code-quality/SKILL.md`](../.cursor/skills/quality/code-quality/SKILL.md) for lint rules, typing patterns, error handling, and validation
+- See [`.cursor/skills/code/languages/nodejs/SKILL.md`](../.cursor/skills/code/languages/nodejs/SKILL.md) for lint rules, typing patterns, error handling, and validation
 
 ## Quality Standards
 
@@ -63,18 +63,20 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 **Before committing:**
 - `npm run lint` → 0 errors
 - `npm run build` → succeeds
-- See [`.cursor/skills/quality/code-quality/SKILL.md`](../.cursor/skills/quality/code-quality/SKILL.md) for patterns and examples
+- See [`.cursor/skills/code/languages/nodejs/SKILL.md`](../.cursor/skills/code/languages/nodejs/SKILL.md) for patterns and examples
 
 ## Cursor Rules & Skills Map
 
 | Domain | Cursor rule | Skill path |
 |---|---|---|
-| Core | `.cursor/rules/project-guidelines.mdc` | always-on |
-| Quality | `.cursor/rules/code-quality.mdc` | `quality/code-quality` |
-| UI | `.cursor/rules/ui-interactions.mdc` | `frontend/ui-interactions` |
-| Architecture | `.cursor/rules/ui-architecture.mdc` | `frontend/ui-architecture` |
-| 3D | `.cursor/rules/threejs.mdc` | `frontend/threejs` |
-| Security | `.cursor/rules/security.mdc` | `quality/security` |
-| Performance | `.cursor/rules/performance.mdc` | `quality/performance` |
+| Core | `.cursor/rules/project/project-guidelines.mdc` | always-on |
+| Engineering | `.cursor/rules/code/foundations/engineering.mdc` | `code/foundations/engineering` |
+| TypeScript / JS | `.cursor/rules/code/languages/nodejs.mdc` | `code/languages/nodejs` |
+| UI structure | `.cursor/rules/code/web/ui.mdc` | `code/web/ui` |
+| React | `.cursor/rules/code/web/libs/react.mdc` | `code/web/libs/react` |
+| 3D / R3F | `.cursor/rules/code/web/libs/threejs.mdc` | `code/web/libs/threejs` |
+| Security | `.cursor/rules/code/quality/security.mdc` | `code/quality/security` |
+| Performance | `.cursor/rules/code/quality/performance.mdc` | `code/quality/performance` |
+| Project UI | `.cursor/rules/project/ui-interactions.mdc` | `project/ui-interactions` |
 
-Workflow skills: `review/code-review`, `review/pr-review`, `review/animation-review`, `platform/supabase`, `platform/supabase-branch-testing`, `frontend/create-r3f-component`, `meta/improvement-protocol`
+Workflow skills: `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `meta/improvement-protocol`

@@ -31,7 +31,7 @@ An improvement should be flagged when:
 
 ```
 🔧 IMPROVEMENT FLAGGED:
-File: .cursor/rules/code-quality.mdc
+File: .cursor/rules/code/languages/nodejs.mdc
 Suggestion: Add explicit guideline for handling async/await in useEffect
 Reason: Current code shows pattern inconsistency in AsyncWorkflow components
 ```
@@ -51,4 +51,4 @@ The parallel session reads target files, drafts, implements, validates, and repo
 
 - [`.cursor/skills/meta/improvement-protocol/SKILL.md`](../.cursor/skills/meta/improvement-protocol/SKILL.md) — full protocol
 - [`.cursor/rules/project-guidelines.mdc`](../.cursor/rules/project-guidelines.mdc) — always-on project context
-- [`.cursor/skills/`](../.cursor/skills/) — domain skills (`frontend/`, `quality/`, `review/`, `platform/`, `meta/`)
+- [`.cursor/skills/`](../.cursor/skills/) — domain skills (`code/`, `project/`, `meta/`)

@@ -12,9 +12,9 @@
 //
 // Place the component in the project's 3D components folder (see the nearest AGENT.md).
 
-import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
+import { useMemo, useRef } from "react";
+import type * as THREE from "three";
 
 interface ExampleSceneProps {
   visible: boolean;

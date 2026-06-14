@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Review lockfile: fingerprint, check, and record code-review tiers (change / commit / pr)."""
+"""Review lockfile: fingerprint, check, and record reviewer tiers (change / commit / pr)."""
 
 from __future__ import annotations
 
@@ -228,7 +228,7 @@ def cmd_record(root: Path, tier: str, verdict: str, inherit: str | None) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Review lockfile for code-review tiers")
+    parser = argparse.ArgumentParser(description="Review lockfile for reviewer tiers")
     sub = parser.add_subparsers(dest="command", required=True)
 
     fp_parser = sub.add_parser("fingerprint", help="Print tier fingerprint")
