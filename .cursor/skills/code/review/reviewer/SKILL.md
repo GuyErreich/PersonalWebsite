@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Single-pass code reviewer — engineering Phase 0 plus domain, logic, and threat passes routed by changed files. No subagents. Use before commit, PR open, push, or manual self-review (see code-review-gate rule). Extends engineering.
+description: Single-pass code reviewer — engineering Phase 0 plus domain, logic, and threat passes routed by changed files. Posts on the open PR via gh when reviewing the PR. No subagents. Use before commit, PR open, push, or manual self-review (see code-review-gate rule). Extends engineering.
 disable-model-invocation: true
 ---
 
@@ -52,6 +52,19 @@ Load a skill only when the diff matches; load its references only if that phase 
 
 Run all phases in one session. Do not fix findings unless the user explicitly asked. If there is no diff at all, report one sentence and stop.
 
+## PR tier — post on the open PR
+
+When the user asks to review **the PR**, or tier is **pr** and they want feedback on GitHub:
+
+1. Complete the review and output the **full findings table in chat only** (below).
+2. Load `references/pr-comments.md` and post **one** review on the current branch's open PR:
+   - Resolve PR with `gh pr view` (or GitHub MCP equivalent).
+   - Add an **inline review comment on each finding's file/line** (verify line is on the PR diff).
+   - Submit **once** with a **brief** review body (verdict + lint/build + inline count) — **never** the findings table.
+3. If there is no open PR, report in chat only.
+
+Do not commit, push, or resolve existing threads — that is `pr-resolver`.
+
 ## Lockfile protocol (optional advisory)
 
 If the repo provides a review-dedup helper, the gate rule may use it to skip a re-scan when the tree is unchanged. Treat it as advisory, not a hard gate. See `references/tiers-and-scope.md`.
@@ -69,3 +82,5 @@ Produce one unified findings table:
 - **Finding** — one concise sentence.
 
 Deduplicate overlapping findings into one row with a combined source. After the table, give: lint/build pass or fail, counts per source, and a one-line verdict — **Review passed** (zero findings, lint+build pass) or **Review failed** (any finding or lint/build failure).
+
+**Chat only** — do not copy this table to GitHub. On PR tier, post findings as inline review comments; see `references/pr-comments.md`.

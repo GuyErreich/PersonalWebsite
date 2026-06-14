@@ -46,3 +46,10 @@ GH_PAGER=cat gh api graphql \
 ```
 
 Resolve a fix thread only after the fix is on the remote branch. Verify by comparing local and upstream SHAs before resolving.
+
+## New review vs thread reply
+
+| Goal | Use |
+|---|---|
+| Post a **new** review (summary + approve/request-changes) | `code/review/reviewer/references/pr-comments.md` |
+| Reply on an **existing** review thread | This file — `pulls/comments/{databaseId}/replies` below |

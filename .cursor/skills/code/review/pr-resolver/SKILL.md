@@ -18,7 +18,7 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first. Load `.cursor
 
 ```
 reviewer(pr) on the branch diff
-  → post review comments for genuine new findings
+  → post new findings on the open PR (reviewer references/pr-comments.md)
   → fetch ALL threads (GraphQL — see references/graphql-fetch.md)
   → SwitchMode → plan: present triage table (fix | by design | blocked)
   → wait for explicit user approval

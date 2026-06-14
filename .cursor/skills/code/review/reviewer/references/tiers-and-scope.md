@@ -26,6 +26,10 @@ git diff --name-only $(git merge-base HEAD "$BASE" 2>/dev/null || git merge-base
 
 The base branch name (for example `dev` or `main`) is a project setting; read it from the repository `AGENT.md`.
 
+## PR tier — comment on the open PR
+
+When the user asks to review **the PR**, after the review completes load `references/pr-comments.md`: findings table in chat only; on GitHub post one review with inline comments per finding and a brief body (no table). If no open PR exists, report in chat only.
+
 ## Lockfile protocol (advisory)
 
 If the repo ships a review-dedup helper (for example `scripts/review-lock.py`), the gate rule may use it to avoid duplicate scans:

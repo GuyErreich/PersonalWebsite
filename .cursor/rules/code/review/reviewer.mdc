@@ -5,10 +5,12 @@ alwaysApply: false
 
 # Reviewer
 
-When the user asks to review code, self-review changes, or inspect a diff before a commit/PR/push milestone:
+When the user asks to review code, self-review changes, inspect a diff before a commit/PR/push milestone, or review **the PR**:
 
 - Load `.cursor/skills/code/review/reviewer/SKILL.md`.
 - It routes to engineering + matching domain skills by changed files and reads the `AGENT.md` chain.
 - Load its `references/` only when a phase needs them.
+
+When reviewing **the open PR**, also load `references/pr-comments.md`: table in chat only; one GitHub review with inline comments per finding (correct file/line) and a brief body — never duplicate the table on the PR.
 
 The reviewer reports findings; it does not fix them unless the user asks. See `.cursor/rules/behaviors/code-review-gate.mdc` for milestone wiring.
