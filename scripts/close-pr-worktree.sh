@@ -5,9 +5,13 @@ set -euo pipefail
 branch="${1:-${GITHUB_HEAD_REF:-${HEAD_BRANCH:-}}}"
 
 if [[ -z "$branch" ]]; then
-  echo "Usage: $0 <branch-name>" >&2
+  echo "Usage: $0 <branch-name|pr-number>" >&2
   echo "  or set GITHUB_HEAD_REF / HEAD_BRANCH" >&2
   exit 1
+fi
+
+if [[ "$branch" =~ ^[0-9]+$ ]] && command -v gh >/dev/null 2>&1; then
+  branch="$(gh pr view "$branch" --json headRefName --jq .headRefName)"
 fi
 
 repo_root="$(git rev-parse --show-toplevel)"
@@ -18,9 +22,10 @@ worktree_exists=false
 if command -v wtp >/dev/null 2>&1; then
   if wtp list 2>/dev/null | awk 'NR > 2 { print $2 }' | grep -Fxq "$branch"; then
     worktree_exists=true
-    echo "Removing wtp worktree and branch: $branch"
-    wtp remove --with-branch "$branch"
-    echo "Done."
+  fi
+
+  if wtp remove --with-branch "$branch"; then
+    echo "Removed wtp worktree and branch: $branch"
     exit 0
   fi
 fi
