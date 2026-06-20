@@ -11,7 +11,7 @@ alwaysApply: true
 
 - `git push`, `git push -u`, `git push origin <branch>`
 - Force push: `git push --force`, `git push --force-with-lease`
-- Pushing as part of another workflow (PR creation, review resolution, CI fix) unless the user asked to push
+- Pushing as part of another workflow (PR creation, review resolution, CI fix) unless the user asked to push or pr-resolver scoped consent applies (see Exceptions)
 
 ## What Counts as Consent
 
@@ -19,7 +19,7 @@ Explicit approval only — e.g. "push", "push to remote", "go ahead and push", "
 
 These do **not** count as push consent on their own:
 
-- Approving a code or review plan
+- Approving a general code or review plan (not a pr-resolver fix plan)
 - Asking to create a PR (ask before pushing; offer to push only if needed)
 - Completing fixes, commits, or lint/build validation
 
@@ -31,4 +31,4 @@ These do **not** count as push consent on their own:
 
 ## Exceptions
 
-None. If push seems required, ask first.
+**pr-resolver only:** when running `code/review/pr-resolver`, approving the resolver plan or an explicit "resolve comments" request grants scoped push consent for approved fix commits on the current PR branch. See pr-resolver `## Scoped consent`. All other pushes still need explicit approval.
