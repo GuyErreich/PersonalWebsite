@@ -2,7 +2,9 @@
 
 This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (React Three Fiber), GSAP, and Supabase.
 
-> **Note:** This document is continuously improved. See [IMPROVEMENT_PROTOCOL.md](./IMPROVEMENT_PROTOCOL.md) for how suggestions are flagged, discussed, and implemented in parallel sessions.
+> **Canonical agent context** lives in `.cursor/rules/` and `.cursor/skills/`. This file is kept for GitHub Copilot compatibility — prefer Cursor rules/skills when using Cursor.
+
+> **Note:** This document is continuously improved. See [`.cursor/skills/meta/improvement-protocol/SKILL.md`](../.cursor/skills/meta/improvement-protocol/SKILL.md) for how suggestions are flagged, discussed, and implemented in parallel sessions.
 
 ## Code Style & Stack
 
@@ -40,12 +42,12 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 - Complex visual code lives in respective subdirectories (e.g., Three.js → `components/backgrounds/three/`)
 
 **UI & Architecture:**
-- See [`.github/skills/ui-architecture/SKILL.md`](./skills/ui-architecture/SKILL.md) for reuse boundaries, responsive patterns, and component extraction
+- See [`.cursor/skills/code/web/ui/SKILL.md`](../.cursor/skills/code/web/ui/SKILL.md) for reuse boundaries, responsive patterns, and component extraction
 - Leverage `AnimationOrchestrator` / `AnimationContext` (`src/lib/`) for complex sequences
 - Block separation: logical groups separated by blank lines (config → state → derived → effects → handlers → return)
 
 **Code Quality & TypeScript:**
-- See [`.github/skills/code-quality/SKILL.md`](./skills/code-quality/SKILL.md) for lint rules, typing patterns, error handling, and validation
+- See [`.cursor/skills/code/languages/nodejs/SKILL.md`](../.cursor/skills/code/languages/nodejs/SKILL.md) for lint rules, typing patterns, error handling, and validation
 
 ## Quality Standards
 
@@ -61,4 +63,20 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 **Before committing:**
 - `npm run lint` → 0 errors
 - `npm run build` → succeeds
-- See [`.github/skills/code-quality/SKILL.md`](./skills/code-quality/SKILL.md) for patterns and examples
+- See [`.cursor/skills/code/languages/nodejs/SKILL.md`](../.cursor/skills/code/languages/nodejs/SKILL.md) for patterns and examples
+
+## Cursor Rules & Skills Map
+
+| Domain | Cursor rule | Skill path |
+|---|---|---|
+| Core | `.cursor/rules/project/project-guidelines.mdc` | always-on |
+| Engineering | `.cursor/rules/code/foundations/engineering.mdc` | `code/foundations/engineering` |
+| TypeScript / JS | `.cursor/rules/code/languages/nodejs.mdc` | `code/languages/nodejs` |
+| UI structure | `.cursor/rules/code/web/ui.mdc` | `code/web/ui` |
+| React | `.cursor/rules/code/web/libs/react.mdc` | `code/web/libs/react` |
+| 3D / R3F | `.cursor/rules/code/web/libs/threejs.mdc` | `code/web/libs/threejs` |
+| Security | `.cursor/rules/code/quality/security.mdc` | `code/quality/security` |
+| Performance | `.cursor/rules/code/quality/performance.mdc` | `code/quality/performance` |
+| Project UI | `.cursor/rules/project/ui-interactions.mdc` | `project/ui-interactions` |
+
+Workflow skills: `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `meta/improvement-protocol`

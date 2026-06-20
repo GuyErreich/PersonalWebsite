@@ -30,5 +30,5 @@ Use this folder for reusable visual background systems, including Three.js and p
 
 ## Coordination
 
-- Follow existing Three.js and performance instructions when editing `three/` components.
+- Load `code/web/libs/threejs` and `code/quality/performance` when editing `three/` components (render-loop, typing, shaders, disposal).
 - If audio, orchestration, or browser capability logic repeats, extract it into hooks or `src/lib/` rather than duplicating it inside scene components.

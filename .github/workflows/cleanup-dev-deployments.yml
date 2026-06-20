@@ -1,0 +1,169 @@
+name: Cleanup Old Dev Deployments
+
+"on":
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cleanup-dev-deployments
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete stale dev deployments
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate Cloudflare cleanup configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          missing=""
+          for key in CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_PAGES_PROJECT_NAME; do
+            if [ -z "${!key}" ]; then
+              missing="$missing $key"
+            fi
+          done
+
+          if [ -n "$missing" ]; then
+            echo "Missing required Cloudflare cleanup configuration:$missing"
+            echo "Set the listed missing key(s) above as repository secrets before running this workflow."
+            exit 1
+          fi
+
+      - name: Delete stale preview deployments via Cloudflare API
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_PAGES_PROJECT_NAME: ${{ secrets.CLOUDFLARE_PAGES_PROJECT_NAME }}
+        run: |
+          node --input-type=module <<'EOF'
+          const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+          const projectName = process.env.CLOUDFLARE_PAGES_PROJECT_NAME;
+          const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+          const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+          if (!accountId || !projectName || !apiToken) {
+            throw new Error("Missing Cloudflare cleanup configuration.");
+          }
+
+          const authHeaders = {
+            Authorization: `Bearer ${apiToken}`,
+            "Content-Type": "application/json",
+          };
+
+          async function listPreviewDeployments() {
+            const deployments = [];
+            let page = 1;
+
+            while (true) {
+              const url = new URL(
+                `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments`,
+              );
+              url.searchParams.set("env", "preview");
+              url.searchParams.set("page", String(page));
+              url.searchParams.set("per_page", "25");
+
+              const response = await fetch(url, { headers: authHeaders });
+              if (!response.ok) {
+                throw new Error(`Cloudflare deployment list failed with HTTP ${response.status}.`);
+              }
+
+              const body = await response.json();
+              if (!body.success) {
+                throw new Error(
+                  `Cloudflare deployment list failed: ${JSON.stringify(body.errors ?? body.messages ?? body)}`,
+                );
+              }
+
+              if (Array.isArray(body.result)) {
+                deployments.push(...body.result);
+              }
+
+              const totalPages = body.result_info?.total_pages ?? 1;
+              if (page >= totalPages) {
+                break;
+              }
+
+              page += 1;
+            }
+
+            return deployments;
+          }
+
+          function getDeploymentCreatedAtMs(deployment) {
+            const createdAtValue =
+              deployment.created_on ??
+              deployment.createdOn ??
+              deployment.latest_stage?.ended_on ??
+              deployment.latest_stage?.started_on;
+
+            const createdAt = new Date(createdAtValue).getTime();
+            return Number.isFinite(createdAt) ? createdAt : null;
+          }
+
+          async function deleteDeployment(deploymentId) {
+            const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments/${encodeURIComponent(deploymentId)}`;
+            const response = await fetch(url, {
+              method: "DELETE",
+              headers: authHeaders,
+            });
+
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(`Delete ${deploymentId} failed with HTTP ${response.status}: ${body}`);
+            }
+
+            const body = await response.json();
+            if (!body.success) {
+              throw new Error(
+                `Delete ${deploymentId} failed: ${JSON.stringify(body.errors ?? body.messages ?? body)}`,
+              );
+            }
+          }
+
+          const deployments = await listPreviewDeployments();
+          const staleDeployments = deployments.filter((deployment) => {
+            if (deployment.environment !== "preview") {
+              return false;
+            }
+
+            const createdAt = getDeploymentCreatedAtMs(deployment);
+            if (createdAt === null) {
+              console.warn(`Skipping deployment ${deployment.id ?? "unknown"} with no parseable created_on timestamp.`);
+              return false;
+            }
+
+            return createdAt < cutoffMs;
+          });
+
+          console.log(
+            `Found ${deployments.length} preview Cloudflare Pages deployments; ${staleDeployments.length} are older than 7 days.`,
+          );
+
+          for (const deployment of staleDeployments) {
+            const deploymentId = deployment.id;
+            if (!deploymentId) {
+              console.warn("Skipping a stale deployment with no id field in Cloudflare API output.");
+              continue;
+            }
+
+            console.log(`Deleting deployment ${deploymentId}`);
+            await deleteDeployment(deploymentId);
+          }
+
+          if (staleDeployments.length === 0) {
+            console.log("No stale preview deployments found.");
+          }
+          EOF

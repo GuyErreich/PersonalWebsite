@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
+import type { TimeoutHandle } from "../../../../../types/handles";
 import type { GameDevIconMap, GameDevItem } from "../../common/data/types";
 
 const MotionLink = motion(Link);
@@ -123,7 +124,7 @@ export const GameDevHiveGallery = ({
   const clusterX = useMotionValue(0);
   const clusterY = useMotionValue(0);
   const [visualOffset, setVisualOffset] = useState({ x: 0, y: 0 });
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTimerRef = useRef<TimeoutHandle | null>(null);
   const pointerOriginRef = useRef<{ x: number; y: number } | null>(null);
   const spreadPointerOriginRef = useRef<{ x: number; y: number } | null>(null);
   const visualOffsetRef = useRef({ x: 0, y: 0 });

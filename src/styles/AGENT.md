@@ -25,5 +25,5 @@ Use this folder for shared CSS organized by responsibility.
 
 ## Skill Usage
 
-- Use `ui-architecture` when deciding whether repeated utility chains should become named reusable classes.
-- Use `code-quality` when style refactors interact with validation, lint, or build constraints.
+- Use `code/web/ui` when deciding whether repeated utility chains should become named reusable classes.
+- Use `code/languages/nodejs` when style refactors interact with validation, lint, or build constraints.

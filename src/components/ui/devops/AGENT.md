@@ -21,6 +21,6 @@ Use this folder for DevOps-specific UI composition.
 
 ## Skill Usage
 
-- Use `ui-architecture` for common/desktop/mobile boundaries and extraction decisions.
-- Use `ui-interactions` when changing interactive project-card behavior or action controls.
-- Use `code-quality` for duplication cleanup, typing, and validation during structural refactors.
+- Use `code/web/ui` for common/desktop/mobile boundaries and extraction decisions.
+- Use `project/ui-interactions` when changing interactive project-card behavior or action controls.
+- Use `code/foundations/engineering` for duplication cleanup and `code/languages/nodejs` for typing and validation during structural refactors.

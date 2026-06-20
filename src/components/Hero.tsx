@@ -24,6 +24,7 @@ import { shouldRenderHeavyEffects } from "../lib/performance";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
+import type { TimeoutHandle } from "../types/handles";
 import { ReverseHyperspace } from "./backgrounds/three/hero/ReverseHyperspace";
 import { ThreeHeroBackground } from "./backgrounds/three/ThreeHeroBackground";
 import { HyperspaceLever } from "./HyperspaceLever";
@@ -123,7 +124,7 @@ export const Hero = () => {
   const [animationKey, setAnimationKey] = useState(0);
   const [isIntroScrollLocked, setIsIntroScrollLocked] = useState(!hasCookie);
   const [forceCinematicReplay, setForceCinematicReplay] = useState(false);
-  const replayTimeoutRef = useRef<number | null>(null);
+  const replayTimeoutRef = useRef<TimeoutHandle | null>(null);
 
   useEffect(() => {
     if (!isIntroScrollLocked) return;
@@ -301,7 +302,7 @@ export const Hero = () => {
     }
 
     // Rewind lasts HERO_REWIND_DURATION_MS, then resets
-    replayTimeoutRef.current = window.setTimeout(() => {
+    replayTimeoutRef.current = setTimeout(() => {
       setIsRewinding(false);
       setAnimationKey((prev) => prev + 1);
       replayTimeoutRef.current = null;

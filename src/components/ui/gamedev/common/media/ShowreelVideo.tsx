@@ -24,6 +24,7 @@ import {
   type SteppedSliderAnimator,
 } from "../../../../../lib/steppedSliderAnimator";
 import { supabase } from "../../../../../lib/supabase";
+import type { TimeoutHandle } from "../../../../../types/handles";
 
 interface ShowreelVideoProps {
   url: string | null;
@@ -74,8 +75,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   // Refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLElement>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const volumePopupCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hideTimerRef = useRef<TimeoutHandle | null>(null);
+  const volumePopupCloseTimerRef = useRef<TimeoutHandle | null>(null);
   const volumeAnimatorRef = useRef<SteppedSliderAnimator | null>(null);
   const volumePopupRef = useRef<HTMLDivElement>(null);
   const timeUpdateRafRef = useRef<number | null>(null);
@@ -206,7 +207,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         video.load();
 
         await new Promise<void>((resolve) => {
-          let timeoutId: number | null = null;
+          let timeoutId: TimeoutHandle | null = null;
           let isSettled = false;
 
           const handleDone = () => {
@@ -245,7 +246,7 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
           };
 
           pendingVideoReadyCleanupRef.current = handleAbort;
-          timeoutId = window.setTimeout(handleDone, 1800);
+          timeoutId = setTimeout(handleDone, 1800);
 
           video.addEventListener("loadedmetadata", handleDone, { once: true });
           video.addEventListener("durationchange", handleDone, { once: true });

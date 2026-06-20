@@ -46,12 +46,27 @@ For UI-heavy features, prefer:
 - Before implementing UI changes, decide and state the target split: global base primitive, section wrapper(s), and responsive variant composition.
 - Create or wire section wrappers first when section differences are known (theme, spacing, behavior), then implement through wrappers instead of direct base usage in feature screens.
 
+## Validate
+
+- Base branch for branch/PR diffs: `dev`.
+- Lint: `npm run lint` — 0 errors required.
+- Build / type-check: `npm run build` (`tsc -b && vite build`) — must succeed.
+- Dev server: `npm run dev`.
+
+Reviewer and CI skills read these commands and the base branch from this block.
+
+## Review scope
+
+When reviewing, always materialize the full surface: the tier diff (for PR/push prefer `merge-base...HEAD` against `dev`), plus the nearest `AGENT.md` for every changed path (leaf → root), plus the skills routed by the changed file types.
+
 ## Skill Usage
 
-- Use `ui-architecture` for UI structure, reuse boundaries, responsive variant splitting, and component extraction decisions.
-- Use `ui-interactions` for interactive controls, hover/tap motion, sound feedback, and accessible action elements.
-- Use `code-quality` for lint cleanup, type strictness, duplication cleanup, and validation expectations.
-- Use `threejs` when changing React Three Fiber, shaders, scene composition, or rendering-performance-sensitive background code.
+- `code/web/ui` for UI structure, reuse boundaries, responsive variant splitting, and component extraction decisions.
+- `project/ui-interactions` for interactive controls, hover/tap motion, sound feedback, and accessible action elements.
+- `code/languages/nodejs` for type strictness, lint cleanup, and async/await discipline; `code/foundations/engineering` for duplication and structure.
+- `code/web/libs/react` for hooks, component structure, and GSAP integration.
+- `code/web/libs/threejs` when changing React Three Fiber, shaders, scene composition, or rendering-performance-sensitive background code.
+- `project/platform/supabase` for backend, auth, and data access.
 
 ## Viewport Layout Model (Mandatory — never bypass)
 
@@ -63,7 +78,7 @@ This project uses a fixed-navbar layout contract. All full-screen sections must 
 - **Card/panel height**: use `max-height: calc(100svh - var(--nav-h) - Xrem)`, not `h-[82%]` or other viewport percentages.
 - **Centering**: belongs on the `.section-frame` child (`flex items-center justify-center`), never driven by section padding.
 
-Violating this pattern causes centring drift, overflow, and blank-space bugs that cascade across screen sizes. See `ui-architecture` SKILL.md §7 for the full reference.
+Violating this pattern causes centring drift, overflow, and blank-space bugs that cascade across screen sizes. This viewport contract is project-specific; the generic UI structure rules live in `code/web/ui`.
 
 ## Local Agent Files
 

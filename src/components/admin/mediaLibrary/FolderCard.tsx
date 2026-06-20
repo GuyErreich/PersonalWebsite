@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Folder } from "lucide-react";
 import { type DragEvent, type MouseEvent, useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
+import type { TimeoutHandle } from "../../../types/handles";
 import type { FolderEntry } from "./types";
 
 interface Props {
@@ -33,7 +34,7 @@ export const FolderCard = ({
   const [dropLabel, setDropLabel] = useState("Move Here");
   const [isClickAnimating, setIsClickAnimating] = useState(false);
   const dragDepthRef = useRef(0);
-  const clickAnimationTimeoutRef = useRef<number | null>(null);
+  const clickAnimationTimeoutRef = useRef<TimeoutHandle | null>(null);
 
   useEffect(() => {
     return () => {
@@ -49,7 +50,7 @@ export const FolderCard = ({
     }
 
     setIsClickAnimating(true);
-    clickAnimationTimeoutRef.current = window.setTimeout(() => {
+    clickAnimationTimeoutRef.current = setTimeout(() => {
       setIsClickAnimating(false);
       clickAnimationTimeoutRef.current = null;
     }, 140);

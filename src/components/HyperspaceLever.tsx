@@ -8,6 +8,7 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { getAudioContextClass } from "../lib/sound/audioContext";
+import type { TimeoutHandle } from "../types/handles";
 
 interface HyperspaceLeverProps {
   onActivate: () => void;
@@ -33,8 +34,8 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
   const audioContextRef = useRef<AudioContext | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
-  const activateTimeoutRef = useRef<number | null>(null);
-  const resetTimeoutRef = useRef<number | null>(null);
+  const activateTimeoutRef = useRef<TimeoutHandle | null>(null);
+  const resetTimeoutRef = useRef<TimeoutHandle | null>(null);
 
   useEffect(() => {
     try {
@@ -164,11 +165,11 @@ export const HyperspaceLever: React.FC<HyperspaceLeverProps> = ({
       dragY.set(maxPull);
       setEnergy(1);
 
-      activateTimeoutRef.current = window.setTimeout(() => {
+      activateTimeoutRef.current = setTimeout(() => {
         activateTimeoutRef.current = null;
         onActivate();
 
-        resetTimeoutRef.current = window.setTimeout(() => {
+        resetTimeoutRef.current = setTimeout(() => {
           dragY.set(0);
           setEnergy(0);
           resetTimeoutRef.current = null;
