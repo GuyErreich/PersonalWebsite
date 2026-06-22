@@ -16,8 +16,11 @@ import { requireSupabaseEnv } from "../infra/load-supabase-env.mjs";
 const PRESIGN_URL = process.env.PRESIGN_URL;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS;
-const { supabaseUrl: SUPABASE_URL, supabaseAnonKey: SUPABASE_ANON_KEY, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
-  requireSupabaseEnv({ requireServiceRole: true });
+const {
+  supabaseUrl: SUPABASE_URL,
+  supabaseAnonKey: SUPABASE_ANON_KEY,
+  supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+} = requireSupabaseEnv({ requireServiceRole: true });
 
 const required = {
   PRESIGN_URL,

@@ -19,8 +19,11 @@ import { requireSupabaseEnv } from "../infra/load-supabase-env.mjs";
 const GITHUB_SEED_URL = process.env.GITHUB_SEED_URL;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS;
-const { supabaseUrl: SUPABASE_URL, supabaseAnonKey: SUPABASE_ANON_KEY, supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY } =
-  requireSupabaseEnv({ requireServiceRole: true });
+const {
+  supabaseUrl: SUPABASE_URL,
+  supabaseAnonKey: SUPABASE_ANON_KEY,
+  supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+} = requireSupabaseEnv({ requireServiceRole: true });
 const GITHUB_SEED_TEST_REPO_URL =
   process.env.GITHUB_SEED_TEST_REPO_URL ?? "https://github.com/octocat/Hello-World";
 
