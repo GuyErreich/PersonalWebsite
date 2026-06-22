@@ -13,10 +13,12 @@
 //   R2_BUCKET_NAME, R2_PUBLIC_URL
 //   ALLOWED_ORIGINS  — comma-separated list of allowed frontend origins
 //                      e.g. "https://abc.pages.dev,https://yourdomain.com"
+//   LOG_LEVEL        — optional: debug | info | warn | error (default: info)
 
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
 import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1026.0";
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
+import { createLogger } from "../_shared/logger.ts";
 
 // Allowed origins for CORS — configured per environment via the ALLOWED_ORIGINS secret.
 // Set it to a comma-separated list, e.g.:
@@ -29,6 +31,15 @@ const ALLOWED_ORIGINS = new Set(
     .filter(Boolean),
 );
 const HAS_ALLOWED_ORIGINS = ALLOWED_ORIGINS.size > 0;
+
+const logger = createLogger("r2-presign");
+
+logger.info("Edge function bootstrapped", {
+  allowedOriginsCount: ALLOWED_ORIGINS.size,
+  allowedOrigins: [...ALLOWED_ORIGINS].sort(),
+  hasAllowedOrigins: HAS_ALLOWED_ORIGINS,
+  logLevel: Deno.env.get("LOG_LEVEL") ?? "info",
+});
 
 // UPLOAD POLICY DUPLICATION NOTICE:
 // This object mirrors the shared client contract in `src/lib/storage/r2UploadPolicies.ts`:
@@ -124,9 +135,19 @@ function errorCorsHeaders(origin: string): Record<string, string> {
 }
 
 Deno.serve(async (req: Request) => {
+  const requestId = crypto.randomUUID();
+  const requestLogger = logger.child({ requestId });
   const origin = req.headers.get("Origin") ?? "";
+  const requestUrl = new URL(req.url);
+
+  requestLogger.info("Request received", {
+    method: req.method,
+    path: requestUrl.pathname,
+    requestOrigin: origin || "(none)",
+  });
 
   if (!HAS_ALLOWED_ORIGINS) {
+    requestLogger.error("ALLOWED_ORIGINS secret is missing or empty");
     return new Response(
       JSON.stringify({ error: "Server misconfigured: ALLOWED_ORIGINS secret is missing or empty" }),
       {
@@ -141,6 +162,10 @@ Deno.serve(async (req: Request) => {
   // Reject requests from origins not in the allowlist.
   // Return 403 with no ACAO header — the browser will block the response.
   if (!CORS) {
+    requestLogger.warn("CORS origin rejected", {
+      requestOrigin: origin || "(none)",
+      allowedOrigins: [...ALLOWED_ORIGINS].sort(),
+    });
     return new Response(null, { status: 403 });
   }
 
@@ -155,10 +180,14 @@ Deno.serve(async (req: Request) => {
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
+    requestLogger.info("CORS preflight handled", {
+      requestOrigin: origin,
+    });
     return new Response("ok", { headers: CORS });
   }
 
   if (req.method !== "POST" && req.method !== "DELETE") {
+    requestLogger.warn("Method not allowed", { method: req.method });
     return json({ error: "Method not allowed" }, 405);
   }
 
@@ -166,9 +195,11 @@ Deno.serve(async (req: Request) => {
     // --- Auth: verify the caller has a valid Supabase session ---
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
+      requestLogger.warn("Missing Authorization header");
       return json({ error: "Missing Authorization header" }, 401);
     }
     if (!authHeader.startsWith("Bearer ")) {
+      requestLogger.warn("Invalid Authorization header format");
       return json({ error: "Invalid Authorization header" }, 401);
     }
 
@@ -187,6 +218,9 @@ Deno.serve(async (req: Request) => {
       error: authError,
     } = await supabase.auth.getUser();
     if (authError || !user) {
+      requestLogger.warn("Authentication failed", {
+        authError: authError?.message ?? "no user returned",
+      });
       return json({ error: "Unauthorized" }, 401);
     }
     const roleValue = user.app_metadata?.roles;
@@ -196,8 +230,11 @@ Deno.serve(async (req: Request) => {
     };
     const isAdmin = isAdminRole(roleValue);
     if (!isAdmin) {
+      requestLogger.warn("Forbidden — caller is not admin", { userId: user.id });
       return json({ error: "Forbidden" }, 403);
     }
+
+    requestLogger.info("Authenticated admin", { userId: user.id });
 
     // --- Parse request ---
     let body: unknown;
@@ -283,6 +320,11 @@ Deno.serve(async (req: Request) => {
         }),
       );
 
+      requestLogger.info("R2 object deleted", {
+        objectFolder,
+        objectKey,
+      });
+
       return json({ ok: true });
     }
 
@@ -351,9 +393,20 @@ Deno.serve(async (req: Request) => {
     // Presigned URL valid for 15 minutes — enough for a video upload
     const signedUrl = await getSignedUrl(r2, command, { expiresIn: 900 });
 
+    requestLogger.info("Presigned upload URL issued", {
+      folder,
+      contentType: normalizedContentType,
+      contentLength,
+      fileExt: extNoDot,
+      objectKey: key,
+    });
+
     return json({ signedUrl, publicUrl: `${publicUrl}/${key}` });
   } catch (err) {
-    console.error(err instanceof Error ? err.message : String(err));
+    requestLogger.error("Unhandled error", {
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+    });
     return json({ error: "Internal server error" }, 500);
   }
 });

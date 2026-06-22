@@ -49,6 +49,7 @@ const requestPresignedUpload = async (
   folderPath: R2UploadFolder,
 ): Promise<PresignResponse> => {
   const fileExt = assertAllowedUpload(file, folderPath);
+  const contentType = file.type.trim().toLowerCase();
   const accessToken = await getAuthSessionToken("upload files");
 
   let presignRes: Response;
@@ -60,7 +61,7 @@ const requestPresignedUpload = async (
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        contentType: file.type,
+        contentType,
         contentLength: file.size,
         fileExt,
         folderPath,
@@ -105,14 +106,19 @@ const requestPresignedUpload = async (
   };
 };
 
-const uploadToPresignedUrl = async (file: File, signedUrl: string): Promise<void> => {
+const uploadToPresignedUrl = async (
+  file: File,
+  signedUrl: string,
+  contentType: string,
+): Promise<void> => {
   let uploadRes: Response;
+  const uploadHost = new URL(signedUrl).host;
 
   try {
     uploadRes = await fetch(signedUrl, {
       method: "PUT",
       body: file,
-      headers: { "Content-Type": file.type },
+      headers: { "Content-Type": contentType },
     });
   } catch (error) {
     const message =
@@ -120,7 +126,7 @@ const uploadToPresignedUrl = async (file: File, signedUrl: string): Promise<void
         ? error.message
         : "Unknown browser network error while uploading to R2.";
     throw new Error(
-      `Upload request failed before reaching R2. Check browser/network policy for presigned PUT URL. ${message}`,
+      `Upload to R2 blocked (${uploadHost}). Check R2 bucket CORS on the same bucket as R2_BUCKET_NAME: AllowedOrigins must include ${typeof window !== "undefined" ? window.location.origin : "your site origin"}, and AllowedHeaders must include Content-Type (the same header sent on PUT in r2client.ts). See README → R2 bucket CORS. ${message}`,
     );
   }
 
@@ -134,7 +140,7 @@ const uploadToPresignedUrl = async (file: File, signedUrl: string): Promise<void
     }
 
     const message = errorText.trim() || uploadRes.statusText;
-    throw new Error(`Failed to upload to R2: ${message}`);
+    throw new Error(`Failed to upload to R2 (${uploadRes.status}): ${message}`);
   }
 };
 
@@ -183,8 +189,9 @@ export const uploadToR2 = async (
   file: File,
   folderPath: R2UploadFolder = R2_UPLOAD_FOLDERS.media,
 ): Promise<string> => {
+  const contentType = file.type.trim().toLowerCase();
   const { signedUrl, publicUrl } = await requestPresignedUpload(file, folderPath);
-  await uploadToPresignedUrl(file, signedUrl);
+  await uploadToPresignedUrl(file, signedUrl, contentType);
 
   return publicUrl;
 };
