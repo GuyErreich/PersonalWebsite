@@ -29,6 +29,7 @@ const PRESIGN_FUNCTION_URL = new URL(
 interface PresignResponse {
   signedUrl: string;
   publicUrl: string;
+  contentType: string;
 }
 
 const getAuthSessionToken = async (actionDescription = "perform this action"): Promise<string> => {
@@ -103,6 +104,7 @@ const requestPresignedUpload = async (
   return {
     signedUrl: signedUrlParsed.href,
     publicUrl: publicUrlParsed.href,
+    contentType,
   };
 };
 
@@ -189,8 +191,7 @@ export const uploadToR2 = async (
   file: File,
   folderPath: R2UploadFolder = R2_UPLOAD_FOLDERS.media,
 ): Promise<string> => {
-  const contentType = file.type.trim().toLowerCase();
-  const { signedUrl, publicUrl } = await requestPresignedUpload(file, folderPath);
+  const { signedUrl, publicUrl, contentType } = await requestPresignedUpload(file, folderPath);
   await uploadToPresignedUrl(file, signedUrl, contentType);
 
   return publicUrl;

@@ -7,8 +7,7 @@
  * Legacy VITE_R2_* / VITE_CLOUDFLARE_ACCOUNT_ID names are still read with a warning.
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { createEnvReader, mergeEnvFiles } from "./load-env.mjs";
 
 const ENV_ALIASES = {
   R2_ACCOUNT_ID: ["R2_ACCOUNT_ID", "VITE_CLOUDFLARE_ACCOUNT_ID"],
@@ -25,46 +24,6 @@ const LEGACY_KEYS = new Set([
   "VITE_R2_PUBLIC_URL",
 ]);
 
-const parseEnvFile = (filePath) => {
-  try {
-    const raw = readFileSync(filePath, "utf8");
-    const values = {};
-
-    for (const line of raw.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-
-      const separatorIndex = trimmed.indexOf("=");
-      if (separatorIndex <= 0) continue;
-
-      const key = trimmed.slice(0, separatorIndex).trim();
-      let value = trimmed.slice(separatorIndex + 1).trim();
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1);
-      }
-
-      values[key] = value;
-    }
-
-    return values;
-  } catch {
-    return {};
-  }
-};
-
-const mergeEnvFiles = () => {
-  const root = process.cwd();
-  return {
-    ...parseEnvFile(resolve(root, ".env")),
-    ...parseEnvFile(resolve(root, ".env.local")),
-  };
-};
-
-const fileEnv = mergeEnvFiles();
-
 let legacyWarningShown = false;
 
 const warnLegacyEnvNames = (key) => {
@@ -75,19 +34,7 @@ const warnLegacyEnvNames = (key) => {
   );
 };
 
-const readValue = (keys) => {
-  for (const key of keys) {
-    if (process.env[key]) {
-      warnLegacyEnvNames(key);
-      return process.env[key];
-    }
-    if (fileEnv[key]) {
-      warnLegacyEnvNames(key);
-      return fileEnv[key];
-    }
-  }
-  return undefined;
-};
+const readValue = createEnvReader(mergeEnvFiles(), { onKeyRead: warnLegacyEnvNames });
 
 export const loadR2Env = () => ({
   accountId: readValue(ENV_ALIASES.R2_ACCOUNT_ID),

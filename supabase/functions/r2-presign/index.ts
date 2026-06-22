@@ -32,13 +32,16 @@ const ALLOWED_ORIGINS = new Set(
 );
 const HAS_ALLOWED_ORIGINS = ALLOWED_ORIGINS.size > 0;
 
+const LOG_LEVEL = (Deno.env.get("LOG_LEVEL") ?? "info").trim().toLowerCase();
+const IS_DEBUG_LOG_LEVEL = LOG_LEVEL === "debug";
+
 const logger = createLogger("r2-presign");
 
 logger.info("Edge function bootstrapped", {
   allowedOriginsCount: ALLOWED_ORIGINS.size,
-  allowedOrigins: [...ALLOWED_ORIGINS].sort(),
+  ...(IS_DEBUG_LOG_LEVEL ? { allowedOrigins: [...ALLOWED_ORIGINS].sort() } : {}),
   hasAllowedOrigins: HAS_ALLOWED_ORIGINS,
-  logLevel: Deno.env.get("LOG_LEVEL") ?? "info",
+  logLevel: LOG_LEVEL,
 });
 
 // UPLOAD POLICY DUPLICATION NOTICE:
@@ -164,7 +167,8 @@ Deno.serve(async (req: Request) => {
   if (!CORS) {
     requestLogger.warn("CORS origin rejected", {
       requestOrigin: origin || "(none)",
-      allowedOrigins: [...ALLOWED_ORIGINS].sort(),
+      allowedOriginsCount: ALLOWED_ORIGINS.size,
+      ...(IS_DEBUG_LOG_LEVEL ? { allowedOrigins: [...ALLOWED_ORIGINS].sort() } : {}),
     });
     return new Response(null, { status: 403 });
   }

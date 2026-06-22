@@ -7,8 +7,7 @@
  * Never use VITE_ prefix for SUPABASE_SERVICE_ROLE_KEY.
  */
 
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { createEnvReader, mergeEnvFiles } from "./load-env.mjs";
 
 const ENV_ALIASES = {
   SUPABASE_URL: ["SUPABASE_URL", "VITE_SUPABASE_URL"],
@@ -16,48 +15,7 @@ const ENV_ALIASES = {
   SUPABASE_SERVICE_ROLE_KEY: ["SUPABASE_SERVICE_ROLE_KEY"],
 };
 
-const parseEnvFile = (filePath) => {
-  try {
-    const raw = readFileSync(filePath, "utf8");
-    const values = {};
-
-    for (const line of raw.split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith("#")) continue;
-
-      const separatorIndex = trimmed.indexOf("=");
-      if (separatorIndex <= 0) continue;
-
-      const key = trimmed.slice(0, separatorIndex).trim();
-      let value = trimmed.slice(separatorIndex + 1).trim();
-      if (
-        (value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))
-      ) {
-        value = value.slice(1, -1);
-      }
-
-      values[key] = value;
-    }
-
-    return values;
-  } catch {
-    return {};
-  }
-};
-
-const fileEnv = {
-  ...parseEnvFile(resolve(process.cwd(), ".env")),
-  ...parseEnvFile(resolve(process.cwd(), ".env.local")),
-};
-
-const readValue = (keys) => {
-  for (const key of keys) {
-    if (process.env[key]) return process.env[key];
-    if (fileEnv[key]) return fileEnv[key];
-  }
-  return undefined;
-};
+const readValue = createEnvReader(mergeEnvFiles());
 
 export const loadSupabaseEnv = () => ({
   supabaseUrl: readValue(ENV_ALIASES.SUPABASE_URL),
