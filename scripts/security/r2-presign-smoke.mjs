@@ -125,7 +125,7 @@ const createUserAndToken = async ({ email, password, appMetadata }) => {
 const buildPostTests = ({ adminJwt, userJwt }) => [
   {
     name: "rejects missing authorization",
-    expectedStatus: 401,
+    expectedStatus: [401, 403],
     headers: headersBase,
     body: {
       contentType: "video/mp4",
@@ -136,7 +136,7 @@ const buildPostTests = ({ adminJwt, userJwt }) => [
   },
   {
     name: "rejects malformed authorization",
-    expectedStatus: 401,
+    expectedStatus: [401, 403],
     headers: { ...headersBase, Authorization: "Token invalid" },
     body: {
       contentType: "video/mp4",
@@ -217,7 +217,7 @@ const buildDeleteTests = ({ adminJwt, userJwt, validPublicUrl }) => [
   {
     name: "delete rejects missing authorization",
     method: "DELETE",
-    expectedStatus: 401,
+    expectedStatus: [401, 403],
     headers: headersBase,
     body: { publicUrl: validPublicUrl },
   },

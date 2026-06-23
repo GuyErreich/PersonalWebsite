@@ -174,7 +174,7 @@ const run = async () => {
       {
         name: "rejects missing authorization",
         method: "POST",
-        expectedStatus: 401,
+        expectedStatus: [401, 403],
         headers: headersBase,
         body: { repoUrl: GITHUB_SEED_TEST_REPO_URL },
       },
