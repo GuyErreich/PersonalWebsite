@@ -146,14 +146,33 @@ export const isMidTierOrConstrainedDevice = (): boolean => {
 
 ### Environment Variables
 
-Create a `.env.local` file at the root with the following variables:
+Create a `.env.local` file at the root (gitignored). Copy from [`.env.example`](.env.example).
+
+| Prefix | Used by | Notes |
+|--------|---------|-------|
+| `VITE_SUPABASE_*` | React app (browser) | **Required** — Vite only exposes `VITE_*` to `import.meta.env` |
+| `SUPABASE_*` | Node smoke tests (optional) | Same values; scripts fall back to `VITE_SUPABASE_*` if unset |
+| `R2_*` | `npm run infra:*` only | Secrets — **never** use `VITE_` for R2 keys |
+
+**Browser:**
 
 ```env
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
-R2 credentials are **not** stored in the browser bundle. They live as Supabase secrets and are used exclusively inside the `r2-presign` edge function. Set them once via the Supabase CLI:
+**Optional local tooling** (infra + smoke tests from `.env.local`):
+
+```env
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_BUCKET_NAME=
+R2_PUBLIC_URL=
+SUPABASE_SERVICE_ROLE_KEY=   # smoke tests only — never VITE_ prefix
+```
+
+Production **upload auth** uses Supabase secrets on the edge function, not `.env.local`. Set via CLI:
 
 ```bash
 supabase secrets set R2_ACCOUNT_ID=<your-cloudflare-account-id>
@@ -162,6 +181,7 @@ supabase secrets set R2_SECRET_ACCESS_KEY=<your-r2-secret-key>
 supabase secrets set R2_BUCKET_NAME=<your-bucket-name>
 supabase secrets set R2_PUBLIC_URL=<your-r2-public-url>
 supabase secrets set ALLOWED_ORIGINS=<comma-separated-allowed-origins>
+supabase secrets set LOG_LEVEL=info   # optional: debug | info | warn | error
 ```
 
 Admin authorization for `r2-presign` is based on Supabase Auth metadata (`app_metadata.roles` contains `"admin"`), not an email allowlist secret.
@@ -171,6 +191,44 @@ Deploy the edge function after setting secrets:
 ```bash
 supabase functions deploy r2-presign
 ```
+
+**R2 bucket CORS (required for browser uploads):** `ALLOWED_ORIGINS` only covers the presign POST to Supabase. The browser also PUTs files directly to `*.r2.cloudflarestorage.com`, which needs a separate CORS policy on the R2 bucket.
+
+1. Copy and edit the example (use the **same origins** as `ALLOWED_ORIGINS`):
+
+```bash
+cp scripts/infra/r2-cors.example.json scripts/infra/r2-cors.json
+# edit scripts/infra/r2-cors.json — replace placeholder origins with your site URL(s)
+```
+
+2. Apply with your R2 admin credentials (from `.env.local` or inline):
+
+```bash
+npm run infra:apply-r2-cors
+```
+
+Or pass origins via env (no file):
+
+```bash
+R2_CORS_ORIGINS="https://your-site.pages.dev" npm run infra:apply-r2-cors
+```
+
+Alternatively, set CORS in Cloudflare Dashboard → R2 → your bucket → Settings → CORS policy.
+
+**Important R2 CORS gotchas:**
+- CORS must be on the **same bucket** as your `R2_BUCKET_NAME` Supabase secret (not the public custom domain).
+- `AllowedOrigins` must match `window.location.origin` exactly (no trailing slash).
+- `AllowedHeaders` must include `Content-Type` (same HTTP header the browser sends on PUT — see `r2client.ts`). If uploads still fail, try lowercase `content-type` in the dashboard; R2 CORS matching can be picky even though HTTP header names are case-insensitive.
+- Dashboard JSON is a **top-level array** (not a `"rules"` wrapper).
+- Changes can take ~30 seconds to propagate.
+
+Verify current bucket CORS:
+
+```bash
+npm run infra:get-r2-cors
+```
+
+After presign succeeds but upload fails with `Failed to fetch`, check DevTools Network for a failed `OPTIONS` or `PUT` to `r2.cloudflarestorage.com` — that indicates missing or misconfigured R2 bucket CORS.
 
 ### Install & Run
 

@@ -14,21 +14,21 @@
 
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { requireSupabaseEnv } from "../infra/load-supabase-env.mjs";
 
 const GITHUB_SEED_URL = process.env.GITHUB_SEED_URL;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS;
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const {
+  supabaseUrl: SUPABASE_URL,
+  supabaseAnonKey: SUPABASE_ANON_KEY,
+  supabaseServiceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+} = requireSupabaseEnv({ requireServiceRole: true });
 const GITHUB_SEED_TEST_REPO_URL =
   process.env.GITHUB_SEED_TEST_REPO_URL ?? "https://github.com/octocat/Hello-World";
 
 const required = {
   GITHUB_SEED_URL,
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY,
-  SUPABASE_SERVICE_ROLE_KEY,
 };
 
 const missing = Object.entries(required)

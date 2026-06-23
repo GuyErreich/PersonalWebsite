@@ -9,6 +9,8 @@
     "lint": "eslint . && biome check .",
     "security:test:r2-presign": "node scripts/security/r2-presign-smoke.mjs",
     "security:test:github-seed": "node scripts/security/github-project-seed-smoke.mjs",
+    "infra:apply-r2-cors": "node scripts/infra/apply-r2-cors.mjs",
+    "infra:get-r2-cors": "node scripts/infra/get-r2-cors.mjs",
     "format": "biome format --write .",
     "preview": "vite preview"
   },
@@ -41,6 +43,7 @@
     "tsparticles": "^3.9.1"
   },
   "devDependencies": {
+    "@aws-sdk/client-s3": "^3.1026.0",
     "@biomejs/biome": "^2.4.10",
     "@tailwindcss/vite": "^4.2.0",
     "@types/js-cookie": "^3.0.6",
