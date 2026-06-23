@@ -27,6 +27,16 @@ try {
     );
     process.exit(1);
   }
+  if (message.includes("AccessDenied") || message.includes("Access Denied")) {
+    console.error(
+      `R2 API token cannot read bucket CORS (AccessDenied). Check CORS in Cloudflare Dashboard:`,
+    );
+    console.error(`  R2 → bucket "${bucket}" → Settings → CORS policy`);
+    console.error(
+      "Required: your site origin in AllowedOrigins; content-type (lowercase) in AllowedHeaders; PUT in AllowedMethods.",
+    );
+    process.exit(1);
+  }
   console.error(message);
   process.exit(1);
 }

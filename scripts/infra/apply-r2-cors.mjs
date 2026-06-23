@@ -42,7 +42,8 @@ const loadCorsRules = () => {
       {
         AllowedOrigins: origins,
         AllowedMethods: ["PUT", "GET", "HEAD"],
-        AllowedHeaders: ["Content-Type", "Content-Length"],
+        // R2 matches preflight literally — use lowercase header names (not "*").
+        AllowedHeaders: ["content-type", "content-length"],
         ExposeHeaders: ["ETag"],
         MaxAgeSeconds: 3600,
       },
@@ -71,11 +72,25 @@ const s3 = new S3Client({
 console.warn(`Applying R2 bucket CORS to "${bucket}"...`);
 console.warn(JSON.stringify(corsRules, null, 2));
 
-await s3.send(
-  new PutBucketCorsCommand({
-    Bucket: bucket,
-    CORSConfiguration: { CORSRules: corsRules },
-  }),
-);
+try {
+  await s3.send(
+    new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: { CORSRules: corsRules },
+    }),
+  );
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("AccessDenied") || message.includes("Access Denied")) {
+    console.error(
+      `R2 API token cannot update bucket CORS (AccessDenied). Use Cloudflare Dashboard instead:`,
+    );
+    console.error(`  R2 → bucket "${bucket}" → Settings → CORS policy`);
+    console.error("Paste this JSON (top-level array):");
+    console.error(JSON.stringify(corsRules, null, 2));
+    process.exit(1);
+  }
+  throw error;
+}
 
 console.warn("R2 bucket CORS applied successfully.");

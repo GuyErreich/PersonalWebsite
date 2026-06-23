@@ -218,7 +218,7 @@ Alternatively, set CORS in Cloudflare Dashboard → R2 → your bucket → Setti
 **Important R2 CORS gotchas:**
 - CORS must be on the **same bucket** as your `R2_BUCKET_NAME` Supabase secret (not the public custom domain).
 - `AllowedOrigins` must match `window.location.origin` exactly (no trailing slash).
-- `AllowedHeaders` must include `Content-Type` (same HTTP header the browser sends on PUT — see `r2client.ts`). If uploads still fail, try lowercase `content-type` in the dashboard; R2 CORS matching can be picky even though HTTP header names are case-insensitive.
+- `AllowedHeaders` must include `Content-Type` (same HTTP header the browser sends on PUT — see `r2client.ts`). If uploads still fail, use lowercase `content-type` in the R2 CORS policy; R2 preflight matching can be picky even though HTTP header names are case-insensitive.
 - Dashboard JSON is a **top-level array** (not a `"rules"` wrapper).
 - Changes can take ~30 seconds to propagate.
 

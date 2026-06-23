@@ -228,6 +228,21 @@ export const getSupabaseClient = (): TypedClient => {
   return supabaseClient;
 };
 
+/** Headers required for direct browser fetch() calls to Supabase Edge Functions. */
+export const getEdgeFunctionAuthHeaders = (accessToken: string): Record<string, string> => {
+  if (!supabaseAnonKey) {
+    throw new Error(
+      "Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.",
+    );
+  }
+
+  return {
+    "Content-Type": "application/json",
+    apikey: supabaseAnonKey,
+    Authorization: `Bearer ${accessToken}`,
+  };
+};
+
 // For backward compatibility, export a proxy that throws on first use if not configured
 export const supabase = new Proxy({} as TypedClient, {
   get: (_, prop) => {
