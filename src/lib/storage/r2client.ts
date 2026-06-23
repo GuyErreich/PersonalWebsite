@@ -84,8 +84,7 @@ const requestPresignedUpload = async (
     }
 
     const msg =
-      presignRes.status === 403 &&
-      (typeof body !== "object" || body === null || !("error" in body))
+      presignRes.status === 403 && (typeof body !== "object" || body === null || !("error" in body))
         ? `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${typeof window !== "undefined" ? window.location.origin : "your site origin"}.`
         : typeof body === "object" && body !== null && "error" in body
           ? String((body as Record<string, unknown>).error)
@@ -108,7 +107,10 @@ const requestPresignedUpload = async (
   };
 };
 
-const buildPresignedPutHeaders = (signedUrl: string, contentType: string): Record<string, string> => {
+const buildPresignedPutHeaders = (
+  signedUrl: string,
+  contentType: string,
+): Record<string, string> => {
   const signedHeadersParam = new URL(signedUrl).searchParams.get("X-Amz-SignedHeaders");
   if (!signedHeadersParam) {
     return { "Content-Type": contentType };
@@ -148,8 +150,7 @@ const uploadToPresignedUrl = async (
       error instanceof Error
         ? error.message
         : "Unknown browser network error while uploading to R2.";
-    const siteOrigin =
-      typeof window !== "undefined" ? window.location.origin : "your site origin";
+    const siteOrigin = typeof window !== "undefined" ? window.location.origin : "your site origin";
     throw new Error(
       `Upload to R2 blocked (${uploadHost}). Presign succeeded; the browser PUT failed (${message}). Configure CORS on the R2 bucket matching R2_BUCKET_NAME: AllowedOrigins must include ${siteOrigin}; AllowedHeaders must include content-type (lowercase, not "*"). Run npm run infra:apply-r2-cors or Cloudflare Dashboard → R2 → bucket → Settings → CORS.`,
     );

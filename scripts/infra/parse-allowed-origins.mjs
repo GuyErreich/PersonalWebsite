@@ -32,7 +32,7 @@ export const parseAllowedOrigins = (raw) => {
     ...new Set(
       normalized
         .split(",")
-        .map((origin) => origin.trim().replace(/^["'\[]+|["'\]]+$/g, ""))
+        .map((origin) => origin.trim().replace(/^["'[]+|["'\]]+$/g, ""))
         .filter(Boolean),
     ),
   ];

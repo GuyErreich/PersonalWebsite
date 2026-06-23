@@ -29,7 +29,7 @@ export function parseAllowedOrigins(raw: string): Set<string> {
   return new Set(
     normalized
       .split(",")
-      .map((origin) => origin.trim().replace(/^["'\[]+|["'\]]+$/g, ""))
+      .map((origin) => origin.trim().replace(/^["'[]+|["'\]]+$/g, ""))
       .filter(Boolean),
   );
 }
