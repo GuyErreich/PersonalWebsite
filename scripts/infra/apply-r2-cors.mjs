@@ -22,6 +22,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PutBucketCorsCommand, S3Client } from "@aws-sdk/client-s3";
 import { requireR2Env } from "./load-r2-env.mjs";
+import { parseAllowedOrigins } from "./parse-allowed-origins.mjs";
 
 const { accountId, accessKeyId, secretAccessKey, bucket } = requireR2Env();
 const corsOriginsEnv = process.env.R2_CORS_ORIGINS;
@@ -29,10 +30,7 @@ const corsFile = process.env.R2_CORS_FILE ?? "scripts/infra/r2-cors.json";
 
 const loadCorsRules = () => {
   if (typeof corsOriginsEnv === "string" && corsOriginsEnv.trim().length > 0) {
-    const origins = corsOriginsEnv
-      .split(",")
-      .map((o) => o.trim())
-      .filter(Boolean);
+    const origins = parseAllowedOrigins(corsOriginsEnv);
 
     if (origins.length === 0) {
       throw new Error("R2_CORS_ORIGINS is empty after parsing.");

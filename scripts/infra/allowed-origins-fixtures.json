@@ -1,0 +1,32 @@
+[
+  {
+    "name": "empty string",
+    "input": "",
+    "expected": []
+  },
+  {
+    "name": "comma-separated list",
+    "input": "https://a.pages.dev,https://b.pages.dev",
+    "expected": ["https://a.pages.dev", "https://b.pages.dev"]
+  },
+  {
+    "name": "JSON-like array",
+    "input": "[\"https://a.pages.dev\",\"https://b.pages.dev\"]",
+    "expected": ["https://a.pages.dev", "https://b.pages.dev"]
+  },
+  {
+    "name": "domain-only entries",
+    "input": "example.com,localhost:5173",
+    "expected": ["https://example.com", "http://localhost:5173"]
+  },
+  {
+    "name": "trailing slash on URL",
+    "input": "https://site.com/",
+    "expected": ["https://site.com"]
+  },
+  {
+    "name": "escaped slashes in JSON copy",
+    "input": "[\"https:\\/\\/a.pages.dev\"]",
+    "expected": ["https://a.pages.dev"]
+  }
+]

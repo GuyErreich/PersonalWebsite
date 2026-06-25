@@ -1,7 +1,16 @@
 /**
  * Shared ALLOWED_ORIGINS parsing for Node smoke scripts.
- * Keep behavior aligned with supabase/functions/_shared/allowedOrigins.ts.
+ * Keep behavior aligned with supabase/functions/_shared/allowedOrigins.ts and
+ * scripts/infra/allowed-origins-fixtures.json (run npm run infra:check-allowed-origins).
  */
+
+const normalizeOrigin = (origin) => {
+  const trimmed = origin.trim();
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed.replace(/\/+$/, "");
+  }
+  return trimmed;
+};
 
 export const parseAllowedOrigins = (raw) => {
   if (typeof raw !== "string") return [];
@@ -11,7 +20,7 @@ export const parseAllowedOrigins = (raw) => {
 
   const urlCandidates = normalized.match(/https?:\/\/[^",\s\]]+/g);
   if (urlCandidates && urlCandidates.length > 0) {
-    return [...new Set(urlCandidates.map((origin) => origin.trim()).filter(Boolean))];
+    return [...new Set(urlCandidates.map((origin) => normalizeOrigin(origin)).filter(Boolean))];
   }
 
   const domainCandidates = normalized.match(
@@ -22,7 +31,8 @@ export const parseAllowedOrigins = (raw) => {
       ...new Set(
         domainCandidates.map((domain) => {
           const host = domain.replace(/^\*\./, "");
-          return host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
+          const origin = host.startsWith("localhost") ? `http://${host}` : `https://${host}`;
+          return normalizeOrigin(origin);
         }),
       ),
     ];
@@ -32,7 +42,7 @@ export const parseAllowedOrigins = (raw) => {
     ...new Set(
       normalized
         .split(",")
-        .map((origin) => origin.trim().replace(/^["'[]+|["'\]]+$/g, ""))
+        .map((origin) => normalizeOrigin(origin.trim().replace(/^["'[]+|["'\]]+$/g, "")))
         .filter(Boolean),
     ),
   ];
@@ -40,7 +50,7 @@ export const parseAllowedOrigins = (raw) => {
 
 export const resolveAllowedOrigin = (singleOrigin, originList) => {
   if (typeof singleOrigin === "string" && singleOrigin.trim().length > 0) {
-    return singleOrigin.trim();
+    return normalizeOrigin(singleOrigin);
   }
 
   const parsed = parseAllowedOrigins(originList ?? "");
