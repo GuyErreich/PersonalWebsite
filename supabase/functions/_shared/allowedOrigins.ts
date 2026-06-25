@@ -5,6 +5,13 @@
  * e.g. `https://a.pages.dev,https://b.pages.dev` or
  * `["https://a.pages.dev","https://b.pages.dev"]`.
  *
+ * Format rule (intentional security guardrail): full URLs and domain-only
+ * shorthand are mutually exclusive in a single secret value. If any `http://` or
+ * `https://` URL is present, only URL tokens are parsed — domain-only tokens
+ * (e.g. `localhost:5173`) are dropped so prod secrets cannot accidentally pick
+ * up localhost shorthand. For local dev, use a branch-only secret with full
+ * origins (`http://localhost:5173`, …); see README → ALLOWED_ORIGINS.
+ *
  * Keep behavior aligned with scripts/infra/parse-allowed-origins.mjs and
  * scripts/infra/allowed-origins-fixtures.json (run npm run infra:check-allowed-origins).
  */
