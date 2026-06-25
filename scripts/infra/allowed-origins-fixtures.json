@@ -16,8 +16,13 @@
   },
   {
     "name": "domain-only entries",
-    "input": "example.com,localhost:5173",
-    "expected": ["https://example.com", "http://localhost:5173"]
+    "input": "example.com,other.com",
+    "expected": ["https://example.com", "https://other.com"]
+  },
+  {
+    "name": "localhost URLs are rejected",
+    "input": "https://a.pages.dev,http://localhost:5173,http://127.0.0.1:5173",
+    "expected": ["https://a.pages.dev"]
   },
   {
     "name": "trailing slash on URL",
