@@ -18,8 +18,8 @@ const fixtures = JSON.parse(readFileSync(fixturesPath, "utf8"));
 let failed = 0;
 
 for (const fixture of fixtures) {
-  const actual = parseAllowedOrigins(fixture.input);
-  const expected = fixture.expected;
+  const actual = [...parseAllowedOrigins(fixture.input)].sort();
+  const expected = [...fixture.expected].sort();
 
   const actualJson = JSON.stringify(actual);
   const expectedJson = JSON.stringify(expected);

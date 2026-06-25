@@ -98,9 +98,12 @@ export const fetchGitHubProjectSeed = async (
 
   if (!response.ok) {
     const message =
-      typeof responseBody === "object" && responseBody !== null && "error" in responseBody
-        ? String((responseBody as Record<string, unknown>).error)
-        : "Failed to import repository data.";
+      response.status === 403 &&
+      (typeof responseBody !== "object" || responseBody === null || !("error" in responseBody))
+        ? `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${window.location.origin}.`
+        : typeof responseBody === "object" && responseBody !== null && "error" in responseBody
+          ? String((responseBody as Record<string, unknown>).error)
+          : "Failed to import repository data.";
 
     throw new Error(message);
   }
