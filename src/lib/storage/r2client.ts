@@ -83,11 +83,7 @@ const requestPresignedUpload = async (
       /* intentional — body may be empty on error responses */
     }
 
-    const msg = resolveEdgeFunctionErrorMessage(
-      presignRes.status,
-      body,
-      presignRes.statusText,
-    );
+    const msg = resolveEdgeFunctionErrorMessage(presignRes.status, body, presignRes.statusText);
     throw new Error(`Failed to get presigned URL: ${msg}`);
   }
 

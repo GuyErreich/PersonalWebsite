@@ -4,11 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import {
-  getEdgeFunctionAuthHeaders,
-  resolveEdgeFunctionErrorMessage,
-  supabase,
-} from "../supabase";
+import { getEdgeFunctionAuthHeaders, resolveEdgeFunctionErrorMessage, supabase } from "../supabase";
 
 const getGitHubSeedFunctionUrl = (): string => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;

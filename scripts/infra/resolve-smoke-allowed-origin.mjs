@@ -18,4 +18,4 @@ if (!resolved) {
   process.exit(1);
 }
 
-console.log(resolved);
+process.stdout.write(`${resolved}\n`);
