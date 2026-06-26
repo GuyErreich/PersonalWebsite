@@ -15,6 +15,7 @@
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseEnv } from "../infra/load-supabase-env.mjs";
+import { resolveAllowedOrigin } from "../infra/parse-allowed-origins.mjs";
 
 const GITHUB_SEED_URL = process.env.GITHUB_SEED_URL;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
@@ -40,44 +41,14 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
-const resolveAllowedOrigin = (singleOrigin, originList) => {
-  if (typeof singleOrigin === "string" && singleOrigin.trim().length > 0) {
-    return singleOrigin.trim();
-  }
-
-  if (typeof originList !== "string" || originList.trim().length === 0) {
-    return undefined;
-  }
-
-  const normalizedList = originList.replace(/\\\//g, "/");
-
-  const urlCandidates = normalizedList.match(/https?:\/\/[^",\s\]]+/g);
-  if (urlCandidates && urlCandidates.length > 0) {
-    return urlCandidates[0];
-  }
-
-  const domainCandidates = normalizedList.match(
-    /(?:\*\.)?(?:localhost|[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)+)(?::\d{2,5})?/g,
-  );
-
-  if (!domainCandidates || domainCandidates.length === 0) {
-    return undefined;
-  }
-
-  const firstDomain = domainCandidates[0].replace(/^\*\./, "");
-  if (firstDomain.startsWith("localhost")) {
-    return `http://${firstDomain}`;
-  }
-
-  return `https://${firstDomain}`;
-};
-
 const resolvedAllowedOrigin = resolveAllowedOrigin(ALLOWED_ORIGIN, ALLOWED_ORIGINS);
 
 if (!resolvedAllowedOrigin) {
-  console.warn(
-    "No ALLOWED_ORIGIN value could be resolved from ALLOWED_ORIGIN/ALLOWED_ORIGINS; running without Origin header for non-negative checks.",
+  console.error(
+    "No ALLOWED_ORIGIN could be resolved from ALLOWED_ORIGIN/ALLOWED_ORIGINS. " +
+      "Loopback origins are rejected — set a deployed preview or production URL.",
   );
+  process.exit(1);
 }
 
 const headersBase = {
@@ -202,7 +173,7 @@ const run = async () => {
       {
         name: "returns metadata for valid admin request",
         method: "POST",
-        expectedStatus: [200, 403],
+        expectedStatus: 200,
         headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
         body: { repoUrl: GITHUB_SEED_TEST_REPO_URL },
       },

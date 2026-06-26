@@ -11,6 +11,7 @@
     "security:test:github-seed": "node scripts/security/github-project-seed-smoke.mjs",
     "infra:apply-r2-cors": "node scripts/infra/apply-r2-cors.mjs",
     "infra:get-r2-cors": "node scripts/infra/get-r2-cors.mjs",
+    "infra:check-allowed-origins": "node scripts/infra/parse-allowed-origins-parity.mjs",
     "format": "biome format --write .",
     "preview": "vite preview"
   },

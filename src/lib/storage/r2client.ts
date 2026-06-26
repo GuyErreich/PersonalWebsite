@@ -9,7 +9,7 @@
 // used exclusively inside the `r2-presign` edge function. The browser only
 // ever receives a short-lived presigned PUT URL, never the actual keys.
 
-import { supabase } from "../supabase";
+import { getEdgeFunctionAuthHeaders, resolveEdgeFunctionErrorMessage, supabase } from "../supabase";
 import {
   R2_ALLOWED_FOLDERS,
   R2_UPLOAD_FOLDERS,
@@ -57,10 +57,7 @@ const requestPresignedUpload = async (
   try {
     presignRes = await fetch(PRESIGN_FUNCTION_URL, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: getEdgeFunctionAuthHeaders(accessToken),
       body: JSON.stringify({
         contentType,
         contentLength: file.size,
@@ -86,10 +83,7 @@ const requestPresignedUpload = async (
       /* intentional — body may be empty on error responses */
     }
 
-    const msg =
-      typeof body === "object" && body !== null && "error" in body
-        ? String((body as Record<string, unknown>).error)
-        : presignRes.statusText;
+    const msg = resolveEdgeFunctionErrorMessage(presignRes.status, body, presignRes.statusText);
     throw new Error(`Failed to get presigned URL: ${msg}`);
   }
 
@@ -108,6 +102,30 @@ const requestPresignedUpload = async (
   };
 };
 
+const buildPresignedPutHeaders = (
+  signedUrl: string,
+  contentType: string,
+): Record<string, string> => {
+  const signedHeadersParam = new URL(signedUrl).searchParams.get("X-Amz-SignedHeaders");
+  if (!signedHeadersParam) {
+    return { "Content-Type": contentType };
+  }
+
+  const signed = new Set(
+    signedHeadersParam
+      .split(";")
+      .map((header) => header.trim().toLowerCase())
+      .filter(Boolean),
+  );
+
+  const headers: Record<string, string> = {};
+  if (signed.has("content-type")) {
+    headers["Content-Type"] = contentType;
+  }
+
+  return headers;
+};
+
 const uploadToPresignedUrl = async (
   file: File,
   signedUrl: string,
@@ -120,15 +138,16 @@ const uploadToPresignedUrl = async (
     uploadRes = await fetch(signedUrl, {
       method: "PUT",
       body: file,
-      headers: { "Content-Type": contentType },
+      headers: buildPresignedPutHeaders(signedUrl, contentType),
     });
   } catch (error) {
     const message =
       error instanceof Error
         ? error.message
         : "Unknown browser network error while uploading to R2.";
+    const siteOrigin = typeof window !== "undefined" ? window.location.origin : "your site origin";
     throw new Error(
-      `Upload to R2 blocked (${uploadHost}). Check R2 bucket CORS on the same bucket as R2_BUCKET_NAME: AllowedOrigins must include ${typeof window !== "undefined" ? window.location.origin : "your site origin"}, and AllowedHeaders must include Content-Type (the same header sent on PUT in r2client.ts). See README → R2 bucket CORS. ${message}`,
+      `Upload to R2 blocked (${uploadHost}). Presign succeeded; the browser PUT failed (${message}). Configure CORS on the R2 bucket matching R2_BUCKET_NAME: AllowedOrigins must include ${siteOrigin}; AllowedHeaders must include content-type (lowercase, not "*"). Run npm run infra:apply-r2-cors or Cloudflare Dashboard → R2 → bucket → Settings → CORS.`,
     );
   }
 
@@ -209,10 +228,7 @@ export const deleteFromR2 = async (publicUrl: string): Promise<void> => {
   try {
     deleteResponse = await fetch(PRESIGN_FUNCTION_URL, {
       method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
+      headers: getEdgeFunctionAuthHeaders(accessToken),
       body: JSON.stringify({ publicUrl: parsedPublicUrl.href }),
     });
   } catch (error) {
@@ -228,10 +244,11 @@ export const deleteFromR2 = async (publicUrl: string): Promise<void> => {
       /* intentional — body may be empty on error responses */
     }
 
-    const message =
-      typeof responseBody === "object" && responseBody !== null && "error" in responseBody
-        ? String((responseBody as Record<string, unknown>).error)
-        : deleteResponse.statusText;
+    const message = resolveEdgeFunctionErrorMessage(
+      deleteResponse.status,
+      responseBody,
+      deleteResponse.statusText,
+    );
 
     throw new Error(`Failed to delete R2 object: ${message}`);
   }

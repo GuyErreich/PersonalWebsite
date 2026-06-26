@@ -184,6 +184,10 @@ supabase secrets set ALLOWED_ORIGINS=<comma-separated-allowed-origins>
 supabase secrets set LOG_LEVEL=info   # optional: debug | info | warn | error
 ```
 
+**ALLOWED_ORIGINS rules:**
+- **No localhost / loopback origins** — `localhost`, `127.0.0.1`, `0.0.0.0`, and `[::1]` are always rejected. Every user runs a local server, so loopback is not a meaningful origin boundary for edge-function CORS. Test uploads and edge functions from a deployed preview URL (e.g. Cloudflare Pages dev), not `npm run dev` against production Supabase secrets.
+- **Format rule:** use either full URLs (`https://site.pages.dev,https://other.com`) **or** domain-only shorthand (`example.com,other.com`) — not both in one secret. If any full URL is present, domain-only entries in the same value are ignored.
+
 Admin authorization for `r2-presign` is based on Supabase Auth metadata (`app_metadata.roles` contains `"admin"`), not an email allowlist secret.
 
 Deploy the edge function after setting secrets:
@@ -218,7 +222,7 @@ Alternatively, set CORS in Cloudflare Dashboard → R2 → your bucket → Setti
 **Important R2 CORS gotchas:**
 - CORS must be on the **same bucket** as your `R2_BUCKET_NAME` Supabase secret (not the public custom domain).
 - `AllowedOrigins` must match `window.location.origin` exactly (no trailing slash).
-- `AllowedHeaders` must include `Content-Type` (same HTTP header the browser sends on PUT — see `r2client.ts`). If uploads still fail, try lowercase `content-type` in the dashboard; R2 CORS matching can be picky even though HTTP header names are case-insensitive.
+- `AllowedHeaders` must include `Content-Type` (same HTTP header the browser sends on PUT — see `r2client.ts`). If uploads still fail, use lowercase `content-type` in the R2 CORS policy; R2 preflight matching can be picky even though HTTP header names are case-insensitive.
 - Dashboard JSON is a **top-level array** (not a `"rules"` wrapper).
 - Changes can take ~30 seconds to propagate.
 
@@ -237,6 +241,8 @@ npm install
 npm run dev
 ```
 
+**Optional — origin parser parity:** `npm run infra:check-allowed-origins` validates the Node and Deno `ALLOWED_ORIGINS` parsers against shared fixtures. CI installs Deno automatically; for local runs, install [Deno](https://docs.deno.com/) first.
+
 ### Other Commands
 
 ```bash
@@ -245,7 +251,7 @@ npm run lint    # ESLint + Biome checks
 npm run preview # Serve the production build locally
 ```
 
-Security smoke tests for `r2-presign`:
+Security smoke tests for `r2-presign` (use a deployed preview/production origin — loopback is rejected):
 
 ```bash
 PRESIGN_URL=https://<ref>.supabase.co/functions/v1/r2-presign \

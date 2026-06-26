@@ -1,0 +1,47 @@
+[
+  {
+    "name": "empty string",
+    "input": "",
+    "expected": []
+  },
+  {
+    "name": "comma-separated list",
+    "input": "https://a.pages.dev,https://b.pages.dev",
+    "expected": ["https://a.pages.dev", "https://b.pages.dev"]
+  },
+  {
+    "name": "JSON-like array",
+    "input": "[\"https://a.pages.dev\",\"https://b.pages.dev\"]",
+    "expected": ["https://a.pages.dev", "https://b.pages.dev"]
+  },
+  {
+    "name": "domain-only entries",
+    "input": "example.com,other.com",
+    "expected": ["https://example.com", "https://other.com"]
+  },
+  {
+    "name": "localhost URLs are rejected",
+    "input": "https://a.pages.dev,http://localhost:5173,http://127.0.0.1:5173",
+    "expected": ["https://a.pages.dev"]
+  },
+  {
+    "name": "trailing slash on URL",
+    "input": "https://site.com/",
+    "expected": ["https://site.com"]
+  },
+  {
+    "name": "escaped slashes in JSON copy",
+    "input": "[\"https:\\/\\/a.pages.dev\"]",
+    "expected": ["https://a.pages.dev"]
+  },
+  {
+    "name": "mixed URL and domain-only drops domains",
+    "input": "https://a.pages.dev,example.com",
+    "expected": ["https://a.pages.dev"]
+  },
+  {
+    "name": "0.0.0.0 loopback is rejected",
+    "input": "https://a.pages.dev,https://0.0.0.0:5173",
+    "expected": ["https://a.pages.dev"]
+  }
+]

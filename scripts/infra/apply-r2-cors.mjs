@@ -22,17 +22,23 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { PutBucketCorsCommand, S3Client } from "@aws-sdk/client-s3";
 import { requireR2Env } from "./load-r2-env.mjs";
+import { parseAllowedOrigins } from "./parse-allowed-origins.mjs";
 
 const { accountId, accessKeyId, secretAccessKey, bucket } = requireR2Env();
 const corsOriginsEnv = process.env.R2_CORS_ORIGINS;
 const corsFile = process.env.R2_CORS_FILE ?? "scripts/infra/r2-cors.json";
 
+const normalizeCorsRules = (rules) =>
+  rules.map((rule) => ({
+    ...rule,
+    AllowedHeaders: Array.isArray(rule.AllowedHeaders)
+      ? rule.AllowedHeaders.map((h) => String(h).toLowerCase())
+      : rule.AllowedHeaders,
+  }));
+
 const loadCorsRules = () => {
   if (typeof corsOriginsEnv === "string" && corsOriginsEnv.trim().length > 0) {
-    const origins = corsOriginsEnv
-      .split(",")
-      .map((o) => o.trim())
-      .filter(Boolean);
+    const origins = parseAllowedOrigins(corsOriginsEnv);
 
     if (origins.length === 0) {
       throw new Error("R2_CORS_ORIGINS is empty after parsing.");
@@ -42,7 +48,8 @@ const loadCorsRules = () => {
       {
         AllowedOrigins: origins,
         AllowedMethods: ["PUT", "GET", "HEAD"],
-        AllowedHeaders: ["Content-Type", "Content-Length"],
+        // R2 matches preflight literally — use lowercase header names (not "*").
+        AllowedHeaders: ["content-type", "content-length"],
         ExposeHeaders: ["ETag"],
         MaxAgeSeconds: 3600,
       },
@@ -57,7 +64,7 @@ const loadCorsRules = () => {
     throw new Error(`${corsFile} must be a non-empty JSON array of CORS rules.`);
   }
 
-  return parsed;
+  return normalizeCorsRules(parsed);
 };
 
 const corsRules = loadCorsRules();
@@ -71,11 +78,25 @@ const s3 = new S3Client({
 console.warn(`Applying R2 bucket CORS to "${bucket}"...`);
 console.warn(JSON.stringify(corsRules, null, 2));
 
-await s3.send(
-  new PutBucketCorsCommand({
-    Bucket: bucket,
-    CORSConfiguration: { CORSRules: corsRules },
-  }),
-);
+try {
+  await s3.send(
+    new PutBucketCorsCommand({
+      Bucket: bucket,
+      CORSConfiguration: { CORSRules: corsRules },
+    }),
+  );
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (message.includes("AccessDenied") || message.includes("Access Denied")) {
+    console.error(
+      `R2 API token cannot update bucket CORS (AccessDenied). Use Cloudflare Dashboard instead:`,
+    );
+    console.error(`  R2 → bucket "${bucket}" → Settings → CORS policy`);
+    console.error("Paste this JSON (top-level array):");
+    console.error(JSON.stringify(corsRules, null, 2));
+    process.exit(1);
+  }
+  throw error;
+}
 
 console.warn("R2 bucket CORS applied successfully.");

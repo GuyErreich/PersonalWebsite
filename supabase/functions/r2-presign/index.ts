@@ -15,21 +15,17 @@
 //                      e.g. "https://abc.pages.dev,https://yourdomain.com"
 //   LOG_LEVEL        — optional: debug | info | warn | error (default: info)
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "npm:@aws-sdk/client-s3@3.1026.0";
-import { getSignedUrl } from "npm:@aws-sdk/s3-request-presigner@3.1026.0";
+import { DeleteObjectCommand } from "npm:@aws-sdk/client-s3@3.1026.0";
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
+import { parseAllowedOrigins } from "../_shared/allowedOrigins.ts";
 import { createLogger } from "../_shared/logger.ts";
+import { createBrowserPresignedPutUrl, createR2PresignClient } from "../_shared/r2Presign.ts";
 
 // Allowed origins for CORS — configured per environment via the ALLOWED_ORIGINS secret.
 // Set it to a comma-separated list, e.g.:
 //   supabase secrets set ALLOWED_ORIGINS="https://abc.pages.dev,https://yourdomain.com"
 const rawOrigins = Deno.env.get("ALLOWED_ORIGINS") ?? "";
-const ALLOWED_ORIGINS = new Set(
-  rawOrigins
-    .split(",")
-    .map((o: string) => o.trim())
-    .filter(Boolean),
-);
+const ALLOWED_ORIGINS = parseAllowedOrigins(rawOrigins);
 const HAS_ALLOWED_ORIGINS = ALLOWED_ORIGINS.size > 0;
 
 const LOG_LEVEL = (Deno.env.get("LOG_LEVEL") ?? "info").trim().toLowerCase();
@@ -268,11 +264,7 @@ Deno.serve(async (req: Request) => {
 
     const ALLOWED_FOLDERS = Object.keys(FOLDER_POLICIES);
 
-    const r2 = new S3Client({
-      region: "auto",
-      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-      credentials: { accessKeyId, secretAccessKey },
-    });
+    const r2 = createR2PresignClient(accountId, accessKeyId, secretAccessKey);
 
     if (req.method === "DELETE") {
       if (
@@ -386,16 +378,13 @@ Deno.serve(async (req: Request) => {
     const ext = extNoDot.length > 0 ? `.${extNoDot}` : "";
     const key = `${folder}/${crypto.randomUUID()}${ext}`;
 
-    const command = new PutObjectCommand({
-      Bucket: bucket,
-      Key: key,
-      ContentType: normalizedContentType,
-      // Bind expected byte size into the signature so a different payload size is rejected.
-      ContentLength: contentLength,
+    const signedUrl = await createBrowserPresignedPutUrl({
+      client: r2,
+      bucket,
+      key,
+      contentType: normalizedContentType,
+      contentLength,
     });
-
-    // Presigned URL valid for 15 minutes — enough for a video upload
-    const signedUrl = await getSignedUrl(r2, command, { expiresIn: 900 });
 
     requestLogger.info("Presigned upload URL issued", {
       folder,

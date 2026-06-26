@@ -26,6 +26,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+
+      - name: Allowed-origins parser parity (Node + Deno)
+        run: npm run infra:check-allowed-origins
+
       - name: Lint (ESLint + Biome)
         run: npm run lint
 

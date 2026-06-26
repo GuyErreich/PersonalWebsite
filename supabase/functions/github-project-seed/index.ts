@@ -5,14 +5,10 @@
  */
 
 import { createClient } from "npm:@supabase/supabase-js@2.102.1";
+import { parseAllowedOrigins } from "../_shared/allowedOrigins.ts";
 
 const rawOrigins = Deno.env.get("ALLOWED_ORIGINS") ?? "";
-const ALLOWED_ORIGINS = new Set(
-  rawOrigins
-    .split(",")
-    .map((origin: string) => origin.trim())
-    .filter(Boolean),
-);
+const ALLOWED_ORIGINS = parseAllowedOrigins(rawOrigins);
 const HAS_ALLOWED_ORIGINS = ALLOWED_ORIGINS.size > 0;
 
 interface RepoSeedBody {

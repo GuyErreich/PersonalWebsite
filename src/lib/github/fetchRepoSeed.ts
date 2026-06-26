@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { supabase } from "../supabase";
+import { getEdgeFunctionAuthHeaders, resolveEdgeFunctionErrorMessage, supabase } from "../supabase";
 
 const getGitHubSeedFunctionUrl = (): string => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -75,10 +75,7 @@ export const fetchGitHubProjectSeed = async (
   try {
     response = await fetch(githubSeedFunctionUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
+      headers: getEdgeFunctionAuthHeaders(session.access_token),
       body: JSON.stringify({ repoUrl }),
       signal: abortController.signal,
     });
@@ -100,10 +97,11 @@ export const fetchGitHubProjectSeed = async (
   }
 
   if (!response.ok) {
-    const message =
-      typeof responseBody === "object" && responseBody !== null && "error" in responseBody
-        ? String((responseBody as Record<string, unknown>).error)
-        : "Failed to import repository data.";
+    const message = resolveEdgeFunctionErrorMessage(
+      response.status,
+      responseBody,
+      "Failed to import repository data.",
+    );
 
     throw new Error(message);
   }

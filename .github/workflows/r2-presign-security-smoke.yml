@@ -36,19 +36,11 @@ jobs:
             presign_url="${PRESIGN_URL:-}"
           fi
 
-          allowed_origin="${ALLOWED_ORIGIN:-}"
-          if [ -z "$allowed_origin" ]; then
-            raw_origins="${ALLOWED_ORIGINS:-}"
-            allowed_origin=""
-
-            # Extract first URL from common formats: comma list, newline list, or JSON-like array.
-            allowed_origin="$(
-              printf '%s' "$raw_origins" \
-                | tr '\n' ',' \
-                | grep -Eo 'https?://[^",[:space:]\]]+' \
-                | head -n 1
-            )"
-          fi
+          allowed_origin="$(
+            ALLOWED_ORIGIN="${ALLOWED_ORIGIN:-}" \
+              ALLOWED_ORIGINS="${ALLOWED_ORIGINS:-}" \
+              node scripts/infra/resolve-smoke-allowed-origin.mjs
+          )"
 
           {
             echo "PRESIGN_URL=$presign_url"
