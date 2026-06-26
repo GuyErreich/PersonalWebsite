@@ -6,7 +6,7 @@
  * `["https://a.pages.dev","https://b.pages.dev"]`.
  *
  * Security rules (always applied):
- * - Localhost / loopback origins are never accepted (`localhost`, `127.0.0.1`,
+ * - Localhost / loopback origins are never accepted (`localhost`, `127.0.0.1`, `0.0.0.0`,
  *   `[::1]`). Every user runs a local server, so they are not a meaningful
  *   origin boundary for edge-function CORS.
  * - Full URLs and domain-only shorthand are mutually exclusive in one secret:
@@ -31,10 +31,20 @@ const isLocalhostOrigin = (origin: string): boolean => {
   try {
     const { hostname } = new URL(origin);
     const host = hostname.toLowerCase();
-    return host === "localhost" || host === "127.0.0.1" || host === "[::1]" || host === "::1";
+    return (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "0.0.0.0" ||
+      host === "[::1]" ||
+      host === "::1"
+    );
   } catch {
     const trimmed = origin.trim().toLowerCase();
-    return /^localhost(?::\d+)?$/.test(trimmed) || /^127\.0\.0\.1(?::\d+)?$/.test(trimmed);
+    return (
+      /^localhost(?::\d+)?$/.test(trimmed) ||
+      /^127\.0\.0\.1(?::\d+)?$/.test(trimmed) ||
+      /^0\.0\.0\.0(?::\d+)?$/.test(trimmed)
+    );
   }
 };
 

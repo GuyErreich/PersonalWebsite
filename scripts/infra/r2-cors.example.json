@@ -1,9 +1,6 @@
 [
   {
-    "AllowedOrigins": [
-      "https://your-project.pages.dev",
-      "https://yourdomain.com"
-    ],
+    "AllowedOrigins": ["https://your-project.pages.dev", "https://yourdomain.com"],
     "AllowedMethods": ["PUT", "GET", "HEAD"],
     "AllowedHeaders": ["content-type", "content-length"],
     "ExposeHeaders": ["ETag"],

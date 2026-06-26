@@ -33,5 +33,15 @@
     "name": "escaped slashes in JSON copy",
     "input": "[\"https:\\/\\/a.pages.dev\"]",
     "expected": ["https://a.pages.dev"]
+  },
+  {
+    "name": "mixed URL and domain-only drops domains",
+    "input": "https://a.pages.dev,example.com",
+    "expected": ["https://a.pages.dev"]
+  },
+  {
+    "name": "0.0.0.0 loopback is rejected",
+    "input": "https://a.pages.dev,https://0.0.0.0:5173",
+    "expected": ["https://a.pages.dev"]
   }
 ]

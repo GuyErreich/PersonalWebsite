@@ -185,7 +185,7 @@ supabase secrets set LOG_LEVEL=info   # optional: debug | info | warn | error
 ```
 
 **ALLOWED_ORIGINS rules:**
-- **No localhost / loopback origins** — `localhost`, `127.0.0.1`, and `[::1]` are always rejected. Every user runs a local server, so loopback is not a meaningful origin boundary for edge-function CORS. Test uploads and edge functions from a deployed preview URL (e.g. Cloudflare Pages dev), not `npm run dev` against production Supabase secrets.
+- **No localhost / loopback origins** — `localhost`, `127.0.0.1`, `0.0.0.0`, and `[::1]` are always rejected. Every user runs a local server, so loopback is not a meaningful origin boundary for edge-function CORS. Test uploads and edge functions from a deployed preview URL (e.g. Cloudflare Pages dev), not `npm run dev` against production Supabase secrets.
 - **Format rule:** use either full URLs (`https://site.pages.dev,https://other.com`) **or** domain-only shorthand (`example.com,other.com`) — not both in one secret. If any full URL is present, domain-only entries in the same value are ignored.
 
 Admin authorization for `r2-presign` is based on Supabase Auth metadata (`app_metadata.roles` contains `"admin"`), not an email allowlist secret.

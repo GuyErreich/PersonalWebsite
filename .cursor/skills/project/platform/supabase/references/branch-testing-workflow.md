@@ -38,5 +38,5 @@ Use preview deployment URLs on the branch secret — never localhost or loopback
 ## Cleanup checklist
 - Remove branch-only secrets.
 - Delete the temporary branch.
-- Confirm production CORS remains unchanged.
+- Confirm production ALLOWED_ORIGINS and R2 CORS remain unchanged.
 - Re-run a quick validation pass if schema or runtime code changed.

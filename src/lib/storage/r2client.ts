@@ -250,9 +250,12 @@ export const deleteFromR2 = async (publicUrl: string): Promise<void> => {
     }
 
     const message =
-      typeof responseBody === "object" && responseBody !== null && "error" in responseBody
-        ? String((responseBody as Record<string, unknown>).error)
-        : deleteResponse.statusText;
+      deleteResponse.status === 403 &&
+      (typeof responseBody !== "object" || responseBody === null || !("error" in responseBody))
+        ? `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${typeof window !== "undefined" ? window.location.origin : "your site origin"}.`
+        : typeof responseBody === "object" && responseBody !== null && "error" in responseBody
+          ? String((responseBody as Record<string, unknown>).error)
+          : deleteResponse.statusText;
 
     throw new Error(`Failed to delete R2 object: ${message}`);
   }
