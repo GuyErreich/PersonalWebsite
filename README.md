@@ -241,6 +241,8 @@ npm install
 npm run dev
 ```
 
+**Optional — origin parser parity:** `npm run infra:check-allowed-origins` validates the Node and Deno `ALLOWED_ORIGINS` parsers against shared fixtures. CI installs Deno automatically; for local runs, install [Deno](https://docs.deno.com/) first.
+
 ### Other Commands
 
 ```bash
@@ -249,7 +251,7 @@ npm run lint    # ESLint + Biome checks
 npm run preview # Serve the production build locally
 ```
 
-Security smoke tests for `r2-presign`:
+Security smoke tests for `r2-presign` (use a deployed preview/production origin — loopback is rejected):
 
 ```bash
 PRESIGN_URL=https://<ref>.supabase.co/functions/v1/r2-presign \

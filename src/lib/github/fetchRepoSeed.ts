@@ -4,7 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { getEdgeFunctionAuthHeaders, supabase } from "../supabase";
+import {
+  getEdgeFunctionAuthHeaders,
+  resolveEdgeFunctionErrorMessage,
+  supabase,
+} from "../supabase";
 
 const getGitHubSeedFunctionUrl = (): string => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
@@ -97,13 +101,11 @@ export const fetchGitHubProjectSeed = async (
   }
 
   if (!response.ok) {
-    const message =
-      response.status === 403 &&
-      (typeof responseBody !== "object" || responseBody === null || !("error" in responseBody))
-        ? `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${window.location.origin}.`
-        : typeof responseBody === "object" && responseBody !== null && "error" in responseBody
-          ? String((responseBody as Record<string, unknown>).error)
-          : "Failed to import repository data.";
+    const message = resolveEdgeFunctionErrorMessage(
+      response.status,
+      responseBody,
+      "Failed to import repository data.",
+    );
 
     throw new Error(message);
   }

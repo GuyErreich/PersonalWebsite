@@ -243,6 +243,33 @@ export const getEdgeFunctionAuthHeaders = (accessToken: string): Record<string, 
   };
 };
 
+const getSiteOriginForDiagnostics = (): string =>
+  typeof window !== "undefined" ? window.location.origin : "your site origin";
+
+/** Actionable message when an edge function returns a bare 403 (CORS origin rejected). */
+export const getEdgeFunctionCorsBlockedMessage = (
+  origin: string = getSiteOriginForDiagnostics(),
+): string =>
+  `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${origin}.`;
+
+/** Prefer server JSON error body; surface CORS hint on bare 403 responses. */
+export const resolveEdgeFunctionErrorMessage = (
+  status: number,
+  body: unknown,
+  fallback: string,
+  origin?: string,
+): string => {
+  if (status === 403 && (typeof body !== "object" || body === null || !("error" in body))) {
+    return getEdgeFunctionCorsBlockedMessage(origin);
+  }
+
+  if (typeof body === "object" && body !== null && "error" in body) {
+    return String((body as Record<string, unknown>).error);
+  }
+
+  return fallback;
+};
+
 // For backward compatibility, export a proxy that throws on first use if not configured
 export const supabase = new Proxy({} as TypedClient, {
   get: (_, prop) => {

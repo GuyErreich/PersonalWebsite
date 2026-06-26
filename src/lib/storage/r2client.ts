@@ -9,7 +9,7 @@
 // used exclusively inside the `r2-presign` edge function. The browser only
 // ever receives a short-lived presigned PUT URL, never the actual keys.
 
-import { getEdgeFunctionAuthHeaders, supabase } from "../supabase";
+import { getEdgeFunctionAuthHeaders, resolveEdgeFunctionErrorMessage, supabase } from "../supabase";
 import {
   R2_ALLOWED_FOLDERS,
   R2_UPLOAD_FOLDERS,
@@ -83,12 +83,11 @@ const requestPresignedUpload = async (
       /* intentional — body may be empty on error responses */
     }
 
-    const msg =
-      presignRes.status === 403 && (typeof body !== "object" || body === null || !("error" in body))
-        ? `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${typeof window !== "undefined" ? window.location.origin : "your site origin"}.`
-        : typeof body === "object" && body !== null && "error" in body
-          ? String((body as Record<string, unknown>).error)
-          : presignRes.statusText;
+    const msg = resolveEdgeFunctionErrorMessage(
+      presignRes.status,
+      body,
+      presignRes.statusText,
+    );
     throw new Error(`Failed to get presigned URL: ${msg}`);
   }
 
@@ -249,13 +248,11 @@ export const deleteFromR2 = async (publicUrl: string): Promise<void> => {
       /* intentional — body may be empty on error responses */
     }
 
-    const message =
-      deleteResponse.status === 403 &&
-      (typeof responseBody !== "object" || responseBody === null || !("error" in responseBody))
-        ? `Request blocked (403). Ensure the Supabase ALLOWED_ORIGINS secret includes ${typeof window !== "undefined" ? window.location.origin : "your site origin"}.`
-        : typeof responseBody === "object" && responseBody !== null && "error" in responseBody
-          ? String((responseBody as Record<string, unknown>).error)
-          : deleteResponse.statusText;
+    const message = resolveEdgeFunctionErrorMessage(
+      deleteResponse.status,
+      responseBody,
+      deleteResponse.statusText,
+    );
 
     throw new Error(`Failed to delete R2 object: ${message}`);
   }

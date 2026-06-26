@@ -39,9 +39,11 @@ if (missing.length > 0) {
 const resolvedAllowedOrigin = resolveAllowedOrigin(ALLOWED_ORIGIN, ALLOWED_ORIGINS);
 
 if (!resolvedAllowedOrigin) {
-  console.warn(
-    "No ALLOWED_ORIGIN value could be resolved from ALLOWED_ORIGIN/ALLOWED_ORIGINS; running without Origin header for non-negative checks.",
+  console.error(
+    "No ALLOWED_ORIGIN could be resolved from ALLOWED_ORIGIN/ALLOWED_ORIGINS. " +
+      "Loopback origins are rejected — set a deployed preview or production URL.",
   );
+  process.exit(1);
 }
 
 const headersBase = {
@@ -171,7 +173,7 @@ const buildPostTests = ({ adminJwt, userJwt }) => [
   },
   {
     name: "allows admin request with valid payload",
-    expectedStatus: resolvedAllowedOrigin ? 200 : [200, 403],
+    expectedStatus: 200,
     headers: { ...headersBase, Authorization: `Bearer ${adminJwt}` },
     body: {
       contentType: "video/mp4",
