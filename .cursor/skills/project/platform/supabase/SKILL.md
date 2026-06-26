@@ -36,13 +36,13 @@ Use this skill as a thin router. It should classify intent, load one small refer
 - Load [Edge Function Workflow](./references/edge-function-workflow.md).
 5. Advisor-driven review:
 - Load [Advisor Workflow](./references/advisor-workflow.md).
-6. Temporary branch localhost testing:
+6. Temporary branch / preview testing:
 - Load [Temporary Branch Testing Workflow](./references/branch-testing-workflow.md).
-- For localhost origin values, load [Localhost Origins Source](./references/localhost-origins.md).
+- When configuring `ALLOWED_ORIGINS` on a branch, load [Localhost and ALLOWED_ORIGINS](./references/localhost-origins.md) (preview URLs only).
 
 ## Hard Rules
 - Prefer MCP tools first, CLI only when MCP coverage is missing.
-- Never apply localhost CORS to production settings.
+- Never put localhost/loopback in `ALLOWED_ORIGINS` (any environment).
 - Never run ad-hoc DDL via raw SQL when migration flow applies.
 - Never load unrelated references.
 
@@ -65,4 +65,4 @@ Always return:
 - [Edge Function Workflow](./references/edge-function-workflow.md)
 - [Advisor Workflow](./references/advisor-workflow.md)
 - [Temporary Branch Testing Workflow](./references/branch-testing-workflow.md)
-- [Localhost Origins Source](./references/localhost-origins.md)
+- [Localhost and ALLOWED_ORIGINS](./references/localhost-origins.md)
