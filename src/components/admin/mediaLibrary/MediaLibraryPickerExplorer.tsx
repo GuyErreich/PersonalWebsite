@@ -15,7 +15,7 @@ import { ExplorerToolbar } from "./ExplorerToolbar";
 import { FolderCard } from "./FolderCard";
 import { MediaPreviewModal } from "./MediaPreviewModal";
 import type { FolderEntry, MediaEntry } from "./types";
-import { seekThumbnailToVideoCenter } from "./videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 export interface MediaLibraryPickerAction {
   id: string;

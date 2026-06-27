@@ -10,7 +10,7 @@ import type { MouseEvent } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 import type { MediaEntry } from "./types";
-import { seekThumbnailToVideoCenter } from "./videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface Props {
   entry: MediaEntry;

@@ -10,7 +10,7 @@ import { playClickSound, playHoverSound } from "../../../../lib/sound/interactio
 import { inferMediaTypeFromUrl } from "../../mediaLibrary/mediaUrlDisplayName";
 import { SelectedMediaPreview } from "../../mediaLibrary/SelectedMediaPreview";
 import type { MediaLibraryRoleFilter } from "../formSections";
-import { seekThumbnailToVideoCenter } from "../../mediaLibrary/videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../../lib/media/seekThumbnailToVideoCenter";
 
 interface MediaRoleCardProps {
   title: string;

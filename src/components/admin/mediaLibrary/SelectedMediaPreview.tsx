@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { useEffect } from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import { inferMediaTypeFromUrl, mediaUrlDisplayName } from "./mediaUrlDisplayName";
-import { seekThumbnailToVideoCenter } from "./videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface SelectedMediaPreviewProps {
   label: string;

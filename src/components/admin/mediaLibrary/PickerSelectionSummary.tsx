@@ -9,7 +9,7 @@ import { X } from "lucide-react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryPickerAction } from "./MediaLibraryPickerExplorer";
 import { inferMediaTypeFromUrl, mediaUrlDisplayName } from "./mediaUrlDisplayName";
-import { seekThumbnailToVideoCenter } from "./videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface PickerSelectionSummaryProps {
   actions: MediaLibraryPickerAction[];

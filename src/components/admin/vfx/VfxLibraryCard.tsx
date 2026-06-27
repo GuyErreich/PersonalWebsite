@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { Globe, Image as ImageIcon, Pencil, Play, Trash2 } from "lucide-react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { AdminGameDevVfx } from "../types";
-import { seekThumbnailToVideoCenter } from "../mediaLibrary/videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface VfxLibraryCardProps {
   item: AdminGameDevVfx;

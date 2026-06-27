@@ -62,7 +62,7 @@ export const GameDevOverviewMobileShort = ({
 
   return (
     <div className="gamedev-overview-mobile-short-stack">
-      <div className="gamedev-mobile-short-tabs" role="tablist">
+      <div className="gamedev-mobile-short-tabs" role="tablist" aria-label="GameDev overview">
         <motion.button
           id={showreelTabId}
           type="button"

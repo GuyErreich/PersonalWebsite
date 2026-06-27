@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
-import { seekThumbnailToVideoCenter } from "../../../../admin/mediaLibrary/videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../../../../lib/media/seekThumbnailToVideoCenter";
 import type { GameDevVfxItem } from "../data/types";
 
 interface GameDevProjectVfxSectionProps {

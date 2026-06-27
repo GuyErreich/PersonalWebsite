@@ -21,7 +21,8 @@ import {
   R2_UPLOAD_POLICIES,
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
-import { seekThumbnailToVideoCenter } from "./mediaLibrary/videoThumbnail";
+import { seekThumbnailToVideoCenter } from "../../lib/media/seekThumbnailToVideoCenter";
+import { ConfirmDialog } from "./mediaLibrary/ConfirmDialog";
 import type { AdminGameDevVfx } from "./types";
 import { VfxLibraryCard } from "./vfx/VfxLibraryCard";
 import { VfxLibrarySkeleton } from "./vfx/VfxLibrarySkeleton";
@@ -68,6 +69,7 @@ export const VfxManager = () => {
   const [tagInput, setTagInput] = useState("");
   const [mediaLibraryItems, setMediaLibraryItems] = useState<MediaLibraryItem[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const loadVfx = useCallback(async () => {
     setIsLoading(true);
@@ -184,8 +186,13 @@ export const VfxManager = () => {
       return;
     }
 
+    setPendingDeleteId(null);
     void loadVfx();
   };
+
+  const pendingDeleteItem = pendingDeleteId
+    ? vfxItems.find((item) => item.id === pendingDeleteId) ?? null
+    : null;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -355,7 +362,7 @@ export const VfxManager = () => {
               item={item}
               onEdit={() => openEdit(item)}
               onDelete={() => {
-                void handleDelete(item.id);
+                setPendingDeleteId(item.id);
               }}
             />
           ))}
@@ -363,7 +370,12 @@ export const VfxManager = () => {
       )}
 
       {isModalOpen ? (
-        <div className="fixed inset-0 z-[60] overflow-y-auto" role="dialog" aria-modal="true">
+        <div
+          className="fixed inset-0 z-[60] overflow-y-auto"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={formTitleId}
+        >
           <button
             type="button"
             className="fixed inset-0 bg-gray-950/85 backdrop-blur-sm"
@@ -676,6 +688,21 @@ export const VfxManager = () => {
             </form>
           </div>
         </div>
+      ) : null}
+
+      {pendingDeleteItem ? (
+        <ConfirmDialog
+          key={`delete-vfx-${pendingDeleteItem.id}`}
+          title={`Delete "${pendingDeleteItem.title}"?`}
+          description="This permanently removes the effect from the global VFX library and unlinks it from every project."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          danger
+          onConfirm={() => {
+            void handleDelete(pendingDeleteItem.id);
+          }}
+          onCancel={() => setPendingDeleteId(null)}
+        />
       ) : null}
     </div>
   );

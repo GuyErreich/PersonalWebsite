@@ -154,6 +154,7 @@ export const ItemFormModal = ({
   const [featuredSort, setFeaturedSort] = useState("");
   const [showVfxSection, setShowVfxSection] = useState(false);
   const [linkedVfxIds, setLinkedVfxIds] = useState<string[]>([]);
+  const [linkedVfxDetails, setLinkedVfxDetails] = useState<AdminGameDevVfx[]>([]);
   const [availableVfx, setAvailableVfx] = useState<AdminGameDevVfx[]>([]);
   const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
   const [customStackInput, setCustomStackInput] = useState("");
@@ -224,6 +225,7 @@ export const ItemFormModal = ({
     setFeaturedSort("");
     setShowVfxSection(false);
     setLinkedVfxIds([]);
+    setLinkedVfxDetails([]);
     setSelectedStacks([]);
     setCustomStackInput("");
     setSelectedGameTags([]);
@@ -278,7 +280,9 @@ export const ItemFormModal = ({
       setFeaturedSort(
         gameDevItem.featured_sort != null ? String(gameDevItem.featured_sort) : "",
       );
-      setShowVfxSection(gameDevItem.show_vfx_section ?? true);
+      setShowVfxSection(
+        gameDevItem.is_coming_soon ? false : (gameDevItem.show_vfx_section ?? true),
+      );
       setIsComingSoon(gameDevItem.is_coming_soon ?? false);
       setSelectedGameTags(gameDevItem.tags ?? []);
       setSelectedStacks([]);
@@ -311,11 +315,28 @@ export const ItemFormModal = ({
           return leftOrder - rightOrder;
         });
 
+        const orderedLinkedIds = orderedLinks.map((link) => link.gamedev_vfx_id);
+        const missingLinkedIds = orderedLinkedIds.filter(
+          (vfxId) => !rawVfx.some((item) => item.id === vfxId),
+        );
+
+        let linkedDetails: AdminGameDevVfx[] = [];
+
+        if (missingLinkedIds.length > 0) {
+          const { data: missingVfxData } = await supabase
+            .from("gamedev_vfx")
+            .select("*")
+            .in("id", missingLinkedIds);
+
+          linkedDetails = ((missingVfxData ?? []) as AdminGameDevVfx[]).map((item) => ({
+            ...item,
+            tags: item.tags ?? [],
+          }));
+        }
+
+        setLinkedVfxDetails(linkedDetails);
         setLinkedVfxIds(
-          normalizeLinkedVfxIds(
-            orderedLinks.map((link) => link.gamedev_vfx_id),
-            rawVfx,
-          ),
+          await normalizeLinkedVfxIds(orderedLinkedIds, rawVfx),
         );
       })();
     } else {
@@ -513,7 +534,7 @@ export const ItemFormModal = ({
               selectedCardThumbnailUrl ||
               selectedHeaderThumbnailUrl,
           ),
-      discovery: isFeatured || !showVfxSection || linkedVfxIds.length > 0,
+      discovery: isComingSoon || isFeatured || !showVfxSection || linkedVfxIds.length > 0,
       links: Boolean(githubUrl.trim() || liveUrl.trim() || repoUrl.trim()),
     }),
     [
@@ -628,7 +649,12 @@ export const ItemFormModal = ({
       setError(null);
     }
 
-    if (sectionIdFromWizardStep(wizardStep) === "discovery" && showVfxSection && linkedVfxIds.length === 0) {
+    if (
+      sectionIdFromWizardStep(wizardStep) === "discovery" &&
+      !isComingSoon &&
+      showVfxSection &&
+      linkedVfxIds.length === 0
+    ) {
       setError("Add at least one VFX image or video for this project.");
       return;
     }
@@ -662,8 +688,11 @@ export const ItemFormModal = ({
             isComingSoon={isComingSoon}
             onComingSoonChange={(value) => {
               setIsComingSoon(value);
-              if (value && description.trim().length === 0) {
-                setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
+              if (value) {
+                setShowVfxSection(false);
+                if (description.trim().length === 0) {
+                  setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
+                }
               }
             }}
           />
@@ -716,6 +745,7 @@ export const ItemFormModal = ({
             showVfxSection={showVfxSection}
             onShowVfxSectionChange={setShowVfxSection}
             availableVfx={availableVfx}
+            linkedVfxDetails={linkedVfxDetails}
             linkedVfxIds={linkedVfxIds}
             onLinkedVfxIdsChange={setLinkedVfxIds}
             onOpenVfxMediaLibrary={openVfxMediaLibrary}
@@ -811,7 +841,7 @@ export const ItemFormModal = ({
           return;
         }
 
-        if (showVfxSection && linkedVfxIds.length === 0) {
+        if (!isComingSoon && showVfxSection && linkedVfxIds.length === 0) {
           setError("Add at least one VFX image or video for this project.");
           return;
         }
@@ -868,7 +898,7 @@ export const ItemFormModal = ({
         };
 
         const syncProjectVfxLinks = async (projectId: string) => {
-          const normalizedLinkedVfxIds = normalizeLinkedVfxIds(linkedVfxIds, availableVfx);
+          const normalizedLinkedVfxIds = await normalizeLinkedVfxIds(linkedVfxIds, availableVfx);
 
           const { data: existingLinks, error: fetchLinksError } = await supabase
             .from("gamedev_project_vfx")
@@ -943,7 +973,9 @@ export const ItemFormModal = ({
             }
           }
 
-          await markVfxShownInLibrary(normalizedLinkedVfxIds);
+          if (showVfxSection && normalizedLinkedVfxIds.length > 0) {
+            await markVfxShownInLibrary(normalizedLinkedVfxIds);
+          }
         };
 
         if (isEditingGameDev && sourceGameDev) {

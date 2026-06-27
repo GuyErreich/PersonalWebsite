@@ -138,12 +138,32 @@ export const loadPublicVfxLibraryItems = async <
 };
 
 /** Collapse linked IDs to one canonical row per media URL. */
-export const normalizeLinkedVfxIds = (
+export const normalizeLinkedVfxIds = async (
   linkedIds: string[],
   available: Array<{ id: string; media_url: string; sort_order?: number | null; created_at?: string }>,
-): string[] => {
-  const deduped = dedupeGameDevVfxByMediaUrl(available);
-  const idToMedia = new Map(available.map((item) => [item.id, item.media_url.trim()]));
+): Promise<string[]> => {
+  const availableById = new Map(available.map((item) => [item.id, item]));
+  const missingIds = linkedIds.filter((id) => !availableById.has(id));
+
+  let mergedAvailable = available;
+
+  if (missingIds.length > 0) {
+    const { data, error } = await supabase.from("gamedev_vfx").select("*").in("id", missingIds);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (data && data.length > 0) {
+      mergedAvailable = [
+        ...available,
+        ...(data as Array<{ id: string; media_url: string; sort_order?: number | null; created_at?: string }>),
+      ];
+    }
+  }
+
+  const deduped = dedupeGameDevVfxByMediaUrl(mergedAvailable);
+  const idToMedia = new Map(mergedAvailable.map((item) => [item.id, item.media_url.trim()]));
   const canonicalByMedia = new Map(deduped.map((item) => [item.media_url.trim(), item.id]));
 
   const normalized: string[] = [];

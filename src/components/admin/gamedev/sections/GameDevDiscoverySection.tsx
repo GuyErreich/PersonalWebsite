@@ -18,6 +18,7 @@ interface GameDevDiscoverySectionProps {
   showVfxSection: boolean;
   onShowVfxSectionChange: (value: boolean) => void;
   availableVfx: AdminGameDevVfx[];
+  linkedVfxDetails?: AdminGameDevVfx[];
   linkedVfxIds: string[];
   onLinkedVfxIdsChange: (updater: (prev: string[]) => string[]) => void;
   onOpenVfxMediaLibrary: () => void;
@@ -31,6 +32,7 @@ export const GameDevDiscoverySection = ({
   showVfxSection,
   onShowVfxSectionChange,
   availableVfx,
+  linkedVfxDetails = [],
   linkedVfxIds,
   onLinkedVfxIdsChange,
   onOpenVfxMediaLibrary,
@@ -40,13 +42,20 @@ export const GameDevDiscoverySection = ({
     [availableVfx],
   );
 
+  const linkedDetailsById = useMemo(
+    () => new Map(linkedVfxDetails.map((item) => [item.id, item])),
+    [linkedVfxDetails],
+  );
+
   const linkedVfxItems = useMemo(
     () =>
       linkedVfxIds
-        .map((id) => vfxById.get(id) ?? null)
+        .map((id) => vfxById.get(id) ?? linkedDetailsById.get(id) ?? null)
         .filter((item): item is AdminGameDevVfx => item != null),
-    [linkedVfxIds, vfxById],
+    [linkedDetailsById, linkedVfxIds, vfxById],
   );
+
+  const unresolvedLinkedCount = linkedVfxIds.length - linkedVfxItems.length;
 
   const unlinkedLibraryVfx = useMemo(
     () => availableVfx.filter((item) => !linkedVfxIds.includes(item.id)),
@@ -98,6 +107,13 @@ export const GameDevDiscoverySection = ({
                 Choose images or videos to display in this project&apos;s VFX gallery.
               </p>
             </div>
+
+            {unresolvedLinkedCount > 0 ? (
+              <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">
+                {unresolvedLinkedCount} linked effect{unresolvedLinkedCount === 1 ? "" : "s"} could
+                not be loaded. Remove stale links or re-import from the media library.
+              </p>
+            ) : null}
 
             {linkedVfxItems.length === 0 ? (
               <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">

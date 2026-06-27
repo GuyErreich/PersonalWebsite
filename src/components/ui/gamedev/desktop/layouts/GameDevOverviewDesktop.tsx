@@ -6,7 +6,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Film, Layers, Sparkles } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type KeyboardEvent } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevGallery } from "../../common/gallery/GameDevGallery";
@@ -60,9 +60,45 @@ export const GameDevOverviewDesktop = ({
 
   const tabPulse = (tab: GameDevOverviewTab) => getOverviewTabPulseMotion(visitedTabs.has(tab));
 
+  const getTabId = (tab: GameDevOverviewTab) => {
+    if (tab === "showreel") return showreelTabId;
+    if (tab === "projects") return projectsTabId;
+    return vfxTabId;
+  };
+
+  const handleTabListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const order = GAMEDEV_OVERVIEW_TAB_ORDER;
+    const currentIndex = order.indexOf(activeTab);
+    let nextIndex: number | null = null;
+
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (currentIndex + 1) % order.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + order.length) % order.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = order.length - 1;
+    }
+
+    if (nextIndex === null || nextIndex === currentIndex) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTab = order[nextIndex];
+    switchTab(nextTab);
+    document.getElementById(getTabId(nextTab))?.focus();
+  };
+
   return (
     <div className="gamedev-overview-desktop-tabs-stack">
-      <div className="gamedev-desktop-overview-tabs" role="tablist" aria-label="GameDev overview">
+      <div
+        className="gamedev-desktop-overview-tabs"
+        role="tablist"
+        aria-label="GameDev overview"
+        onKeyDown={handleTabListKeyDown}
+      >
         <motion.button
           id={showreelTabId}
           type="button"

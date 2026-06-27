@@ -114,7 +114,20 @@ export const GameDevProject = () => {
 
         if (linkData && linkData.length > 0) {
           const vfxIds = linkData.map((link) => link.gamedev_vfx_id);
-          const { data: vfxData } = await supabase.from("gamedev_vfx").select("*").in("id", vfxIds);
+          const { data: vfxData, error: vfxError } = await supabase
+            .from("gamedev_vfx")
+            .select("*")
+            .in("id", vfxIds);
+
+          if (vfxError) {
+            safeSetState({
+              project: typedProject,
+              linkedVfx: [],
+              isLoading: false,
+              error: "Failed to load project visual effects.",
+            });
+            return;
+          }
 
           const vfxById = new Map(
             ((vfxData ?? []) as GameDevVfxItem[]).map((item) => [item.id, item]),

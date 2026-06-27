@@ -6,11 +6,10 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Play } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState, type SyntheticEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
 import { vfxDeckCardVariants } from "../../../../../lib/motionVariants";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
-import { seekThumbnailToVideoCenter } from "../../../../admin/mediaLibrary/videoThumbnail";
 import type { GameDevVfxItem } from "../data/types";
 
 interface GameDevVfxSliderProps {
@@ -28,10 +27,9 @@ interface VfxLoopVideoProps {
   item: GameDevVfxItem;
   autoPlay: boolean;
   className: string;
-  onLoadedMetadata?: (event: SyntheticEvent<HTMLVideoElement>) => void;
 }
 
-const VfxLoopVideo = ({ item, autoPlay, className, onLoadedMetadata }: VfxLoopVideoProps) => {
+const VfxLoopVideo = ({ item, autoPlay, className }: VfxLoopVideoProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -57,7 +55,6 @@ const VfxLoopVideo = ({ item, autoPlay, className, onLoadedMetadata }: VfxLoopVi
       preload={autoPlay ? "auto" : "metadata"}
       disablePictureInPicture
       disableRemotePlayback
-      onLoadedMetadata={onLoadedMetadata}
       className={className}
       aria-label={item.title}
     />
@@ -75,16 +72,22 @@ const renderVfxMedia = (
       : "h-full w-full object-cover transition-transform duration-300";
 
   if (item.media_type === "video") {
-    const shouldAutoPlay = variant === "hero";
+    if (variant === "thumb") {
+      return (
+        <img
+          src={item.thumbnail_url ?? item.media_url}
+          alt=""
+          loading={isActive ? "eager" : "lazy"}
+          className={className}
+        />
+      );
+    }
 
     return (
       <VfxLoopVideo
         item={item}
-        autoPlay={shouldAutoPlay}
+        autoPlay
         className={className}
-        onLoadedMetadata={
-          variant === "thumb" && !shouldAutoPlay ? seekThumbnailToVideoCenter : undefined
-        }
       />
     );
   }
