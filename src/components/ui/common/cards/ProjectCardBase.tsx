@@ -82,9 +82,6 @@ export const ProjectCardBase = ({
   const wrapperClassName = contentSized
     ? "h-auto min-h-0 overflow-visible pt-2"
     : "h-full min-h-0 overflow-visible pt-2";
-  const containerClassName = contentSized
-    ? theme.containerClassName.replace(/\bh-full\b/g, "h-auto").replace(/\boverflow-hidden\b/g, "overflow-visible")
-    : theme.containerClassName;
 
   const cardBody = (
     <>
@@ -185,9 +182,10 @@ export const ProjectCardBase = ({
           animate={isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
           transition={{ duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 }}
           whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
+          onMouseEnter={playHoverSound}
           onDoubleClick={handleDoubleClick}
           onKeyDown={handleKeyDown}
-          className={`relative cursor-pointer ${containerClassName}`}
+          className={`relative cursor-pointer ${theme.containerClassName}`}
         >
           {cardBody}
         </motion.div>
@@ -197,7 +195,7 @@ export const ProjectCardBase = ({
           animate={isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
           transition={{ duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 }}
           whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
-          className={`relative ${containerClassName}`}
+          className={`relative ${theme.containerClassName}`}
         >
           {cardBody}
         </motion.div>

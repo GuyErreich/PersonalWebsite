@@ -376,7 +376,9 @@ export const GameDevGallery = ({
           <PaginatedSlideFrame
             direction={direction}
             frameKey={frameKey}
-            wrapperClassName={useDenseGrid ? "min-h-0 flex-1 overflow-y-auto pr-1" : "min-h-0 flex-1"}
+            wrapperClassName={
+              useDenseGrid ? "min-h-0 flex-1 overflow-y-auto pr-1" : "min-h-0 flex-1"
+            }
             clipClassName="relative min-h-0"
             contentClassName={`grid grid-cols-1 gap-3 md:gap-4 ${
               useDenseGrid ? "md:grid-cols-3 md:auto-rows-auto md:items-start" : "md:grid-cols-3"
@@ -404,7 +406,7 @@ export const GameDevGallery = ({
                 return (
                   <div
                     key={`ghost-${i}`}
-                    className="pointer-events-none invisible select-none h-0 overflow-hidden"
+                    className="pointer-events-none select-none opacity-0"
                     aria-hidden="true"
                   >
                     <GalleryInfoCard item={template} index={i} iconMap={iconMap} withThumbnail />

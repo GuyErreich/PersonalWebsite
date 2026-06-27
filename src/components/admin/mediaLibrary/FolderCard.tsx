@@ -6,7 +6,14 @@
 
 import { motion } from "framer-motion";
 import { Folder } from "lucide-react";
-import { type DragEvent, type KeyboardEvent, type MouseEvent, useEffect, useRef, useState } from "react";
+import {
+  type DragEvent,
+  type KeyboardEvent,
+  type MouseEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../types/handles";
 import type { FolderEntry } from "./types";
