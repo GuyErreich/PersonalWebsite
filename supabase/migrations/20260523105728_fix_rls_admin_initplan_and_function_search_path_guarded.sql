@@ -1,10 +1,7 @@
 -- Copyright (c) 2026 Guy Erreich
 -- SPDX-License-Identifier: MIT
 
--- This migration captures remote changes already applied via MCP:
--- 1) RLS admin-check initplan optimization
--- 2) trigger function search_path hardening
--- 3) creation of public.gamedev_item_media
+-- Applied remotely via Supabase MCP; recorded here to align CLI migration history.
 
 create or replace function public.touch_media_library_updated_at()
 returns trigger
@@ -192,42 +189,3 @@ BEGIN
     EXECUTE 'ALTER POLICY "Admins can delete site settings" ON public.site_settings USING ((select public.is_admin()))';
   END IF;
 END $$;
-
-create table if not exists public.gamedev_item_media (
-  id uuid primary key default gen_random_uuid(),
-  gamedev_item_id uuid not null references public.gamedev_items(id) on delete cascade,
-  media_url text not null,
-  thumbnail_url text,
-  media_type text not null check (media_type in ('image', 'video')),
-  caption text,
-  sort_order integer,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists gamedev_item_media_gamedev_item_id_idx
-  on public.gamedev_item_media (gamedev_item_id);
-
-create index if not exists gamedev_item_media_sort_order_idx
-  on public.gamedev_item_media (gamedev_item_id, sort_order nulls last, created_at asc);
-
-alter table public.gamedev_item_media enable row level security;
-
-drop policy if exists "Public can read gamedev item media" on public.gamedev_item_media;
-create policy "Public can read gamedev item media"
-  on public.gamedev_item_media for select
-  using (true);
-
-drop policy if exists "Admins can insert gamedev item media" on public.gamedev_item_media;
-create policy "Admins can insert gamedev item media"
-  on public.gamedev_item_media for insert
-  with check ((select public.is_admin()));
-
-drop policy if exists "Admins can update gamedev item media" on public.gamedev_item_media;
-create policy "Admins can update gamedev item media"
-  on public.gamedev_item_media for update
-  using ((select public.is_admin()));
-
-drop policy if exists "Admins can delete gamedev item media" on public.gamedev_item_media;
-create policy "Admins can delete gamedev item media"
-  on public.gamedev_item_media for delete
-  using ((select public.is_admin()));
