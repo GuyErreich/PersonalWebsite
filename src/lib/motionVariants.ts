@@ -22,3 +22,31 @@ export const slideYVariants = {
   center: { opacity: 1, y: 0 },
   exit: (dir: number) => ({ opacity: 0, y: `${dir * -100}%` }),
 };
+
+/** Deck-style card switch for the GameDev VFX showcase. */
+export const vfxDeckCardVariants = {
+  enter: (dir: number) => ({
+    opacity: 0,
+    x: dir * 48,
+    y: 20,
+    rotateZ: dir * -5,
+    rotateY: dir * 12,
+    scale: 0.92,
+  }),
+  center: {
+    opacity: 1,
+    x: 0,
+    y: 0,
+    rotateZ: 0,
+    rotateY: 0,
+    scale: 1,
+  },
+  exit: (dir: number) => ({
+    opacity: 0,
+    x: dir * -56,
+    y: -24,
+    rotateZ: dir * 6,
+    rotateY: dir * -14,
+    scale: 0.95,
+  }),
+};

@@ -15,6 +15,9 @@ interface PaginatedSlideFrameProps {
   contentClassName?: string;
   clipClassName?: string;
   wrapperClassName?: string;
+  /** Framer layout animation — disable inside fixed-height panels to avoid scroll flashes */
+  enableLayout?: boolean;
+  presenceMode?: "sync" | "wait" | "popLayout";
 }
 
 export const PaginatedSlideFrame = ({
@@ -24,15 +27,17 @@ export const PaginatedSlideFrame = ({
   contentClassName,
   clipClassName = "relative overflow-hidden",
   wrapperClassName,
+  enableLayout = true,
+  presenceMode = "popLayout",
 }: PaginatedSlideFrameProps) => {
   return (
     <motion.div
-      layout
-      transition={{ layout: { duration: 0.5, ease: "easeInOut" } }}
+      layout={enableLayout}
+      transition={enableLayout ? { layout: { duration: 0.5, ease: "easeInOut" } } : undefined}
       className={wrapperClassName}
     >
       <div className={clipClassName}>
-        <AnimatePresence mode="popLayout" custom={direction}>
+        <AnimatePresence mode={presenceMode} custom={direction}>
           <motion.div
             key={frameKey}
             custom={direction}

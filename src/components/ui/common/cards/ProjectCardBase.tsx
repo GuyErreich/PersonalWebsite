@@ -34,6 +34,7 @@ interface ProjectCardBaseProps {
   contentSized?: boolean;
   openOnDoubleClick?: boolean;
   thumbnailUrl?: string;
+  skipRevealGate?: boolean;
   theme: ProjectCardTheme;
 }
 
@@ -50,6 +51,7 @@ export const ProjectCardBase = ({
   contentSized = false,
   openOnDoubleClick = false,
   thumbnailUrl,
+  skipRevealGate = false,
   theme,
 }: ProjectCardBaseProps) => {
   const isRevealed = useContext(SectionRevealContext);
@@ -194,9 +196,10 @@ export const ProjectCardBase = ({
   );
 
   const motionProps = {
-    initial: { opacity: 0, y: 16 },
-    animate: isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
-    transition: { duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 },
+    initial: skipRevealGate ? false : { opacity: 0, y: 16 },
+    animate:
+      skipRevealGate || (isRevealed && isInView) ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
+    transition: { duration: 0.3, delay: skipRevealGate ? 0 : isRevealed ? 0.1 + index * 0.07 : 0 },
   };
 
   return (
