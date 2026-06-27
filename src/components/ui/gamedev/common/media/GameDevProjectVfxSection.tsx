@@ -6,92 +6,164 @@
 
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
+import { seekThumbnailToVideoCenter } from "../../../../admin/mediaLibrary/videoThumbnail";
 import type { GameDevVfxItem } from "../data/types";
 
 interface GameDevProjectVfxSectionProps {
   vfxItems: GameDevVfxItem[];
 }
 
-export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionProps) => {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+const clampIndex = (index: number, length: number) => {
+  if (length <= 0) return 0;
+  return Math.max(0, Math.min(length - 1, index));
+};
 
-  if (vfxItems.length === 0) {
+export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionProps) => {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const safeIndex = clampIndex(activeIndex, vfxItems.length);
+  const activeItem = vfxItems[safeIndex];
+
+  useEffect(() => {
+    setActiveIndex((current) => clampIndex(current, vfxItems.length));
+  }, [vfxItems.length]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || activeItem?.media_type !== "video") {
+      return;
+    }
+
+    void video.play().catch(() => {
+      // Browser autoplay policy may block until user gesture.
+    });
+  }, [activeItem?.id, activeItem?.media_type, activeItem?.media_url]);
+
+  if (!activeItem) {
     return null;
   }
 
+  const thumbPreview = (item: GameDevVfxItem) => item.thumbnail_url || item.media_url;
+
   return (
-    <section className="mb-10">
-      <div className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
-        <Sparkles className="h-3.5 w-3.5" />
-        Visual Effects
+    <section className="mt-10 mb-10">
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
+            <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            Visual Effects
+          </div>
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-400">
+            Shaders, particles, and real-time effects from this project.
+          </p>
+        </div>
+        <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-500">
+          {vfxItems.length} effect{vfxItems.length === 1 ? "" : "s"}
+        </p>
+      </header>
+
+      <div className="overflow-hidden rounded-2xl border border-white/10 bg-black shadow-[0_24px_80px_-48px_rgba(15,23,42,1)]">
+        <div className="aspect-video w-full">
+          {activeItem.media_type === "video" ? (
+            <video
+              key={activeItem.id}
+              ref={videoRef}
+              src={activeItem.media_url}
+              poster={activeItem.thumbnail_url ?? undefined}
+              muted
+              loop
+              playsInline
+              autoPlay
+              preload="auto"
+              disablePictureInPicture
+              disableRemotePlayback
+              className="h-full w-full object-contain"
+              aria-label={activeItem.title}
+            />
+          ) : (
+            <img
+              key={activeItem.id}
+              src={activeItem.media_url}
+              alt={activeItem.title}
+              loading="eager"
+              className="h-full w-full object-contain"
+            />
+          )}
+        </div>
       </div>
 
-      <div className="gamedev-vfx-grid">
-        {vfxItems.map((item) => {
-          const isExpanded = expandedId === item.id;
-
-          return (
-            <motion.button
-              key={item.id}
-              type="button"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.99 }}
-              onMouseEnter={playHoverSound}
-              onClick={() => {
-                playClickSound();
-                setExpandedId((current) => (current === item.id ? null : item.id));
-              }}
-              className={`gamedev-vfx-card text-left${isExpanded ? " gamedev-vfx-card--expanded" : ""}`}
-              aria-expanded={isExpanded}
-            >
-              <div className="gamedev-vfx-card-media">
-                {item.media_type === "video" ? (
-                  <video
-                    src={item.media_url}
-                    poster={item.thumbnail_url ?? undefined}
-                    muted
-                    loop
-                    playsInline
-                    autoPlay={isExpanded}
-                    controls={isExpanded}
-                    className="h-full w-full object-cover"
-                    aria-label={item.title}
-                  />
-                ) : (
-                  <img
-                    src={item.media_url}
-                    alt={item.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                )}
-              </div>
-
-              <div className="gamedev-vfx-card-body">
-                <h3 className="text-sm font-semibold text-white">{item.title}</h3>
-                {item.description ? (
-                  <p className="mt-1 line-clamp-2 text-xs text-slate-300">{item.description}</p>
-                ) : null}
-
-                {item.tags && item.tags.length > 0 ? (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.tags.slice(0, 4).map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-md border border-cyan-400/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] text-cyan-100"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            </motion.button>
-          );
-        })}
+      <div className="mt-4 rounded-2xl border border-white/10 bg-slate-900/65 p-4 backdrop-blur-sm md:p-5">
+        <h3 className="text-lg font-semibold text-white">{activeItem.title}</h3>
+        {activeItem.description ? (
+          <p className="mt-2 text-sm leading-relaxed text-slate-300">{activeItem.description}</p>
+        ) : null}
+        {activeItem.tags && activeItem.tags.length > 0 ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {activeItem.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-md border border-cyan-400/25 bg-cyan-500/10 px-2.5 py-1 text-xs text-cyan-100"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
+
+      {vfxItems.length > 1 ? (
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+          {vfxItems.map((item, index) => {
+            const isActive = index === safeIndex;
+
+            return (
+              <motion.button
+                key={item.id}
+                type="button"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onMouseEnter={playHoverSound}
+                onClick={() => {
+                  playClickSound();
+                  setActiveIndex(index);
+                }}
+                aria-label={`Show ${item.title}`}
+                aria-current={isActive ? "true" : undefined}
+                className={`shrink-0 overflow-hidden rounded-xl border ${
+                  isActive
+                    ? "border-cyan-400/70 ring-1 ring-cyan-300/70"
+                    : "border-white/10 hover:border-white/30"
+                }`}
+              >
+                <div className="aspect-video w-28 bg-black sm:w-32">
+                  {item.media_type === "video" ? (
+                    <video
+                      src={item.media_url}
+                      poster={item.thumbnail_url ?? undefined}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      onLoadedMetadata={seekThumbnailToVideoCenter}
+                      className="h-full w-full object-cover"
+                      aria-hidden="true"
+                      tabIndex={-1}
+                    />
+                  ) : (
+                    <img
+                      src={thumbPreview(item)}
+                      alt=""
+                      loading="lazy"
+                      className="h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      ) : null}
     </section>
   );
 };

@@ -12,16 +12,13 @@ import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { fallbackGameDevItems } from "../components/ui/gamedev/common/data/items";
 import type {
   GameDevItem,
-  GameDevMediaItem,
   GameDevVfxItem,
 } from "../components/ui/gamedev/common/data/types";
 import { GameDevProjectHeaderMedia } from "../components/ui/gamedev/common/media/GameDevProjectHeaderMedia";
-import { GameDevProjectMediaGallery } from "../components/ui/gamedev/common/media/GameDevProjectMediaGallery";
 import { GameDevProjectVfxSection } from "../components/ui/gamedev/common/media/GameDevProjectVfxSection";
 import {
   buildGameDevSummary,
   dedupeGameDevVfxByMediaUrl,
-  inferMediaTypeFromUrl,
   isGameDevComingSoon,
   parseGameDevStoredContent,
 } from "../lib/gamedev";
@@ -30,7 +27,6 @@ import { supabase } from "../lib/supabase";
 
 interface ProjectState {
   project: GameDevItem | null;
-  mediaItems: GameDevMediaItem[];
   linkedVfx: GameDevVfxItem[];
   isLoading: boolean;
   error: string | null;
@@ -42,7 +38,6 @@ export const GameDevProject = () => {
   const { id } = useParams();
   const [state, setState] = useState<ProjectState>({
     project: null,
-    mediaItems: [],
     linkedVfx: [],
     isLoading: true,
     error: null,
@@ -62,7 +57,6 @@ export const GameDevProject = () => {
     if (!id) {
       safeSetState({
         project: null,
-        mediaItems: [],
         linkedVfx: [],
         isLoading: false,
         error: "Missing project id.",
@@ -75,7 +69,6 @@ export const GameDevProject = () => {
     void (async () => {
       safeSetState({
         project: null,
-        mediaItems: [],
         linkedVfx: [],
         isLoading: true,
         error: null,
@@ -93,7 +86,6 @@ export const GameDevProject = () => {
           if (!fallback) {
             safeSetState({
               project: null,
-              mediaItems: [],
               linkedVfx: [],
               isLoading: false,
               error: "Project not found.",
@@ -103,7 +95,6 @@ export const GameDevProject = () => {
 
           safeSetState({
             project: fallback,
-            mediaItems: [],
             linkedVfx: [],
             isLoading: false,
             error: null,
@@ -113,29 +104,11 @@ export const GameDevProject = () => {
 
         const typedProject = projectData as GameDevItem;
 
-        const [{ data: mediaData, error: mediaError }, { data: linkData }] = await Promise.all([
-          supabase
-            .from("gamedev_item_media")
-            .select("*")
-            .eq("gamedev_item_id", id)
-            .order("sort_order", { ascending: true, nullsFirst: false })
-            .order("created_at", { ascending: true }),
-          supabase
-            .from("gamedev_project_vfx")
-            .select("gamedev_vfx_id, sort_order")
-            .eq("gamedev_item_id", id)
-            .order("sort_order", { ascending: true, nullsFirst: false }),
-        ]);
-
-        const normalizedMedia = mediaError
-          ? []
-          : (mediaData ?? []).map((item) => {
-              const typedItem = item as GameDevMediaItem;
-              return {
-                ...typedItem,
-                media_type: typedItem.media_type ?? inferMediaTypeFromUrl(typedItem.media_url),
-              };
-            });
+        const { data: linkData } = await supabase
+          .from("gamedev_project_vfx")
+          .select("gamedev_vfx_id, sort_order")
+          .eq("gamedev_item_id", id)
+          .order("sort_order", { ascending: true, nullsFirst: false });
 
         let linkedVfx: GameDevVfxItem[] = [];
 
@@ -156,7 +129,6 @@ export const GameDevProject = () => {
 
         safeSetState({
           project: typedProject,
-          mediaItems: normalizedMedia,
           linkedVfx,
           isLoading: false,
           error: null,
@@ -167,7 +139,6 @@ export const GameDevProject = () => {
         if (fallback) {
           safeSetState({
             project: fallback,
-            mediaItems: [],
             linkedVfx: [],
             isLoading: false,
             error: null,
@@ -177,7 +148,6 @@ export const GameDevProject = () => {
 
         safeSetState({
           project: null,
-          mediaItems: [],
           linkedVfx: [],
           isLoading: false,
           error: "Project not found.",
@@ -200,11 +170,13 @@ export const GameDevProject = () => {
   if (state.isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100">
-        <div className="mx-auto max-w-6xl px-4 py-20">
-          <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-800" />
-          <div className="mt-6 h-10 w-2/3 animate-pulse rounded-lg bg-slate-800" />
-          <div className="mt-8 aspect-video animate-pulse rounded-2xl bg-slate-800" />
-        </div>
+        <header className="gamedev-project-header gamedev-project-header--media">
+          <div className="gamedev-project-header-fade" />
+          <div className="gamedev-project-header-content relative z-10 mx-auto max-w-6xl px-4 md:px-6">
+            <div className="h-10 w-48 animate-pulse rounded-lg bg-slate-800/80" />
+            <div className="mt-6 h-10 w-2/3 animate-pulse rounded-lg bg-slate-800/80" />
+          </div>
+        </header>
       </div>
     );
   }
@@ -240,71 +212,96 @@ export const GameDevProject = () => {
     project.header_media_url?.trim() || project.media_url?.trim() || null;
   const showVfxSection = project.show_vfx_section !== false && state.linkedVfx.length > 0;
 
-  return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.18),transparent_42%),radial-gradient(circle_at_70%_80%,rgba(14,165,233,0.14),transparent_42%),linear-gradient(to_bottom,#030712,#0f172a)] text-slate-100">
-      <main className="mx-auto max-w-6xl px-4 py-8 md:px-6 md:py-12">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <MotionLink
-            to="/#gamedev"
-            whileHover={{ x: -3 }}
-            whileTap={{ scale: 0.97 }}
+  const projectNav = (
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <MotionLink
+        to="/#gamedev"
+        whileHover={{ x: -3 }}
+        whileTap={{ scale: 0.97 }}
+        onMouseEnter={playHoverSound}
+        onClick={playClickSound}
+        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-4 py-2 text-sm text-white/90 backdrop-blur-sm hover:border-cyan-300/40"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to GameDev
+      </MotionLink>
+
+      <div className="flex items-center gap-2">
+        {project.github_url ? (
+          <motion.a
+            href={project.github_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
             onMouseEnter={playHoverSound}
             onClick={playClickSound}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/90 hover:border-cyan-300/40"
+            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-sm backdrop-blur-sm hover:border-cyan-300/45"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back to GameDev
-          </MotionLink>
+            <Github className="h-4 w-4" />
+            GitHub
+          </motion.a>
+        ) : null}
 
-          <div className="flex items-center gap-2">
-            {project.github_url ? (
-              <motion.a
-                href={project.github_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onMouseEnter={playHoverSound}
-                onClick={playClickSound}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:border-cyan-300/45"
-              >
-                <Github className="h-4 w-4" />
-                GitHub
-              </motion.a>
-            ) : null}
+        {project.live_url ? (
+          <motion.a
+            href={project.live_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onMouseEnter={playHoverSound}
+            onClick={playClickSound}
+            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-sm backdrop-blur-sm hover:border-cyan-300/45"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Live
+          </motion.a>
+        ) : null}
+      </div>
+    </div>
+  );
 
-            {project.live_url ? (
-              <motion.a
-                href={project.live_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onMouseEnter={playHoverSound}
-                onClick={playClickSound}
-                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm hover:border-cyan-300/45"
-              >
-                <ExternalLink className="h-4 w-4" />
-                Live
-              </motion.a>
-            ) : null}
-          </div>
+  const projectHeader = (
+    <header>
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300/80">
+        {comingSoon ? "Coming Soon" : "GameDev Project"}
+      </p>
+      <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl lg:text-5xl">
+        {project.title}
+      </h1>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-200/90 md:text-base">
+        {summary}
+      </p>
+    </header>
+  );
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.18),transparent_42%),radial-gradient(circle_at_70%_80%,rgba(14,165,233,0.14),transparent_42%),linear-gradient(to_bottom,#030712,#0f172a)] text-slate-100">
+      <header
+        className={`gamedev-project-header${headerMediaUrl ? " gamedev-project-header--media" : ""}`}
+      >
+        {headerMediaUrl ? (
+          <GameDevProjectHeaderMedia
+            mediaUrl={headerMediaUrl}
+            thumbnailUrl={project.header_thumbnail_url}
+          />
+        ) : null}
+        {headerMediaUrl ? <div className="gamedev-project-header-fade" aria-hidden="true" /> : null}
+
+        <div
+          className={`gamedev-project-header-content relative z-10 mx-auto max-w-6xl px-4 md:px-6${headerMediaUrl ? "" : " pt-6 md:pt-8"}`}
+        >
+          {projectNav}
+          {projectHeader}
         </div>
+      </header>
 
-        <header className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300/80">
-            {comingSoon ? "Coming Soon" : "GameDev Project"}
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-            {project.title}
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300 md:text-base">
-            {summary}
-          </p>
-        </header>
-
+      <main
+        className={`gamedev-project-body relative z-20 mx-auto max-w-6xl px-4 pb-12 md:px-6 md:pb-16${headerMediaUrl ? " gamedev-project-body--overlap" : " pt-6 md:pt-8"}`}
+      >
         {comingSoon ? (
-          <section className="mb-10 rounded-2xl border border-amber-400/20 bg-amber-500/10 p-6 md:p-8">
+          <section className="rounded-2xl border border-amber-400/20 bg-amber-500/10 p-6 md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-200/90">
               In development
             </p>
@@ -312,23 +309,6 @@ export const GameDevProject = () => {
               This project is still in progress. Check back later for screenshots, breakdowns, and
               playable builds.
             </p>
-            {headerMediaUrl ? (
-              <div className="mt-8">
-                <GameDevProjectHeaderMedia
-                  mediaUrl={headerMediaUrl}
-                  thumbnailUrl={project.header_thumbnail_url}
-                  title={project.title}
-                />
-              </div>
-            ) : null}
-            {state.mediaItems.length > 0 ? (
-              <div className="mt-8">
-                <GameDevProjectMediaGallery
-                  mediaItems={state.mediaItems}
-                  projectTitle={project.title}
-                />
-              </div>
-            ) : null}
             {project.tags && project.tags.length > 0 ? (
               <div className="mt-8 flex flex-wrap gap-2">
                 {project.tags.map((tag) => (
@@ -344,34 +324,13 @@ export const GameDevProject = () => {
           </section>
         ) : (
           <>
-            {headerMediaUrl ? (
-              <section className="mb-10">
-                <GameDevProjectHeaderMedia
-                  mediaUrl={headerMediaUrl}
-                  thumbnailUrl={project.header_thumbnail_url}
-                  title={project.title}
-                />
-              </section>
-            ) : null}
-
-            {state.mediaItems.length > 0 ? (
-              <section className="mb-10">
-                <GameDevProjectMediaGallery
-                  mediaItems={state.mediaItems}
-                  projectTitle={project.title}
-                />
-              </section>
-            ) : null}
-
-            {showVfxSection ? <GameDevProjectVfxSection vfxItems={state.linkedVfx} /> : null}
-
-            <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_0.6fr]">
-              <article className="rounded-2xl border border-white/10 bg-slate-900/65 p-5 shadow-[0_24px_80px_-48px_rgba(15,23,42,1)] md:p-7">
+            <section className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+              <article className="rounded-2xl border border-white/10 bg-slate-900/70 p-5 shadow-[0_24px_80px_-48px_rgba(15,23,42,1)] backdrop-blur-sm md:p-7">
                 <MarkdownRenderer content={content} />
               </article>
 
               <aside className="space-y-4">
-                <div className="rounded-2xl border border-white/10 bg-slate-900/60 p-4">
+                <div className="rounded-2xl border border-white/10 bg-slate-900/65 p-4 backdrop-blur-sm">
                   <div className="mb-2 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-cyan-300/80">
                     <Layers3 className="h-3.5 w-3.5" />
                     Tech Stack
@@ -396,6 +355,8 @@ export const GameDevProject = () => {
                 </div>
               </aside>
             </section>
+
+            {showVfxSection ? <GameDevProjectVfxSection vfxItems={state.linkedVfx} /> : null}
           </>
         )}
       </main>

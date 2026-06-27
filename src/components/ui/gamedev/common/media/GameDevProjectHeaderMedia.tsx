@@ -9,35 +9,34 @@ import { inferMediaTypeFromUrl } from "../../../../../lib/gamedev";
 interface GameDevProjectHeaderMediaProps {
   mediaUrl: string;
   thumbnailUrl?: string | null;
-  title: string;
 }
 
 export const GameDevProjectHeaderMedia = ({
   mediaUrl,
   thumbnailUrl,
-  title,
 }: GameDevProjectHeaderMediaProps) => {
   const mediaType = inferMediaTypeFromUrl(mediaUrl);
+  const mediaClassName =
+    "absolute inset-0 h-full w-full object-cover object-center pointer-events-none select-none";
 
   return (
-    <div className="gamedev-project-header-media overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 shadow-[0_24px_80px_-48px_rgba(6,182,212,0.55)]">
+    <div className="gamedev-project-header-media absolute inset-0 overflow-hidden" aria-hidden="true">
       {mediaType === "video" ? (
         <video
           src={mediaUrl}
           poster={thumbnailUrl ?? undefined}
-          controls
+          autoPlay
+          muted
           playsInline
           loop
-          className="aspect-video w-full object-cover"
-          aria-label={`${title} header video`}
+          preload="metadata"
+          disablePictureInPicture
+          disableRemotePlayback
+          tabIndex={-1}
+          className={mediaClassName}
         />
       ) : (
-        <img
-          src={mediaUrl}
-          alt={title}
-          loading="eager"
-          className="aspect-video w-full object-cover"
-        />
+        <img src={mediaUrl} alt="" loading="eager" className={mediaClassName} />
       )}
     </div>
   );

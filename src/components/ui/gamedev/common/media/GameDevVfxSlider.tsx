@@ -6,7 +6,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Play } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type SyntheticEvent } from "react";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
 import { vfxDeckCardVariants } from "../../../../../lib/motionVariants";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
@@ -24,6 +24,46 @@ const clampIndex = (index: number, length: number) => {
 
 const DECK_SPRING = { type: "spring" as const, stiffness: 340, damping: 30, mass: 0.82 };
 
+interface VfxLoopVideoProps {
+  item: GameDevVfxItem;
+  autoPlay: boolean;
+  className: string;
+  onLoadedMetadata?: (event: SyntheticEvent<HTMLVideoElement>) => void;
+}
+
+const VfxLoopVideo = ({ item, autoPlay, className, onLoadedMetadata }: VfxLoopVideoProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !autoPlay) {
+      return;
+    }
+
+    void video.play().catch(() => {
+      // Browser autoplay policy may block until user gesture.
+    });
+  }, [autoPlay, item.media_url]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={item.media_url}
+      poster={item.thumbnail_url ?? undefined}
+      muted
+      loop
+      playsInline
+      autoPlay={autoPlay}
+      preload={autoPlay ? "auto" : "metadata"}
+      disablePictureInPicture
+      disableRemotePlayback
+      onLoadedMetadata={onLoadedMetadata}
+      className={className}
+      aria-label={item.title}
+    />
+  );
+};
+
 const renderVfxMedia = (
   item: GameDevVfxItem,
   variant: "hero" | "thumb",
@@ -35,18 +75,16 @@ const renderVfxMedia = (
       : "h-full w-full object-cover transition-transform duration-300";
 
   if (item.media_type === "video") {
+    const shouldAutoPlay = variant === "hero" || (variant === "thumb" && isActive);
+
     return (
-      <video
-        src={item.media_url}
-        poster={item.thumbnail_url ?? undefined}
-        muted
-        loop
-        playsInline
-        autoPlay={variant === "hero"}
-        preload={variant === "hero" ? "auto" : "metadata"}
-        onLoadedMetadata={variant === "thumb" ? seekThumbnailToVideoCenter : undefined}
+      <VfxLoopVideo
+        item={item}
+        autoPlay={shouldAutoPlay}
         className={className}
-        aria-label={item.title}
+        onLoadedMetadata={
+          variant === "thumb" && !shouldAutoPlay ? seekThumbnailToVideoCenter : undefined
+        }
       />
     );
   }
