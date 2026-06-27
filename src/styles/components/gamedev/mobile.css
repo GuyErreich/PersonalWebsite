@@ -27,6 +27,10 @@
     @apply h-full;
   }
 
+  .gamedev-mobile-short-panel .gamedev-panel-primary-button {
+    @apply shrink-0;
+  }
+
   /* Short-height phone layout — tab-based so showreel and gallery don't compete */
 
   .gamedev-overview-mobile-short-stack {
@@ -163,7 +167,7 @@
   }
 
   .gamedev-hive-node {
-    @apply absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-start gap-1 rounded-[1rem] border border-white/10 bg-[#09111d]/84 px-1 py-1 text-center text-white shadow-[0_10px_28px_rgba(2,6,23,0.42)] backdrop-blur-sm;
+    @apply absolute flex h-full -translate-x-1/2 -translate-y-1/2 flex-col items-stretch justify-between gap-1 rounded-[1rem] border border-white/10 bg-[#09111d]/84 px-1 py-1 text-center text-white shadow-[0_10px_28px_rgba(2,6,23,0.42)] backdrop-blur-sm;
   }
 
   .gamedev-hive-node--center {
@@ -171,15 +175,15 @@
   }
 
   .gamedev-hive-node-thumb {
-    @apply h-10 w-full rounded-[0.72rem] border border-white/15 bg-cover bg-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)];
+    @apply min-h-0 w-full flex-1 rounded-[0.72rem] border border-white/15 bg-cover bg-center shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)];
   }
 
   .gamedev-hive-node-icon {
-    @apply flex h-9 w-full items-center justify-center rounded-[0.72rem] border border-purple-500/30 bg-purple-500/14 text-purple-200;
+    @apply flex min-h-0 w-full flex-1 items-center justify-center rounded-[0.72rem] border border-purple-500/30 bg-purple-500/14 text-purple-200;
   }
 
   .gamedev-hive-node-label {
-    @apply line-clamp-2 w-full px-0.5 text-[8px] font-semibold leading-tight text-gray-200;
+    @apply mt-auto line-clamp-2 w-full shrink-0 px-0.5 text-[8px] font-semibold leading-tight text-gray-200;
   }
 
   .gamedev-hive-focus-core {
@@ -215,7 +219,15 @@
   }
 
   .gamedev-hive-meta {
-    @apply flex items-start justify-between gap-3 px-1;
+    @apply flex shrink-0 flex-col gap-2 px-1 pb-1;
+  }
+
+  .gamedev-hive-meta-row {
+    @apply flex items-start justify-between gap-3;
+  }
+
+  .gamedev-hive-open-link {
+    @apply shrink-0;
   }
 
   .gamedev-hive-caption {

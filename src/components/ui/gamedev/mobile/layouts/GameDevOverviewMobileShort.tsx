@@ -148,7 +148,7 @@ export const GameDevOverviewMobileShort = ({
               <GameDevPanelShell
                 eyebrow="Featured Gallery"
                 title="Selected Work"
-                className="h-[95%]"
+                className="h-full"
                 clipScroll
                 footer={
                   <GameDevPanelButton

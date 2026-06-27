@@ -16,6 +16,8 @@ interface GameDevProjectCardProps {
   icon: ReactNode;
   index: number;
   compact?: boolean;
+  contentSized?: boolean;
+  openOnDoubleClick?: boolean;
   thumbnailUrl?: string;
 }
 
@@ -28,8 +30,16 @@ export const GameDevProjectCard = ({
   icon,
   index,
   compact = false,
+  contentSized = false,
+  openOnDoubleClick = false,
   thumbnailUrl,
 }: GameDevProjectCardProps) => {
+  const baseContainer =
+    "group flex flex-col rounded-xl border border-white/10 bg-gray-800/90 backdrop-blur-sm";
+  const containerClassName = contentSized
+    ? `${baseContainer} h-auto overflow-visible`
+    : `${baseContainer} h-full overflow-hidden`;
+
   return (
     <ProjectCardBase
       title={title}
@@ -40,10 +50,11 @@ export const GameDevProjectCard = ({
       icon={icon}
       index={index}
       compact={compact}
+      contentSized={contentSized}
+      openOnDoubleClick={openOnDoubleClick}
       thumbnailUrl={thumbnailUrl}
       theme={{
-        containerClassName:
-          "group flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-gray-800/90 backdrop-blur-sm",
+        containerClassName,
         iconShellClassName:
           "rounded-lg border border-purple-500/20 bg-purple-500/15 shadow-[inset_0_2px_8px_rgba(0,0,0,0.6)]",
         titleClassName: "font-semibold text-white transition-colors group-hover:text-purple-300",
