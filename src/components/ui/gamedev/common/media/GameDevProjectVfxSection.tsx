@@ -19,6 +19,66 @@ const clampIndex = (index: number, length: number) => {
   return Math.max(0, Math.min(length - 1, index));
 };
 
+interface VfxThumbVideoProps {
+  src: string;
+  poster?: string | null;
+  isActive: boolean;
+}
+
+const VfxThumbVideo = ({ src, poster, isActive }: VfxThumbVideoProps) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) {
+      return;
+    }
+
+    void video.play().catch(() => {
+      // Browser autoplay policy may block until user gesture.
+    });
+  }, [src, isActive]);
+
+  return (
+    <video
+      ref={videoRef}
+      src={src}
+      poster={poster ?? undefined}
+      muted
+      loop
+      playsInline
+      autoPlay
+      preload={isActive ? "auto" : "metadata"}
+      disablePictureInPicture
+      disableRemotePlayback
+      className="h-full w-full object-cover"
+      aria-hidden="true"
+      tabIndex={-1}
+    />
+  );
+};
+
+const renderVfxThumb = (item: GameDevVfxItem, isActive: boolean) => {
+  if (item.media_type === "video") {
+    return (
+      <VfxThumbVideo
+        src={item.media_url}
+        poster={item.thumbnail_url}
+        isActive={isActive}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={item.thumbnail_url ?? item.media_url}
+      alt=""
+      loading={isActive ? "eager" : "lazy"}
+      className="h-full w-full object-cover"
+    />
+  );
+};
+
 export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -43,8 +103,6 @@ export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionP
   if (!activeItem) {
     return null;
   }
-
-  const thumbPreview = (item: GameDevVfxItem) => item.thumbnail_url || item.media_url;
 
   return (
     <section className="mt-10 mb-10">
@@ -137,12 +195,7 @@ export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionP
                 }`}
               >
                 <div className="aspect-video w-28 bg-black sm:w-32">
-                  <img
-                    src={thumbPreview(item)}
-                    alt=""
-                    loading={isActive ? "eager" : "lazy"}
-                    className="h-full w-full object-cover"
-                  />
+                  {renderVfxThumb(item, isActive)}
                 </div>
               </motion.button>
             );
