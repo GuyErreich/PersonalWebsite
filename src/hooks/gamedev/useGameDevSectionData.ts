@@ -26,6 +26,8 @@ export const useGameDevSectionData = () => {
   const [isVfxLoading, setIsVfxLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     void (async () => {
       try {
         const { data: showreelData, error: showreelError } = await supabase
@@ -33,6 +35,10 @@ export const useGameDevSectionData = () => {
           .select("value")
           .eq("key", "showreel_url")
           .single();
+
+        if (!isMounted) {
+          return;
+        }
 
         if (!showreelError && showreelData) {
           setShowreelUrl(showreelData.value);
@@ -42,6 +48,10 @@ export const useGameDevSectionData = () => {
           .from("gamedev_items")
           .select("*")
           .order("created_at", { ascending: false });
+
+        if (!isMounted) {
+          return;
+        }
 
         if (itemsError) {
           const fallback = withSummary(fallbackGameDevItems);
@@ -55,34 +65,61 @@ export const useGameDevSectionData = () => {
           );
         }
       } catch {
+        if (!isMounted) {
+          return;
+        }
+
         const fallback = withSummary(fallbackGameDevItems);
         setGalleryItems(fallback);
         setFeaturedItems(fallback);
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     void (async () => {
       try {
         const items = await loadPublicVfxLibraryItems<GameDevVfxItem>();
+
+        if (!isMounted) {
+          return;
+        }
+
         setVfxItems(items);
       } catch {
+        if (!isMounted) {
+          return;
+        }
+
         setVfxItems([]);
       } finally {
-        setIsVfxLoading(false);
+        if (isMounted) {
+          setIsVfxLoading(false);
+        }
       }
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return {
+    showreelUrl,
     galleryItems,
     featuredItems,
     vfxItems,
     isLoading,
     isVfxLoading,
-    showreelUrl,
   };
 };

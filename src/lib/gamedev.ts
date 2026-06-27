@@ -185,3 +185,25 @@ export const dedupeGameDevVfxByMediaUrl = <
 
   return sortGameDevVfxItems([...byUrl.values()]);
 };
+
+/** Dedupe by media URL while preserving the input order (first occurrence wins). */
+export const dedupeGameDevVfxPreservingOrder = <
+  T extends { id: string; media_url: string },
+>(
+  items: T[],
+): T[] => {
+  const seenUrls = new Set<string>();
+  const result: T[] = [];
+
+  for (const item of items) {
+    const key = normalizeVfxMediaUrl(item.media_url);
+    if (!key || seenUrls.has(key)) {
+      continue;
+    }
+
+    seenUrls.add(key);
+    result.push(item);
+  }
+
+  return result;
+};

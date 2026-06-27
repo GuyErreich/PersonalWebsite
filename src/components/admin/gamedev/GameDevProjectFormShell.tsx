@@ -21,6 +21,7 @@ interface GameDevProjectFormShellProps {
   sectionCompletion: Record<GameDevFormSectionId, boolean>;
   sectionTitleId: string;
   loading: boolean;
+  saveDisabled?: boolean;
   onWizardStepChange: (step: number) => void;
   onSectionChange: (section: GameDevFormSectionId) => void;
   onBack: () => void;
@@ -36,6 +37,7 @@ export const GameDevProjectFormShell = ({
   sectionCompletion,
   sectionTitleId,
   loading,
+  saveDisabled = false,
   onWizardStepChange,
   onSectionChange,
   onBack,
@@ -43,6 +45,7 @@ export const GameDevProjectFormShell = ({
   onCancel,
   children,
 }: GameDevProjectFormShellProps) => {
+  const isFormDisabled = loading || saveDisabled;
   const isMobile = useMediaQuery("(max-width: 767px)");
   const sectionHeadingRef = useRef<HTMLHeadingElement>(null);
   const isWizard = mode === "wizard";
@@ -85,7 +88,13 @@ export const GameDevProjectFormShell = ({
         key={section.id}
         type="button"
         role={variant === "mobile-tab" ? "tab" : undefined}
-        aria-current={variant === "sidebar" && isActive ? "page" : undefined}
+        aria-current={
+          variant === "sidebar" && isActive
+            ? "page"
+            : variant === "wizard" && isActive
+              ? "step"
+              : undefined
+        }
         aria-selected={variant === "mobile-tab" ? isActive : undefined}
         whileHover={{ scale: variant === "wizard" ? 1.02 : 1.01 }}
         whileTap={{ scale: 0.98 }}
@@ -180,7 +189,7 @@ export const GameDevProjectFormShell = ({
             playClickSound();
             onCancel();
           }}
-          disabled={loading}
+          disabled={isFormDisabled}
           className="inline-flex justify-center rounded-md border border-gray-500 bg-gray-700 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600 disabled:opacity-50"
         >
           Cancel
@@ -196,7 +205,7 @@ export const GameDevProjectFormShell = ({
               playClickSound();
               onBack();
             }}
-            disabled={loading}
+            disabled={isFormDisabled}
             className="inline-flex justify-center rounded-md border border-gray-500 bg-gray-700 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600 disabled:opacity-50"
           >
             Back
@@ -213,7 +222,7 @@ export const GameDevProjectFormShell = ({
               playClickSound();
               onNext();
             }}
-            disabled={loading}
+            disabled={isFormDisabled}
             className="inline-flex justify-center rounded-md border border-cyan-500/40 bg-cyan-600/20 px-4 py-2 text-sm font-medium text-cyan-100 hover:bg-cyan-600/30 disabled:opacity-50"
           >
             Next
@@ -226,7 +235,7 @@ export const GameDevProjectFormShell = ({
           whileTap={{ scale: 0.97 }}
           onMouseEnter={playHoverSound}
           onClick={playClickSound}
-          disabled={loading}
+          disabled={isFormDisabled}
           className={`inline-flex justify-center rounded-md border border-transparent px-4 py-2 text-sm font-medium text-white shadow-sm disabled:opacity-50 ${
             isWizard && !isLastWizardStep
               ? "bg-gray-600 hover:bg-gray-500"

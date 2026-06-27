@@ -16,6 +16,7 @@ create table if not exists public.gamedev_items (
   is_featured boolean not null default false,
   featured_sort integer,
   show_vfx_section boolean not null default true,
+  is_coming_soon boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -33,7 +34,13 @@ drop policy if exists "Public can read gamedev items" on public.gamedev_items;
 
 create policy "Public can read gamedev items"
   on public.gamedev_items for select
-  using (true);
+  using (is_coming_soon = false);
+
+drop policy if exists "Admins can read all gamedev items" on public.gamedev_items;
+
+create policy "Admins can read all gamedev items"
+  on public.gamedev_items for select
+  using ((select public.is_admin()));
 
 -- Only admins can insert
 drop policy if exists "Admins can insert gamedev items" on public.gamedev_items;

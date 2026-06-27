@@ -259,16 +259,11 @@ export const VfxManager = () => {
         const existing = await findVfxByMediaUrl(mediaUrl);
 
         if (existing) {
-          const { error: updateError } = await supabase
-            .from("gamedev_vfx")
-            .update(payload)
-            .eq("id", existing.id);
-
-          if (updateError) throw new Error(updateError.message);
-        } else {
-          const { error: insertError } = await supabase.from("gamedev_vfx").insert([payload]);
-          if (insertError) throw new Error(insertError.message);
+          throw new Error("VFX already exists for this media. Edit the existing entry instead.");
         }
+
+        const { error: insertError } = await supabase.from("gamedev_vfx").insert([payload]);
+        if (insertError) throw new Error(insertError.message);
       }
 
       closeModal();

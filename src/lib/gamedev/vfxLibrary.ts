@@ -69,7 +69,7 @@ export const ensureVfxFromMediaLibraryItem = async (
       {
         title: item.name.trim() || "VFX",
         description: "",
-        media_url: item.media_url,
+        media_url: item.media_url.trim(),
         thumbnail_url: null,
         media_type: item.media_type,
         tags: [],

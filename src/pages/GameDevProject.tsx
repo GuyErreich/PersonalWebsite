@@ -18,7 +18,7 @@ import { GameDevProjectHeaderMedia } from "../components/ui/gamedev/common/media
 import { GameDevProjectVfxSection } from "../components/ui/gamedev/common/media/GameDevProjectVfxSection";
 import {
   buildGameDevSummary,
-  dedupeGameDevVfxByMediaUrl,
+  dedupeGameDevVfxPreservingOrder,
   isGameDevComingSoon,
   parseGameDevStoredContent,
 } from "../lib/gamedev";
@@ -124,7 +124,7 @@ export const GameDevProject = () => {
               project: typedProject,
               linkedVfx: [],
               isLoading: false,
-              error: "Failed to load project visual effects.",
+              error: null,
             });
             return;
           }
@@ -133,7 +133,7 @@ export const GameDevProject = () => {
             ((vfxData ?? []) as GameDevVfxItem[]).map((item) => [item.id, item]),
           );
 
-          linkedVfx = dedupeGameDevVfxByMediaUrl(
+          linkedVfx = dedupeGameDevVfxPreservingOrder(
             linkData
               .map((link) => vfxById.get(link.gamedev_vfx_id) ?? null)
               .filter((item): item is GameDevVfxItem => item != null),

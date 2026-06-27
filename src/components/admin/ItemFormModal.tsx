@@ -176,6 +176,7 @@ export const ItemFormModal = ({
     [],
   );
   const [isComingSoon, setIsComingSoon] = useState(false);
+  const [isVfxLinksHydrated, setIsVfxLinksHydrated] = useState(true);
 
   const pendingMediaPreviewUrl = useMemo(() => {
     if (!mediaFile) {
@@ -241,6 +242,7 @@ export const ItemFormModal = ({
     setWizardStep(0);
     setActiveSection("basics");
     setIsComingSoon(false);
+    setIsVfxLinksHydrated(true);
     setError(null);
   }, []);
 
@@ -258,6 +260,7 @@ export const ItemFormModal = ({
         setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
       }
 
+      setIsVfxLinksHydrated(true);
       return;
     }
 
@@ -286,59 +289,78 @@ export const ItemFormModal = ({
       setIsComingSoon(gameDevItem.is_coming_soon ?? false);
       setSelectedGameTags(gameDevItem.tags ?? []);
       setSelectedStacks([]);
+      setIsVfxLinksHydrated(false);
+
+      let isCurrent = true;
 
       void (async () => {
-        const [{ data: vfxData }, { data: linkData }] = await Promise.all([
-          supabase
-            .from("gamedev_vfx")
-            .select("*")
-            .order("sort_order", { ascending: true, nullsFirst: false })
-            .order("created_at", { ascending: false }),
-          supabase
-            .from("gamedev_project_vfx")
-            .select("gamedev_vfx_id, sort_order")
-            .eq("gamedev_item_id", gameDevItem.id)
-            .order("sort_order", { ascending: true, nullsFirst: false }),
-        ]);
+        try {
+          const [{ data: vfxData }, { data: linkData }] = await Promise.all([
+            supabase
+              .from("gamedev_vfx")
+              .select("*")
+              .order("sort_order", { ascending: true, nullsFirst: false })
+              .order("created_at", { ascending: false }),
+            supabase
+              .from("gamedev_project_vfx")
+              .select("gamedev_vfx_id, sort_order")
+              .eq("gamedev_item_id", gameDevItem.id)
+              .order("sort_order", { ascending: true, nullsFirst: false }),
+          ]);
 
-        const rawVfx = ((vfxData ?? []) as AdminGameDevVfx[]).map((item) => ({
-          ...item,
-          tags: item.tags ?? [],
-        }));
-        const dedupedVfx = dedupeGameDevVfxByMediaUrl(rawVfx);
+          if (!isCurrent) {
+            return;
+          }
 
-        setAvailableVfx(dedupedVfx);
-
-        const orderedLinks = [...(linkData ?? [])].sort((left, right) => {
-          const leftOrder = left.sort_order ?? Number.MAX_SAFE_INTEGER;
-          const rightOrder = right.sort_order ?? Number.MAX_SAFE_INTEGER;
-          return leftOrder - rightOrder;
-        });
-
-        const orderedLinkedIds = orderedLinks.map((link) => link.gamedev_vfx_id);
-        const missingLinkedIds = orderedLinkedIds.filter(
-          (vfxId) => !rawVfx.some((item) => item.id === vfxId),
-        );
-
-        let linkedDetails: AdminGameDevVfx[] = [];
-
-        if (missingLinkedIds.length > 0) {
-          const { data: missingVfxData } = await supabase
-            .from("gamedev_vfx")
-            .select("*")
-            .in("id", missingLinkedIds);
-
-          linkedDetails = ((missingVfxData ?? []) as AdminGameDevVfx[]).map((item) => ({
+          const rawVfx = ((vfxData ?? []) as AdminGameDevVfx[]).map((item) => ({
             ...item,
             tags: item.tags ?? [],
           }));
-        }
+          const dedupedVfx = dedupeGameDevVfxByMediaUrl(rawVfx);
 
-        setLinkedVfxDetails(linkedDetails);
-        setLinkedVfxIds(
-          await normalizeLinkedVfxIds(orderedLinkedIds, rawVfx),
-        );
+          setAvailableVfx(dedupedVfx);
+
+          const orderedLinks = [...(linkData ?? [])].sort((left, right) => {
+            const leftOrder = left.sort_order ?? Number.MAX_SAFE_INTEGER;
+            const rightOrder = right.sort_order ?? Number.MAX_SAFE_INTEGER;
+            return leftOrder - rightOrder;
+          });
+
+          const orderedLinkedIds = orderedLinks.map((link) => link.gamedev_vfx_id);
+          const missingLinkedIds = orderedLinkedIds.filter(
+            (vfxId) => !rawVfx.some((item) => item.id === vfxId),
+          );
+
+          let linkedDetails: AdminGameDevVfx[] = [];
+
+          if (missingLinkedIds.length > 0) {
+            const { data: missingVfxData } = await supabase
+              .from("gamedev_vfx")
+              .select("*")
+              .in("id", missingLinkedIds);
+
+            if (!isCurrent) {
+              return;
+            }
+
+            linkedDetails = ((missingVfxData ?? []) as AdminGameDevVfx[]).map((item) => ({
+              ...item,
+              tags: item.tags ?? [],
+            }));
+          }
+
+          setLinkedVfxDetails(linkedDetails);
+          setLinkedVfxIds(await normalizeLinkedVfxIds(orderedLinkedIds, rawVfx));
+        } finally {
+          if (isCurrent) {
+            setIsVfxLinksHydrated(true);
+          }
+        }
       })();
+
+      return () => {
+        isCurrent = false;
+      };
     } else {
       const devOpsItem = editingItem as AdminDevOpsProject;
       setDescription(devOpsItem.description);
@@ -346,6 +368,7 @@ export const ItemFormModal = ({
       setSelectedHeaderMediaUrl(null);
       setSelectedStacks(devOpsItem.tech_stack ?? []);
       setSelectedGameTags([]);
+      setIsVfxLinksHydrated(true);
     }
   }, [editingItem, gameDevCreatePreset, isOpen, resetForm, type]);
 
@@ -690,6 +713,8 @@ export const ItemFormModal = ({
               setIsComingSoon(value);
               if (value) {
                 setShowVfxSection(false);
+                setLinkedVfxIds([]);
+                setLinkedVfxDetails([]);
                 if (description.trim().length === 0) {
                   setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
                 }
@@ -819,6 +844,11 @@ export const ItemFormModal = ({
       return;
     }
 
+    if (type === "gamedev" && isEditingGameDev && !isVfxLinksHydrated) {
+      setError("Project VFX links are still loading. Please wait and try again.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -841,7 +871,9 @@ export const ItemFormModal = ({
           return;
         }
 
-        if (!isComingSoon && showVfxSection && linkedVfxIds.length === 0) {
+        const normalizedLinkedVfxIds = await normalizeLinkedVfxIds(linkedVfxIds, availableVfx);
+
+        if (!isComingSoon && showVfxSection && normalizedLinkedVfxIds.length === 0) {
           setError("Add at least one VFX image or video for this project.");
           return;
         }
@@ -898,7 +930,31 @@ export const ItemFormModal = ({
         };
 
         const syncProjectVfxLinks = async (projectId: string) => {
-          const normalizedLinkedVfxIds = await normalizeLinkedVfxIds(linkedVfxIds, availableVfx);
+          if (isComingSoon) {
+            const { data: existingLinks, error: fetchLinksError } = await supabase
+              .from("gamedev_project_vfx")
+              .select("gamedev_vfx_id")
+              .eq("gamedev_item_id", projectId);
+
+            if (fetchLinksError) {
+              throw new Error(fetchLinksError.message);
+            }
+
+            if ((existingLinks ?? []).length === 0) {
+              return;
+            }
+
+            const { error: clearLinksError } = await supabase
+              .from("gamedev_project_vfx")
+              .delete()
+              .eq("gamedev_item_id", projectId);
+
+            if (clearLinksError) {
+              throw new Error(clearLinksError.message);
+            }
+
+            return;
+          }
 
           const { data: existingLinks, error: fetchLinksError } = await supabase
             .from("gamedev_project_vfx")
@@ -1120,6 +1176,7 @@ export const ItemFormModal = ({
                       sectionCompletion={sectionCompletion}
                       sectionTitleId={gameDevSectionTitleId}
                       loading={loading}
+                      saveDisabled={isEditingGameDev && !isVfxLinksHydrated}
                       onWizardStepChange={setWizardStep}
                       onSectionChange={setActiveSection}
                       onBack={handleWizardBack}
