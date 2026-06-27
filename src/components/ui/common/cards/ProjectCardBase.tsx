@@ -83,7 +83,38 @@ export const ProjectCardBase = ({
     ? "h-auto min-h-0 overflow-visible pt-2"
     : "h-full min-h-0 overflow-visible pt-2";
 
-  const cardBody = (
+  const githubLinkClassName = compact
+    ? "text-gray-400 transition-colors hover:text-white"
+    : "text-gray-400 transition-colors hover:text-white";
+
+  const githubLinkOverlayClassName = compact
+    ? `absolute top-3 right-3 z-30 ${githubLinkClassName}`
+    : `absolute top-5 right-5 z-30 ${githubLinkClassName}`;
+
+  const renderGitHubLink = (className: string) => {
+    if (!link) return null;
+
+    return (
+      <motion.a
+        whileHover={{ scale: 1.15, rotate: 8 }}
+        whileTap={{ scale: 0.9 }}
+        onMouseEnter={playHoverSound}
+        onClick={(event) => {
+          event.stopPropagation();
+          playClickSound();
+        }}
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`View ${title} on GitHub`}
+        className={className}
+      >
+        <GitHubIcon className={compact ? "h-5 w-5" : "h-6 w-6"} />
+      </motion.a>
+    );
+  };
+
+  const cardBody = (showGitHubInHeader: boolean) => (
     <>
       {hasThumbnail && (
         <div
@@ -119,24 +150,7 @@ export const ProjectCardBase = ({
               </MotionLink>
             )}
 
-            {link && (
-              <motion.a
-                whileHover={{ scale: 1.15, rotate: 8 }}
-                whileTap={{ scale: 0.9 }}
-                onMouseEnter={playHoverSound}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  playClickSound();
-                }}
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`View ${title} on GitHub`}
-                className="relative z-30 text-gray-400 transition-colors hover:text-white"
-              >
-                <GitHubIcon className={compact ? "h-5 w-5" : "h-6 w-6"} />
-              </motion.a>
-            )}
+            {showGitHubInHeader && renderGitHubLink(`relative z-30 ${githubLinkClassName}`)}
           </div>
         </div>
 
@@ -170,34 +184,42 @@ export const ProjectCardBase = ({
     </>
   );
 
+  const motionProps = {
+    initial: { opacity: 0, y: 16 },
+    animate: isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
+    transition: { duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 },
+  };
+
   return (
     <div ref={ref} className={wrapperClassName}>
       {useDoubleClickOpen ? (
         <motion.div
-          role="button"
-          tabIndex={0}
-          title="Double-click to open project"
-          aria-label={`${title}. Double-click to open project page.`}
-          initial={{ opacity: 0, y: 16 }}
-          animate={isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 }}
-          whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
-          onMouseEnter={playHoverSound}
-          onDoubleClick={handleDoubleClick}
-          onKeyDown={handleKeyDown}
-          className={`relative cursor-pointer ${theme.containerClassName}`}
-        >
-          {cardBody}
-        </motion.div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 }}
-          transition={{ duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 }}
+          {...motionProps}
           whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
           className={`relative ${theme.containerClassName}`}
         >
-          {cardBody}
+          <motion.div
+            role="button"
+            tabIndex={0}
+            title="Double-click to open project"
+            aria-label={`${title}. Double-click or press Enter to open project page.`}
+            whileTap={{ scale: 0.98 }}
+            onMouseEnter={playHoverSound}
+            onDoubleClick={handleDoubleClick}
+            onKeyDown={handleKeyDown}
+            className="relative h-full w-full cursor-pointer"
+          >
+            {cardBody(false)}
+          </motion.div>
+          {renderGitHubLink(githubLinkOverlayClassName)}
+        </motion.div>
+      ) : (
+        <motion.div
+          {...motionProps}
+          whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
+          className={`relative ${theme.containerClassName}`}
+        >
+          {cardBody(true)}
         </motion.div>
       )}
     </div>
