@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
-import { buildGameDevStoredContent, GAMEDEV_COMING_SOON_DEFAULT_SUMMARY, parseGameDevStoredContent } from "../../lib/gamedev";
+import { buildGameDevStoredContent, parseGameDevStoredContent } from "../../lib/gamedev";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
   playClickSound,
@@ -40,8 +40,6 @@ import {
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 import { MarkdownRenderer } from "../MarkdownRenderer";
-import { MediaLibraryPickerModal } from "./mediaLibrary/MediaLibraryPickerModal";
-import { SelectedMediaPreview } from "./mediaLibrary/SelectedMediaPreview";
 import type { AdminDevOpsProject, AdminGameDevProject } from "./types";
 
 interface ItemFormModalProps {
@@ -50,7 +48,6 @@ interface ItemFormModalProps {
   type: "gamedev" | "devops";
   onSuccess: () => void;
   editingItem?: AdminGameDevProject | AdminDevOpsProject | null;
-  gameDevCreatePreset?: "full" | "coming_soon";
 }
 
 const AVAILABLE_ICONS = [
@@ -77,6 +74,7 @@ const MAX_MEDIA_SIZE_MB = Math.round(MAX_MEDIA_SIZE_BYTES / (1024 * 1024));
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 50000;
 const MAX_STACK_LENGTH = 40;
+const MEDIA_LIBRARY_PICKER_LIMIT = 48;
 const GAMEDEV_BODY_TEMPLATE = [
   "## Overview",
   "",
@@ -103,6 +101,11 @@ const GAMEDEV_BODY_TEMPLATE = [
 ].join("\n");
 
 type BodyEditorTab = "write" | "preview";
+
+const ROOT_MEDIA_FOLDER = "Root";
+
+const normalizeMediaFolderOrigin = (value: string | null | undefined) =>
+  value && value.trim().length > 0 ? value.trim() : ROOT_MEDIA_FOLDER;
 
 const escapeMarkdownImageLabel = (value: string) =>
   value.replace(/\\/g, "\\\\").replace(/\]/g, "\\]").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -131,7 +134,6 @@ export const ItemFormModal = ({
   type,
   onSuccess,
   editingItem = null,
-  gameDevCreatePreset = "full",
 }: ItemFormModalProps) => {
   const formIdBase = useId();
   const modalTitleId = `${formIdBase}-modal-title`;
@@ -140,13 +142,13 @@ export const ItemFormModal = ({
   const itemBodyId = `${formIdBase}-item-body`;
   const itemBodyAssetUploadId = `${formIdBase}-item-body-asset-upload`;
   const itemMediaId = `${formIdBase}-item-media`;
+  const itemLibraryFilterFolderId = `${formIdBase}-item-library-folder`;
   const itemGithubUrlId = `${formIdBase}-item-github-url`;
   const itemLiveUrlId = `${formIdBase}-item-live-url`;
   const itemRepoUrlId = `${formIdBase}-item-repo-url`;
   const customGameTagInputId = `${formIdBase}-custom-game-tag-input`;
   const customStackInputId = `${formIdBase}-custom-stack-input`;
   const bodyAssetInputRef = useRef<HTMLInputElement>(null);
-  const mediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +161,9 @@ export const ItemFormModal = ({
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [selectedFeatureMediaUrl, setSelectedFeatureMediaUrl] = useState<string | null>(null);
+  const [libraryFilterFolder, setLibraryFilterFolder] = useState("all");
+  const [isLoadingMediaLibrary, setIsLoadingMediaLibrary] = useState(false);
+  const [mediaLibraryItems, setMediaLibraryItems] = useState<MediaLibraryItem[]>([]);
   const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
   const [customStackInput, setCustomStackInput] = useState("");
   const [selectedGameTags, setSelectedGameTags] = useState<string[]>([]);
@@ -168,47 +173,18 @@ export const ItemFormModal = ({
   const [repoUrl, setRepoUrl] = useState("");
   const [isImportingRepo, setIsImportingRepo] = useState(false);
   const [isUploadingBodyAsset, setIsUploadingBodyAsset] = useState(false);
-  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [activeBodyTab, setActiveBodyTab] = useState<BodyEditorTab>("write");
   const [uploadedBodyMedia, setUploadedBodyMedia] = useState<Array<{ url: string; alt: string }>>(
     [],
   );
-  const [isComingSoon, setIsComingSoon] = useState(false);
-
-  const pendingMediaPreviewUrl = useMemo(() => {
-    if (!mediaFile) {
-      return null;
-    }
-
-    return URL.createObjectURL(mediaFile);
-  }, [mediaFile]);
-
-  useEffect(() => {
-    return () => {
-      if (pendingMediaPreviewUrl) {
-        URL.revokeObjectURL(pendingMediaPreviewUrl);
-      }
-    };
-  }, [pendingMediaPreviewUrl]);
 
   const isEditing = Boolean(editingItem);
   const isEditingGameDev = Boolean(isEditing && type === "gamedev");
 
   const modalTitle = useMemo(() => {
-    if (isEditing) {
-      if (type === "gamedev" && isComingSoon) {
-        return "Edit Coming Soon Project";
-      }
-
-      return `Edit ${type === "gamedev" ? "Game Dev Project" : "DevOps Project"}`;
-    }
-
-    if (type === "gamedev" && isComingSoon) {
-      return "Add Coming Soon Project";
-    }
-
+    if (isEditing) return `Edit ${type === "gamedev" ? "Game Dev Project" : "DevOps Project"}`;
     return `Add New ${type === "gamedev" ? "Game Dev Project" : "DevOps Project"}`;
-  }, [isComingSoon, isEditing, type]);
+  }, [isEditing, type]);
 
   const resetForm = useCallback(() => {
     setTitle("");
@@ -217,6 +193,7 @@ export const ItemFormModal = ({
     setSelectedIcon("gamepad");
     setMediaFile(null);
     setSelectedFeatureMediaUrl(null);
+    setLibraryFilterFolder("all");
     setSelectedStacks([]);
     setCustomStackInput("");
     setSelectedGameTags([]);
@@ -226,8 +203,6 @@ export const ItemFormModal = ({
     setRepoUrl("");
     setActiveBodyTab("write");
     setUploadedBodyMedia([]);
-    setIsMediaLibraryOpen(false);
-    setIsComingSoon(false);
     setError(null);
   }, []);
 
@@ -239,12 +214,6 @@ export const ItemFormModal = ({
 
     if (!editingItem) {
       resetForm();
-
-      if (type === "gamedev" && gameDevCreatePreset === "coming_soon") {
-        setIsComingSoon(true);
-        setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
-      }
-
       return;
     }
 
@@ -263,7 +232,6 @@ export const ItemFormModal = ({
       setSelectedFeatureMediaUrl(gameDevItem.media_url || null);
       setSelectedGameTags(gameDevItem.tags ?? []);
       setSelectedStacks([]);
-      setIsComingSoon(gameDevItem.is_coming_soon ?? false);
     } else {
       const devOpsItem = editingItem as AdminDevOpsProject;
       setDescription(devOpsItem.description);
@@ -272,7 +240,32 @@ export const ItemFormModal = ({
       setSelectedStacks(devOpsItem.tech_stack ?? []);
       setSelectedGameTags([]);
     }
-  }, [editingItem, gameDevCreatePreset, isOpen, resetForm, type]);
+  }, [editingItem, isOpen, resetForm, type]);
+
+  useEffect(() => {
+    if (!isOpen || type !== "gamedev") {
+      return;
+    }
+
+    void (async () => {
+      setIsLoadingMediaLibrary(true);
+
+      const { data, error } = await supabase
+        .from("media_library")
+        .select("*")
+        .order("updated_at", { ascending: false })
+        .limit(MEDIA_LIBRARY_PICKER_LIMIT);
+
+      setIsLoadingMediaLibrary(false);
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      setMediaLibraryItems((data ?? []) as MediaLibraryItem[]);
+    })();
+  }, [isOpen, type]);
 
   if (!isOpen) return null;
 
@@ -322,6 +315,17 @@ export const ItemFormModal = ({
     });
   };
 
+  const filteredMediaLibraryItems =
+    libraryFilterFolder === "all"
+      ? mediaLibraryItems
+      : mediaLibraryItems.filter(
+          (item) => normalizeMediaFolderOrigin(item.folder_origin) === libraryFilterFolder,
+        );
+
+  const mediaLibraryFolders = Array.from(
+    new Set(mediaLibraryItems.map((item) => normalizeMediaFolderOrigin(item.folder_origin))),
+  ).sort((a, b) => a.localeCompare(b));
+
   const handleBodyAssetUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -361,9 +365,16 @@ export const ItemFormModal = ({
 
       setUploadedBodyMedia((prev) => [...prev, ...newMedia]);
 
-      if (mediaLibraryReloadRef.current) {
-        await mediaLibraryReloadRef.current();
+      const { data, error: refreshLibraryError } = await supabase
+        .from("media_library")
+        .select("*")
+        .order("updated_at", { ascending: false });
+
+      if (refreshLibraryError) {
+        throw new Error(refreshLibraryError.message);
       }
+
+      setMediaLibraryItems((data ?? []) as MediaLibraryItem[]);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -437,22 +448,16 @@ export const ItemFormModal = ({
         const normalizedBody = body.trim();
 
         if (!normalizedSummary) {
-          setError(
-            isComingSoon
-              ? "Teaser description is required for coming soon projects."
-              : "Description is required for Game Dev projects.",
-          );
+          setError("Description is required for Game Dev projects.");
           return;
         }
 
-        if (!isComingSoon && !normalizedBody) {
+        if (!normalizedBody) {
           setError("Body markdown is required for Game Dev projects.");
           return;
         }
 
-        const storedDescription = isComingSoon
-          ? normalizedSummary
-          : buildGameDevStoredContent(normalizedSummary, normalizedBody);
+        const storedDescription = buildGameDevStoredContent(normalizedSummary, normalizedBody);
         if (storedDescription.length > MAX_DESCRIPTION_LENGTH) {
           setError(`Body content must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`);
           return;
@@ -472,33 +477,24 @@ export const ItemFormModal = ({
           finalMediaUrl = item.media_url;
         }
 
-        const normalizedMediaUrl = finalMediaUrl.trim() ? finalMediaUrl.trim() : null;
-
-        if (!isComingSoon && !isEditingGameDev && !normalizedMediaUrl) {
+        if (!isEditingGameDev && finalMediaUrl.trim().length === 0) {
           setError("Feature media is required when creating a Game Dev project.");
           return;
         }
 
-        const teaserThumbnailUrl = isComingSoon
-          ? normalizedMediaUrl ?? sourceGameDev?.thumbnail_url ?? null
-          : sourceGameDev?.thumbnail_url ?? null;
-
-        const projectPayload = {
-          title: normalizedTitle,
-          description: storedDescription,
-          media_url: normalizedMediaUrl,
-          thumbnail_url: teaserThumbnailUrl,
-          icon_name: selectedIcon,
-          github_url: normalizedGithubUrl,
-          live_url: normalizedLiveUrl,
-          tags: normalizedGameTags,
-          is_coming_soon: isComingSoon,
-        };
-
         if (isEditingGameDev && sourceGameDev) {
           const { error: updateError } = await supabase
             .from("gamedev_items")
-            .update(projectPayload)
+            .update({
+              title: normalizedTitle,
+              description: storedDescription,
+              media_url: finalMediaUrl,
+              thumbnail_url: sourceGameDev.thumbnail_url ?? null,
+              icon_name: selectedIcon,
+              github_url: normalizedGithubUrl,
+              live_url: normalizedLiveUrl,
+              tags: normalizedGameTags,
+            })
             .eq("id", sourceGameDev.id);
 
           if (updateError) {
@@ -507,7 +503,18 @@ export const ItemFormModal = ({
         } else {
           const { data: insertedItem, error: insertError } = await supabase
             .from("gamedev_items")
-            .insert([projectPayload])
+            .insert([
+              {
+                title: normalizedTitle,
+                description: storedDescription,
+                media_url: finalMediaUrl,
+                thumbnail_url: null,
+                icon_name: selectedIcon,
+                github_url: normalizedGithubUrl,
+                live_url: normalizedLiveUrl,
+                tags: normalizedGameTags,
+              },
+            ])
             .select("id")
             .single();
 
@@ -602,11 +609,7 @@ export const ItemFormModal = ({
           &#8203;
         </span>
 
-        <div
-          className={`relative inline-block w-full transform overflow-hidden rounded-lg border border-gray-700 bg-gray-800 text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle ${
-            type === "gamedev" ? "max-w-5xl" : "max-w-2xl"
-          }`}
-        >
+        <div className="relative inline-block w-full max-w-2xl transform overflow-hidden rounded-lg border border-gray-700 bg-gray-800 text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle">
           <form onSubmit={handleSubmit}>
             <div className="bg-gray-800 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
               <h3 className="mb-4 text-lg font-medium leading-6 text-white" id={modalTitleId}>
@@ -666,39 +669,12 @@ export const ItemFormModal = ({
 
                 {type === "gamedev" ? (
                   <>
-                    <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
-                      <label className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={isComingSoon}
-                          onChange={(event) => {
-                            const enabled = event.target.checked;
-                            setIsComingSoon(enabled);
-
-                            if (enabled && description.trim().length === 0) {
-                              setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
-                            }
-                          }}
-                          className="mt-1 rounded border-gray-500 bg-gray-700 text-amber-400 focus:ring-amber-400"
-                        />
-                        <span>
-                          <span className="block text-sm font-medium text-amber-100">
-                            Coming soon project
-                          </span>
-                          <span className="mt-1 block text-xs text-amber-100/75">
-                            Quick teaser setup: title, short description, optional preview image, and
-                            tags. No markdown body or links required.
-                          </span>
-                        </span>
-                      </label>
-                    </div>
-
                     <div>
                       <label
                         htmlFor={itemDescriptionId}
                         className="block text-sm font-medium text-gray-300"
                       >
-                        {isComingSoon ? "Teaser Description" : "Description (Short)"}
+                        Description (Short)
                       </label>
                       <input
                         id={itemDescriptionId}
@@ -710,7 +686,6 @@ export const ItemFormModal = ({
                       />
                     </div>
 
-                    {!isComingSoon ? (
                     <div>
                       <label
                         htmlFor={itemBodyId}
@@ -873,7 +848,6 @@ export const ItemFormModal = ({
                         </div>
                       )}
                     </div>
-                    ) : null}
 
                     <div className="space-y-3">
                       <p className="block text-sm font-medium text-gray-300">Project Tags</p>
@@ -931,34 +905,33 @@ export const ItemFormModal = ({
                         htmlFor={itemMediaId}
                         className="block text-sm font-medium text-gray-300"
                       >
-                        {isComingSoon ? "Teaser Preview (Optional)" : "Feature Media"}
+                        Feature Media
                       </label>
                       <p className="mb-1 text-xs text-gray-500">
-                        {isComingSoon
-                          ? "Optional image or video for gallery cards and the teaser page."
-                          : "Required when creating a project. Used for the top media section on the project page."}
+                        Required when creating a project. Used for the top media section on the
+                        project page.
                       </p>
 
-                      {selectedFeatureMediaUrl && !mediaFile ? (
-                        <SelectedMediaPreview
-                          label={isComingSoon ? "Teaser preview" : "Feature media"}
-                          url={selectedFeatureMediaUrl}
-                          onClear={() => setSelectedFeatureMediaUrl(null)}
-                        />
-                      ) : null}
-
-                      {mediaFile && pendingMediaPreviewUrl ? (
-                        <SelectedMediaPreview
-                          label="Pending upload"
-                          url={pendingMediaPreviewUrl}
-                          mediaType={
-                            mediaFile.type.toLowerCase().startsWith("video/") ? "video" : "image"
-                          }
-                          onClear={() => {
-                            setMediaFile(null);
-                          }}
-                        />
-                      ) : null}
+                      {selectedFeatureMediaUrl && !mediaFile && (
+                        <div className="mb-2 flex items-center justify-between rounded-md border border-cyan-500/30 bg-cyan-500/10 px-2 py-1.5 text-xs text-cyan-200">
+                          <span className="truncate">
+                            Selected from library: {selectedFeatureMediaUrl}
+                          </span>
+                          <motion.button
+                            type="button"
+                            whileHover={{ scale: 1.04 }}
+                            whileTap={{ scale: 0.96 }}
+                            onMouseEnter={playHoverSound}
+                            onClick={() => {
+                              playClickSound();
+                              setSelectedFeatureMediaUrl(null);
+                            }}
+                            className="ml-2 rounded border border-cyan-300/40 px-2 py-0.5 text-[11px] text-cyan-100 hover:bg-cyan-500/20"
+                          >
+                            Clear
+                          </motion.button>
+                        </div>
+                      )}
 
                       <input
                         id={itemMediaId}
@@ -992,52 +965,105 @@ export const ItemFormModal = ({
                       />
                     </div>
 
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
-                      <p className="text-sm font-medium text-gray-200">Media Library</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Browse folders like the Gallery admin. Pick feature media or insert items into
-                        the markdown body.
-                      </p>
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onMouseEnter={playHoverSound}
-                        onClick={() => {
-                          playClickSound();
-                          setIsMediaLibraryOpen(true);
-                        }}
-                        className="mt-3 inline-flex items-center gap-2 rounded-md border border-cyan-500/35 bg-cyan-600/15 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-600/25"
-                      >
-                        Browse Media Library
-                      </motion.button>
-                    </div>
+                    <details className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
+                      <summary className="cursor-pointer text-sm font-medium text-gray-200">
+                        Media Library
+                      </summary>
 
-                    <MediaLibraryPickerModal
-                      isOpen={isMediaLibraryOpen}
-                      onClose={() => setIsMediaLibraryOpen(false)}
-                      onReady={({ reload }) => {
-                        mediaLibraryReloadRef.current = reload;
-                      }}
-                      actions={[
-                        {
-                          id: "feature",
-                          label: "Use as Feature",
-                          badgeLabel: "Feature",
-                          selectedUrl: selectedFeatureMediaUrl,
-                          onClear: () => setSelectedFeatureMediaUrl(null),
-                          onSelect: (item) => {
-                            setSelectedFeatureMediaUrl(item.media_url);
-                            setMediaFile(null);
-                          },
-                        },
-                        {
-                          id: "body",
-                          label: "Insert in Body",
-                          onSelect: insertLibraryMedia,
-                        },
-                      ]}
-                    />
+                      <p className="mt-2 text-xs text-gray-500">
+                        Reuse existing media from the gallery. You can set feature media or insert
+                        items into the markdown body.
+                      </p>
+
+                      <div className="mt-3 flex items-center gap-2">
+                        <label
+                          htmlFor={itemLibraryFilterFolderId}
+                          className="text-xs text-gray-400"
+                        >
+                          Folder
+                        </label>
+                        <select
+                          id={itemLibraryFilterFolderId}
+                          value={libraryFilterFolder}
+                          onChange={(e) => setLibraryFilterFolder(e.target.value)}
+                          className="rounded border border-gray-600 bg-gray-800 px-2 py-1 text-xs text-white"
+                        >
+                          <option value="all">All</option>
+                          {mediaLibraryFolders.map((folder) => (
+                            <option key={folder} value={folder}>
+                              {folder}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {isLoadingMediaLibrary ? (
+                        <p className="mt-3 text-xs text-gray-400">Loading media library...</p>
+                      ) : filteredMediaLibraryItems.length === 0 ? (
+                        <p className="mt-3 text-xs text-gray-500">
+                          No media available for this folder.
+                        </p>
+                      ) : (
+                        <div className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">
+                          {filteredMediaLibraryItems.map((item) => (
+                            <div
+                              key={item.id}
+                              className="rounded-md border border-gray-700 bg-gray-800/70 p-2"
+                            >
+                              <div className="mb-2 aspect-video overflow-hidden rounded bg-black">
+                                {item.media_type === "video" ? (
+                                  <video
+                                    src={item.media_url}
+                                    muted
+                                    playsInline
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <img
+                                    src={item.media_url}
+                                    alt={item.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                )}
+                              </div>
+
+                              <p className="truncate text-xs text-gray-200">{item.name}</p>
+
+                              <div className="mt-2 flex gap-2">
+                                <motion.button
+                                  type="button"
+                                  whileHover={{ scale: 1.03 }}
+                                  whileTap={{ scale: 0.96 }}
+                                  onMouseEnter={playHoverSound}
+                                  onClick={() => {
+                                    playClickSound();
+                                    setSelectedFeatureMediaUrl(item.media_url);
+                                    setMediaFile(null);
+                                  }}
+                                  className="rounded bg-cyan-700 px-2 py-1 text-[11px] text-white hover:bg-cyan-600"
+                                >
+                                  Use as Feature
+                                </motion.button>
+
+                                <motion.button
+                                  type="button"
+                                  whileHover={{ scale: 1.03 }}
+                                  whileTap={{ scale: 0.96 }}
+                                  onMouseEnter={playHoverSound}
+                                  onClick={() => {
+                                    playClickSound();
+                                    insertLibraryMedia(item);
+                                  }}
+                                  className="rounded border border-gray-600 px-2 py-1 text-[11px] text-gray-200 hover:border-gray-500"
+                                >
+                                  Insert in Body
+                                </motion.button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </details>
                   </>
                 ) : (
                   <>

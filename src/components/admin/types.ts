@@ -8,13 +8,12 @@ export interface AdminGameDevProject {
   id: string;
   title: string;
   description: string;
-  media_url: string | null;
+  media_url: string;
   thumbnail_url: string | null;
   icon_name: string | null;
   github_url: string | null;
   live_url: string | null;
   tags: string[];
-  is_coming_soon?: boolean;
   created_at: string;
 }
 
@@ -34,6 +33,5 @@ export interface AdminProjectListItem {
   title: string;
   description: string;
   tags: string[];
-  is_coming_soon?: boolean;
   created_at: string;
 }

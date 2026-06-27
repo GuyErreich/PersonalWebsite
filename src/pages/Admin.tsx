@@ -6,7 +6,6 @@
 
 import { motion } from "framer-motion";
 import {
-  Clock3,
   FolderOpen,
   Gamepad2,
   LogOut,
@@ -51,7 +50,6 @@ export const Admin = () => {
   const [editingItem, setEditingItem] = useState<AdminGameDevProject | AdminDevOpsProject | null>(
     null,
   );
-  const [gameDevCreatePreset, setGameDevCreatePreset] = useState<"full" | "coming_soon">("full");
 
   const loadProjects = useCallback(async () => {
     setIsFetching(true);
@@ -100,7 +98,6 @@ export const Admin = () => {
           title: item.title,
           description: parsed.summary,
           tags: item.tags ?? [],
-          is_coming_soon: item.is_coming_soon ?? false,
           created_at: item.created_at,
         };
       }),
@@ -122,7 +119,6 @@ export const Admin = () => {
   const handleModalClose = () => {
     setIsModalOpen(false);
     setEditingItem(null);
-    setGameDevCreatePreset("full");
   };
 
   const handleEdit = (id: string, section: ProjectSection) => {
@@ -142,15 +138,7 @@ export const Admin = () => {
 
   const handleCreate = (section: ProjectSection) => {
     setEditingItem(null);
-    setGameDevCreatePreset("full");
     setModalType(section);
-    setIsModalOpen(true);
-  };
-
-  const handleCreateComingSoon = () => {
-    setEditingItem(null);
-    setGameDevCreatePreset("coming_soon");
-    setModalType("gamedev");
     setIsModalOpen(true);
   };
 
@@ -158,7 +146,6 @@ export const Admin = () => {
     void loadProjects();
     setIsModalOpen(false);
     setEditingItem(null);
-    setGameDevCreatePreset("full");
   };
 
   if (loading) {
@@ -304,23 +291,6 @@ export const Admin = () => {
                     Refresh
                   </motion.button>
 
-                  {projectSection === "gamedev" ? (
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.95 }}
-                      onMouseEnter={playHoverSound}
-                      onClick={() => {
-                        playClickSound();
-                        handleCreateComingSoon();
-                      }}
-                      className="flex items-center gap-2 rounded-lg border border-amber-500/35 bg-amber-500/10 px-4 py-2 text-amber-100 transition-colors hover:border-amber-400/50 hover:bg-amber-500/15"
-                    >
-                      <Clock3 className="h-4 w-4" />
-                      Coming Soon
-                    </motion.button>
-                  ) : null}
-
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.04 }}
@@ -349,7 +319,7 @@ export const Admin = () => {
               ) : projectSection === "gamedev" ? (
                 <ManagedProjectsList
                   title="Existing GameDev Projects"
-                  emptyText="No GameDev projects yet. Use Coming Soon for a quick teaser or Add New for a full project."
+                  emptyText="No GameDev projects yet. Click Add New to create one."
                   items={gameDevListItems}
                   onEdit={(id) => handleEdit(id, "gamedev")}
                 />
@@ -373,7 +343,6 @@ export const Admin = () => {
           type={modalType}
           onSuccess={handleSaveSuccess}
           editingItem={editingItem}
-          gameDevCreatePreset={gameDevCreatePreset}
         />
       </main>
     </div>
