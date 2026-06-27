@@ -16,14 +16,13 @@ import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 interface Props {
   item: MediaLibraryItem;
   onClose: () => void;
-  overlayClassName?: string;
 }
 
-export const MediaPreviewModal = ({ item, onClose, overlayClassName }: Props) => (
-  <MediaPreviewModalContent item={item} onClose={onClose} overlayClassName={overlayClassName} />
+export const MediaPreviewModal = ({ item, onClose }: Props) => (
+  <MediaPreviewModalContent item={item} onClose={onClose} />
 );
 
-const MediaPreviewModalContent = ({ item, onClose, overlayClassName }: Props) => {
+const MediaPreviewModalContent = ({ item, onClose }: Props) => {
   const titleId = useId();
 
   useEffect(() => {
@@ -40,7 +39,7 @@ const MediaPreviewModalContent = ({ item, onClose, overlayClassName }: Props) =>
 
   return (
     <div
-      className={overlayClassName ?? "fixed inset-0 z-50 flex items-center justify-center p-4"}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
