@@ -42,11 +42,15 @@ export const FolderCard = ({
   const [isClickAnimating, setIsClickAnimating] = useState(false);
   const dragDepthRef = useRef(0);
   const clickAnimationTimeoutRef = useRef<TimeoutHandle | null>(null);
+  const singleClickTimeoutRef = useRef<TimeoutHandle | null>(null);
 
   useEffect(() => {
     return () => {
       if (clickAnimationTimeoutRef.current !== null) {
         window.clearTimeout(clickAnimationTimeoutRef.current);
+      }
+      if (singleClickTimeoutRef.current !== null) {
+        window.clearTimeout(singleClickTimeoutRef.current);
       }
     };
   }, []);
@@ -109,6 +113,18 @@ export const FolderCard = ({
   const openFolder = () => {
     onNavigate(entry.path);
     onClearSearch();
+  };
+
+  const clearPendingSingleClick = () => {
+    if (singleClickTimeoutRef.current !== null) {
+      window.clearTimeout(singleClickTimeoutRef.current);
+      singleClickTimeoutRef.current = null;
+    }
+  };
+
+  const playClickFeedback = () => {
+    playClickSound();
+    triggerClickAnimation();
   };
 
   return (
@@ -190,19 +206,22 @@ export const FolderCard = ({
           onContextMenu(e);
         }}
         onClick={() => {
-          playClickSound();
-          triggerClickAnimation();
+          clearPendingSingleClick();
+          singleClickTimeoutRef.current = setTimeout(() => {
+            singleClickTimeoutRef.current = null;
+            playClickFeedback();
+          }, 250);
         }}
         onDoubleClick={() => {
-          playClickSound();
-          triggerClickAnimation();
+          clearPendingSingleClick();
+          playClickFeedback();
           openFolder();
         }}
         onKeyDown={(event: KeyboardEvent<HTMLButtonElement>) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            playClickSound();
-            triggerClickAnimation();
+            clearPendingSingleClick();
+            playClickFeedback();
             openFolder();
           }
         }}

@@ -297,7 +297,7 @@ export const GameDevGallery = ({
               {items.map((item, index) => (
                 <div
                   key={item.id}
-                  className="shrink-0 overflow-visible"
+                  className="shrink-0 overflow-hidden"
                   style={{ height: dynamicCardH }}
                 >
                   <GalleryInfoCard
