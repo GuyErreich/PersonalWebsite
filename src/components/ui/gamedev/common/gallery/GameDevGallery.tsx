@@ -409,7 +409,14 @@ export const GameDevGallery = ({
                     className="pointer-events-none select-none opacity-0"
                     aria-hidden="true"
                   >
-                    <GalleryInfoCard item={template} index={i} iconMap={iconMap} withThumbnail />
+                    <GalleryInfoCard
+                      item={template}
+                      index={i}
+                      iconMap={iconMap}
+                      withThumbnail
+                      contentSized={useDenseGrid}
+                      openOnDoubleClick={isDesktop}
+                    />
                   </div>
                 );
               }}

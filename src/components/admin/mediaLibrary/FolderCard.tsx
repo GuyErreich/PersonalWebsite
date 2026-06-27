@@ -211,7 +211,7 @@ export const FolderCard = ({
             ? "border-cyan-300/80 bg-cyan-400/15 shadow-[0_0_0_2px_rgba(103,232,249,0.45),0_0_26px_rgba(34,211,238,0.28)]"
             : "border-transparent hover:border-amber-300/30 hover:bg-amber-200/5"
         }`}
-        aria-label={`Open folder: ${entry.name} (double-click)`}
+        aria-label={`${entry.name}. Double-click or press Enter to open folder.`}
       >
         <Folder
           className={`h-24 w-24 drop-shadow-[0_8px_14px_rgba(0,0,0,0.5)] ${

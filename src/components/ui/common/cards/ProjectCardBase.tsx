@@ -83,9 +83,7 @@ export const ProjectCardBase = ({
     ? "h-auto min-h-0 overflow-visible pt-2"
     : "h-full min-h-0 overflow-visible pt-2";
 
-  const githubLinkClassName = compact
-    ? "text-gray-400 transition-colors hover:text-white"
-    : "text-gray-400 transition-colors hover:text-white";
+  const githubLinkClassName = "text-gray-400 transition-colors hover:text-white";
 
   const githubLinkOverlayClassName = compact
     ? `absolute top-3 right-3 z-30 ${githubLinkClassName}`
