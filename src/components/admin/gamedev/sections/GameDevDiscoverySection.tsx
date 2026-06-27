@@ -5,7 +5,9 @@
  */
 
 import { motion } from "framer-motion";
-import { playClickSound } from "../../../../lib/sound/interactionSounds";
+import { FolderOpen, Image, Play, Plus } from "lucide-react";
+import { useMemo } from "react";
+import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
 import type { AdminGameDevVfx } from "../../types";
 
 interface GameDevDiscoverySectionProps {
@@ -18,6 +20,7 @@ interface GameDevDiscoverySectionProps {
   availableVfx: AdminGameDevVfx[];
   linkedVfxIds: string[];
   onLinkedVfxIdsChange: (updater: (prev: string[]) => string[]) => void;
+  onOpenVfxMediaLibrary: () => void;
 }
 
 export const GameDevDiscoverySection = ({
@@ -30,124 +33,225 @@ export const GameDevDiscoverySection = ({
   availableVfx,
   linkedVfxIds,
   onLinkedVfxIdsChange,
-}: GameDevDiscoverySectionProps) => (
-  <div className="space-y-4">
-    <div className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
-      <label className="flex items-center gap-2 text-sm text-gray-200">
-        <input
-          type="checkbox"
-          checked={isFeatured}
-          onChange={(e) => onIsFeaturedChange(e.target.checked)}
-          className="rounded border-gray-600"
-        />
-        Show in Selected Work
-      </label>
+  onOpenVfxMediaLibrary,
+}: GameDevDiscoverySectionProps) => {
+  const vfxById = useMemo(
+    () => new Map(availableVfx.map((item) => [item.id, item])),
+    [availableVfx],
+  );
 
-      {isFeatured ? (
-        <div className="mt-3">
-          <label className="block text-xs text-gray-400">Featured order (lower appears first)</label>
+  const linkedVfxItems = useMemo(
+    () =>
+      linkedVfxIds
+        .map((id) => vfxById.get(id) ?? null)
+        .filter((item): item is AdminGameDevVfx => item != null),
+    [linkedVfxIds, vfxById],
+  );
+
+  const unlinkedLibraryVfx = useMemo(
+    () => availableVfx.filter((item) => !linkedVfxIds.includes(item.id)),
+    [availableVfx, linkedVfxIds],
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
+        <label className="flex items-center gap-2 text-sm text-gray-200">
           <input
-            type="number"
-            value={featuredSort}
-            onChange={(e) => onFeaturedSortChange(e.target.value)}
-            className="mt-1 w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white"
+            type="checkbox"
+            checked={isFeatured}
+            onChange={(e) => onIsFeaturedChange(e.target.checked)}
+            className="rounded border-gray-600"
           />
-        </div>
-      ) : null}
-    </div>
+          Show in Selected Work
+        </label>
 
-    <div className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
-      <label className="flex items-center gap-2 text-sm text-gray-200">
-        <input
-          type="checkbox"
-          checked={showVfxSection}
-          onChange={(e) => onShowVfxSectionChange(e.target.checked)}
-          className="rounded border-gray-600"
-        />
-        Show VFX section on project page
-      </label>
-    </div>
-
-    {availableVfx.length > 0 ? (
-      <div className="space-y-2 rounded-lg border border-gray-700 bg-gray-900/40 p-3">
-        <p className="text-sm font-medium text-gray-200">Linked VFX</p>
-        <p className="text-xs text-gray-500">
-          Select effects to show on this project page. Use move buttons to reorder.
-        </p>
-
-        <ul className="space-y-2">
-          {availableVfx.map((vfx) => {
-            const isLinked = linkedVfxIds.includes(vfx.id);
-            const linkIndex = linkedVfxIds.indexOf(vfx.id);
-
-            return (
-              <li
-                key={vfx.id}
-                className="flex items-center justify-between gap-2 rounded border border-gray-700 bg-gray-800/70 px-2 py-1.5"
-              >
-                <label className="flex min-w-0 flex-1 items-center gap-2 text-xs text-gray-200">
-                  <input
-                    type="checkbox"
-                    checked={isLinked}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        onLinkedVfxIdsChange((prev) => [...prev, vfx.id]);
-                        return;
-                      }
-
-                      onLinkedVfxIdsChange((prev) => prev.filter((id) => id !== vfx.id));
-                    }}
-                  />
-                  <span className="truncate">{vfx.title}</span>
-                </label>
-
-                {isLinked ? (
-                  <div className="flex gap-1">
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      disabled={linkIndex <= 0}
-                      onClick={() => {
-                        playClickSound();
-                        onLinkedVfxIdsChange((prev) => {
-                          const next = [...prev];
-                          const temp = next[linkIndex - 1];
-                          next[linkIndex - 1] = next[linkIndex];
-                          next[linkIndex] = temp;
-                          return next;
-                        });
-                      }}
-                      className="rounded border border-gray-600 px-1.5 py-0.5 text-[10px] disabled:opacity-40"
-                    >
-                      Up
-                    </motion.button>
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      disabled={linkIndex >= linkedVfxIds.length - 1}
-                      onClick={() => {
-                        playClickSound();
-                        onLinkedVfxIdsChange((prev) => {
-                          const next = [...prev];
-                          const temp = next[linkIndex + 1];
-                          next[linkIndex + 1] = next[linkIndex];
-                          next[linkIndex] = temp;
-                          return next;
-                        });
-                      }}
-                      className="rounded border border-gray-600 px-1.5 py-0.5 text-[10px] disabled:opacity-40"
-                    >
-                      Down
-                    </motion.button>
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
+        {isFeatured ? (
+          <div className="mt-3">
+            <label className="block text-xs text-gray-400">Featured order (lower appears first)</label>
+            <input
+              type="number"
+              value={featuredSort}
+              onChange={(e) => onFeaturedSortChange(e.target.value)}
+              className="mt-1 w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white"
+            />
+          </div>
+        ) : null}
       </div>
-    ) : null}
-  </div>
-);
+
+      <div className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
+        <label className="flex items-center gap-2 text-sm text-gray-200">
+          <input
+            type="checkbox"
+            checked={showVfxSection}
+            onChange={(e) => onShowVfxSectionChange(e.target.checked)}
+            className="rounded border-gray-600"
+          />
+          Show VFX section on project page
+        </label>
+
+        {showVfxSection ? (
+          <div className="mt-4 space-y-3 border-t border-gray-700/80 pt-4">
+            <div>
+              <p className="text-sm font-medium text-gray-200">Project VFX</p>
+              <p className="mt-1 text-xs text-gray-500">
+                Choose images or videos to display in this project&apos;s VFX gallery.
+              </p>
+            </div>
+
+            {linkedVfxItems.length === 0 ? (
+              <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                Add at least one image or video before saving.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {linkedVfxItems.map((vfx) => {
+                  const linkIndex = linkedVfxIds.indexOf(vfx.id);
+
+                  return (
+                    <li
+                      key={vfx.id}
+                      className="flex items-center gap-3 rounded border border-gray-700 bg-gray-800/70 p-2"
+                    >
+                      <div className="h-12 w-20 shrink-0 overflow-hidden rounded bg-black">
+                        {vfx.media_type === "video" ? (
+                          <video
+                            src={vfx.media_url}
+                            poster={vfx.thumbnail_url ?? undefined}
+                            muted
+                            playsInline
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={vfx.media_url}
+                            alt={vfx.title}
+                            className="h-full w-full object-cover"
+                          />
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-gray-100">{vfx.title}</p>
+                        <p className="mt-0.5 inline-flex items-center gap-1 text-[10px] text-gray-400">
+                          {vfx.media_type === "video" ? (
+                            <Play className="h-3 w-3" aria-hidden="true" />
+                          ) : (
+                            <Image className="h-3 w-3" aria-hidden="true" />
+                          )}
+                          {vfx.media_type === "video" ? "Video" : "Image"}
+                        </p>
+                      </div>
+
+                      <div className="flex shrink-0 gap-1">
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          disabled={linkIndex <= 0}
+                          onClick={() => {
+                            playClickSound();
+                            onLinkedVfxIdsChange((prev) => {
+                              const next = [...prev];
+                              const temp = next[linkIndex - 1];
+                              next[linkIndex - 1] = next[linkIndex];
+                              next[linkIndex] = temp;
+                              return next;
+                            });
+                          }}
+                          className="rounded border border-gray-600 px-1.5 py-0.5 text-[10px] disabled:opacity-40"
+                        >
+                          Up
+                        </motion.button>
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          disabled={linkIndex >= linkedVfxIds.length - 1}
+                          onClick={() => {
+                            playClickSound();
+                            onLinkedVfxIdsChange((prev) => {
+                              const next = [...prev];
+                              const temp = next[linkIndex + 1];
+                              next[linkIndex + 1] = next[linkIndex];
+                              next[linkIndex] = temp;
+                              return next;
+                            });
+                          }}
+                          className="rounded border border-gray-600 px-1.5 py-0.5 text-[10px] disabled:opacity-40"
+                        >
+                          Down
+                        </motion.button>
+                        <motion.button
+                          type="button"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            playClickSound();
+                            onLinkedVfxIdsChange((prev) => prev.filter((id) => id !== vfx.id));
+                          }}
+                          className="rounded border border-red-500/40 px-1.5 py-0.5 text-[10px] text-red-200"
+                        >
+                          Remove
+                        </motion.button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            <motion.button
+              type="button"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
+              onMouseEnter={playHoverSound}
+              onClick={() => {
+                playClickSound();
+                onOpenVfxMediaLibrary();
+              }}
+              className="inline-flex items-center gap-2 rounded-md border border-cyan-500/35 bg-cyan-600/20 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-600/30"
+            >
+              <FolderOpen className="h-3.5 w-3.5" aria-hidden="true" />
+              Add from Media Library
+            </motion.button>
+
+            {unlinkedLibraryVfx.length > 0 ? (
+              <details className="rounded-lg border border-gray-700 bg-gray-950/40 p-3">
+                <summary className="cursor-pointer text-xs font-medium text-gray-300">
+                  Or link from existing VFX library ({unlinkedLibraryVfx.length})
+                </summary>
+                <ul className="mt-3 space-y-2">
+                  {unlinkedLibraryVfx.map((vfx) => (
+                    <li
+                      key={vfx.id}
+                      className="flex items-center justify-between gap-2 rounded border border-gray-700 bg-gray-800/70 px-2 py-1.5"
+                    >
+                      <span className="truncate text-xs text-gray-200">{vfx.title}</span>
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onMouseEnter={playHoverSound}
+                        onClick={() => {
+                          playClickSound();
+                          onLinkedVfxIdsChange((prev) =>
+                            prev.includes(vfx.id) ? prev : [...prev, vfx.id],
+                          );
+                        }}
+                        className="inline-flex items-center gap-1 rounded border border-cyan-500/35 px-2 py-0.5 text-[10px] text-cyan-100"
+                      >
+                        <Plus className="h-3 w-3" aria-hidden="true" />
+                        Add
+                      </motion.button>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+};

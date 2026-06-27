@@ -22,7 +22,7 @@ import {
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
 import { buildGameDevStoredContent, dedupeGameDevVfxByMediaUrl, GAMEDEV_COMING_SOON_DEFAULT_SUMMARY, parseGameDevStoredContent } from "../../lib/gamedev";
-import { markVfxShownInLibrary, normalizeLinkedVfxIds } from "../../lib/gamedev/vfxLibrary";
+import { markVfxShownInLibrary, normalizeLinkedVfxIds, ensureVfxFromMediaLibraryItem } from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
   playClickSound,
@@ -152,7 +152,7 @@ export const ItemFormModal = ({
   const [selectedCardThumbnailUrl, setSelectedCardThumbnailUrl] = useState<string | null>(null);
   const [isFeatured, setIsFeatured] = useState(false);
   const [featuredSort, setFeaturedSort] = useState("");
-  const [showVfxSection, setShowVfxSection] = useState(true);
+  const [showVfxSection, setShowVfxSection] = useState(false);
   const [linkedVfxIds, setLinkedVfxIds] = useState<string[]>([]);
   const [availableVfx, setAvailableVfx] = useState<AdminGameDevVfx[]>([]);
   const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
@@ -165,6 +165,7 @@ export const ItemFormModal = ({
   const [isImportingRepo, setIsImportingRepo] = useState(false);
   const [isUploadingBodyAsset, setIsUploadingBodyAsset] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+  const [isVfxMediaLibraryOpen, setIsVfxMediaLibraryOpen] = useState(false);
   const [mediaLibraryRoleFilter, setMediaLibraryRoleFilter] =
     useState<MediaLibraryRoleFilter>("all");
   const [wizardStep, setWizardStep] = useState(0);
@@ -221,7 +222,7 @@ export const ItemFormModal = ({
     setSelectedCardThumbnailUrl(null);
     setIsFeatured(false);
     setFeaturedSort("");
-    setShowVfxSection(true);
+    setShowVfxSection(false);
     setLinkedVfxIds([]);
     setSelectedStacks([]);
     setCustomStackInput("");
@@ -233,6 +234,7 @@ export const ItemFormModal = ({
     setActiveBodyTab("write");
     setUploadedBodyMedia([]);
     setIsMediaLibraryOpen(false);
+    setIsVfxMediaLibraryOpen(false);
     setMediaLibraryRoleFilter("all");
     setWizardStep(0);
     setActiveSection("basics");
@@ -469,6 +471,32 @@ export const ItemFormModal = ({
     setIsMediaLibraryOpen(true);
   }, []);
 
+  const openVfxMediaLibrary = useCallback(() => {
+    setIsVfxMediaLibraryOpen(true);
+  }, []);
+
+  const handleVfxMediaLibrarySelect = useCallback(async (item: MediaLibraryItem) => {
+    setError(null);
+
+    try {
+      const vfx = await ensureVfxFromMediaLibraryItem(item);
+
+      setAvailableVfx((prev) =>
+        dedupeGameDevVfxByMediaUrl([
+          ...prev.filter((entry) => entry.id !== vfx.id),
+          {
+            ...vfx,
+            tags: vfx.tags ?? [],
+          },
+        ]),
+      );
+
+      setLinkedVfxIds((prev) => (prev.includes(vfx.id) ? prev : [...prev, vfx.id]));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to add VFX media.");
+    }
+  }, []);
+
   const gameDevFormMode = isEditing ? "sidebar" : "wizard";
   const visibleGameDevSection =
     gameDevFormMode === "wizard" ? sectionIdFromWizardStep(wizardStep) : activeSection;
@@ -485,7 +513,7 @@ export const ItemFormModal = ({
               selectedCardThumbnailUrl ||
               selectedHeaderThumbnailUrl,
           ),
-      discovery: isFeatured || linkedVfxIds.length > 0 || !showVfxSection,
+      discovery: isFeatured || !showVfxSection || linkedVfxIds.length > 0,
       links: Boolean(githubUrl.trim() || liveUrl.trim() || repoUrl.trim()),
     }),
     [
@@ -556,6 +584,27 @@ export const ItemFormModal = ({
     insertLibraryMedia,
   ]);
 
+  const vfxMediaLibraryActions = useMemo((): MediaLibraryPickerAction[] => {
+    const linkedUrls = new Set(
+      linkedVfxIds
+        .map((id) => availableVfx.find((item) => item.id === id)?.media_url)
+        .filter((url): url is string => Boolean(url)),
+    );
+
+    return [
+      {
+        id: "vfx",
+        label: "Add to Project VFX",
+        badgeLabel: "VFX",
+        selectedUrl: null,
+        onSelect: (item) => {
+          void handleVfxMediaLibrarySelect(item);
+        },
+        isAvailable: (item) => !linkedUrls.has(item.media_url),
+      },
+    ];
+  }, [availableVfx, handleVfxMediaLibrarySelect, linkedVfxIds]);
+
   const filteredMediaLibraryActions = useMemo(() => {
     if (mediaLibraryRoleFilter === "all") {
       return mediaLibraryActions;
@@ -579,6 +628,12 @@ export const ItemFormModal = ({
       setError(null);
     }
 
+    if (sectionIdFromWizardStep(wizardStep) === "discovery" && showVfxSection && linkedVfxIds.length === 0) {
+      setError("Add at least one VFX image or video for this project.");
+      return;
+    }
+
+    setError(null);
     setWizardStep((current) => Math.min(current + 1, GAMEDEV_FORM_SECTIONS.length - 1));
   };
 
@@ -663,6 +718,7 @@ export const ItemFormModal = ({
             availableVfx={availableVfx}
             linkedVfxIds={linkedVfxIds}
             onLinkedVfxIdsChange={setLinkedVfxIds}
+            onOpenVfxMediaLibrary={openVfxMediaLibrary}
           />
         );
       case "links":
@@ -752,6 +808,11 @@ export const ItemFormModal = ({
 
         if (!isComingSoon && !normalizedBody) {
           setError("Body markdown is required for Game Dev projects.");
+          return;
+        }
+
+        if (showVfxSection && linkedVfxIds.length === 0) {
+          setError("Add at least one VFX image or video for this project.");
           return;
         }
 
@@ -998,6 +1059,17 @@ export const ItemFormModal = ({
                         mediaLibraryReloadRef.current = reload;
                       }}
                       actions={filteredMediaLibraryActions}
+                    />
+
+                    <MediaLibraryPickerModal
+                      isOpen={isVfxMediaLibraryOpen}
+                      onClose={() => setIsVfxMediaLibraryOpen(false)}
+                      title="Add Project VFX"
+                      description="Pick images or videos from the media library to show in this project's VFX section."
+                      onReady={({ reload }) => {
+                        mediaLibraryReloadRef.current = reload;
+                      }}
+                      actions={vfxMediaLibraryActions}
                     />
                   </>
                 ) : (
