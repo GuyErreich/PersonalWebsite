@@ -11,11 +11,14 @@ import { playClickSound, playHoverSound } from "../../../../../lib/sound/interac
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
+import {
+  GAMEDEV_OVERVIEW_TAB_ORDER,
+  type GameDevOverviewTab,
+  getOverviewTabPulseMotion,
+} from "../../common/panels/overviewTabPulse";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
-
-type Tab = "showreel" | "projects" | "vfx";
 
 const slideVariants = {
   enter: (dir: number) => ({ opacity: 0, x: dir * -40 }),
@@ -32,8 +35,8 @@ export const GameDevOverviewMobileShort = ({
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
-  const [activeTab, setActiveTab] = useState<Tab>("showreel");
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [activeTab, setActiveTab] = useState<GameDevOverviewTab>("showreel");
+  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(() => new Set(["showreel"]));
   const tabPanelIdBase = useId();
   const showreelTabId = `${tabPanelIdBase}-tab-showreel`;
   const projectsTabId = `${tabPanelIdBase}-tab-projects`;
@@ -42,35 +45,20 @@ export const GameDevOverviewMobileShort = ({
   const projectsPanelId = `${tabPanelIdBase}-tab-panel-projects`;
   const vfxPanelId = `${tabPanelIdBase}-tab-panel-vfx`;
   const directionRef = useRef(1);
-  const TAB_ORDER: Tab[] = ["showreel", "projects", "vfx"];
 
-  const markInteracted = () => {
-    if (!hasInteracted) {
-      setHasInteracted(true);
-    }
-  };
-
-  const switchTab = (tab: Tab) => {
-    const from = TAB_ORDER.indexOf(activeTab);
-    const to = TAB_ORDER.indexOf(tab);
+  const switchTab = (tab: GameDevOverviewTab) => {
+    const from = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(activeTab);
+    const to = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(tab);
     directionRef.current = to > from ? 1 : -1;
-    markInteracted();
+    setVisitedTabs((current) => {
+      if (current.has(tab)) return current;
+      return new Set([...current, tab]);
+    });
     playClickSound();
     setActiveTab(tab);
   };
 
-  const pulseAnimation = hasInteracted
-    ? { boxShadow: "0 0 0px rgba(6,182,212,0)" }
-    : {
-        boxShadow: [
-          "0 0 0px rgba(6,182,212,0)",
-          "0 0 14px rgba(6,182,212,0.75)",
-          "0 0 0px rgba(6,182,212,0)",
-        ],
-      };
-  const pulseTransition = hasInteracted
-    ? { duration: 0.3 }
-    : { duration: 1.4, repeat: Infinity, repeatDelay: 0.4, ease: "easeInOut" as const };
+  const tabPulse = (tab: GameDevOverviewTab) => getOverviewTabPulseMotion(visitedTabs.has(tab));
 
   return (
     <div className="gamedev-overview-mobile-short-stack">
@@ -82,6 +70,7 @@ export const GameDevOverviewMobileShort = ({
           aria-selected={activeTab === "showreel"}
           aria-controls={showreelPanelId}
           tabIndex={activeTab === "showreel" ? 0 : -1}
+          {...tabPulse("showreel")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -99,8 +88,7 @@ export const GameDevOverviewMobileShort = ({
           aria-selected={activeTab === "projects"}
           aria-controls={projectsPanelId}
           tabIndex={activeTab === "projects" ? 0 : -1}
-          animate={pulseAnimation}
-          transition={pulseTransition}
+          {...tabPulse("projects")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -118,6 +106,7 @@ export const GameDevOverviewMobileShort = ({
           aria-selected={activeTab === "vfx"}
           aria-controls={vfxPanelId}
           tabIndex={activeTab === "vfx" ? 0 : -1}
+          {...tabPulse("vfx")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -166,7 +155,7 @@ export const GameDevOverviewMobileShort = ({
                 title="Selected Work"
                 className="h-full"
                 clipScroll
-                footer={
+                rightAction={
                   <GameDevPanelButton
                     variant="primary"
                     hoverX={3}
@@ -192,16 +181,11 @@ export const GameDevOverviewMobileShort = ({
               animate="center"
               exit="exit"
               transition={{ duration: 0.28, ease: "easeInOut" }}
-              className="gamedev-mobile-short-panel"
+              className="gamedev-mobile-short-panel gamedev-mobile-short-panel--clip"
             >
-              <GameDevPanelShell
-                eyebrow="Effects Reel"
-                title="Visual Effects"
-                className="h-[95%]"
-                clipScroll
-              >
+              <div className="gamedev-vfx-showcase">
                 <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
-              </GameDevPanelShell>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

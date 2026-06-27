@@ -33,6 +33,7 @@ const GalleryInfoCard = ({
   compact = false,
   contentSized = false,
   openOnDoubleClick = false,
+  skipRevealGate = false,
 }: {
   item: GameDevItem;
   index: number;
@@ -41,6 +42,7 @@ const GalleryInfoCard = ({
   compact?: boolean;
   contentSized?: boolean;
   openOnDoubleClick?: boolean;
+  skipRevealGate?: boolean;
 }) => {
   const ProjectIcon = (
     item.icon_name ? (iconMap[item.icon_name] ?? Gamepad2) : Gamepad2
@@ -62,6 +64,7 @@ const GalleryInfoCard = ({
       compact={compact}
       contentSized={contentSized}
       openOnDoubleClick={comingSoon ? false : openOnDoubleClick}
+      skipRevealGate={skipRevealGate}
       thumbnailUrl={withThumbnail ? teaserThumbnail : undefined}
     />
   );
@@ -94,6 +97,7 @@ export const GameDevGallery = ({
   // Compact slider: measure available strip height so 3 cards always fill the space
   const COMPACT_GAP = 8; // px — gap-2
   const COMPACT_CARD_H_FALLBACK = 148; // px — used until ResizeObserver fires
+  const MIN_COMPACT_CARD_H = 96;
   const COMPACT_VISIBLE = isDesktop ? 3 : maxCompactItems;
   const stripRef = useRef<HTMLDivElement>(null);
   const [stripContainerH, setStripContainerH] = useState(0);
@@ -133,12 +137,17 @@ export const GameDevGallery = ({
     return () => el.removeEventListener("wheel", handler);
   }, [compact, isDesktop]);
 
-  // Divide measured height into COMPACT_VISIBLE equal slots; fall back to fixed px until measured
+  // Divide measured height across the slots we actually render (not always 3).
+  const layoutSlots = Math.min(COMPACT_VISIBLE, Math.max(items.length, 1));
   const dynamicCardH =
     stripContainerH > 0
-      ? Math.floor((stripContainerH - (COMPACT_VISIBLE - 1) * COMPACT_GAP) / COMPACT_VISIBLE)
+      ? Math.max(
+          MIN_COMPACT_CARD_H,
+          Math.floor((stripContainerH - (layoutSlots - 1) * COMPACT_GAP) / layoutSlots),
+        )
       : COMPACT_CARD_H_FALLBACK;
   const dynamicStep = dynamicCardH + COMPACT_GAP;
+  const useStaticCompactLayout = isDesktop && items.length > 0 && items.length <= COMPACT_VISIBLE;
 
   // Compact slider state
   const compactMaxOffset = compact ? Math.max(0, items.length - COMPACT_VISIBLE) : 0;
@@ -264,6 +273,7 @@ export const GameDevGallery = ({
                     index={index}
                     iconMap={iconMap}
                     compact
+                    skipRevealGate
                   />
                 ))}
               </PaginatedSlideFrame>
@@ -291,33 +301,53 @@ export const GameDevGallery = ({
             ))}
           </div>
         ) : items.length > 0 ? (
-          <div className="flex items-stretch gap-2 flex-1 min-h-0">
-            {/* Strip container — measured by ResizeObserver to derive per-card height */}
-            <VerticalOffsetFrame
-              offset={safeCompactOffset}
-              step={dynamicStep}
-              viewportRef={stripRef}
-            >
-              {items.map((item, index) => (
-                <div
-                  key={item.id}
-                  className="shrink-0 overflow-hidden"
-                  style={{ height: dynamicCardH }}
-                >
-                  <GalleryInfoCard
-                    item={item}
-                    index={index}
-                    iconMap={iconMap}
-                    compact
-                    contentSized
-                    openOnDoubleClick
-                  />
-                </div>
-              ))}
-            </VerticalOffsetFrame>
+          <div className="flex min-h-0 flex-1 items-stretch gap-2">
+            {useStaticCompactLayout ? (
+              <div ref={stripRef} className="flex min-h-0 flex-1 flex-col gap-2">
+                {items.map((item, index) => (
+                  <div key={item.id} className="min-h-0 flex-1 overflow-hidden">
+                    <GalleryInfoCard
+                      item={item}
+                      index={index}
+                      iconMap={iconMap}
+                      withThumbnail
+                      compact
+                      contentSized
+                      openOnDoubleClick
+                      skipRevealGate
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <VerticalOffsetFrame
+                offset={safeCompactOffset}
+                step={dynamicStep}
+                viewportRef={stripRef}
+              >
+                {items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="shrink-0 overflow-hidden"
+                    style={{ height: dynamicCardH }}
+                  >
+                    <GalleryInfoCard
+                      item={item}
+                      index={index}
+                      iconMap={iconMap}
+                      withThumbnail
+                      compact
+                      contentSized
+                      openOnDoubleClick
+                      skipRevealGate
+                    />
+                  </div>
+                ))}
+              </VerticalOffsetFrame>
+            )}
 
             {/* Dot indicators pinned to the right */}
-            {compactMaxOffset > 0 && (
+            {!useStaticCompactLayout && compactMaxOffset > 0 ? (
               <div className="flex flex-col items-center justify-center overflow-visible py-1">
                 {/* Dot indicators — one per scrollable position */}
                 <div className="flex flex-col items-center gap-1">
@@ -342,7 +372,7 @@ export const GameDevGallery = ({
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-700 p-8 text-gray-500">
@@ -361,12 +391,22 @@ export const GameDevGallery = ({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col gap-4"
+      className={
+        useDenseGrid
+          ? "gamedev-gallery-panel flex min-h-0 flex-1 flex-col gap-3 overflow-hidden"
+          : "flex min-h-0 flex-1 flex-col gap-4"
+      }
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
       {isLoading ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-3 md:auto-rows-auto md:items-start md:gap-4">
+        <div
+          className={`grid min-h-0 flex-1 grid-cols-1 gap-3 md:gap-4 ${
+            useDenseGrid
+              ? "gamedev-gallery-dense-grid overflow-hidden md:grid-cols-3 md:grid-rows-2 md:items-stretch"
+              : "md:grid-cols-3"
+          }`}
+        >
           {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
             <div key={i} className="h-40 rounded-xl bg-gray-700/40 animate-pulse" />
           ))}
@@ -380,12 +420,14 @@ export const GameDevGallery = ({
           <PaginatedSlideFrame
             direction={direction}
             frameKey={frameKey}
-            wrapperClassName={
-              useDenseGrid ? "min-h-0 flex-1 overflow-y-auto pr-1" : "min-h-0 flex-1"
-            }
-            clipClassName="relative min-h-0 overflow-x-hidden"
-            contentClassName={`grid grid-cols-1 gap-3 md:gap-4 ${
-              useDenseGrid ? "md:grid-cols-3 md:auto-rows-auto md:items-start" : "md:grid-cols-3"
+            enableLayout={!useDenseGrid}
+            presenceMode={useDenseGrid ? "wait" : "popLayout"}
+            wrapperClassName="min-h-0 flex-1 overflow-hidden"
+            clipClassName="relative min-h-0 flex-1 overflow-hidden"
+            contentClassName={`grid min-h-0 grid-cols-1 gap-3 md:gap-4 ${
+              useDenseGrid
+                ? "gamedev-gallery-dense-grid md:grid-cols-3 md:grid-rows-2 md:items-stretch"
+                : "md:grid-cols-3"
             }`}
           >
             {pageItems.map((item, index) => (
@@ -395,36 +437,38 @@ export const GameDevGallery = ({
                 index={index}
                 iconMap={iconMap}
                 withThumbnail
-                contentSized={useDenseGrid}
+                contentSized={false}
                 openOnDoubleClick={isDesktop}
+                skipRevealGate={useDenseGrid}
               />
             ))}
 
-            {/* Ghost cards to pad the grid so the container height is stable */}
-            <GhostSlotRepeater
-              count={Math.max(0, ITEMS_PER_PAGE - pageItems.length)}
-              renderGhost={(i) => {
-                const template = pageItems[0] || items[0];
-                if (!template) return <div key={i} />;
+            {/* Ghost cards pad non-dense grids; dense panels use a fixed 2×3 grid instead */}
+            {!useDenseGrid ? (
+              <GhostSlotRepeater
+                count={Math.max(0, ITEMS_PER_PAGE - pageItems.length)}
+                renderGhost={(i) => {
+                  const template = pageItems[0] || items[0];
+                  if (!template) return <div key={i} />;
 
-                return (
-                  <div
-                    key={`ghost-${i}`}
-                    className="pointer-events-none select-none opacity-0"
-                    aria-hidden="true"
-                  >
-                    <GalleryInfoCard
-                      item={template}
-                      index={i}
-                      iconMap={iconMap}
-                      withThumbnail
-                      contentSized={useDenseGrid}
-                      openOnDoubleClick={isDesktop}
-                    />
-                  </div>
-                );
-              }}
-            />
+                  return (
+                    <div
+                      key={`ghost-${i}`}
+                      className="pointer-events-none select-none opacity-0"
+                      aria-hidden="true"
+                    >
+                      <GalleryInfoCard
+                        item={template}
+                        index={i}
+                        iconMap={iconMap}
+                        withThumbnail
+                        openOnDoubleClick={isDesktop}
+                      />
+                    </div>
+                  );
+                }}
+              />
+            ) : null}
           </PaginatedSlideFrame>
 
           {/* Pagination — colored common dots on mobile */}
@@ -436,7 +480,7 @@ export const GameDevGallery = ({
             />
           )}
 
-          {/* Pagination — sticky so it's always visible at the bottom of the scroll area (desktop only) */}
+          {/* Pagination — desktop controls sit below the fixed grid (no scroll container) */}
           {isDesktop && totalPages > 1 && (
             <GameDevPaginationDesktop
               currentPage={safePage}

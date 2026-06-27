@@ -14,8 +14,11 @@ import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
-
-type Tab = "showreel" | "projects" | "vfx";
+import {
+  GAMEDEV_OVERVIEW_TAB_ORDER,
+  type GameDevOverviewTab,
+  getOverviewTabPulseMotion,
+} from "../../common/panels/overviewTabPulse";
 
 const slideVariants = {
   enter: (dir: number) => ({ opacity: 0, x: dir * -40 }),
@@ -32,7 +35,8 @@ export const GameDevOverviewDesktop = ({
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
-  const [activeTab, setActiveTab] = useState<Tab>("showreel");
+  const [activeTab, setActiveTab] = useState<GameDevOverviewTab>("showreel");
+  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(() => new Set(["showreel"]));
   const tabPanelIdBase = useId();
   const showreelTabId = `${tabPanelIdBase}-desktop-tab-showreel`;
   const projectsTabId = `${tabPanelIdBase}-desktop-tab-projects`;
@@ -41,15 +45,20 @@ export const GameDevOverviewDesktop = ({
   const projectsPanelId = `${tabPanelIdBase}-desktop-panel-projects`;
   const vfxPanelId = `${tabPanelIdBase}-desktop-panel-vfx`;
   const directionRef = useRef(1);
-  const TAB_ORDER: Tab[] = ["showreel", "projects", "vfx"];
 
-  const switchTab = (tab: Tab) => {
-    const from = TAB_ORDER.indexOf(activeTab);
-    const to = TAB_ORDER.indexOf(tab);
+  const switchTab = (tab: GameDevOverviewTab) => {
+    const from = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(activeTab);
+    const to = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(tab);
     directionRef.current = to > from ? 1 : -1;
+    setVisitedTabs((current) => {
+      if (current.has(tab)) return current;
+      return new Set([...current, tab]);
+    });
     playClickSound();
     setActiveTab(tab);
   };
+
+  const tabPulse = (tab: GameDevOverviewTab) => getOverviewTabPulseMotion(visitedTabs.has(tab));
 
   return (
     <div className="gamedev-overview-desktop-tabs-stack">
@@ -60,6 +69,7 @@ export const GameDevOverviewDesktop = ({
           role="tab"
           aria-selected={activeTab === "showreel"}
           aria-controls={showreelPanelId}
+          {...tabPulse("showreel")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -76,6 +86,7 @@ export const GameDevOverviewDesktop = ({
           role="tab"
           aria-selected={activeTab === "projects"}
           aria-controls={projectsPanelId}
+          {...tabPulse("projects")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -92,6 +103,7 @@ export const GameDevOverviewDesktop = ({
           role="tab"
           aria-selected={activeTab === "vfx"}
           aria-controls={vfxPanelId}
+          {...tabPulse("vfx")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
@@ -117,6 +129,7 @@ export const GameDevOverviewDesktop = ({
               animate="center"
               exit="exit"
               transition={{ duration: 0.28, ease: "easeInOut" }}
+              className="h-full"
             >
               <GameDevShowreelPanel showreelUrl={showreelUrl} />
             </motion.div>
@@ -132,36 +145,37 @@ export const GameDevOverviewDesktop = ({
               animate="center"
               exit="exit"
               transition={{ duration: 0.28, ease: "easeInOut" }}
+              className="h-full"
             >
-              <GameDevPanelShell
-                eyebrow="Featured Gallery"
-                title="Selected Work"
-                clipScroll
-                description="A curated set of projects and prototypes highlighting gameplay, technical systems, and visual polish."
-                rightAction={
-                  featuredItems.length > 0 ? (
-                    <p className="gamedev-panel-meta">{featuredItems.length} items</p>
-                  ) : undefined
-                }
-                footer={
-                  <GameDevPanelButton
-                    variant="primary"
-                    hoverX={3}
-                    onClick={onViewAll}
-                    icon={<ArrowRight className="h-4 w-4" />}
-                  >
-                    View All Projects
-                  </GameDevPanelButton>
-                }
-              >
-                <GameDevGallery
-                  items={featuredItems}
-                  iconMap={iconMap}
-                  isLoading={isLoading}
-                  compact
-                  maxCompactItems={3}
-                />
-              </GameDevPanelShell>
+              <div className="gamedev-panel-frame">
+                <GameDevPanelShell
+                  eyebrow="Featured Gallery"
+                  title="Selected Work"
+                  clipScroll
+                  rightAction={
+                    <div className="flex shrink-0 flex-col items-end gap-2">
+                      {featuredItems.length > 0 ? (
+                        <p className="gamedev-panel-meta">{featuredItems.length} items</p>
+                      ) : null}
+                      <GameDevPanelButton
+                        variant="primary"
+                        hoverX={3}
+                        onClick={onViewAll}
+                        icon={<ArrowRight className="h-4 w-4" />}
+                      >
+                        View All Projects
+                      </GameDevPanelButton>
+                    </div>
+                  }
+                >
+                  <GameDevGallery
+                    items={featuredItems}
+                    iconMap={iconMap}
+                    isLoading={isLoading}
+                    denseCards
+                  />
+                </GameDevPanelShell>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -175,20 +189,11 @@ export const GameDevOverviewDesktop = ({
               animate="center"
               exit="exit"
               transition={{ duration: 0.28, ease: "easeInOut" }}
+              className="h-full"
             >
-              <GameDevPanelShell
-                eyebrow="Effects Reel"
-                title="Visual Effects"
-                clipScroll
-                description="Shader work, particles, and real-time FX captured from recent projects."
-                rightAction={
-                  vfxItems.length > 0 ? (
-                    <p className="gamedev-panel-meta">{vfxItems.length} effects</p>
-                  ) : undefined
-                }
-              >
+              <div className="gamedev-vfx-showcase">
                 <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
-              </GameDevPanelShell>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

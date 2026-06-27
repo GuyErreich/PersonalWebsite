@@ -20,6 +20,7 @@ interface GameDevProjectCardProps {
   contentSized?: boolean;
   openOnDoubleClick?: boolean;
   thumbnailUrl?: string;
+  skipRevealGate?: boolean;
 }
 
 export const GameDevProjectCard = ({
@@ -35,6 +36,7 @@ export const GameDevProjectCard = ({
   contentSized = false,
   openOnDoubleClick = false,
   thumbnailUrl,
+  skipRevealGate = false,
 }: GameDevProjectCardProps) => {
   const baseContainer =
     "group flex flex-col rounded-xl border border-white/10 bg-gray-800/90 backdrop-blur-sm";
@@ -56,6 +58,7 @@ export const GameDevProjectCard = ({
       contentSized={contentSized}
       openOnDoubleClick={openOnDoubleClick}
       thumbnailUrl={thumbnailUrl}
+      skipRevealGate={skipRevealGate}
       theme={{
         containerClassName,
         iconShellClassName:

@@ -58,6 +58,7 @@ export const GameDevAllProjectsDesktop = ({
           dropdownAriaLabel="Filter by game development stack"
           listAriaLabel="Game development stack options"
           theme={GAMEDEV_STACK_FILTER_THEME}
+          className="shrink-0"
         />
 
         <GameDevGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} denseCards />
