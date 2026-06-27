@@ -37,6 +37,11 @@ export const ManagedProjectsList = ({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h4 className="text-sm font-semibold text-white">{item.title}</h4>
+                  {item.is_coming_soon ? (
+                    <span className="mt-1 inline-flex rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
+                      Coming Soon
+                    </span>
+                  ) : null}
                   <p className="mt-1 line-clamp-2 text-xs text-gray-400">{item.description}</p>
                   {item.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
