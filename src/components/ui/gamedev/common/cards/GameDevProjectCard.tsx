@@ -16,6 +16,8 @@ interface GameDevProjectCardProps {
   icon: ReactNode;
   index: number;
   compact?: boolean;
+  contentSized?: boolean;
+  openOnDoubleClick?: boolean;
   thumbnailUrl?: string;
 }
 
@@ -28,6 +30,8 @@ export const GameDevProjectCard = ({
   icon,
   index,
   compact = false,
+  contentSized = false,
+  openOnDoubleClick = false,
   thumbnailUrl,
 }: GameDevProjectCardProps) => {
   return (
@@ -40,6 +44,8 @@ export const GameDevProjectCard = ({
       icon={icon}
       index={index}
       compact={compact}
+      contentSized={contentSized}
+      openOnDoubleClick={openOnDoubleClick}
       thumbnailUrl={thumbnailUrl}
       theme={{
         containerClassName:

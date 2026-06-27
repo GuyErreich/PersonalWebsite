@@ -73,7 +73,7 @@ const GRID_CONFIG = {
     cellWidth: 108,
     cellHeight: 112,
     cardWidth: 86,
-    cardHeight: 98,
+    cardHeight: 108,
     centerScale: 1.22,
     ringOneScale: 0.94,
     ringTwoScale: 0.66,
@@ -92,7 +92,7 @@ const GRID_CONFIG = {
     cellWidth: 70,
     cellHeight: 76,
     cardWidth: 58,
-    cardHeight: 68,
+    cardHeight: 76,
     centerScale: 1.14,
     ringOneScale: 0.9,
     ringTwoScale: 0.72,
@@ -684,24 +684,26 @@ export const GameDevHiveGallery = ({
         : null}
 
       <div className="gamedev-hive-meta">
-        <p className="gamedev-hive-caption">
-          {isSpreadMode
-            ? "Release to collapse the spread view."
-            : "Swipe to spin the hive, tap any node to focus it, or hold to spread it."}
-        </p>
-
         <MotionLink
           to={buildGameDevProjectPath(activeItem.id)}
           whileHover={{ scale: 1.04 }}
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
           onClick={playClickSound}
-          className="inline-flex items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
+          className="gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
         >
           Open Project Page
         </MotionLink>
 
-        <p className="gamedev-hive-count">{items.length} visible</p>
+        <div className="gamedev-hive-meta-row">
+          <p className="gamedev-hive-caption">
+            {isSpreadMode
+              ? "Release to collapse the spread view."
+              : "Swipe to spin the hive, tap any node to focus it, or hold to spread it."}
+          </p>
+
+          <p className="gamedev-hive-count">{items.length} visible</p>
+        </div>
       </div>
     </div>
   );

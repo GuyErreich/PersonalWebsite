@@ -31,12 +31,16 @@ const GalleryInfoCard = ({
   iconMap,
   withThumbnail = false,
   compact = false,
+  contentSized = false,
+  openOnDoubleClick = false,
 }: {
   item: GameDevItem;
   index: number;
   iconMap: Record<string, React.ElementType>;
   withThumbnail?: boolean;
   compact?: boolean;
+  contentSized?: boolean;
+  openOnDoubleClick?: boolean;
 }) => {
   const ProjectIcon = (
     item.icon_name ? (iconMap[item.icon_name] ?? Gamepad2) : Gamepad2
@@ -52,6 +56,8 @@ const GalleryInfoCard = ({
       icon={<ProjectIcon className="h-6 w-6 text-purple-300 drop-shadow-[0_0_4px_currentColor]" />}
       index={index}
       compact={compact}
+      contentSized={contentSized}
+      openOnDoubleClick={openOnDoubleClick}
       thumbnailUrl={withThumbnail ? item.thumbnail_url : undefined}
     />
   );
@@ -289,8 +295,19 @@ export const GameDevGallery = ({
               viewportRef={stripRef}
             >
               {items.map((item, index) => (
-                <div key={item.id} className="flex-1 min-h-0 min-h-min">
-                  <GalleryInfoCard item={item} index={index} iconMap={iconMap} compact />
+                <div
+                  key={item.id}
+                  className="shrink-0 overflow-visible"
+                  style={{ height: dynamicCardH }}
+                >
+                  <GalleryInfoCard
+                    item={item}
+                    index={index}
+                    iconMap={iconMap}
+                    compact
+                    contentSized
+                    openOnDoubleClick
+                  />
                 </div>
               ))}
             </VerticalOffsetFrame>
@@ -335,7 +352,7 @@ export const GameDevGallery = ({
   // ── Full gallery — paginated grid of info cards ────────────────────────
 
   const pageItems = items.slice(safePage * ITEMS_PER_PAGE, (safePage + 1) * ITEMS_PER_PAGE);
-  // denseCards → use 2-row grid to fill the full-height panel; cards stay full-size
+  // denseCards → 3-col grid with content-sized rows on desktop
   const useDenseGrid = denseCards && isDesktop;
 
   return (
@@ -345,9 +362,9 @@ export const GameDevGallery = ({
       onTouchEnd={onTouchEnd}
     >
       {isLoading ? (
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-3 md:grid-rows-2 md:auto-rows-fr md:gap-4">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 md:grid-cols-3 md:auto-rows-auto md:items-start md:gap-4">
           {Array.from({ length: ITEMS_PER_PAGE }).map((_, i) => (
-            <div key={i} className="h-40 rounded-xl bg-gray-700/40 animate-pulse md:h-full" />
+            <div key={i} className="h-40 rounded-xl bg-gray-700/40 animate-pulse" />
           ))}
         </div>
       ) : items.length === 0 ? (
@@ -359,10 +376,10 @@ export const GameDevGallery = ({
           <PaginatedSlideFrame
             direction={direction}
             frameKey={frameKey}
-            wrapperClassName="min-h-0 flex-1"
-            clipClassName="relative h-full min-h-0 overflow-hidden"
-            contentClassName={`grid h-full min-h-0 grid-cols-1 gap-3 md:gap-4 ${
-              useDenseGrid ? "md:grid-cols-3 md:grid-rows-2 md:auto-rows-fr" : "md:grid-cols-3"
+            wrapperClassName={useDenseGrid ? "min-h-0 flex-1 overflow-y-auto pr-1" : "min-h-0 flex-1"}
+            clipClassName="relative min-h-0"
+            contentClassName={`grid grid-cols-1 gap-3 md:gap-4 ${
+              useDenseGrid ? "md:grid-cols-3 md:auto-rows-auto md:items-start" : "md:grid-cols-3"
             }`}
           >
             {pageItems.map((item, index) => (
@@ -372,6 +389,8 @@ export const GameDevGallery = ({
                 index={index}
                 iconMap={iconMap}
                 withThumbnail
+                contentSized={useDenseGrid}
+                openOnDoubleClick={isDesktop}
               />
             ))}
 
@@ -385,7 +404,7 @@ export const GameDevGallery = ({
                 return (
                   <div
                     key={`ghost-${i}`}
-                    className="pointer-events-none select-none opacity-0"
+                    className="pointer-events-none invisible select-none h-0 overflow-hidden"
                     aria-hidden="true"
                   >
                     <GalleryInfoCard item={template} index={i} iconMap={iconMap} withThumbnail />
