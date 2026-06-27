@@ -11,8 +11,10 @@ import { GameDevOverviewMobileShort } from "./mobile/layouts/GameDevOverviewMobi
 
 export const GameDevOverviewPanel = ({
   showreelUrl,
-  galleryItems,
+  featuredItems,
+  vfxItems,
   isLoading,
+  isVfxLoading,
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
@@ -22,21 +24,23 @@ export const GameDevOverviewPanel = ({
     return (
       <GameDevOverviewDesktop
         showreelUrl={showreelUrl}
-        galleryItems={galleryItems}
+        featuredItems={featuredItems}
+        vfxItems={vfxItems}
         isLoading={isLoading}
+        isVfxLoading={isVfxLoading}
         iconMap={iconMap}
         onViewAll={onViewAll}
       />
     );
   }
 
-  // All mobile phones use the tabbed layout so both showreel and projects
-  // are accessible without vertical overflow
   return (
     <GameDevOverviewMobileShort
       showreelUrl={showreelUrl}
-      galleryItems={galleryItems}
+      featuredItems={featuredItems}
+      vfxItems={vfxItems}
       isLoading={isLoading}
+      isVfxLoading={isVfxLoading}
       iconMap={iconMap}
       onViewAll={onViewAll}
     />

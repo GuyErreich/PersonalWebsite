@@ -24,7 +24,8 @@ const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
 export const GameDevSection = () => {
   const [showAllProjectsView, setShowAllProjectsView] = useState(false);
 
-  const { galleryItems, isLoading, showreelUrl } = useGameDevSectionData();
+  const { galleryItems, featuredItems, vfxItems, isLoading, isVfxLoading, showreelUrl } =
+    useGameDevSectionData();
   const {
     filteredItems,
     search,
@@ -64,8 +65,10 @@ export const GameDevSection = () => {
           primaryPanel={
             <GameDevOverviewPanel
               showreelUrl={showreelUrl}
-              galleryItems={galleryItems}
+              featuredItems={featuredItems}
+              vfxItems={vfxItems}
               isLoading={isLoading}
+              isVfxLoading={isVfxLoading}
               iconMap={iconMap}
               onViewAll={() => setShowAllProjectsView(true)}
             />

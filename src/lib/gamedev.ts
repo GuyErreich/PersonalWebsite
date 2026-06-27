@@ -115,3 +115,73 @@ export const inferMediaTypeFromUrl = (url: string): "video" | "image" => {
 export const inferMediaTypeFromFile = (file: File): "video" | "image" => {
   return file.type.toLowerCase().startsWith("video/") ? "video" : "image";
 };
+
+const compareNullableSort = (a: number | null | undefined, b: number | null | undefined): number => {
+  const aVal = a ?? Number.MAX_SAFE_INTEGER;
+  const bVal = b ?? Number.MAX_SAFE_INTEGER;
+  if (aVal !== bVal) return aVal - bVal;
+  return 0;
+};
+
+export const sortFeaturedGameDevItems = <T extends { featured_sort?: number | null; created_at?: string }>(
+  items: T[],
+): T[] =>
+  [...items].sort((left, right) => {
+    const sortCompare = compareNullableSort(left.featured_sort, right.featured_sort);
+    if (sortCompare !== 0) return sortCompare;
+
+    const leftCreated = left.created_at ?? "";
+    const rightCreated = right.created_at ?? "";
+    return rightCreated.localeCompare(leftCreated);
+  });
+
+export const sortGameDevVfxItems = <T extends { sort_order?: number | null; created_at?: string }>(
+  items: T[],
+): T[] =>
+  [...items].sort((left, right) => {
+    const sortCompare = compareNullableSort(left.sort_order, right.sort_order);
+    if (sortCompare !== 0) return sortCompare;
+
+    const leftCreated = left.created_at ?? "";
+    const rightCreated = right.created_at ?? "";
+    return rightCreated.localeCompare(leftCreated);
+  });
+
+const normalizeVfxMediaUrl = (url: string): string => url.trim();
+
+/** Keep one VFX row per media URL (best sort_order, then newest). */
+export const dedupeGameDevVfxByMediaUrl = <
+  T extends { id: string; media_url: string; sort_order?: number | null; created_at?: string },
+>(
+  items: T[],
+): T[] => {
+  const byUrl = new Map<string, T>();
+
+  for (const item of items) {
+    const key = normalizeVfxMediaUrl(item.media_url);
+    if (!key) continue;
+
+    const existing = byUrl.get(key);
+    if (!existing) {
+      byUrl.set(key, item);
+      continue;
+    }
+
+    const existingSort = existing.sort_order ?? Number.MAX_SAFE_INTEGER;
+    const itemSort = item.sort_order ?? Number.MAX_SAFE_INTEGER;
+    if (itemSort < existingSort) {
+      byUrl.set(key, item);
+      continue;
+    }
+
+    if (itemSort === existingSort) {
+      const existingCreated = existing.created_at ?? "";
+      const itemCreated = item.created_at ?? "";
+      if (itemCreated > existingCreated) {
+        byUrl.set(key, item);
+      }
+    }
+  }
+
+  return sortGameDevVfxItems([...byUrl.values()]);
+};

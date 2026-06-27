@@ -13,7 +13,7 @@ import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
 export const GameDevOverviewMobile = ({
   showreelUrl,
-  galleryItems,
+  featuredItems,
   isLoading,
   iconMap,
   onViewAll,
@@ -38,7 +38,7 @@ export const GameDevOverviewMobile = ({
             </GameDevPanelButton>
           }
         >
-          <GameDevHiveGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
+          <GameDevHiveGallery items={featuredItems} iconMap={iconMap} isLoading={isLoading} />
         </GameDevPanelShell>
       </div>
     </div>

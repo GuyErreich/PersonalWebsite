@@ -36,12 +36,20 @@ export const ManagedProjectsList = ({
             <li key={item.id} className="rounded-lg border border-gray-700 bg-gray-800/60 p-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-semibold text-white">{item.title}</h4>
-                  {item.is_coming_soon ? (
-                    <span className="mt-1 inline-flex rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
-                      Coming Soon
-                    </span>
-                  ) : null}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h4 className="text-sm font-semibold text-white">{item.title}</h4>
+                    {item.is_coming_soon ? (
+                      <span className="rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
+                        Coming Soon
+                      </span>
+                    ) : null}
+                    {item.is_featured ? (
+                      <span className="rounded-md border border-emerald-500/35 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-200">
+                        Selected
+                        {item.featured_sort != null ? ` · #${item.featured_sort}` : ""}
+                      </span>
+                    ) : null}
+                  </div>
                   <p className="mt-1 line-clamp-2 text-xs text-gray-400">{item.description}</p>
                   {item.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">

@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
-import { buildGameDevStoredContent, GAMEDEV_COMING_SOON_DEFAULT_SUMMARY, parseGameDevStoredContent } from "../../lib/gamedev";
+import { buildGameDevStoredContent, dedupeGameDevVfxByMediaUrl, GAMEDEV_COMING_SOON_DEFAULT_SUMMARY, parseGameDevStoredContent } from "../../lib/gamedev";
+import { markVfxShownInLibrary, normalizeLinkedVfxIds } from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
   playClickSound,
@@ -39,10 +40,21 @@ import {
   R2_UPLOAD_POLICIES,
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
-import { MarkdownRenderer } from "../MarkdownRenderer";
+import {
+  GAMEDEV_FORM_SECTIONS,
+  type GameDevFormSectionId,
+  type MediaLibraryRoleFilter,
+  sectionIdFromWizardStep,
+} from "./gamedev/formSections";
+import { GameDevProjectFormShell } from "./gamedev/GameDevProjectFormShell";
+import { GameDevBasicsSection } from "./gamedev/sections/GameDevBasicsSection";
+import { GameDevContentSection } from "./gamedev/sections/GameDevContentSection";
+import { GameDevDiscoverySection } from "./gamedev/sections/GameDevDiscoverySection";
+import { GameDevLinksSection } from "./gamedev/sections/GameDevLinksSection";
+import { GameDevMediaSection } from "./gamedev/sections/GameDevMediaSection";
 import { MediaLibraryPickerModal } from "./mediaLibrary/MediaLibraryPickerModal";
-import { SelectedMediaPreview } from "./mediaLibrary/SelectedMediaPreview";
-import type { AdminDevOpsProject, AdminGameDevProject } from "./types";
+import type { MediaLibraryPickerAction } from "./mediaLibrary/MediaLibraryPickerExplorer";
+import type { AdminDevOpsProject, AdminGameDevProject, AdminGameDevVfx } from "./types";
 
 interface ItemFormModalProps {
   isOpen: boolean;
@@ -77,30 +89,6 @@ const MAX_MEDIA_SIZE_MB = Math.round(MAX_MEDIA_SIZE_BYTES / (1024 * 1024));
 const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 50000;
 const MAX_STACK_LENGTH = 40;
-const GAMEDEV_BODY_TEMPLATE = [
-  "## Overview",
-  "",
-  "Write the problem, goal, or design intent here.",
-  "",
-  "![Feature media](https://your-r2-media-url)",
-  "",
-  "## Critical Implementation",
-  "",
-  "```ts",
-  "// Paste critical code here",
-  "```",
-  "",
-  "## Breakdown",
-  "",
-  "Explain the system, tradeoffs, and interesting results.",
-  "",
-  "![Another media shot](https://your-r2-media-url)",
-  "",
-  "```cpp",
-  "// Another key snippet",
-  "```",
-  "",
-].join("\n");
 
 type BodyEditorTab = "write" | "preview";
 
@@ -135,6 +123,7 @@ export const ItemFormModal = ({
 }: ItemFormModalProps) => {
   const formIdBase = useId();
   const modalTitleId = `${formIdBase}-modal-title`;
+  const gameDevSectionTitleId = `${formIdBase}-gamedev-section-title`;
   const itemTitleId = `${formIdBase}-item-title`;
   const itemDescriptionId = `${formIdBase}-item-description`;
   const itemBodyId = `${formIdBase}-item-body`;
@@ -158,7 +147,14 @@ export const ItemFormModal = ({
   const [body, setBody] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("gamepad");
   const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [selectedFeatureMediaUrl, setSelectedFeatureMediaUrl] = useState<string | null>(null);
+  const [selectedHeaderMediaUrl, setSelectedHeaderMediaUrl] = useState<string | null>(null);
+  const [selectedHeaderThumbnailUrl, setSelectedHeaderThumbnailUrl] = useState<string | null>(null);
+  const [selectedCardThumbnailUrl, setSelectedCardThumbnailUrl] = useState<string | null>(null);
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [featuredSort, setFeaturedSort] = useState("");
+  const [showVfxSection, setShowVfxSection] = useState(true);
+  const [linkedVfxIds, setLinkedVfxIds] = useState<string[]>([]);
+  const [availableVfx, setAvailableVfx] = useState<AdminGameDevVfx[]>([]);
   const [selectedStacks, setSelectedStacks] = useState<string[]>([]);
   const [customStackInput, setCustomStackInput] = useState("");
   const [selectedGameTags, setSelectedGameTags] = useState<string[]>([]);
@@ -169,6 +165,10 @@ export const ItemFormModal = ({
   const [isImportingRepo, setIsImportingRepo] = useState(false);
   const [isUploadingBodyAsset, setIsUploadingBodyAsset] = useState(false);
   const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
+  const [mediaLibraryRoleFilter, setMediaLibraryRoleFilter] =
+    useState<MediaLibraryRoleFilter>("all");
+  const [wizardStep, setWizardStep] = useState(0);
+  const [activeSection, setActiveSection] = useState<GameDevFormSectionId>("basics");
   const [activeBodyTab, setActiveBodyTab] = useState<BodyEditorTab>("write");
   const [uploadedBodyMedia, setUploadedBodyMedia] = useState<Array<{ url: string; alt: string }>>(
     [],
@@ -216,7 +216,13 @@ export const ItemFormModal = ({
     setBody("");
     setSelectedIcon("gamepad");
     setMediaFile(null);
-    setSelectedFeatureMediaUrl(null);
+    setSelectedHeaderMediaUrl(null);
+    setSelectedHeaderThumbnailUrl(null);
+    setSelectedCardThumbnailUrl(null);
+    setIsFeatured(false);
+    setFeaturedSort("");
+    setShowVfxSection(true);
+    setLinkedVfxIds([]);
     setSelectedStacks([]);
     setCustomStackInput("");
     setSelectedGameTags([]);
@@ -227,6 +233,9 @@ export const ItemFormModal = ({
     setActiveBodyTab("write");
     setUploadedBodyMedia([]);
     setIsMediaLibraryOpen(false);
+    setMediaLibraryRoleFilter("all");
+    setWizardStep(0);
+    setActiveSection("basics");
     setIsComingSoon(false);
     setError(null);
   }, []);
@@ -260,26 +269,90 @@ export const ItemFormModal = ({
 
       setDescription(parsed.summary);
       setBody(parsed.body);
-      setSelectedFeatureMediaUrl(gameDevItem.media_url || null);
+      setSelectedHeaderMediaUrl(gameDevItem.header_media_url ?? gameDevItem.media_url ?? null);
+      setSelectedHeaderThumbnailUrl(gameDevItem.header_thumbnail_url ?? null);
+      setSelectedCardThumbnailUrl(gameDevItem.thumbnail_url ?? null);
+      setIsFeatured(gameDevItem.is_featured ?? false);
+      setFeaturedSort(
+        gameDevItem.featured_sort != null ? String(gameDevItem.featured_sort) : "",
+      );
+      setShowVfxSection(gameDevItem.show_vfx_section ?? true);
+      setIsComingSoon(gameDevItem.is_coming_soon ?? false);
       setSelectedGameTags(gameDevItem.tags ?? []);
       setSelectedStacks([]);
-      setIsComingSoon(gameDevItem.is_coming_soon ?? false);
+
+      void (async () => {
+        const [{ data: vfxData }, { data: linkData }] = await Promise.all([
+          supabase
+            .from("gamedev_vfx")
+            .select("*")
+            .order("sort_order", { ascending: true, nullsFirst: false })
+            .order("created_at", { ascending: false }),
+          supabase
+            .from("gamedev_project_vfx")
+            .select("gamedev_vfx_id, sort_order")
+            .eq("gamedev_item_id", gameDevItem.id)
+            .order("sort_order", { ascending: true, nullsFirst: false }),
+        ]);
+
+        const rawVfx = ((vfxData ?? []) as AdminGameDevVfx[]).map((item) => ({
+          ...item,
+          tags: item.tags ?? [],
+        }));
+        const dedupedVfx = dedupeGameDevVfxByMediaUrl(rawVfx);
+
+        setAvailableVfx(dedupedVfx);
+
+        const orderedLinks = [...(linkData ?? [])].sort((left, right) => {
+          const leftOrder = left.sort_order ?? Number.MAX_SAFE_INTEGER;
+          const rightOrder = right.sort_order ?? Number.MAX_SAFE_INTEGER;
+          return leftOrder - rightOrder;
+        });
+
+        setLinkedVfxIds(
+          normalizeLinkedVfxIds(
+            orderedLinks.map((link) => link.gamedev_vfx_id),
+            rawVfx,
+          ),
+        );
+      })();
     } else {
       const devOpsItem = editingItem as AdminDevOpsProject;
       setDescription(devOpsItem.description);
       setBody("");
-      setSelectedFeatureMediaUrl(null);
+      setSelectedHeaderMediaUrl(null);
       setSelectedStacks(devOpsItem.tech_stack ?? []);
       setSelectedGameTags([]);
     }
   }, [editingItem, gameDevCreatePreset, isOpen, resetForm, type]);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen || type !== "gamedev") {
+      return;
+    }
 
-  const closeModal = () => {
+    void (async () => {
+      const { data } = await supabase
+        .from("gamedev_vfx")
+        .select("*")
+        .order("sort_order", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false });
+
+      setAvailableVfx(
+        dedupeGameDevVfxByMediaUrl(
+          ((data ?? []) as AdminGameDevVfx[]).map((item) => ({
+            ...item,
+            tags: item.tags ?? [],
+          })),
+        ),
+      );
+    })();
+  }, [isOpen, type]);
+
+  const closeModal = useCallback(() => {
     playMenuCloseSound();
     onClose();
-  };
+  }, [onClose]);
 
   const handleImportFromRepo = async () => {
     const normalizedRepoUrl = repoUrl.trim();
@@ -379,8 +452,240 @@ export const ItemFormModal = ({
     appendToBody(`![${escapeMarkdownImageLabel(mediaAlt)}](${mediaUrl})`);
   };
 
-  const insertLibraryMedia = (item: MediaLibraryItem) => {
+  const insertLibraryMedia = useCallback((item: MediaLibraryItem) => {
     appendToBody(`![${escapeMarkdownImageLabel(item.name)}](${item.media_url})`);
+  }, []);
+
+  const addGameTag = useCallback(() => {
+    const trimmed = customGameTagInput.trim();
+    if (trimmed && !selectedGameTags.includes(trimmed)) {
+      setSelectedGameTags((prev) => [...prev, trimmed]);
+    }
+    setCustomGameTagInput("");
+  }, [customGameTagInput, selectedGameTags]);
+
+  const openMediaLibrary = useCallback((role: MediaLibraryRoleFilter) => {
+    setMediaLibraryRoleFilter(role);
+    setIsMediaLibraryOpen(true);
+  }, []);
+
+  const gameDevFormMode = isEditing ? "sidebar" : "wizard";
+  const visibleGameDevSection =
+    gameDevFormMode === "wizard" ? sectionIdFromWizardStep(wizardStep) : activeSection;
+
+  const sectionCompletion = useMemo(
+    (): Record<GameDevFormSectionId, boolean> => ({
+      basics: Boolean(title.trim() && description.trim()),
+      content: isComingSoon ? true : Boolean(body.trim()),
+      media: isComingSoon
+        ? true
+        : Boolean(
+            selectedHeaderMediaUrl ||
+              mediaFile ||
+              selectedCardThumbnailUrl ||
+              selectedHeaderThumbnailUrl,
+          ),
+      discovery: isFeatured || linkedVfxIds.length > 0 || !showVfxSection,
+      links: Boolean(githubUrl.trim() || liveUrl.trim() || repoUrl.trim()),
+    }),
+    [
+      title,
+      description,
+      body,
+      isComingSoon,
+      selectedHeaderMediaUrl,
+      mediaFile,
+      selectedCardThumbnailUrl,
+      selectedHeaderThumbnailUrl,
+      isFeatured,
+      linkedVfxIds,
+      showVfxSection,
+      githubUrl,
+      liveUrl,
+      repoUrl,
+    ],
+  );
+
+  const mediaLibraryActions = useMemo((): MediaLibraryPickerAction[] => {
+    const actions: MediaLibraryPickerAction[] = [
+      {
+        id: "header",
+        label: "Use as Header",
+        badgeLabel: "Header",
+        selectedUrl: selectedHeaderMediaUrl,
+        onClear: () => setSelectedHeaderMediaUrl(null),
+        onSelect: (item) => {
+          setSelectedHeaderMediaUrl(item.media_url);
+          setMediaFile(null);
+        },
+      },
+      {
+        id: "thumbnail",
+        label: "Card Thumbnail",
+        badgeLabel: "Card",
+        selectedUrl: selectedCardThumbnailUrl,
+        onClear: () => setSelectedCardThumbnailUrl(null),
+        isAvailable: (item) => item.media_type === "image",
+        onSelect: (item) => {
+          setSelectedCardThumbnailUrl(item.media_url);
+        },
+      },
+      {
+        id: "poster",
+        label: "Header Poster",
+        badgeLabel: "Poster",
+        selectedUrl: selectedHeaderThumbnailUrl,
+        onClear: () => setSelectedHeaderThumbnailUrl(null),
+        isAvailable: (item) => item.media_type === "image",
+        onSelect: (item) => {
+          setSelectedHeaderThumbnailUrl(item.media_url);
+        },
+      },
+      {
+        id: "body",
+        label: "Insert in Body",
+        onSelect: insertLibraryMedia,
+      },
+    ];
+
+    return actions;
+  }, [
+    selectedHeaderMediaUrl,
+    selectedCardThumbnailUrl,
+    selectedHeaderThumbnailUrl,
+    insertLibraryMedia,
+  ]);
+
+  const filteredMediaLibraryActions = useMemo(() => {
+    if (mediaLibraryRoleFilter === "all") {
+      return mediaLibraryActions;
+    }
+
+    return mediaLibraryActions.filter((action) => action.id === mediaLibraryRoleFilter);
+  }, [mediaLibraryActions, mediaLibraryRoleFilter]);
+
+  const handleWizardNext = () => {
+    if (wizardStep === 0) {
+      if (!title.trim()) {
+        setError("Title is required.");
+        return;
+      }
+
+      if (!description.trim()) {
+        setError("Description is required for Game Dev projects.");
+        return;
+      }
+
+      setError(null);
+    }
+
+    setWizardStep((current) => Math.min(current + 1, GAMEDEV_FORM_SECTIONS.length - 1));
+  };
+
+  const handleWizardBack = () => {
+    setWizardStep((current) => Math.max(current - 1, 0));
+  };
+
+  const renderGameDevSection = () => {
+    switch (visibleGameDevSection) {
+      case "basics":
+        return (
+          <GameDevBasicsSection
+            itemTitleId={itemTitleId}
+            itemDescriptionId={itemDescriptionId}
+            customGameTagInputId={customGameTagInputId}
+            title={title}
+            onTitleChange={setTitle}
+            description={description}
+            onDescriptionChange={setDescription}
+            selectedIcon={selectedIcon}
+            onIconChange={setSelectedIcon}
+            selectedGameTags={selectedGameTags}
+            customGameTagInput={customGameTagInput}
+            onCustomGameTagInputChange={setCustomGameTagInput}
+            onAddGameTag={addGameTag}
+            isComingSoon={isComingSoon}
+            onComingSoonChange={(value) => {
+              setIsComingSoon(value);
+              if (value && description.trim().length === 0) {
+                setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
+              }
+            }}
+          />
+        );
+      case "content":
+        return (
+          <GameDevContentSection
+            itemBodyId={itemBodyId}
+            itemBodyAssetUploadId={itemBodyAssetUploadId}
+            body={body}
+            onBodyChange={setBody}
+            activeBodyTab={activeBodyTab}
+            onActiveBodyTabChange={setActiveBodyTab}
+            isUploadingBodyAsset={isUploadingBodyAsset}
+            bodyAssetInputRef={bodyAssetInputRef}
+            mediaAccept={MEDIA_ACCEPT}
+            onBodyAssetUpload={handleBodyAssetUpload}
+            uploadedBodyMedia={uploadedBodyMedia}
+            onInsertUploadedMedia={insertUploadedMedia}
+          />
+        );
+      case "media":
+        return (
+          <GameDevMediaSection
+            itemMediaId={itemMediaId}
+            mediaAccept={MEDIA_ACCEPT}
+            maxMediaSizeMb={MAX_MEDIA_SIZE_MB}
+            selectedHeaderMediaUrl={selectedHeaderMediaUrl}
+            pendingHeaderPreviewUrl={pendingMediaPreviewUrl}
+            mediaFile={mediaFile}
+            onHeaderMediaUrlChange={setSelectedHeaderMediaUrl}
+            onMediaFileChange={setMediaFile}
+            onMediaValidationError={setError}
+            selectedCardThumbnailUrl={selectedCardThumbnailUrl}
+            onCardThumbnailUrlChange={setSelectedCardThumbnailUrl}
+            selectedHeaderThumbnailUrl={selectedHeaderThumbnailUrl}
+            onHeaderThumbnailUrlChange={setSelectedHeaderThumbnailUrl}
+            onOpenMediaLibrary={openMediaLibrary}
+            allowedMediaMimeTypes={ALLOWED_MEDIA_MIME_TYPES}
+            maxMediaSizeBytes={MAX_MEDIA_SIZE_BYTES}
+          />
+        );
+      case "discovery":
+        return (
+          <GameDevDiscoverySection
+            isFeatured={isFeatured}
+            onIsFeaturedChange={setIsFeatured}
+            featuredSort={featuredSort}
+            onFeaturedSortChange={setFeaturedSort}
+            showVfxSection={showVfxSection}
+            onShowVfxSectionChange={setShowVfxSection}
+            availableVfx={availableVfx}
+            linkedVfxIds={linkedVfxIds}
+            onLinkedVfxIdsChange={setLinkedVfxIds}
+          />
+        );
+      case "links":
+        return (
+          <GameDevLinksSection
+            itemGithubUrlId={itemGithubUrlId}
+            itemLiveUrlId={itemLiveUrlId}
+            itemRepoUrlId={itemRepoUrlId}
+            githubUrl={githubUrl}
+            onGithubUrlChange={setGithubUrl}
+            liveUrl={liveUrl}
+            onLiveUrlChange={setLiveUrl}
+            repoUrl={repoUrl}
+            onRepoUrlChange={setRepoUrl}
+            isImportingRepo={isImportingRepo}
+            onImportFromRepo={() => {
+              void handleImportFromRepo();
+            }}
+          />
+        );
+      default:
+        return null;
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -460,7 +765,8 @@ export const ItemFormModal = ({
 
         const sourceGameDev = isEditingGameDev ? (editingItem as AdminGameDevProject) : null;
 
-        let finalMediaUrl = selectedFeatureMediaUrl ?? sourceGameDev?.media_url ?? "";
+        let finalHeaderMediaUrl =
+          selectedHeaderMediaUrl ?? sourceGameDev?.header_media_url ?? sourceGameDev?.media_url ?? null;
 
         if (mediaFile) {
           const { item } = await uploadOrReuseMediaLibraryItem({
@@ -469,30 +775,66 @@ export const ItemFormModal = ({
             folderOrigin: "gamedev",
             preferredName: stripFileExtension(mediaFile.name),
           });
-          finalMediaUrl = item.media_url;
+          finalHeaderMediaUrl = item.media_url;
         }
 
-        const normalizedMediaUrl = finalMediaUrl.trim() ? finalMediaUrl.trim() : null;
+        const parsedFeaturedSort = featuredSort.trim() ? Number(featuredSort) : null;
+        const normalizedFeaturedSort =
+          parsedFeaturedSort != null && Number.isFinite(parsedFeaturedSort)
+            ? parsedFeaturedSort
+            : null;
 
-        if (!isComingSoon && !isEditingGameDev && !normalizedMediaUrl) {
-          setError("Feature media is required when creating a Game Dev project.");
-          return;
-        }
-
+        const teaserMediaUrl = finalHeaderMediaUrl?.trim() ? finalHeaderMediaUrl.trim() : null;
         const teaserThumbnailUrl = isComingSoon
-          ? normalizedMediaUrl ?? sourceGameDev?.thumbnail_url ?? null
-          : sourceGameDev?.thumbnail_url ?? null;
+          ? selectedCardThumbnailUrl ?? teaserMediaUrl ?? sourceGameDev?.thumbnail_url ?? null
+          : selectedCardThumbnailUrl ?? sourceGameDev?.thumbnail_url ?? null;
 
         const projectPayload = {
           title: normalizedTitle,
           description: storedDescription,
-          media_url: normalizedMediaUrl,
+          media_url: isComingSoon ? teaserMediaUrl : sourceGameDev?.media_url ?? null,
           thumbnail_url: teaserThumbnailUrl,
+          header_media_url: isComingSoon ? teaserMediaUrl : teaserMediaUrl,
+          header_thumbnail_url: selectedHeaderThumbnailUrl,
           icon_name: selectedIcon,
           github_url: normalizedGithubUrl,
           live_url: normalizedLiveUrl,
           tags: normalizedGameTags,
+          is_featured: isFeatured,
+          featured_sort: isFeatured ? normalizedFeaturedSort : null,
+          show_vfx_section: showVfxSection,
           is_coming_soon: isComingSoon,
+        };
+
+        const syncProjectVfxLinks = async (projectId: string) => {
+          const { error: deleteError } = await supabase
+            .from("gamedev_project_vfx")
+            .delete()
+            .eq("gamedev_item_id", projectId);
+
+          if (deleteError) {
+            throw new Error(deleteError.message);
+          }
+
+          const normalizedLinkedVfxIds = normalizeLinkedVfxIds(linkedVfxIds, availableVfx);
+
+          if (normalizedLinkedVfxIds.length === 0) {
+            return;
+          }
+
+          const { error: insertLinksError } = await supabase.from("gamedev_project_vfx").insert(
+            normalizedLinkedVfxIds.map((vfxId, index) => ({
+              gamedev_item_id: projectId,
+              gamedev_vfx_id: vfxId,
+              sort_order: index,
+            })),
+          );
+
+          if (insertLinksError) {
+            throw new Error(insertLinksError.message);
+          }
+
+          await markVfxShownInLibrary(normalizedLinkedVfxIds);
         };
 
         if (isEditingGameDev && sourceGameDev) {
@@ -504,6 +846,8 @@ export const ItemFormModal = ({
           if (updateError) {
             throw new Error(updateError.message);
           }
+
+          await syncProjectVfxLinks(sourceGameDev.id);
         } else {
           const { data: insertedItem, error: insertError } = await supabase
             .from("gamedev_items")
@@ -514,6 +858,8 @@ export const ItemFormModal = ({
           if (insertError || !insertedItem) {
             throw new Error(insertError?.message ?? "Failed to create game dev project.");
           }
+
+          await syncProjectVfxLinks(insertedItem.id);
         }
       } else {
         const normalizedDescription = description.trim();
@@ -575,6 +921,10 @@ export const ItemFormModal = ({
     }
   };
 
+  if (!isOpen) {
+    return null;
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
@@ -620,427 +970,82 @@ export const ItemFormModal = ({
               )}
 
               <div className="space-y-4">
-                <div>
-                  <p className="mb-1 block text-sm font-medium text-gray-300">Project Icon</p>
-                  <div className="grid grid-cols-6 gap-2">
-                    {AVAILABLE_ICONS.map((iconOpt) => (
-                      <motion.button
-                        key={iconOpt.id}
-                        type="button"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onMouseEnter={playHoverSound}
-                        onClick={() => {
-                          playClickSound();
-                          setSelectedIcon(iconOpt.id);
-                        }}
-                        className={`flex flex-col items-center justify-center rounded-lg p-2 transition-colors ${
-                          selectedIcon === iconOpt.id
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white"
-                        }`}
-                        title={iconOpt.label}
-                      >
-                        <iconOpt.icon className="mb-1 h-5 w-5" />
-                        <span className="flex w-full justify-center truncate text-[10px]">
-                          {iconOpt.label}
-                        </span>
-                      </motion.button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label htmlFor={itemTitleId} className="block text-sm font-medium text-gray-300">
-                    Title
-                  </label>
-                  <input
-                    id={itemTitleId}
-                    type="text"
-                    required
-                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
-                </div>
-
                 {type === "gamedev" ? (
                   <>
-                    <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-4">
-                      <label className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          checked={isComingSoon}
-                          onChange={(event) => {
-                            const enabled = event.target.checked;
-                            setIsComingSoon(enabled);
-
-                            if (enabled && description.trim().length === 0) {
-                              setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
-                            }
-                          }}
-                          className="mt-1 rounded border-gray-500 bg-gray-700 text-amber-400 focus:ring-amber-400"
-                        />
-                        <span>
-                          <span className="block text-sm font-medium text-amber-100">
-                            Coming soon project
-                          </span>
-                          <span className="mt-1 block text-xs text-amber-100/75">
-                            Quick teaser setup: title, short description, optional preview image, and
-                            tags. No markdown body or links required.
-                          </span>
-                        </span>
-                      </label>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor={itemDescriptionId}
-                        className="block text-sm font-medium text-gray-300"
-                      >
-                        {isComingSoon ? "Teaser Description" : "Description (Short)"}
-                      </label>
-                      <input
-                        id={itemDescriptionId}
-                        type="text"
-                        required
-                        className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                      />
-                    </div>
-
-                    {!isComingSoon ? (
-                    <div>
-                      <label
-                        htmlFor={itemBodyId}
-                        className="block text-sm font-medium text-gray-300"
-                      >
-                        Body (Markdown)
-                      </label>
-
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.96 }}
-                          onMouseEnter={playHoverSound}
-                          onClick={() => {
-                            playClickSound();
-                            setBody((current) =>
-                              current.trim().length > 0 ? current : GAMEDEV_BODY_TEMPLATE,
-                            );
-                          }}
-                          className="rounded-md border border-cyan-500/35 bg-cyan-500/10 px-3 py-1.5 text-xs font-medium text-cyan-200 hover:bg-cyan-500/20"
-                        >
-                          Insert Starter Template
-                        </motion.button>
-
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: 1.03 }}
-                          whileTap={{ scale: 0.96 }}
-                          onMouseEnter={playHoverSound}
-                          onClick={() => {
-                            playClickSound();
-                            bodyAssetInputRef.current?.click();
-                          }}
-                          className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-medium text-gray-200 hover:border-white/30 hover:bg-white/10"
-                        >
-                          {isUploadingBodyAsset ? "Uploading Media..." : "Upload Media Into Body"}
-                        </motion.button>
-                        <input
-                          id={itemBodyAssetUploadId}
-                          type="file"
-                          accept={MEDIA_ACCEPT}
-                          multiple
-                          ref={bodyAssetInputRef}
-                          aria-label="Upload media into body markdown"
-                          className="hidden"
-                          onChange={(e) => {
-                            void handleBodyAssetUpload(e.currentTarget.files);
-                            e.currentTarget.value = "";
-                          }}
-                        />
-                      </div>
-
-                      <div className="mt-3 overflow-hidden rounded-lg border border-gray-700 bg-gray-900/50">
-                        <div
-                          className="flex gap-2 border-b border-gray-700 bg-gray-800/80 p-2"
-                          role="tablist"
-                          aria-label="Markdown editor mode"
-                        >
-                          <motion.button
-                            type="button"
-                            role="tab"
-                            aria-selected={activeBodyTab === "write"}
-                            aria-controls={`${itemBodyId}-panel`}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.96 }}
-                            onMouseEnter={playHoverSound}
-                            onClick={() => {
-                              playClickSound();
-                              setActiveBodyTab("write");
-                            }}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                              activeBodyTab === "write"
-                                ? "bg-cyan-500/20 text-cyan-200"
-                                : "bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
-                            }`}
-                          >
-                            Write
-                          </motion.button>
-
-                          <motion.button
-                            type="button"
-                            role="tab"
-                            aria-selected={activeBodyTab === "preview"}
-                            aria-controls={`${itemBodyId}-panel`}
-                            whileHover={{ scale: 1.03 }}
-                            whileTap={{ scale: 0.96 }}
-                            onMouseEnter={playHoverSound}
-                            onClick={() => {
-                              playClickSound();
-                              setActiveBodyTab("preview");
-                            }}
-                            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                              activeBodyTab === "preview"
-                                ? "bg-cyan-500/20 text-cyan-200"
-                                : "bg-transparent text-gray-400 hover:bg-white/5 hover:text-gray-200"
-                            }`}
-                          >
-                            Preview
-                          </motion.button>
-                        </div>
-
-                        <div id={`${itemBodyId}-panel`} role="tabpanel" className="p-3">
-                          {activeBodyTab === "write" ? (
-                            <textarea
-                              id={itemBodyId}
-                              required
-                              rows={12}
-                              className="block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              value={body}
-                              onChange={(e) => setBody(e.target.value)}
-                            />
-                          ) : body.trim() ? (
-                            <div className="max-h-[28rem] overflow-y-auto rounded-md border border-gray-700 bg-gray-950/60 p-4">
-                              <MarkdownRenderer content={body} />
-                            </div>
-                          ) : (
-                            <div className="rounded-md border border-dashed border-gray-600 bg-gray-950/40 px-4 py-8 text-sm text-gray-400">
-                              Add some markdown in Write mode to preview the rendered project body.
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="mt-1 text-xs text-gray-500">
-                        Supports GitHub-flavored markdown, Mermaid code blocks, syntax-highlighted
-                        code fences, styled links, emoji, lists, blockquotes, and image/video
-                        embeds. Upload media above and click to insert into the body.
-                      </p>
-
-                      {uploadedBodyMedia.length > 0 && (
-                        <div className="mt-4 rounded-lg border border-cyan-500/30 bg-cyan-500/5 p-4">
-                          <p className="mb-3 text-xs font-semibold uppercase text-cyan-300">
-                            Uploaded Media — Click to Insert
-                          </p>
-                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                            {uploadedBodyMedia.map((media, idx) => (
-                              <motion.button
-                                key={`${media.url}-${idx}`}
-                                type="button"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onMouseEnter={playHoverSound}
-                                onClick={() => {
-                                  playClickSound();
-                                  insertUploadedMedia(media.url, media.alt);
-                                }}
-                                className="flex flex-col items-center justify-center rounded-lg border border-cyan-400/40 bg-cyan-400/10 p-3 text-center transition-colors hover:border-cyan-300 hover:bg-cyan-400/20"
-                              >
-                                <div className="mb-2 h-10 w-10 rounded bg-cyan-600/40" />
-                                <span className="line-clamp-2 text-xs text-cyan-200">
-                                  {media.alt}
-                                </span>
-                                <span className="mt-1 whitespace-nowrap text-[10px] text-cyan-300/60">
-                                  Click to add
-                                </span>
-                              </motion.button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    ) : null}
-
-                    <div className="space-y-3">
-                      <p className="block text-sm font-medium text-gray-300">Project Tags</p>
-
-                      {selectedGameTags.length > 0 && (
-                        <p className="text-xs text-gray-400">
-                          Selected:{" "}
-                          <span className="text-cyan-300">{selectedGameTags.join(", ")}</span>
-                        </p>
-                      )}
-
-                      <div className="flex gap-2">
-                        <input
-                          id={customGameTagInputId}
-                          type="text"
-                          aria-label="Game Dev tag entry"
-                          placeholder="Add tag (e.g. VFX, Unreal, C++)"
-                          value={customGameTagInput}
-                          onChange={(e) => setCustomGameTagInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              const trimmed = customGameTagInput.trim();
-                              if (trimmed && !selectedGameTags.includes(trimmed)) {
-                                setSelectedGameTags((prev) => [...prev, trimmed]);
-                              }
-                              setCustomGameTagInput("");
-                            }
-                          }}
-                          className="flex-1 rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"
-                        />
-                        <motion.button
-                          type="button"
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onMouseEnter={playHoverSound}
-                          onClick={() => {
-                            playClickSound();
-                            const trimmed = customGameTagInput.trim();
-                            if (trimmed && !selectedGameTags.includes(trimmed)) {
-                              setSelectedGameTags((prev) => [...prev, trimmed]);
-                            }
-                            setCustomGameTagInput("");
-                          }}
-                          disabled={!customGameTagInput.trim()}
-                          className="rounded-md bg-cyan-700 px-3 py-2 text-sm text-white hover:bg-cyan-600 disabled:opacity-40"
-                        >
-                          Add
-                        </motion.button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label
-                        htmlFor={itemMediaId}
-                        className="block text-sm font-medium text-gray-300"
-                      >
-                        {isComingSoon ? "Teaser Preview (Optional)" : "Feature Media"}
-                      </label>
-                      <p className="mb-1 text-xs text-gray-500">
-                        {isComingSoon
-                          ? "Optional image or video for gallery cards and the teaser page."
-                          : "Required when creating a project. Used for the top media section on the project page."}
-                      </p>
-
-                      {selectedFeatureMediaUrl && !mediaFile ? (
-                        <SelectedMediaPreview
-                          label={isComingSoon ? "Teaser preview" : "Feature media"}
-                          url={selectedFeatureMediaUrl}
-                          onClear={() => setSelectedFeatureMediaUrl(null)}
-                        />
-                      ) : null}
-
-                      {mediaFile && pendingMediaPreviewUrl ? (
-                        <SelectedMediaPreview
-                          label="Pending upload"
-                          url={pendingMediaPreviewUrl}
-                          mediaType={
-                            mediaFile.type.toLowerCase().startsWith("video/") ? "video" : "image"
-                          }
-                          onClear={() => {
-                            setMediaFile(null);
-                          }}
-                        />
-                      ) : null}
-
-                      <input
-                        id={itemMediaId}
-                        type="file"
-                        accept={MEDIA_ACCEPT}
-                        className="mt-1 block w-full text-white file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-blue-700"
-                        onChange={(e) => {
-                          const input = e.currentTarget;
-                          const nextFile =
-                            input.files && input.files.length > 0 ? input.files[0] : null;
-                          if (!nextFile) {
-                            setMediaFile(null);
-                            input.value = "";
-                            return;
-                          }
-                          if (!ALLOWED_MEDIA_MIME_TYPES.has(nextFile.type.toLowerCase())) {
-                            setError("Media file type is not allowed.");
-                            setMediaFile(null);
-                            input.value = "";
-                            return;
-                          }
-                          if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
-                            setError(`Media file is empty or exceeds ${MAX_MEDIA_SIZE_MB}MB.`);
-                            setMediaFile(null);
-                            input.value = "";
-                            return;
-                          }
-                          setError(null);
-                          setMediaFile(nextFile);
-                        }}
-                      />
-                    </div>
-
-                    <div className="rounded-lg border border-gray-700 bg-gray-900/40 p-3">
-                      <p className="text-sm font-medium text-gray-200">Media Library</p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Browse folders like the Gallery admin. Pick feature media or insert items into
-                        the markdown body.
-                      </p>
-                      <motion.button
-                        type="button"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onMouseEnter={playHoverSound}
-                        onClick={() => {
-                          playClickSound();
-                          setIsMediaLibraryOpen(true);
-                        }}
-                        className="mt-3 inline-flex items-center gap-2 rounded-md border border-cyan-500/35 bg-cyan-600/15 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-600/25"
-                      >
-                        Browse Media Library
-                      </motion.button>
-                    </div>
+                    <GameDevProjectFormShell
+                      mode={gameDevFormMode}
+                      wizardStep={wizardStep}
+                      activeSection={activeSection}
+                      sectionCompletion={sectionCompletion}
+                      sectionTitleId={gameDevSectionTitleId}
+                      loading={loading}
+                      onWizardStepChange={setWizardStep}
+                      onSectionChange={setActiveSection}
+                      onBack={handleWizardBack}
+                      onNext={handleWizardNext}
+                      onCancel={closeModal}
+                    >
+                      {renderGameDevSection()}
+                    </GameDevProjectFormShell>
 
                     <MediaLibraryPickerModal
                       isOpen={isMediaLibraryOpen}
-                      onClose={() => setIsMediaLibraryOpen(false)}
+                      onClose={() => {
+                        setIsMediaLibraryOpen(false);
+                        setMediaLibraryRoleFilter("all");
+                      }}
                       onReady={({ reload }) => {
                         mediaLibraryReloadRef.current = reload;
                       }}
-                      actions={[
-                        {
-                          id: "feature",
-                          label: "Use as Feature",
-                          badgeLabel: "Feature",
-                          selectedUrl: selectedFeatureMediaUrl,
-                          onClear: () => setSelectedFeatureMediaUrl(null),
-                          onSelect: (item) => {
-                            setSelectedFeatureMediaUrl(item.media_url);
-                            setMediaFile(null);
-                          },
-                        },
-                        {
-                          id: "body",
-                          label: "Insert in Body",
-                          onSelect: insertLibraryMedia,
-                        },
-                      ]}
+                      actions={filteredMediaLibraryActions}
                     />
                   </>
                 ) : (
                   <>
+                    <div>
+                      <p className="mb-1 block text-sm font-medium text-gray-300">Project Icon</p>
+                      <div className="grid grid-cols-6 gap-2">
+                        {AVAILABLE_ICONS.map((iconOpt) => (
+                          <motion.button
+                            key={iconOpt.id}
+                            type="button"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            onMouseEnter={playHoverSound}
+                            onClick={() => {
+                              playClickSound();
+                              setSelectedIcon(iconOpt.id);
+                            }}
+                            className={`flex flex-col items-center justify-center rounded-lg p-2 transition-colors ${
+                              selectedIcon === iconOpt.id
+                                ? "bg-blue-600 text-white"
+                                : "bg-gray-700 text-gray-400 hover:bg-gray-600 hover:text-white"
+                            }`}
+                            title={iconOpt.label}
+                          >
+                            <iconOpt.icon className="mb-1 h-5 w-5" />
+                            <span className="flex w-full justify-center truncate text-[10px]">
+                              {iconOpt.label}
+                            </span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor={itemTitleId} className="block text-sm font-medium text-gray-300">
+                        Title
+                      </label>
+                      <input
+                        id={itemTitleId}
+                        type="text"
+                        required
+                        className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
+                    </div>
+
                     <div>
                       <label
                         htmlFor={itemDescriptionId}
@@ -1168,44 +1173,45 @@ export const ItemFormModal = ({
                         </motion.button>
                       </div>
                     </div>
+
+                    <div>
+                      <label
+                        htmlFor={itemGithubUrlId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        GitHub URL (Optional)
+                      </label>
+                      <input
+                        id={itemGithubUrlId}
+                        type="url"
+                        className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        value={githubUrl}
+                        onChange={(e) => setGithubUrl(e.target.value)}
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor={itemLiveUrlId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Live URL (Optional)
+                      </label>
+                      <input
+                        id={itemLiveUrlId}
+                        type="url"
+                        className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        value={liveUrl}
+                        onChange={(e) => setLiveUrl(e.target.value)}
+                      />
+                    </div>
                   </>
                 )}
-
-                <div>
-                  <label
-                    htmlFor={itemGithubUrlId}
-                    className="block text-sm font-medium text-gray-300"
-                  >
-                    GitHub URL (Optional)
-                  </label>
-                  <input
-                    id={itemGithubUrlId}
-                    type="url"
-                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={githubUrl}
-                    onChange={(e) => setGithubUrl(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor={itemLiveUrlId}
-                    className="block text-sm font-medium text-gray-300"
-                  >
-                    Live URL (Optional)
-                  </label>
-                  <input
-                    id={itemLiveUrlId}
-                    type="url"
-                    className="mt-1 block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                    value={liveUrl}
-                    onChange={(e) => setLiveUrl(e.target.value)}
-                  />
-                </div>
               </div>
             </div>
 
-            <div className="border-t border-gray-600 bg-gray-700 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+            {type !== "gamedev" ? (
+              <div className="border-t border-gray-600 bg-gray-700 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
               <motion.button
                 type="submit"
                 whileHover={{ scale: 1.03 }}
@@ -1231,7 +1237,8 @@ export const ItemFormModal = ({
               >
                 Cancel
               </motion.button>
-            </div>
+              </div>
+            ) : null}
           </form>
         </div>
       </div>

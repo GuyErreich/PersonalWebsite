@@ -5,19 +5,18 @@
  */
 
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Film, Layers } from "lucide-react";
+import { ArrowRight, Film, Layers, Sparkles } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
+import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
-type Tab = "showreel" | "projects";
+type Tab = "showreel" | "projects" | "vfx";
 
-// Variant functions: AnimatePresence forwards `custom` (current direction)
-// to the exiting child at exit time, so the correct direction is always used.
 const slideVariants = {
   enter: (dir: number) => ({ opacity: 0, x: dir * -40 }),
   center: { opacity: 1, x: 0 },
@@ -26,8 +25,10 @@ const slideVariants = {
 
 export const GameDevOverviewMobileShort = ({
   showreelUrl,
-  galleryItems,
+  featuredItems,
+  vfxItems,
   isLoading,
+  isVfxLoading,
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
@@ -36,10 +37,12 @@ export const GameDevOverviewMobileShort = ({
   const tabPanelIdBase = useId();
   const showreelTabId = `${tabPanelIdBase}-tab-showreel`;
   const projectsTabId = `${tabPanelIdBase}-tab-projects`;
+  const vfxTabId = `${tabPanelIdBase}-tab-vfx`;
   const showreelPanelId = `${tabPanelIdBase}-tab-panel-showreel`;
   const projectsPanelId = `${tabPanelIdBase}-tab-panel-projects`;
-  const directionRef = useRef(1); // 1 = forward (showreel→projects), -1 = backward
-  const TAB_ORDER: Tab[] = ["showreel", "projects"];
+  const vfxPanelId = `${tabPanelIdBase}-tab-panel-vfx`;
+  const directionRef = useRef(1);
+  const TAB_ORDER: Tab[] = ["showreel", "projects", "vfx"];
 
   const markInteracted = () => {
     if (!hasInteracted) {
@@ -56,8 +59,6 @@ export const GameDevOverviewMobileShort = ({
     setActiveTab(tab);
   };
 
-  // Repeating cyan pulse on the "projects" tab until user interacts with tabs.
-  // When done, explicitly animate boxShadow to "none" so framer-motion clears the lingering glow.
   const pulseAnimation = hasInteracted
     ? { boxShadow: "0 0 0px rgba(6,182,212,0)" }
     : {
@@ -73,7 +74,6 @@ export const GameDevOverviewMobileShort = ({
 
   return (
     <div className="gamedev-overview-mobile-short-stack">
-      {/* Tab strip */}
       <div className="gamedev-mobile-short-tabs" role="tablist">
         <motion.button
           id={showreelTabId}
@@ -110,9 +110,25 @@ export const GameDevOverviewMobileShort = ({
           <Layers className="h-3.5 w-3.5" />
           Selected Work
         </motion.button>
+
+        <motion.button
+          id={vfxTabId}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "vfx"}
+          aria-controls={vfxPanelId}
+          tabIndex={activeTab === "vfx" ? 0 : -1}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.96 }}
+          onMouseEnter={playHoverSound}
+          onClick={() => switchTab("vfx")}
+          className={`gamedev-mobile-short-tab-btn${activeTab === "vfx" ? " gamedev-mobile-short-tab-btn--active" : ""}`}
+        >
+          <Sparkles className="h-3.5 w-3.5" />
+          VFX
+        </motion.button>
       </div>
 
-      {/* Tab panels */}
       <div className="gamedev-mobile-short-content">
         <AnimatePresence mode="wait" custom={directionRef.current}>
           {activeTab === "showreel" ? (
@@ -131,7 +147,7 @@ export const GameDevOverviewMobileShort = ({
             >
               <GameDevShowreelPanel showreelUrl={showreelUrl} />
             </motion.div>
-          ) : (
+          ) : activeTab === "projects" ? (
             <motion.div
               key="projects"
               role="tabpanel"
@@ -161,7 +177,30 @@ export const GameDevOverviewMobileShort = ({
                   </GameDevPanelButton>
                 }
               >
-                <GameDevHiveGallery items={galleryItems} iconMap={iconMap} isLoading={isLoading} />
+                <GameDevHiveGallery items={featuredItems} iconMap={iconMap} isLoading={isLoading} />
+              </GameDevPanelShell>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="vfx"
+              role="tabpanel"
+              id={vfxPanelId}
+              aria-labelledby={vfxTabId}
+              custom={directionRef.current}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.28, ease: "easeInOut" }}
+              className="gamedev-mobile-short-panel"
+            >
+              <GameDevPanelShell
+                eyebrow="Effects Reel"
+                title="Visual Effects"
+                className="h-[95%]"
+                clipScroll
+              >
+                <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
               </GameDevPanelShell>
             </motion.div>
           )}

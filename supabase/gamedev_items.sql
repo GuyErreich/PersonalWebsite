@@ -5,17 +5,25 @@ create table if not exists public.gamedev_items (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text not null,
-  media_url text not null,
+  media_url text,
   thumbnail_url text,
+  header_media_url text,
+  header_thumbnail_url text,
   icon_name text,
   github_url text,
   live_url text,
   tags text[] not null default '{}',
+  is_featured boolean not null default false,
+  featured_sort integer,
+  show_vfx_section boolean not null default true,
   created_at timestamptz not null default now()
 );
 
 create index if not exists gamedev_items_created_at_idx
   on public.gamedev_items (created_at desc);
+
+create index if not exists gamedev_items_featured_idx
+  on public.gamedev_items (is_featured, featured_sort nulls last, created_at desc);
 
 -- Enable Row Level Security
 alter table public.gamedev_items enable row level security;

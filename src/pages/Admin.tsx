@@ -23,6 +23,7 @@ import { ItemFormModal } from "../components/admin/ItemFormModal";
 import { ManagedProjectsList } from "../components/admin/ManagedProjectsList";
 import { MediaLibraryManager } from "../components/admin/MediaLibraryManager";
 import { ShowreelManager } from "../components/admin/ShowreelManager";
+import { VfxManager } from "../components/admin/VfxManager";
 import type {
   AdminDevOpsProject,
   AdminGameDevProject,
@@ -70,6 +71,11 @@ export const Admin = () => {
           ((gameDevResponse.data ?? []) as AdminGameDevProject[]).map((item) => ({
             ...item,
             tags: item.tags ?? [],
+            is_featured: item.is_featured ?? false,
+            featured_sort: item.featured_sort ?? null,
+            show_vfx_section: item.show_vfx_section ?? true,
+            header_media_url: item.header_media_url ?? null,
+            header_thumbnail_url: item.header_thumbnail_url ?? null,
           })),
         );
       }
@@ -102,6 +108,8 @@ export const Admin = () => {
           tags: item.tags ?? [],
           is_coming_soon: item.is_coming_soon ?? false,
           created_at: item.created_at,
+          is_featured: item.is_featured ?? false,
+          featured_sort: item.featured_sort ?? null,
         };
       }),
     [gameDevProjects],
@@ -347,12 +355,15 @@ export const Admin = () => {
               {isFetching ? (
                 <p className="py-10 text-center text-gray-400">Loading projects...</p>
               ) : projectSection === "gamedev" ? (
-                <ManagedProjectsList
-                  title="Existing GameDev Projects"
-                  emptyText="No GameDev projects yet. Use Coming Soon for a quick teaser or Add New for a full project."
-                  items={gameDevListItems}
-                  onEdit={(id) => handleEdit(id, "gamedev")}
-                />
+                <>
+                  <ManagedProjectsList
+                    title="Existing GameDev Projects"
+                    emptyText="No GameDev projects yet. Use Coming Soon for a quick teaser or Add New for a full project."
+                    items={gameDevListItems}
+                    onEdit={(id) => handleEdit(id, "gamedev")}
+                  />
+                  <VfxManager />
+                </>
               ) : (
                 <ManagedProjectsList
                   title="Existing DevOps Projects"

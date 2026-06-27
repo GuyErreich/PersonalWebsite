@@ -10,10 +10,17 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { fallbackGameDevItems } from "../components/ui/gamedev/common/data/items";
-import type { GameDevItem, GameDevMediaItem } from "../components/ui/gamedev/common/data/types";
+import type {
+  GameDevItem,
+  GameDevMediaItem,
+  GameDevVfxItem,
+} from "../components/ui/gamedev/common/data/types";
+import { GameDevProjectHeaderMedia } from "../components/ui/gamedev/common/media/GameDevProjectHeaderMedia";
 import { GameDevProjectMediaGallery } from "../components/ui/gamedev/common/media/GameDevProjectMediaGallery";
+import { GameDevProjectVfxSection } from "../components/ui/gamedev/common/media/GameDevProjectVfxSection";
 import {
   buildGameDevSummary,
+  dedupeGameDevVfxByMediaUrl,
   inferMediaTypeFromUrl,
   isGameDevComingSoon,
   parseGameDevStoredContent,
@@ -24,33 +31,19 @@ import { supabase } from "../lib/supabase";
 interface ProjectState {
   project: GameDevItem | null;
   mediaItems: GameDevMediaItem[];
+  linkedVfx: GameDevVfxItem[];
   isLoading: boolean;
   error: string | null;
 }
 
 const MotionLink = motion(Link);
 
-const buildFallbackMedia = (item: GameDevItem): GameDevMediaItem[] => {
-  if (!item.media_url) return [];
-
-  return [
-    {
-      id: `${item.id}-fallback-media`,
-      gamedev_item_id: item.id,
-      media_url: item.media_url,
-      thumbnail_url: item.thumbnail_url ?? null,
-      media_type: inferMediaTypeFromUrl(item.media_url),
-      caption: item.title,
-      sort_order: 0,
-    },
-  ];
-};
-
 export const GameDevProject = () => {
   const { id } = useParams();
   const [state, setState] = useState<ProjectState>({
     project: null,
     mediaItems: [],
+    linkedVfx: [],
     isLoading: true,
     error: null,
   });
@@ -70,6 +63,7 @@ export const GameDevProject = () => {
       safeSetState({
         project: null,
         mediaItems: [],
+        linkedVfx: [],
         isLoading: false,
         error: "Missing project id.",
       });
@@ -79,7 +73,13 @@ export const GameDevProject = () => {
     }
 
     void (async () => {
-      safeSetState({ project: null, mediaItems: [], isLoading: true, error: null });
+      safeSetState({
+        project: null,
+        mediaItems: [],
+        linkedVfx: [],
+        isLoading: true,
+        error: null,
+      });
 
       try {
         const { data: projectData, error: projectError } = await supabase
@@ -94,6 +94,7 @@ export const GameDevProject = () => {
             safeSetState({
               project: null,
               mediaItems: [],
+              linkedVfx: [],
               isLoading: false,
               error: "Project not found.",
             });
@@ -102,7 +103,8 @@ export const GameDevProject = () => {
 
           safeSetState({
             project: fallback,
-            mediaItems: buildFallbackMedia(fallback),
+            mediaItems: [],
+            linkedVfx: [],
             isLoading: false,
             error: null,
           });
@@ -111,42 +113,62 @@ export const GameDevProject = () => {
 
         const typedProject = projectData as GameDevItem;
 
-        const { data: mediaData, error: mediaError } = await supabase
-          .from("gamedev_item_media")
-          .select("*")
-          .eq("gamedev_item_id", id)
-          .order("sort_order", { ascending: true, nullsFirst: false })
-          .order("created_at", { ascending: true });
+        const [{ data: mediaData, error: mediaError }, { data: linkData }] = await Promise.all([
+          supabase
+            .from("gamedev_item_media")
+            .select("*")
+            .eq("gamedev_item_id", id)
+            .order("sort_order", { ascending: true, nullsFirst: false })
+            .order("created_at", { ascending: true }),
+          supabase
+            .from("gamedev_project_vfx")
+            .select("gamedev_vfx_id, sort_order")
+            .eq("gamedev_item_id", id)
+            .order("sort_order", { ascending: true, nullsFirst: false }),
+        ]);
 
-        if (mediaError) {
-          safeSetState({
-            project: typedProject,
-            mediaItems: buildFallbackMedia(typedProject),
-            isLoading: false,
-            error: null,
-          });
-          return;
+        const normalizedMedia = mediaError
+          ? []
+          : (mediaData ?? []).map((item) => {
+              const typedItem = item as GameDevMediaItem;
+              return {
+                ...typedItem,
+                media_type: typedItem.media_type ?? inferMediaTypeFromUrl(typedItem.media_url),
+              };
+            });
+
+        let linkedVfx: GameDevVfxItem[] = [];
+
+        if (linkData && linkData.length > 0) {
+          const vfxIds = linkData.map((link) => link.gamedev_vfx_id);
+          const { data: vfxData } = await supabase.from("gamedev_vfx").select("*").in("id", vfxIds);
+
+          const vfxById = new Map(
+            ((vfxData ?? []) as GameDevVfxItem[]).map((item) => [item.id, item]),
+          );
+
+          linkedVfx = dedupeGameDevVfxByMediaUrl(
+            linkData
+              .map((link) => vfxById.get(link.gamedev_vfx_id) ?? null)
+              .filter((item): item is GameDevVfxItem => item != null),
+          );
         }
 
-        const normalizedMedia = (mediaData ?? []).map((item) => {
-          const typedItem = item as GameDevMediaItem;
-          return {
-            ...typedItem,
-            media_type: typedItem.media_type ?? inferMediaTypeFromUrl(typedItem.media_url),
-          };
+        safeSetState({
+          project: typedProject,
+          mediaItems: normalizedMedia,
+          linkedVfx,
+          isLoading: false,
+          error: null,
         });
-
-        const mediaItems =
-          normalizedMedia.length > 0 ? normalizedMedia : buildFallbackMedia(typedProject);
-
-        safeSetState({ project: typedProject, mediaItems, isLoading: false, error: null });
       } catch {
         const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
 
         if (fallback) {
           safeSetState({
             project: fallback,
-            mediaItems: buildFallbackMedia(fallback),
+            mediaItems: [],
+            linkedVfx: [],
             isLoading: false,
             error: null,
           });
@@ -156,6 +178,7 @@ export const GameDevProject = () => {
         safeSetState({
           project: null,
           mediaItems: [],
+          linkedVfx: [],
           isLoading: false,
           error: "Project not found.",
         });
@@ -213,6 +236,9 @@ export const GameDevProject = () => {
   const project = state.project;
   const comingSoon = isGameDevComingSoon(project);
   const summary = project.summary ?? buildGameDevSummary(project.description, 240);
+  const headerMediaUrl =
+    project.header_media_url?.trim() || project.media_url?.trim() || null;
+  const showVfxSection = project.show_vfx_section !== false && state.linkedVfx.length > 0;
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.18),transparent_42%),radial-gradient(circle_at_70%_80%,rgba(14,165,233,0.14),transparent_42%),linear-gradient(to_bottom,#030712,#0f172a)] text-slate-100">
@@ -286,6 +312,15 @@ export const GameDevProject = () => {
               This project is still in progress. Check back later for screenshots, breakdowns, and
               playable builds.
             </p>
+            {headerMediaUrl ? (
+              <div className="mt-8">
+                <GameDevProjectHeaderMedia
+                  mediaUrl={headerMediaUrl}
+                  thumbnailUrl={project.header_thumbnail_url}
+                  title={project.title}
+                />
+              </div>
+            ) : null}
             {state.mediaItems.length > 0 ? (
               <div className="mt-8">
                 <GameDevProjectMediaGallery
@@ -309,9 +344,26 @@ export const GameDevProject = () => {
           </section>
         ) : (
           <>
-            <section className="mb-10">
-              <GameDevProjectMediaGallery mediaItems={state.mediaItems} projectTitle={project.title} />
-            </section>
+            {headerMediaUrl ? (
+              <section className="mb-10">
+                <GameDevProjectHeaderMedia
+                  mediaUrl={headerMediaUrl}
+                  thumbnailUrl={project.header_thumbnail_url}
+                  title={project.title}
+                />
+              </section>
+            ) : null}
+
+            {state.mediaItems.length > 0 ? (
+              <section className="mb-10">
+                <GameDevProjectMediaGallery
+                  mediaItems={state.mediaItems}
+                  projectTitle={project.title}
+                />
+              </section>
+            ) : null}
+
+            {showVfxSection ? <GameDevProjectVfxSection vfxItems={state.linkedVfx} /> : null}
 
             <section className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_0.6fr]">
               <article className="rounded-2xl border border-white/10 bg-slate-900/65 p-5 shadow-[0_24px_80px_-48px_rgba(15,23,42,1)] md:p-7">

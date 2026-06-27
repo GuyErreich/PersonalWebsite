@@ -10,4 +10,64 @@
   .gamedev-overview-grid {
     @apply grid h-full w-full grid-cols-1 items-start gap-4 pt-2 pb-4 md:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)] md:items-stretch md:gap-5 md:pt-3 md:pb-5 lg:gap-7 lg:pt-4 lg:pb-6;
   }
+
+  .gamedev-overview-desktop-tabs-stack {
+    @apply flex h-full w-full flex-col gap-3 pt-2 pb-4;
+  }
+
+  .gamedev-desktop-overview-tabs {
+    @apply flex shrink-0 gap-2 rounded-xl border border-white/10 bg-white/5 p-1.5;
+  }
+
+  .gamedev-desktop-overview-tab {
+    @apply flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold uppercase tracking-[0.12em] text-gray-400 transition-colors;
+  }
+
+  .gamedev-desktop-overview-tab--active {
+    @apply bg-cyan-500/20 text-cyan-200 shadow-sm;
+  }
+
+  .gamedev-desktop-overview-content {
+    @apply min-h-0 flex-1 overflow-hidden;
+  }
+
+  .gamedev-vfx-showcase-grid {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3;
+  }
+
+  .gamedev-vfx-showcase-loading {
+    @apply grid grid-cols-1 gap-3 sm:grid-cols-2;
+  }
+
+  .gamedev-vfx-showcase-card {
+    @apply overflow-hidden rounded-2xl border border-white/10 bg-slate-900/60 shadow-[0_16px_48px_-32px_rgba(6,182,212,0.45)];
+  }
+
+  .gamedev-vfx-showcase-media {
+    @apply aspect-video overflow-hidden bg-black;
+  }
+
+  .gamedev-vfx-showcase-body {
+    @apply space-y-1 p-3;
+  }
+
+  .gamedev-vfx-grid {
+    @apply grid grid-cols-1 gap-3 md:grid-cols-2;
+  }
+
+  .gamedev-vfx-card {
+    @apply overflow-hidden rounded-xl border border-white/10 bg-slate-900/55 text-left transition-colors hover:border-cyan-400/30;
+  }
+
+  .gamedev-vfx-card--expanded {
+    @apply border-cyan-400/40 ring-1 ring-cyan-400/20;
+  }
+
+  .gamedev-vfx-card-media {
+    @apply aspect-video overflow-hidden bg-black;
+  }
+
+  .gamedev-vfx-card-body {
+    @apply p-3;
+  }
 }
