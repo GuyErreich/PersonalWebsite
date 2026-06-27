@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
-import { seekThumbnailToVideoCenter } from "../../../../../lib/media/seekThumbnailToVideoCenter";
 import type { GameDevVfxItem } from "../data/types";
 
 interface GameDevProjectVfxSectionProps {
@@ -138,26 +137,12 @@ export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionP
                 }`}
               >
                 <div className="aspect-video w-28 bg-black sm:w-32">
-                  {item.media_type === "video" ? (
-                    <video
-                      src={item.media_url}
-                      poster={item.thumbnail_url ?? undefined}
-                      muted
-                      playsInline
-                      preload="metadata"
-                      onLoadedMetadata={seekThumbnailToVideoCenter}
-                      className="h-full w-full object-cover"
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    />
-                  ) : (
-                    <img
-                      src={thumbPreview(item)}
-                      alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  )}
+                  <img
+                    src={thumbPreview(item)}
+                    alt=""
+                    loading={isActive ? "eager" : "lazy"}
+                    className="h-full w-full object-cover"
+                  />
                 </div>
               </motion.button>
             );

@@ -41,6 +41,7 @@ interface VfxFormState {
   mediaType: "video" | "image";
   tags: string[];
   sortOrder: string;
+  showInLibrary: boolean;
 }
 
 const emptyForm = (): VfxFormState => ({
@@ -51,6 +52,7 @@ const emptyForm = (): VfxFormState => ({
   mediaType: "video",
   tags: [],
   sortOrder: "",
+  showInLibrary: true,
 });
 
 const inputClassName =
@@ -157,6 +159,7 @@ export const VfxManager = () => {
       mediaType: item.media_type,
       tags: item.tags ?? [],
       sortOrder: item.sort_order != null ? String(item.sort_order) : "",
+      showInLibrary: item.show_in_library ?? false,
     });
     setMediaFile(null);
     setTagInput("");
@@ -242,7 +245,7 @@ export const VfxManager = () => {
         media_type: mediaType,
         tags: form.tags,
         sort_order: Number.isFinite(sortOrder) ? sortOrder : null,
-        show_in_library: true,
+        show_in_library: form.showInLibrary,
       };
 
       if (editingId) {
@@ -603,6 +606,20 @@ export const VfxManager = () => {
                         className={inputClassName}
                         placeholder="Lower appears first"
                       />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="flex items-center gap-2 text-sm text-gray-200">
+                        <input
+                          type="checkbox"
+                          checked={form.showInLibrary}
+                          onChange={(e) =>
+                            setForm((c) => ({ ...c, showInLibrary: e.target.checked }))
+                          }
+                          className="rounded border-gray-600"
+                        />
+                        Show in public VFX library
+                      </label>
                     </div>
 
                     <div className="sm:col-span-2">
