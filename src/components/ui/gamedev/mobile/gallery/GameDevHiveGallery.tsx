@@ -15,7 +15,7 @@ import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
+import { buildGameDevProjectPath, buildGameDevSummary, isGameDevComingSoon } from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
@@ -338,6 +338,7 @@ export const GameDevHiveGallery = ({
   }, [clusterX, clusterY]);
 
   const activeItem = items[previewIndex];
+  const activeItemComingSoon = activeItem ? isGameDevComingSoon(activeItem) : false;
   const ActiveProjectIcon = (
     activeItem?.icon_name ? (iconMap[activeItem.icon_name] ?? Gamepad2) : Gamepad2
   ) as React.ComponentType<{ className?: string }>;
@@ -659,7 +660,16 @@ export const GameDevHiveGallery = ({
                       <p className="gamedev-hive-focus-index">
                         {focusIndex + 1} / {items.length}
                       </p>
-                      <h4 className="gamedev-hive-focus-title">{activeItem.title}</h4>
+                      <h4 className="gamedev-hive-focus-title">
+                        <span className="inline-flex flex-wrap items-center gap-2">
+                          <span>{activeItem.title}</span>
+                          {activeItemComingSoon ? (
+                            <span className="rounded-md border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
+                              Coming Soon
+                            </span>
+                          ) : null}
+                        </span>
+                      </h4>
 
                       <p className="gamedev-hive-focus-description">
                         {activeItem.summary ?? buildGameDevSummary(activeItem.description, 210)}
@@ -684,16 +694,22 @@ export const GameDevHiveGallery = ({
         : null}
 
       <div className="gamedev-hive-meta">
-        <MotionLink
-          to={buildGameDevProjectPath(activeItem.id)}
-          whileHover={{ scale: 1.04 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={playClickSound}
-          className="gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
-        >
-          Open Project Page
-        </MotionLink>
+        {activeItemComingSoon ? (
+          <p className="inline-flex w-full items-center justify-center rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-100">
+            Full project page coming soon
+          </p>
+        ) : (
+          <MotionLink
+            to={buildGameDevProjectPath(activeItem.id)}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            onMouseEnter={playHoverSound}
+            onClick={playClickSound}
+            className="gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
+          >
+            Open Project Page
+          </MotionLink>
+        )}
 
         <div className="gamedev-hive-meta-row">
           <p className="gamedev-hive-caption">
