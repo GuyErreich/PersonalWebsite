@@ -10,6 +10,7 @@ create table if not exists public.gamedev_vfx (
   media_type text not null check (media_type in ('image', 'video')),
   tags text[] not null default '{}',
   sort_order integer,
+  show_in_library boolean not null default false,
   created_at timestamptz not null default now()
 );
 

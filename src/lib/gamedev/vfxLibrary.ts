@@ -5,7 +5,21 @@
  */
 
 import { dedupeGameDevVfxByMediaUrl } from "../gamedev";
+import type { MediaLibraryItem } from "../storage/mediaLibrary";
 import { supabase } from "../supabase";
+
+export interface GameDevVfxRecord {
+  id: string;
+  title: string;
+  description: string;
+  media_url: string;
+  thumbnail_url: string | null;
+  media_type: "video" | "image";
+  tags: string[];
+  sort_order: number | null;
+  show_in_library?: boolean;
+  created_at: string;
+}
 
 export const markVfxShownInLibrary = async (vfxIds: string[]): Promise<void> => {
   const uniqueIds = [...new Set(vfxIds.filter(Boolean))];
@@ -21,6 +35,59 @@ export const markVfxShownInLibrary = async (vfxIds: string[]): Promise<void> => 
   if (error) {
     throw new Error(error.message);
   }
+};
+
+export const ensureVfxFromMediaLibraryItem = async (
+  item: Pick<MediaLibraryItem, "name" | "media_url" | "media_type">,
+): Promise<GameDevVfxRecord> => {
+  const existing = await findVfxByMediaUrl(item.media_url);
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("gamedev_vfx")
+      .select("*")
+      .eq("id", existing.id)
+      .single();
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    if (!data) {
+      throw new Error("VFX entry not found.");
+    }
+
+    return {
+      ...(data as GameDevVfxRecord),
+      tags: (data as GameDevVfxRecord).tags ?? [],
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("gamedev_vfx")
+    .insert([
+      {
+        title: item.name.trim() || "VFX",
+        description: "",
+        media_url: item.media_url,
+        thumbnail_url: null,
+        media_type: item.media_type,
+        tags: [],
+        sort_order: null,
+        show_in_library: false,
+      },
+    ])
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to create VFX entry.");
+  }
+
+  return {
+    ...(data as GameDevVfxRecord),
+    tags: (data as GameDevVfxRecord).tags ?? [],
+  };
 };
 
 export const findVfxByMediaUrl = async (
