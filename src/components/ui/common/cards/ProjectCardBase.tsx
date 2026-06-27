@@ -27,7 +27,6 @@ interface ProjectCardBaseProps {
   tags?: string[];
   link?: string | null;
   detailsLink?: string;
-  statusBadge?: string | null;
   icon: ReactNode;
   index: number;
   compact?: boolean;
@@ -43,7 +42,6 @@ export const ProjectCardBase = ({
   tags,
   link,
   detailsLink,
-  statusBadge,
   icon,
   index,
   compact = false,
@@ -154,16 +152,7 @@ export const ProjectCardBase = ({
           </div>
         </div>
 
-        <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>
-          <span className="inline-flex flex-wrap items-center gap-2">
-            <span>{title}</span>
-            {statusBadge ? (
-              <span className="rounded-md border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
-                {statusBadge}
-              </span>
-            ) : null}
-          </span>
-        </h3>
+        <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>{title}</h3>
 
         <p
           className={`min-h-0 leading-relaxed text-gray-400 ${

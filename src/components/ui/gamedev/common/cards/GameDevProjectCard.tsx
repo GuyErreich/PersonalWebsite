@@ -13,7 +13,6 @@ interface GameDevProjectCardProps {
   tags?: string[];
   link?: string | null;
   detailsLink?: string;
-  statusBadge?: string | null;
   icon: ReactNode;
   index: number;
   compact?: boolean;
@@ -28,7 +27,6 @@ export const GameDevProjectCard = ({
   tags,
   link,
   detailsLink,
-  statusBadge,
   icon,
   index,
   compact = false,
@@ -49,7 +47,6 @@ export const GameDevProjectCard = ({
       tags={tags}
       link={link}
       detailsLink={detailsLink}
-      statusBadge={statusBadge}
       icon={icon}
       index={index}
       compact={compact}

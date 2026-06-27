@@ -23,13 +23,12 @@ export interface GameDevItem {
   title: string;
   description: string;
   summary?: string;
-  media_url?: string | null;
+  media_url: string;
   thumbnail_url?: string;
   icon_name?: string;
   github_url?: string;
   live_url?: string;
   tags?: string[];
-  is_coming_soon?: boolean;
   media_items?: GameDevMediaItem[];
 }
 

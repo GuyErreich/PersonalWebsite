@@ -32,12 +32,6 @@ const getMediaExtension = (url: string): string => {
 export const buildGameDevProjectPath = (id: string) =>
   `/gamedev/projects/${encodeURIComponent(id)}`;
 
-export const GAMEDEV_COMING_SOON_DEFAULT_SUMMARY =
-  "A new project is in development. Stay tuned for updates.";
-
-export const isGameDevComingSoon = (item: { is_coming_soon?: boolean | null }): boolean =>
-  item.is_coming_soon === true;
-
 export const markdownToPlainText = (content: string): string => {
   const plain = content
     .replace(/^#{1,6}\s+/gm, "")

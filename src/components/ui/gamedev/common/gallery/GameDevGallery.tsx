@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePaginatedNavigation } from "../../../../../hooks/pagination/usePaginatedNavigation";
 import { useMediaQuery } from "../../../../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
-import { buildGameDevProjectPath, buildGameDevSummary, isGameDevComingSoon } from "../../../../../lib/gamedev";
+import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
 import { GhostSlotRepeater } from "../../../common/pagination/GhostSlotRepeater";
@@ -46,23 +46,19 @@ const GalleryInfoCard = ({
     item.icon_name ? (iconMap[item.icon_name] ?? Gamepad2) : Gamepad2
   ) as React.ComponentType<{ className?: string }>;
 
-  const comingSoon = isGameDevComingSoon(item);
-  const teaserThumbnail = item.thumbnail_url ?? item.media_url ?? undefined;
-
   return (
     <GameDevProjectCard
       title={item.title}
       description={item.summary ?? buildGameDevSummary(item.description)}
       tags={item.tags}
-      link={comingSoon ? null : item.github_url}
-      detailsLink={comingSoon ? undefined : buildGameDevProjectPath(item.id)}
-      statusBadge={comingSoon ? "Coming Soon" : null}
+      link={item.github_url}
+      detailsLink={buildGameDevProjectPath(item.id)}
       icon={<ProjectIcon className="h-6 w-6 text-purple-300 drop-shadow-[0_0_4px_currentColor]" />}
       index={index}
       compact={compact}
       contentSized={contentSized}
-      openOnDoubleClick={comingSoon ? false : openOnDoubleClick}
-      thumbnailUrl={withThumbnail ? teaserThumbnail : undefined}
+      openOnDoubleClick={openOnDoubleClick}
+      thumbnailUrl={withThumbnail ? item.thumbnail_url : undefined}
     />
   );
 };
