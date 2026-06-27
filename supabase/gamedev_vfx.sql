@@ -22,7 +22,19 @@ alter table public.gamedev_vfx enable row level security;
 drop policy if exists "Public can read gamedev vfx" on public.gamedev_vfx;
 create policy "Public can read gamedev vfx"
   on public.gamedev_vfx for select
-  using (true);
+  using (
+    show_in_library = true
+    or exists (
+      select 1
+      from public.gamedev_project_vfx p
+      where p.gamedev_vfx_id = id
+    )
+  );
+
+drop policy if exists "Admins can read all gamedev vfx" on public.gamedev_vfx;
+create policy "Admins can read all gamedev vfx"
+  on public.gamedev_vfx for select
+  using ((select public.is_admin()));
 
 drop policy if exists "Admins can insert gamedev vfx" on public.gamedev_vfx;
 create policy "Admins can insert gamedev vfx"

@@ -75,7 +75,7 @@ const renderVfxMedia = (
       : "h-full w-full object-cover transition-transform duration-300";
 
   if (item.media_type === "video") {
-    const shouldAutoPlay = variant === "hero" || (variant === "thumb" && isActive);
+    const shouldAutoPlay = variant === "hero";
 
     return (
       <VfxLoopVideo

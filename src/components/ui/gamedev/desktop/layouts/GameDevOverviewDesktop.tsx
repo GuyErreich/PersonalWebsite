@@ -69,6 +69,7 @@ export const GameDevOverviewDesktop = ({
           role="tab"
           aria-selected={activeTab === "showreel"}
           aria-controls={showreelPanelId}
+          tabIndex={activeTab === "showreel" ? 0 : -1}
           {...tabPulse("showreel")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
@@ -86,6 +87,7 @@ export const GameDevOverviewDesktop = ({
           role="tab"
           aria-selected={activeTab === "projects"}
           aria-controls={projectsPanelId}
+          tabIndex={activeTab === "projects" ? 0 : -1}
           {...tabPulse("projects")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}
@@ -103,6 +105,7 @@ export const GameDevOverviewDesktop = ({
           role="tab"
           aria-selected={activeTab === "vfx"}
           aria-controls={vfxPanelId}
+          tabIndex={activeTab === "vfx" ? 0 : -1}
           {...tabPulse("vfx")}
           whileHover={{ scale: 1.03 }}
           whileTap={{ scale: 0.96 }}

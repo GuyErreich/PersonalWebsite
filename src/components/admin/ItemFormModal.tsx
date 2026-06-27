@@ -868,31 +868,79 @@ export const ItemFormModal = ({
         };
 
         const syncProjectVfxLinks = async (projectId: string) => {
-          const { error: deleteError } = await supabase
-            .from("gamedev_project_vfx")
-            .delete()
-            .eq("gamedev_item_id", projectId);
-
-          if (deleteError) {
-            throw new Error(deleteError.message);
-          }
-
           const normalizedLinkedVfxIds = normalizeLinkedVfxIds(linkedVfxIds, availableVfx);
 
+          const { data: existingLinks, error: fetchLinksError } = await supabase
+            .from("gamedev_project_vfx")
+            .select("gamedev_vfx_id")
+            .eq("gamedev_item_id", projectId);
+
+          if (fetchLinksError) {
+            throw new Error(fetchLinksError.message);
+          }
+
+          const existingIds = (existingLinks ?? []).map((link) => link.gamedev_vfx_id);
+          const desiredIdSet = new Set(normalizedLinkedVfxIds);
+
           if (normalizedLinkedVfxIds.length === 0) {
+            if (existingIds.length === 0) {
+              return;
+            }
+
+            const { error: clearLinksError } = await supabase
+              .from("gamedev_project_vfx")
+              .delete()
+              .eq("gamedev_item_id", projectId);
+
+            if (clearLinksError) {
+              throw new Error(clearLinksError.message);
+            }
+
             return;
           }
 
-          const { error: insertLinksError } = await supabase.from("gamedev_project_vfx").insert(
-            normalizedLinkedVfxIds.map((vfxId, index) => ({
-              gamedev_item_id: projectId,
-              gamedev_vfx_id: vfxId,
-              sort_order: index,
-            })),
-          );
+          const idsToRemove = existingIds.filter((id) => !desiredIdSet.has(id));
 
-          if (insertLinksError) {
-            throw new Error(insertLinksError.message);
+          if (idsToRemove.length > 0) {
+            const { error: removeLinksError } = await supabase
+              .from("gamedev_project_vfx")
+              .delete()
+              .eq("gamedev_item_id", projectId)
+              .in("gamedev_vfx_id", idsToRemove);
+
+            if (removeLinksError) {
+              throw new Error(removeLinksError.message);
+            }
+          }
+
+          const existingIdSet = new Set(existingIds);
+          const idsToAdd = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
+
+          if (idsToAdd.length > 0) {
+            const { error: insertLinksError } = await supabase.from("gamedev_project_vfx").insert(
+              idsToAdd.map((vfxId) => ({
+                gamedev_item_id: projectId,
+                gamedev_vfx_id: vfxId,
+                sort_order: normalizedLinkedVfxIds.indexOf(vfxId),
+              })),
+            );
+
+            if (insertLinksError) {
+              throw new Error(insertLinksError.message);
+            }
+          }
+
+          for (let index = 0; index < normalizedLinkedVfxIds.length; index += 1) {
+            const vfxId = normalizedLinkedVfxIds[index];
+            const { error: sortOrderError } = await supabase
+              .from("gamedev_project_vfx")
+              .update({ sort_order: index })
+              .eq("gamedev_item_id", projectId)
+              .eq("gamedev_vfx_id", vfxId);
+
+            if (sortOrderError) {
+              throw new Error(sortOrderError.message);
+            }
           }
 
           await markVfxShownInLibrary(normalizedLinkedVfxIds);
