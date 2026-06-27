@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { Pencil, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { Check, FolderOpen, Image as ImageIcon, Plus, Sparkles, Video, X } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from "react";
 import { dedupeGameDevVfxByMediaUrl, inferMediaTypeFromFile, inferMediaTypeFromUrl } from "../../lib/gamedev";
 import { findVfxByMediaUrl } from "../../lib/gamedev/vfxLibrary";
@@ -21,7 +21,10 @@ import {
   R2_UPLOAD_POLICIES,
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
+import { seekThumbnailToVideoCenter } from "./mediaLibrary/videoThumbnail";
 import type { AdminGameDevVfx } from "./types";
+import { VfxLibraryCard } from "./vfx/VfxLibraryCard";
+import { VfxLibrarySkeleton } from "./vfx/VfxLibrarySkeleton";
 
 const ALLOWED_MEDIA_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevAssets));
 const MEDIA_ACCEPT = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevAssets).join(",");
@@ -48,6 +51,9 @@ const emptyForm = (): VfxFormState => ({
   tags: [],
   sortOrder: "",
 });
+
+const inputClassName =
+  "mt-1 w-full rounded-lg border border-gray-600 bg-gray-900/70 px-3 py-2 text-sm text-white shadow-inner focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30";
 
 export const VfxManager = () => {
   const formTitleId = useId();
@@ -114,6 +120,11 @@ export const VfxManager = () => {
   }, [isModalOpen, loadMediaLibrary]);
 
   const modalTitle = editingId ? "Edit VFX" : "Add VFX";
+  const selectedMediaUrl = mediaFile ? null : form.mediaUrl;
+  const publicCount = useMemo(
+    () => vfxItems.filter((item) => item.show_in_library).length,
+    [vfxItems],
+  );
 
   const closeModal = () => {
     playMenuCloseSound();
@@ -160,6 +171,10 @@ export const VfxManager = () => {
 
     setForm((current) => ({ ...current, tags: [...current.tags, trimmed] }));
     setTagInput("");
+  };
+
+  const removeTag = (tag: string) => {
+    setForm((current) => ({ ...current, tags: current.tags.filter((entry) => entry !== tag) }));
   };
 
   const handleDelete = async (id: string) => {
@@ -255,14 +270,32 @@ export const VfxManager = () => {
     }
   };
 
-  const sortedItems = useMemo(() => vfxItems, [vfxItems]);
-
   return (
-    <div className="mt-8 rounded-xl border border-gray-700 bg-gray-900/60 p-4">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-cyan-300" />
-          <h3 className="text-lg font-semibold text-white">VFX Library</h3>
+    <div className="mt-8 overflow-hidden rounded-xl border border-gray-700 bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.08),transparent_42%),linear-gradient(to_bottom,rgba(17,24,39,0.95),rgba(3,7,18,0.98))] p-5 sm:p-6">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-gray-700/80 pb-5">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-lg border border-cyan-500/25 bg-cyan-500/10 p-2">
+              <Sparkles className="h-5 w-5 text-cyan-300" aria-hidden="true" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-white sm:text-xl">VFX Library</h3>
+              <p className="mt-1 max-w-2xl text-sm text-gray-400">
+                Curate the global effects pool used on project pages and the Game Dev section.
+              </p>
+            </div>
+          </div>
+
+          {!isLoading ? (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="rounded-full border border-gray-600 bg-gray-900/60 px-2.5 py-1 text-xs text-gray-300">
+                {vfxItems.length} effect{vfxItems.length === 1 ? "" : "s"}
+              </span>
+              <span className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-1 text-xs text-emerald-100">
+                {publicCount} public
+              </span>
+            </div>
+          ) : null}
         </div>
 
         <motion.button
@@ -274,292 +307,357 @@ export const VfxManager = () => {
             playClickSound();
             openCreate();
           }}
-          className="inline-flex items-center gap-2 rounded-lg bg-cyan-700 px-3 py-2 text-sm text-white hover:bg-cyan-600"
+          className="inline-flex items-center gap-2 rounded-lg border border-cyan-500/35 bg-cyan-600 px-4 py-2 text-sm font-medium text-white shadow-[0_10px_30px_-18px_rgba(6,182,212,0.9)] hover:bg-cyan-500"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4" aria-hidden="true" />
           Add VFX
         </motion.button>
       </div>
 
       {error && !isModalOpen ? (
-        <div className="mb-3 rounded border border-red-500 bg-red-500/10 p-3 text-sm text-red-300">
+        <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-200">
           {error}
         </div>
       ) : null}
 
       {isLoading ? (
-        <p className="py-6 text-center text-sm text-gray-400">Loading VFX...</p>
-      ) : sortedItems.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-gray-700 px-4 py-8 text-center text-sm text-gray-500">
-          No VFX entries yet. Add effects to showcase them globally and on projects.
-        </p>
+        <VfxLibrarySkeleton />
+      ) : vfxItems.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-600/80 bg-gray-900/30 px-6 py-14 text-center">
+          <div className="mb-4 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-4">
+            <Sparkles className="h-8 w-8 text-cyan-300" aria-hidden="true" />
+          </div>
+          <h4 className="text-base font-medium text-white">No VFX yet</h4>
+          <p className="mt-2 max-w-md text-sm text-gray-400">
+            Upload clips or stills to build your reusable effects library for projects and the public
+            gallery.
+          </p>
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.95 }}
+            onMouseEnter={playHoverSound}
+            onClick={() => {
+              playClickSound();
+              openCreate();
+            }}
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-cyan-700 px-4 py-2 text-sm text-white hover:bg-cyan-600"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+            Add your first effect
+          </motion.button>
+        </div>
       ) : (
-        <ul className="space-y-3">
-          {sortedItems.map((item) => (
-            <li key={item.id} className="rounded-lg border border-gray-700 bg-gray-800/60 p-3">
-              <div className="flex items-start gap-3">
-                <div className="h-16 w-28 shrink-0 overflow-hidden rounded-md bg-black">
-                  {item.media_type === "video" ? (
-                    <video
-                      src={item.media_url}
-                      poster={item.thumbnail_url ?? undefined}
-                      muted
-                      playsInline
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <img
-                      src={item.media_url}
-                      alt={item.title}
-                      className="h-full w-full object-cover"
-                    />
-                  )}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <h4 className="text-sm font-semibold text-white">{item.title}</h4>
-                  {item.description ? (
-                    <p className="mt-1 line-clamp-2 text-xs text-gray-400">{item.description}</p>
-                  ) : null}
-                  {item.tags.length > 0 ? (
-                    <div className="mt-2 flex flex-wrap gap-1">
-                      {item.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] text-cyan-200"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="flex shrink-0 gap-2">
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.95 }}
-                    onMouseEnter={playHoverSound}
-                    onClick={() => {
-                      playClickSound();
-                      openEdit(item);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border border-blue-500/40 bg-blue-600/20 px-2 py-1 text-xs text-blue-200"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </motion.button>
-
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.04 }}
-                    whileTap={{ scale: 0.95 }}
-                    onMouseEnter={playHoverSound}
-                    onClick={() => {
-                      playClickSound();
-                      void handleDelete(item.id);
-                    }}
-                    className="inline-flex items-center gap-1 rounded-md border border-red-500/40 bg-red-600/20 px-2 py-1 text-xs text-red-200"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    Delete
-                  </motion.button>
-                </div>
-              </div>
-            </li>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {vfxItems.map((item) => (
+            <VfxLibraryCard
+              key={item.id}
+              item={item}
+              onEdit={() => openEdit(item)}
+              onDelete={() => {
+                void handleDelete(item.id);
+              }}
+            />
           ))}
-        </ul>
+        </div>
       )}
 
       {isModalOpen ? (
         <div className="fixed inset-0 z-[60] overflow-y-auto" role="dialog" aria-modal="true">
           <button
             type="button"
-            className="fixed inset-0 bg-gray-900/80"
+            className="fixed inset-0 bg-gray-950/85 backdrop-blur-sm"
             aria-label="Close dialog"
             onClick={() => {
               if (!isSaving) closeModal();
             }}
           />
 
-          <div className="relative mx-auto my-8 w-full max-w-xl px-4">
+          <div className="relative mx-auto my-8 w-full max-w-2xl px-4">
             <form
               onSubmit={(event) => void handleSubmit(event)}
-              className="rounded-xl border border-gray-700 bg-gray-800 p-5 shadow-xl"
+              className="overflow-hidden rounded-2xl border border-gray-700 bg-gray-900 shadow-2xl"
             >
-              <div className="mb-4 flex items-center justify-between">
-                <h4 id={formTitleId} className="text-lg font-semibold text-white">
-                  {modalTitle}
-                </h4>
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={closeModal}
-                  className="rounded-md border border-gray-600 p-1 text-gray-300"
-                  aria-label="Close"
-                >
-                  <X className="h-4 w-4" />
-                </motion.button>
+              <div className="border-b border-gray-700/80 bg-gray-900/80 px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 id={formTitleId} className="text-lg font-semibold text-white">
+                      {modalTitle}
+                    </h4>
+                    <p className="mt-1 text-xs text-gray-400">
+                      Effects added here appear in the global library and can be linked to projects.
+                    </p>
+                  </div>
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onMouseEnter={playHoverSound}
+                    onClick={() => {
+                      playClickSound();
+                      closeModal();
+                    }}
+                    className="rounded-lg border border-gray-600 p-2 text-gray-300 hover:border-gray-500"
+                    aria-label="Close"
+                  >
+                    <X className="h-4 w-4" />
+                  </motion.button>
+                </div>
               </div>
 
-              {error ? (
-                <div className="mb-3 rounded border border-red-500 bg-red-500/10 p-3 text-sm text-red-300">
-                  {error}
-                </div>
-              ) : null}
-
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm text-gray-300">Title</label>
-                  <input
-                    required
-                    value={form.title}
-                    onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
-                    className="mt-1 w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300">Description</label>
-                  <textarea
-                    rows={3}
-                    value={form.description}
-                    onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))}
-                    className="mt-1 w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300">Media file</label>
-                  <input
-                    type="file"
-                    accept={MEDIA_ACCEPT}
-                    className="mt-1 block w-full text-sm text-white file:mr-3 file:rounded file:border-0 file:bg-cyan-700 file:px-3 file:py-1.5"
-                    onChange={(e) => {
-                      const nextFile = e.currentTarget.files?.[0] ?? null;
-                      if (!nextFile) {
-                        setMediaFile(null);
-                        return;
-                      }
-
-                      if (!ALLOWED_MEDIA_MIME_TYPES.has(nextFile.type.toLowerCase())) {
-                        setError("Media file type is not allowed.");
-                        return;
-                      }
-
-                      if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
-                        setError(`Media file is empty or exceeds ${MAX_MEDIA_SIZE_MB}MB.`);
-                        return;
-                      }
-
-                      setError(null);
-                      setMediaFile(nextFile);
-                      setForm((c) => ({
-                        ...c,
-                        mediaType: inferMediaTypeFromFile(nextFile),
-                      }));
-                    }}
-                  />
-                </div>
-
-                {form.mediaUrl && !mediaFile ? (
-                  <p className="truncate text-xs text-cyan-200">Selected: {form.mediaUrl}</p>
+              <div className="max-h-[min(72vh,760px)] overflow-y-auto px-5 py-4">
+                {error ? (
+                  <div className="mb-4 rounded-lg border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-200">
+                    {error}
+                  </div>
                 ) : null}
 
-                <details className="rounded-lg border border-gray-700 p-3">
-                  <summary className="cursor-pointer text-sm text-gray-200">Media Library</summary>
-                  {isLoadingLibrary ? (
-                    <p className="mt-2 text-xs text-gray-400">Loading...</p>
-                  ) : (
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {mediaLibraryItems.map((item) => (
+                <div className="space-y-4">
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-300">Title</label>
+                      <input
+                        required
+                        value={form.title}
+                        onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
+                        className={inputClassName}
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-300">Description</label>
+                      <textarea
+                        rows={3}
+                        value={form.description}
+                        onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))}
+                        className={inputClassName}
+                        placeholder="What does this effect demonstrate?"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-300">Upload media</label>
+                      <input
+                        type="file"
+                        accept={MEDIA_ACCEPT}
+                        className="mt-1 block w-full text-sm text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-cyan-600"
+                        onChange={(e) => {
+                          const nextFile = e.currentTarget.files?.[0] ?? null;
+                          if (!nextFile) {
+                            setMediaFile(null);
+                            return;
+                          }
+
+                          if (!ALLOWED_MEDIA_MIME_TYPES.has(nextFile.type.toLowerCase())) {
+                            setError("Media file type is not allowed.");
+                            return;
+                          }
+
+                          if (nextFile.size <= 0 || nextFile.size > MAX_MEDIA_SIZE_BYTES) {
+                            setError(`Media file is empty or exceeds ${MAX_MEDIA_SIZE_MB}MB.`);
+                            return;
+                          }
+
+                          setError(null);
+                          setMediaFile(nextFile);
+                          setForm((c) => ({
+                            ...c,
+                            mediaType: inferMediaTypeFromFile(nextFile),
+                          }));
+                        }}
+                      />
+                    </div>
+
+                    {selectedMediaUrl ? (
+                      <div className="sm:col-span-2 overflow-hidden rounded-xl border border-cyan-500/30 bg-black/40">
+                        <div className="aspect-video">
+                          {form.mediaType === "video" ? (
+                            <video
+                              src={selectedMediaUrl}
+                              muted
+                              playsInline
+                              controls
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={selectedMediaUrl}
+                              alt="Selected VFX media"
+                              className="h-full w-full object-cover"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    <div className="sm:col-span-2 rounded-xl border border-gray-700 bg-gray-950/40 p-3">
+                      <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-200">
+                        <FolderOpen className="h-4 w-4 text-cyan-300" aria-hidden="true" />
+                        Pick from Media Library
+                      </div>
+
+                      {isLoadingLibrary ? (
+                        <p className="text-xs text-gray-400">Loading library...</p>
+                      ) : mediaLibraryItems.length === 0 ? (
+                        <p className="text-xs text-gray-500">No media in the library yet.</p>
+                      ) : (
+                        <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+                          {mediaLibraryItems.map((item) => {
+                            const isSelected = selectedMediaUrl === item.media_url;
+
+                            return (
+                              <motion.button
+                                key={item.id}
+                                type="button"
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onMouseEnter={playHoverSound}
+                                onClick={() => {
+                                  playClickSound();
+                                  setMediaFile(null);
+                                  setForm((c) => ({
+                                    ...c,
+                                    mediaUrl: item.media_url,
+                                    mediaType: item.media_type,
+                                  }));
+                                }}
+                                className={`overflow-hidden rounded-lg border text-left transition-colors ${
+                                  isSelected
+                                    ? "border-cyan-400/70 ring-1 ring-cyan-400/50"
+                                    : "border-gray-700 hover:border-cyan-500/35"
+                                }`}
+                              >
+                                <div className="relative aspect-video bg-black">
+                                  {item.media_type === "video" ? (
+                                    <video
+                                      src={item.media_url}
+                                      muted
+                                      playsInline
+                                      preload="metadata"
+                                      onLoadedMetadata={seekThumbnailToVideoCenter}
+                                      className="h-full w-full object-cover"
+                                    />
+                                  ) : (
+                                    <img
+                                      src={item.media_url}
+                                      alt={item.name}
+                                      loading="lazy"
+                                      className="h-full w-full object-cover"
+                                    />
+                                  )}
+
+                                  {isSelected ? (
+                                    <span className="absolute right-1.5 top-1.5 rounded-full bg-cyan-500 p-1 text-white shadow">
+                                      <Check className="h-3 w-3" aria-hidden="true" />
+                                    </span>
+                                  ) : null}
+                                </div>
+
+                                <div className="flex items-center gap-1.5 px-2 py-1.5">
+                                  {item.media_type === "video" ? (
+                                    <Video className="h-3 w-3 shrink-0 text-cyan-300" />
+                                  ) : (
+                                    <ImageIcon className="h-3 w-3 shrink-0 text-cyan-300" />
+                                  )}
+                                  <span className="truncate text-[11px] text-gray-200">{item.name}</span>
+                                </div>
+                              </motion.button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300">
+                        Poster thumbnail URL
+                      </label>
+                      <input
+                        value={form.thumbnailUrl ?? ""}
+                        onChange={(e) =>
+                          setForm((c) => ({ ...c, thumbnailUrl: e.target.value.trim() || null }))
+                        }
+                        className={inputClassName}
+                        placeholder="Optional video poster"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300">Sort order</label>
+                      <input
+                        type="number"
+                        value={form.sortOrder}
+                        onChange={(e) => setForm((c) => ({ ...c, sortOrder: e.target.value }))}
+                        className={inputClassName}
+                        placeholder="Lower appears first"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-300">Tags</label>
+                      <div className="mt-1 flex gap-2">
+                        <input
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addTag();
+                            }
+                          }}
+                          className={`${inputClassName} mt-0`}
+                          placeholder="e.g. Niagara, Unity"
+                        />
                         <motion.button
-                          key={item.id}
                           type="button"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          whileHover={{ scale: 1.04 }}
+                          whileTap={{ scale: 0.95 }}
+                          onMouseEnter={playHoverSound}
                           onClick={() => {
                             playClickSound();
-                            setMediaFile(null);
-                            setForm((c) => ({
-                              ...c,
-                              mediaUrl: item.media_url,
-                              mediaType: item.media_type,
-                            }));
+                            addTag();
                           }}
-                          className="rounded border border-gray-600 p-2 text-left text-xs text-gray-200 hover:border-cyan-500/40"
+                          className="shrink-0 rounded-lg bg-cyan-700 px-3 py-2 text-sm text-white hover:bg-cyan-600"
                         >
-                          {item.name}
+                          Add
                         </motion.button>
-                      ))}
+                      </div>
+
+                      {form.tags.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {form.tags.map((tag) => (
+                            <motion.button
+                              key={tag}
+                              type="button"
+                              whileHover={{ scale: 1.03 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() => {
+                                playClickSound();
+                                removeTag(tag);
+                              }}
+                              className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-xs text-cyan-100"
+                            >
+                              {tag} ×
+                            </motion.button>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
-                  )}
-                </details>
-
-                <div>
-                  <label className="block text-sm text-gray-300">Poster thumbnail URL (optional)</label>
-                  <input
-                    value={form.thumbnailUrl ?? ""}
-                    onChange={(e) =>
-                      setForm((c) => ({ ...c, thumbnailUrl: e.target.value.trim() || null }))
-                    }
-                    className="mt-1 w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300">Sort order (optional)</label>
-                  <input
-                    type="number"
-                    value={form.sortOrder}
-                    onChange={(e) => setForm((c) => ({ ...c, sortOrder: e.target.value }))}
-                    className="mt-1 w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm text-gray-300">Tags</label>
-                  <div className="mt-1 flex gap-2">
-                    <input
-                      value={tagInput}
-                      onChange={(e) => setTagInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addTag();
-                        }
-                      }}
-                      className="flex-1 rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-sm text-white"
-                      placeholder="e.g. Niagara, Unity"
-                    />
-                    <motion.button
-                      type="button"
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        playClickSound();
-                        addTag();
-                      }}
-                      className="rounded-md bg-cyan-700 px-3 py-2 text-sm text-white"
-                    >
-                      Add
-                    </motion.button>
                   </div>
-                  {form.tags.length > 0 ? (
-                    <p className="mt-1 text-xs text-cyan-200">{form.tags.join(", ")}</p>
-                  ) : null}
                 </div>
               </div>
 
-              <div className="mt-5 flex justify-end gap-2">
+              <div className="flex justify-end gap-2 border-t border-gray-700/80 bg-gray-900/80 px-5 py-4">
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.96 }}
-                  onClick={closeModal}
-                  className="rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-200"
+                  onMouseEnter={playHoverSound}
+                  onClick={() => {
+                    playClickSound();
+                    closeModal();
+                  }}
+                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 hover:border-gray-500"
                 >
                   Cancel
                 </motion.button>
@@ -568,7 +666,9 @@ export const VfxManager = () => {
                   disabled={isSaving}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.96 }}
-                  className="rounded-md bg-cyan-700 px-4 py-2 text-sm text-white disabled:opacity-50"
+                  onMouseEnter={playHoverSound}
+                  onClick={playClickSound}
+                  className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-600 disabled:opacity-50"
                 >
                   {isSaving ? "Saving..." : "Save VFX"}
                 </motion.button>
