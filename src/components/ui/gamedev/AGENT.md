@@ -36,5 +36,5 @@ Public VFX pickers (`GameDevVfxSlider`, `GameDevProjectVfxSection`) must support
 ## Skill Usage
 
 - Use `code/web/ui` for folder structure, common/desktop/mobile boundaries, panel extraction, and selector thinning.
-- Use `project/ui-interactions` for panel buttons, motion feedback, and sound behavior.
+- Use `code/web/ux` for panel buttons, motion feedback, and sound behavior (`src/lib/sound/interactionSounds.ts`).
 - Use `code/foundations/engineering` for duplication removal and `code/languages/nodejs` for type cleanup and validation during refactors.

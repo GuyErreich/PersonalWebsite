@@ -9,6 +9,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 | `.github/copilot-instructions.md` | `.cursor/rules/project/project-guidelines.mdc` + the `AGENT.md` chain |
 | `.github/instructions/*.instructions.md` | `.cursor/rules/code/**/*.mdc` + `.cursor/rules/behaviors/*.mdc` |
 | `.github/skills/*/SKILL.md` | `.cursor/skills/code/**/SKILL.md` + `.cursor/skills/project/**/SKILL.md` |
+| `.github/skills/ui-interactions/SKILL.md` | redirect → `code/web/ux` (see `.cursor/skills/code/web/ux/SKILL.md`) |
 | `.github/agents/default.agent.md` | merged into `project/project-guidelines.mdc` + the rules tree |
 | `.github/agents/animation-reviewer.agent.md` | removed — folded into `code/web/libs/threejs`, `code/quality/performance`, and `src/lib/AGENT.md` |
 | `.github/instructions/pr-review.instructions.md` | `.cursor/skills/code/review/pr-resolver/SKILL.md` |
@@ -22,6 +23,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 │   ├── foundations/engineering   universal base (all code skills extend it)
 │   ├── languages/nodejs          TypeScript / JS syntax + tooling
 │   ├── web/ui                    UI structure, reuse, accessibility
+│   ├── web/ux                    motion, press, overlays, generative sound
 │   ├── web/libs/react            hooks, components, GSAP
 │   ├── web/libs/threejs          R3F, shaders, disposal (+ component template asset)
 │   ├── quality/performance       memory + render performance
@@ -31,8 +33,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 │   └── ci/{commit,pr,push,local-review-loop}
 ├── meta/improvement-protocol   skill/rule maintenance
 └── project/                    PROJECT overlay (not exported)
-    ├── ui-interactions           Framer Motion + generative sound
-    └── platform/                 supabase, supabase-branch-testing
+    └── platform/                 supabase, supabase-branch-testing, deploy-secrets
 ```
 
 ## Rules layout
@@ -41,7 +42,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 .cursor/rules/
 ├── behaviors/   git-push-consent, git-commit-consent, code-review-gate (always apply)
 ├── code/        glob rules mirroring the code skill tree (load matching skills)
-└── project/     project-guidelines, project ui-interactions
+└── project/     project-guidelines
 ```
 
 ## Usage in Cursor

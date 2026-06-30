@@ -25,12 +25,11 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first — Phase 0 ru
 |---|---|
 | any code file | **engineering** (Phase 0, always) |
 | `*.{ts,tsx,js,mjs}` | + `code/languages/nodejs` |
-| `*.{tsx,jsx}` components/pages | + `code/web/libs/react`, `code/web/ui` |
+| `*.{tsx,jsx}` components/pages | + `code/web/libs/react`, `code/web/ui`, `code/web/ux` |
 | `**/three/**`, shaders | + `code/web/libs/threejs`, `code/quality/performance` |
 | effects/timers/listeners/audio/GPU | + `code/quality/performance` |
 | auth / input / data / secrets | + `code/quality/security` |
 | GSAP / animation libraries | + `code/web/libs/react` (gsap-patterns reference) |
-| project interactive UI | + `project/ui-interactions` (if present) |
 | project backend (supabase) | + `project/platform/supabase` (if present) |
 
 Load a skill only when the diff matches; load its references only if that phase surfaces an issue.
@@ -43,6 +42,7 @@ Load a skill only when the diff matches; load its references only if that phase 
 | 1 | Language / lint | `code/languages/nodejs` |
 | 2 | React structure | `code/web/libs/react` |
 | 3 | UI / a11y | `code/web/ui` |
+| 3b | UX / interactivity | `code/web/ux` (press, dismiss, motion, reduced motion, library fit) |
 | 4 | Performance / memory | `code/quality/performance` |
 | 5 | Security | `code/quality/security` |
 | 6 | Domain | `threejs`, project skills — only if paths match |

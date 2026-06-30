@@ -15,10 +15,19 @@ This `.cursor/` tree is structured as a portable agent plugin plus a per-project
 
 ```
 AGENT.md tree               # project context, validate commands, local conventions
-.cursor/skills/project/**   # project-specific skills (UI interactions, platform/supabase)
+.cursor/skills/project/**   # project-specific skills (platform/supabase, deploy-secrets)
 .cursor/rules/project/**    # project guidelines + project glob rules
 scripts/review-lock.py      # optional review dedup helper (advisory only)
 ```
+
+## Portable vs project rules
+
+| Layer | Location | Examples |
+|---|---|---|
+| Portable | `~/.cursor/rules/code/web/` (or copied `.cursor/rules/code/web/`) | `ui.mdc`, `ux.mdc`, `components-ui-hierarchy.mdc`, `mobile-ui.mdc`, `mobile-ux.mdc`, `desktop-ui.mdc`, `desktop-ux.mdc` |
+| Project | `.cursor/rules/project/` | `project-guidelines.mdc` — repo paths and product contracts |
+
+Portable rules anchor on `**/components/ui/**` (no `src/` prefix). Project rules add shell paths and product-specific globs. Greenfield UI hierarchy: `code/web/ui` → `components-ui-hierarchy.md`.
 
 ## Inheritance contract
 
@@ -32,6 +41,7 @@ foundations/engineering   (universal base — always)
        └─ web/libs/react   (hooks, components)
             └─ web/libs/threejs
   └─ web/ui                (layout, a11y, responsive)
+  └─ web/ux                (motion, press, overlays, sound)
   └─ quality/{performance,security}
   └─ review/{reviewer,pr-resolver}
   └─ ci/{commit,pr,push,local-review-loop}

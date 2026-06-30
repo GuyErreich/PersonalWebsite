@@ -1,6 +1,6 @@
 # Responsive Variant Structure
 
-For UI-heavy features with shared behavior plus per-viewport differences, use the abstraction-then-extension pattern (see engineering `folder-structure.md`):
+For UI-heavy features with shared behavior plus per-viewport differences, use the abstraction-then-extension pattern (see engineering `folder-structure.md` and **`components-ui-hierarchy.md`** for the full tree).
 
 - `common/` — shared shells, controls, types, and data constants.
 - `desktop/` — desktop-specific layout composition.
@@ -17,6 +17,17 @@ For UI-heavy features with shared behavior plus per-viewport differences, use th
 
 This pattern applies broadly (cards, controls, overlays, filter bars, pagination), not to one element type.
 
+## Skill and rule loading by folder
+
+When working in responsive variant folders, load matching skills from `code/web/ui` and `code/web/ux`. Rule pairing table: **`components-ui-hierarchy.md`** → Rule pairing.
+
+| Code folder | UI | UX |
+|---|---|---|
+| `components/ui/**` | `components-ui-hierarchy.mdc` → hierarchy ref | — |
+| `common/` | `ui.mdc` | `ux.mdc` → `shared/*` + `viewport-routing.md` |
+| `mobile/` | `mobile-ui.mdc` | `mobile-ux.mdc` → `mobile/*` + shared |
+| `desktop/` | `desktop-ui.mdc` | `desktop-ux.mdc` → `desktop/*` + shared |
+
 ## Project specifics
 
-The concrete folder names and any required hooks are project conventions. Read the nearest `AGENT.md` for the repository's structure.
+The concrete path prefix (`src/` vs `web/src/`) is repo-specific. Read the nearest `AGENT.md` for local conventions. This portfolio has no PWA shell — feature motion uses `mobile/*` and `desktop/*` refs.

@@ -21,14 +21,18 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first, then `.cursor
 - **No magic values.** Reuse existing tokens/variables/classes; when a literal would repeat in 2+ places, name it once in the same change.
 - **Hierarchy-first sizing.** Solve positioning and sizing at the highest layout boundary first; add deeper overrides only when a higher-level fix cannot satisfy the requirement.
 - **Accessibility is mandatory.** Interactive behavior belongs on semantic interactive elements.
+- **components/ui hierarchy.** New or moved UI under `components/ui/` must follow `references/components-ui-hierarchy.md` — `common/`, `<domain>/common/`, `mobile/`, `desktop/` placement.
+- **UX is separate.** Load `.cursor/skills/code/web/ux/SKILL.md` when adding or editing interactive **behavior** — press feedback, motion, overlays, pickers, transitions, or animation library choice.
 
 ## When to load references
 
 | Topic | Reference |
 |---|---|
+| **Greenfield / `components/ui/` placement** | `references/components-ui-hierarchy.md` |
 | Extraction triggers and targets (components, hooks, styles) | `references/reuse-extraction.md` |
 | Responsive variant folder structure (common/desktop/mobile) | `references/responsive-variants.md` |
 | Accessible interactive elements (semantic elements, aria) | `references/a11y-interactive.md` |
+| Shared primitives catalog (Button, Stack, Sheet shell, etc.) | `references/standard-primitives.md` |
 
 Load a reference only when the matching decision arises. Do not preload.
 

@@ -62,7 +62,8 @@ When reviewing, always materialize the full surface: the tier diff (for PR/push 
 ## Skill Usage
 
 - `code/web/ui` for UI structure, reuse boundaries, responsive variant splitting, and component extraction decisions.
-- `project/ui-interactions` for interactive controls, hover/tap motion, sound feedback, and accessible action elements.
+- `code/web/ux` for interactive behavior — press feedback, motion, overlays, dismiss lifecycle, library choice, and generative sound patterns.
+- This repo **mandates** Framer motion + generative sound on interactive controls; helpers at `src/lib/sound/interactionSounds.ts`.
 - `code/languages/nodejs` for type strictness, lint cleanup, and async/await discipline; `code/foundations/engineering` for duplication and structure.
 - `code/web/libs/react` for hooks, component structure, and GSAP integration.
 - `code/web/libs/threejs` when changing React Three Fiber, shaders, scene composition, or rendering-performance-sensitive background code.
