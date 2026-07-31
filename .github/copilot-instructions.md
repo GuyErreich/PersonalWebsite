@@ -4,7 +4,7 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 
 > **Canonical agent context** lives in `.cursor/rules/` and `.cursor/skills/`. This file is kept for GitHub Copilot compatibility — prefer Cursor rules/skills when using Cursor.
 
-> **Note:** This document is continuously improved. See [`.cursor/skills/meta/improvement-protocol/SKILL.md`](../.cursor/skills/meta/improvement-protocol/SKILL.md) for how suggestions are flagged, discussed, and implemented in parallel sessions.
+> **Note:** This document is continuously improved. See [`.cursor/skills/ai-agent/improvement-protocol/SKILL.md`](../.cursor/skills/ai-agent/improvement-protocol/SKILL.md) for how suggestions are flagged, discussed, and implemented in parallel sessions.
 
 ## Code Style & Stack
 
@@ -71,6 +71,7 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 |---|---|---|
 | Core | `.cursor/rules/project/project-guidelines.mdc` | always-on |
 | Folder hierarchy | `.cursor/rules/foundations/hierarchy.mdc` | `foundations/hierarchy` |
+| Agent library hierarchy | `.cursor/rules/ai-agent/hierarchy.mdc` | `ai-agent/hierarchy` |
 | Engineering | `.cursor/rules/code/foundations/engineering.mdc` | `code/foundations/engineering` |
 | TypeScript / JS | `.cursor/rules/code/languages/nodejs.mdc` | `code/languages/nodejs` |
 | UI structure | `.cursor/rules/code/web/ui.mdc` | `code/web/ui` |
@@ -80,4 +81,4 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 | Performance | `.cursor/rules/code/quality/performance.mdc` | `code/quality/performance` |
 | UX (motion, sound, overlays) | `.cursor/rules/code/web/ux.mdc` | `code/web/ux` |
 
-Workflow skills: `foundations/hierarchy`, `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `meta/improvement-protocol`
+Workflow skills: `foundations/hierarchy`, `ai-agent/hierarchy`, `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `ai-agent/improvement-protocol`

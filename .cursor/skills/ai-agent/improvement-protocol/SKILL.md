@@ -1,6 +1,6 @@
 ---
 name: improvement-protocol
-description: Flags and implements improvements to skills, rules, and agent instructions. Use when discovering patterns that should be documented, after UI/motion/shell work, or when updating `.cursor/skills/` or `.cursor/rules/`.
+description: Flags and implements improvements to skills, rules, and agent instructions. Use when discovering patterns that should be documented, after any task that surfaces a reusable gap, or when updating `.cursor/skills/` or `.cursor/rules/`.
 disable-model-invocation: true
 ---
 
@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 When a new improvement is discovered during development or review, **flag it before implementing doc changes**. Non-blocking doc work goes in **separate parallel sessions**.
 
-**Canonical location:** `~/.cursor/skills/meta/improvement-protocol/SKILL.md` — do not duplicate per project.
+**Canonical location:** `~/.cursor/skills/ai-agent/improvement-protocol/SKILL.md` — do not duplicate per project.
 
 ## When to flag
 
@@ -20,7 +20,7 @@ When a new improvement is discovered during development or review, **flag it bef
 
 ## Mandatory post-task flag block
 
-After completing work on **UI, motion, shell layout, styles tokens, skills, or rules**, end the task with:
+After completing a task — especially when a reusable pattern, class-of-bug, or instruction gap showed up, or when editing skills or rules — end the task with:
 
 ```markdown
 ## Improvement flags
@@ -76,6 +76,8 @@ or one or more flags using the template below.
 | System behaviors | `~/.cursor/rules/behaviors/*.mdc` |
 | Portable foundations rules | `~/.cursor/rules/foundations/**/*.mdc` |
 | Portable foundations skills | `~/.cursor/skills/foundations/**/SKILL.md` |
+| Portable ai-agent rules | `~/.cursor/rules/ai-agent/**/*.mdc` |
+| Portable ai-agent skills | `~/.cursor/skills/ai-agent/**/SKILL.md` |
 | Portable code rules | `~/.cursor/rules/code/**/*.mdc` |
 | Portable skills | `~/.cursor/skills/code/**/SKILL.md` |
 | Project skills | `<repo>/.cursor/skills/project/**/SKILL.md` |
@@ -83,7 +85,7 @@ or one or more flags using the template below.
 | Agent entry | `<repo>/AGENTS.md`, `AGENT.md` chain |
 | CI only | `.github/workflows/` (not agent context) |
 
-Keep portable `foundations/**`, `code/**`, and `meta/**` skills free of project paths and commands. Project-specific guidance belongs in `project/**` or the repo `AGENT.md` chain.
+Keep portable `foundations/**`, `code/**`, and `ai-agent/**` skills free of project paths and commands. Project-specific guidance belongs in `project/**` or the repo `AGENT.md` chain.
 
 ## Portable vs project (quick rule)
 

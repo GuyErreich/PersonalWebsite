@@ -7,8 +7,9 @@ This `.cursor/` tree is structured as a portable agent plugin plus a per-project
 ```
 .cursor/skills/foundations/**  # domain-agnostic hierarchy (and future universal bases)
 .cursor/skills/code/**         # foundations, languages, web, quality, review, ci
-.cursor/skills/meta/**         # skill/rule authoring + maintenance
+.cursor/skills/ai-agent/**     # agent taxonomy + skill/rule maintenance
 .cursor/rules/foundations/**   # always-on hierarchy rule
+.cursor/rules/ai-agent/**      # glob rules for agent-library hierarchy
 .cursor/rules/behaviors/**     # consent + review gate (always apply)
 .cursor/rules/code/**          # glob rules that load matching code skills
 ```
@@ -33,12 +34,14 @@ Portable rules anchor on `**/components/ui/**` (no `src/` prefix). Project rules
 
 ## Inheritance contract
 
-Every skill under `code/` extends `.cursor/skills/code/foundations/engineering/SKILL.md`. Domain-agnostic folder taxonomy lives in `.cursor/skills/foundations/hierarchy/` (outside `code/`). Downstream skills add domain rules but never weaken the universal engineering principles. Project skills may add stricter rules, never weaker ones.
+Every skill under `code/` extends `.cursor/skills/code/foundations/engineering/SKILL.md`. Domain-agnostic folder taxonomy lives in `.cursor/skills/foundations/hierarchy/` (outside `code/`). Agent-library container tiers live in `.cursor/skills/ai-agent/hierarchy/` (extends foundations). Downstream skills add domain rules but never weaken the universal engineering principles. Project skills may add stricter rules, never weaker ones.
 
 ## Layering
 
 ```
 foundations/hierarchy     (domain-agnostic folder taxonomy — always)
+ai-agent/hierarchy        (agent container tiers — deepen vs widen)
+ai-agent/improvement-protocol
 code/foundations/engineering   (code base — always)
   └─ languages/nodejs      (TS/JS syntax + tooling)
        └─ web/libs/react   (hooks, components)

@@ -1,0 +1,14 @@
+---
+description: Load agent-hierarchy when editing skills, rules, or agent markdown under .cursor
+globs: "**/.cursor/**/*.{md,mdc}"
+alwaysApply: false
+---
+
+# Agent Hierarchy
+
+When creating or reorganizing skills, rules, or agent docs under `.cursor/`:
+
+- Prefer **deepening** (flat `references/*.md`) over new sibling skills.
+- Tiers by cost: always-on rule → glob rule → `SKILL.md` → `references/` → `assets/`. Keep `references/` one level deep — no subfolders.
+- Load `.cursor/skills/ai-agent/hierarchy/SKILL.md` for the full decision. Project-local context uses the `AGENT.md` chain (outside this glob).
+- Nesting/retrieval still come from `foundations/hierarchy`.

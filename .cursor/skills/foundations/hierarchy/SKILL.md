@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Universal taxonomy logic for any folder tree. A folder is a **promise about context**: everything inside inherits the parent's meaning, and the path should read as a sentence that narrows scope (for example `code/web/libs/react`).
 
-This skill is domain-agnostic. Code-specific application (shared vs feature-local, abstraction-then-extension) lives in `code/foundations/engineering` → `references/folder-structure.md`.
+This skill is domain-agnostic. Code-specific application (shared vs feature-local, abstraction-then-extension) lives in `code/foundations/engineering` → `references/folder-structure.md`. Agent-library container tiers (rule vs skill vs `references/`) live in `ai-agent/hierarchy`.
 
 ## Principles
 

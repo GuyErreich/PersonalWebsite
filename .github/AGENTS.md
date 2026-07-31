@@ -20,6 +20,9 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 ```
 .cursor/skills/
 ├── foundations/hierarchy       domain-agnostic folder taxonomy
+├── ai-agent/
+│   ├── hierarchy               agent container tiers (deepen vs widen)
+│   └── improvement-protocol    skill/rule maintenance
 ├── code/                       PORTABLE plugin core
 │   ├── foundations/engineering   universal base (all code skills extend it)
 │   ├── languages/nodejs          TypeScript / JS syntax + tooling
@@ -32,7 +35,6 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 │   ├── review/reviewer           single-pass code reviewer
 │   ├── review/pr-resolver        controlled PR-thread resolution loop
 │   └── ci/{commit,pr,push,local-review-loop}
-├── meta/improvement-protocol   skill/rule maintenance
 └── project/                    PROJECT overlay (not exported)
     └── platform/                 supabase, supabase-branch-testing, deploy-secrets
 ```
@@ -42,6 +44,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 ```
 .cursor/rules/
 ├── foundations/hierarchy  (always apply)
+├── ai-agent/    hierarchy (glob: .cursor markdown)
 ├── behaviors/   git-push-consent, git-commit-consent, code-review-gate (always apply)
 ├── code/        glob rules mirroring the code skill tree (load matching skills)
 └── project/     project-guidelines

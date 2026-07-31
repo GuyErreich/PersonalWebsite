@@ -17,6 +17,7 @@ Deep conventions live in two places — read them rather than duplicating here:
 | Area | Skill |
 |---|---|
 | Folder hierarchy | `foundations/hierarchy` (always applied) |
+| Agent library hierarchy | `ai-agent/hierarchy` |
 | Universal principles | `code/foundations/engineering` (always applied) |
 | TypeScript / JS | `code/languages/nodejs` |
 | Web UI structure & a11y | `code/web/ui` |
@@ -27,7 +28,7 @@ Deep conventions live in two places — read them rather than duplicating here:
 | Review & PR resolution | `code/review/reviewer`, `code/review/pr-resolver` |
 | Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop}` |
 | Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing`, `project/platform/deploy-secrets` |
-| Skill/rule maintenance | `~/.cursor/skills/meta/improvement-protocol` |
+| Skill/rule maintenance | `~/.cursor/skills/ai-agent/improvement-protocol` |
 
 ## Behaviors
 
