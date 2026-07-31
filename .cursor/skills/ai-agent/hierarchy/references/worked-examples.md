@@ -29,3 +29,17 @@ Generic cleanup/security rules fail the nesting test for Node — they hold for 
 - Retrieval test favored `ai-agent`. Rename-for-drift was applied in the same change as this skill; indexes updated together.
 
 **Rule applied:** subject-named parent for agent-stack maintenance; couple hierarchy + improvement protocol under one change unit.
+
+## 4. `code/web/ux` references — subfolders are fine, chains are not
+
+**Candidate:** `code/web/ux/references/{desktop,mobile,shared}/` plus two top-level references.
+
+| Check | Result |
+|---|---|
+| Does `SKILL.md` link each file directly? | Yes — the `## When to load references` table names all nine paths |
+| Does any group hold 3+ files on one axis? | `shared/` has 4, `mobile/` has 2, `desktop/` has 1 |
+| Is any reference reachable only through another reference? | No |
+
+Verdict: **keep the subfolders.** They also let `desktop/navigation-motion.md` and `mobile/navigation-motion.md` share a filename that reads correctly under its parent — flattening would force prefixes for no gain. `desktop/` sitting at one file is the only soft signal; it stays because the viewport axis is already routed and a second desktop reference is expected.
+
+**Rule applied:** link depth is the constraint, not folder depth. A flatten-everything rule would have caused churn and lost the axis in the path.

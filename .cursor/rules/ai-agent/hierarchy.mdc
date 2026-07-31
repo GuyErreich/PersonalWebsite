@@ -8,7 +8,8 @@ alwaysApply: false
 
 When creating or reorganizing skills, rules, or agent docs under `.cursor/`:
 
-- Prefer **deepening** (flat `references/*.md`) over new sibling skills.
-- Tiers by cost: always-on rule → glob rule → `SKILL.md` → `references/` → `assets/`. Keep `references/` one level deep — no subfolders.
+- Prefer **deepening** (`references/`) over new sibling skills.
+- Tiers by cost: always-on rule → glob rule → `SKILL.md` → `references/` → `references/<group>/` → `assets/`.
+- **Link depth, not folder depth:** `SKILL.md` links directly to every reference; never chain reference → reference. Subfolders need a routing table and 3+ files on one axis. `assets/` is templates/images/data, never docs.
 - Load `.cursor/skills/ai-agent/hierarchy/SKILL.md` for the full decision. Project-local context uses the `AGENT.md` chain (outside this glob).
 - Nesting/retrieval still come from `foundations/hierarchy`.
