@@ -70,6 +70,7 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 | Domain | Cursor rule | Skill path |
 |---|---|---|
 | Core | `.cursor/rules/project/project-guidelines.mdc` | always-on |
+| Folder hierarchy | `.cursor/rules/foundations/hierarchy.mdc` | `foundations/hierarchy` |
 | Engineering | `.cursor/rules/code/foundations/engineering.mdc` | `code/foundations/engineering` |
 | TypeScript / JS | `.cursor/rules/code/languages/nodejs.mdc` | `code/languages/nodejs` |
 | UI structure | `.cursor/rules/code/web/ui.mdc` | `code/web/ui` |
@@ -79,4 +80,4 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 | Performance | `.cursor/rules/code/quality/performance.mdc` | `code/quality/performance` |
 | UX (motion, sound, overlays) | `.cursor/rules/code/web/ux.mdc` | `code/web/ux` |
 
-Workflow skills: `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `meta/improvement-protocol`
+Workflow skills: `foundations/hierarchy`, `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `meta/improvement-protocol`

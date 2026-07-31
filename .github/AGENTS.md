@@ -19,6 +19,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 
 ```
 .cursor/skills/
+├── foundations/hierarchy       domain-agnostic folder taxonomy
 ├── code/                       PORTABLE plugin core
 │   ├── foundations/engineering   universal base (all code skills extend it)
 │   ├── languages/nodejs          TypeScript / JS syntax + tooling
@@ -40,6 +41,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 
 ```
 .cursor/rules/
+├── foundations/hierarchy  (always apply)
 ├── behaviors/   git-push-consent, git-commit-consent, code-review-gate (always apply)
 ├── code/        glob rules mirroring the code skill tree (load matching skills)
 └── project/     project-guidelines
@@ -47,7 +49,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 
 ## Usage in Cursor
 
-- **Rules** apply automatically based on file globs or `alwaysApply: true`; `code/foundations/engineering.mdc` always applies.
+- **Rules** apply automatically based on file globs or `alwaysApply: true`; `foundations/hierarchy.mdc` and `code/foundations/engineering.mdc` always apply.
 - **Skills** load on demand — attach or `@`-mention them (for example `@reviewer`, `@pr-resolver`, `@supabase`).
 - **`AGENT.md`** files carry project context; read the nearest one (leaf → root) when working in a folder.
 

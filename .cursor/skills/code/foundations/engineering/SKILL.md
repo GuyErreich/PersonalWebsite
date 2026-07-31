@@ -17,7 +17,7 @@ This is the **base of the inheritance chain**. Load it first, then layer the dom
 | No duplication | Same logic, structure, or pattern in 2+ places → extract a shared abstraction before adding a third copy | `references/duplication-and-reuse.md` |
 | Proper typings | Explicit, honest types at boundaries; never use typing to hide a design gap; types document intent | `references/typing-discipline.md` |
 | Proper naming | Names reveal responsibility; consistent domain vocabulary; no misleading suffixes or cryptic abbreviations | `references/naming.md` |
-| Folder structure | Organize by feature/responsibility, not file type alone; shared vs feature-local must be obvious from the path | `references/folder-structure.md` |
+| Folder structure | Code layout: shared vs feature-local; general taxonomy via `foundations/hierarchy` | `references/folder-structure.md` |
 | Separation of concerns | One module, one reason to change; keep data, orchestration, presentation, and I/O apart | `references/separation-of-concerns.md` |
 | Coupling / decoupling | Couple what changes together; decouple what changes for different reasons; avoid both duplication and premature abstraction | `references/coupling-decoupling.md` |
 

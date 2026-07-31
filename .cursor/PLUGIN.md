@@ -5,10 +5,12 @@ This `.cursor/` tree is structured as a portable agent plugin plus a per-project
 ## Portable plugin (copy to a new repo or import as a Remote Rule)
 
 ```
-.cursor/skills/code/**      # foundations, languages, web, quality, review, ci
-.cursor/skills/meta/**      # skill/rule authoring + maintenance
-.cursor/rules/behaviors/**  # consent + review gate (always apply)
-.cursor/rules/code/**       # glob rules that load matching code skills
+.cursor/skills/foundations/**  # domain-agnostic hierarchy (and future universal bases)
+.cursor/skills/code/**         # foundations, languages, web, quality, review, ci
+.cursor/skills/meta/**         # skill/rule authoring + maintenance
+.cursor/rules/foundations/**   # always-on hierarchy rule
+.cursor/rules/behaviors/**     # consent + review gate (always apply)
+.cursor/rules/code/**          # glob rules that load matching code skills
 ```
 
 ## Per-project overlay (keep in the application repo)
@@ -31,12 +33,13 @@ Portable rules anchor on `**/components/ui/**` (no `src/` prefix). Project rules
 
 ## Inheritance contract
 
-Every skill under `code/` extends `.cursor/skills/code/foundations/engineering/SKILL.md`. Downstream skills add domain rules but never weaken the universal engineering principles. Project skills may add stricter rules, never weaker ones.
+Every skill under `code/` extends `.cursor/skills/code/foundations/engineering/SKILL.md`. Domain-agnostic folder taxonomy lives in `.cursor/skills/foundations/hierarchy/` (outside `code/`). Downstream skills add domain rules but never weaken the universal engineering principles. Project skills may add stricter rules, never weaker ones.
 
 ## Layering
 
 ```
-foundations/engineering   (universal base — always)
+foundations/hierarchy     (domain-agnostic folder taxonomy — always)
+code/foundations/engineering   (code base — always)
   └─ languages/nodejs      (TS/JS syntax + tooling)
        └─ web/libs/react   (hooks, components)
             └─ web/libs/threejs

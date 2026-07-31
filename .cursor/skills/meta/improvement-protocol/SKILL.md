@@ -41,7 +41,7 @@ or one or more flags using the template below.
 **Title:** [Concise name]
 **Description:** [What to add/change and why]
 **Scope:** [Single file | Multiple files | New file]
-**Portable or project:** [portable `~/.cursor/skills/code/**` | project `.cursor/skills/project/**` | system `~/.cursor/rules/**`]
+**Portable or project:** [portable `~/.cursor/skills/foundations/**` or `~/.cursor/skills/code/**` | project `.cursor/skills/project/**` | system `~/.cursor/rules/**`]
 **Estimated Effort:** [Quick | Medium | Complex]
 **Priority:** [Nice-to-have | Recommended | Critical]
 ```
@@ -74,6 +74,8 @@ or one or more flags using the template below.
 | Layer | Path |
 |---|---|
 | System behaviors | `~/.cursor/rules/behaviors/*.mdc` |
+| Portable foundations rules | `~/.cursor/rules/foundations/**/*.mdc` |
+| Portable foundations skills | `~/.cursor/skills/foundations/**/SKILL.md` |
 | Portable code rules | `~/.cursor/rules/code/**/*.mdc` |
 | Portable skills | `~/.cursor/skills/code/**/SKILL.md` |
 | Project skills | `<repo>/.cursor/skills/project/**/SKILL.md` |
@@ -81,7 +83,7 @@ or one or more flags using the template below.
 | Agent entry | `<repo>/AGENTS.md`, `AGENT.md` chain |
 | CI only | `.github/workflows/` (not agent context) |
 
-Keep portable `code/**` and `meta/**` skills free of project paths and commands. Project-specific guidance belongs in `project/**` or the repo `AGENT.md` chain.
+Keep portable `foundations/**`, `code/**`, and `meta/**` skills free of project paths and commands. Project-specific guidance belongs in `project/**` or the repo `AGENT.md` chain.
 
 ## Portable vs project (quick rule)
 

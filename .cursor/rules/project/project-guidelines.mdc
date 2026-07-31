@@ -10,12 +10,13 @@ This is a React + TypeScript + Vite portfolio using Tailwind v4, Three.js (R3F),
 Deep conventions live in two places — read them rather than duplicating here:
 
 - **Project context and validate commands:** the `AGENT.md` chain. Start at the repository-root `AGENT.md`; when working in a folder with its own `AGENT.md`, follow it too (leaf → root).
-- **Engineering and domain rules:** the portable skill library under `.cursor/skills/code/**`, loaded by the glob rules in `.cursor/rules/code/**` and the always-applied engineering foundation.
+- **Engineering and domain rules:** the portable skill library under `.cursor/skills/foundations/**` and `.cursor/skills/code/**`, loaded by the matching rules in `.cursor/rules/foundations/**` / `.cursor/rules/code/**` and the always-applied foundations.
 
 ## Skill map
 
 | Area | Skill |
 |---|---|
+| Folder hierarchy | `foundations/hierarchy` (always applied) |
 | Universal principles | `code/foundations/engineering` (always applied) |
 | TypeScript / JS | `code/languages/nodejs` |
 | Web UI structure & a11y | `code/web/ui` |
