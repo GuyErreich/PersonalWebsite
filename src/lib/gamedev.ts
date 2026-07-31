@@ -116,14 +116,19 @@ export const inferMediaTypeFromFile = (file: File): "video" | "image" => {
   return file.type.toLowerCase().startsWith("video/") ? "video" : "image";
 };
 
-const compareNullableSort = (a: number | null | undefined, b: number | null | undefined): number => {
+const compareNullableSort = (
+  a: number | null | undefined,
+  b: number | null | undefined,
+): number => {
   const aVal = a ?? Number.MAX_SAFE_INTEGER;
   const bVal = b ?? Number.MAX_SAFE_INTEGER;
   if (aVal !== bVal) return aVal - bVal;
   return 0;
 };
 
-export const sortFeaturedGameDevItems = <T extends { featured_sort?: number | null; created_at?: string }>(
+export const sortFeaturedGameDevItems = <
+  T extends { featured_sort?: number | null; created_at?: string },
+>(
   items: T[],
 ): T[] =>
   [...items].sort((left, right) => {
@@ -187,9 +192,7 @@ export const dedupeGameDevVfxByMediaUrl = <
 };
 
 /** Dedupe by media URL while preserving the input order (first occurrence wins). */
-export const dedupeGameDevVfxPreservingOrder = <
-  T extends { id: string; media_url: string },
->(
+export const dedupeGameDevVfxPreservingOrder = <T extends { id: string; media_url: string }>(
   items: T[],
 ): T[] => {
   const seenUrls = new Set<string>();

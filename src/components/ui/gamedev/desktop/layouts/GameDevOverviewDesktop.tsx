@@ -6,7 +6,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Film, Layers, Sparkles } from "lucide-react";
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { type KeyboardEvent, useId, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevGallery } from "../../common/gallery/GameDevGallery";
@@ -36,7 +36,9 @@ export const GameDevOverviewDesktop = ({
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
   const [activeTab, setActiveTab] = useState<GameDevOverviewTab>("showreel");
-  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(() => new Set(["showreel"]));
+  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(
+    () => new Set(["showreel"]),
+  );
   const tabPanelIdBase = useId();
   const showreelTabId = `${tabPanelIdBase}-desktop-tab-showreel`;
   const projectsTabId = `${tabPanelIdBase}-desktop-tab-projects`;

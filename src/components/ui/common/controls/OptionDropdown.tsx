@@ -26,8 +26,7 @@ interface OptionDropdownProps {
   activeOptionIconClassName?: string;
 }
 
-const DEFAULT_ACTIVE_BUTTON_CLASS =
-  "border-purple-500/50 bg-purple-500/15 text-purple-300";
+const DEFAULT_ACTIVE_BUTTON_CLASS = "border-purple-500/50 bg-purple-500/15 text-purple-300";
 const DEFAULT_ACTIVE_OPTION_CLASS = "text-purple-300";
 const DEFAULT_ACTIVE_OPTION_ICON_CLASS = "text-purple-400";
 const INACTIVE_BUTTON_CLASS =

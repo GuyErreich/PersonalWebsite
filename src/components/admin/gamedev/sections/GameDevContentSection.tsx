@@ -186,7 +186,9 @@ export const GameDevContentSection = ({
             >
               <div className="mb-2 h-10 w-10 rounded bg-cyan-600/40" />
               <span className="line-clamp-2 text-xs text-cyan-200">{media.alt}</span>
-              <span className="mt-1 whitespace-nowrap text-[10px] text-cyan-300/60">Click to add</span>
+              <span className="mt-1 whitespace-nowrap text-[10px] text-cyan-300/60">
+                Click to add
+              </span>
             </motion.button>
           ))}
         </div>

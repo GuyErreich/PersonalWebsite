@@ -6,10 +6,10 @@
 
 import { motion } from "framer-motion";
 import { X } from "lucide-react";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryPickerAction } from "./MediaLibraryPickerExplorer";
 import { inferMediaTypeFromUrl, mediaUrlDisplayName } from "./mediaUrlDisplayName";
-import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface PickerSelectionSummaryProps {
   actions: MediaLibraryPickerAction[];

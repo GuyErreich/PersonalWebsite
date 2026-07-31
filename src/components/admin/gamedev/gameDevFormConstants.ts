@@ -10,6 +10,7 @@ import {
   Database,
   Gamepad2,
   Globe,
+  type LucideIcon,
   Monitor,
   Rocket,
   Server,
@@ -17,7 +18,6 @@ import {
   Smartphone,
   Terminal,
   Wrench,
-  type LucideIcon,
 } from "lucide-react";
 
 export const GAMEDEV_AVAILABLE_ICONS: Array<{ id: string; icon: LucideIcon; label: string }> = [

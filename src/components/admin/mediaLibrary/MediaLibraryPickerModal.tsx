@@ -14,8 +14,8 @@ import {
   playMenuCloseSound,
 } from "../../../lib/sound/interactionSounds";
 import {
-  MediaLibraryPickerExplorer,
   type MediaLibraryPickerAction,
+  MediaLibraryPickerExplorer,
 } from "./MediaLibraryPickerExplorer";
 import { PickerSelectionSummary } from "./PickerSelectionSummary";
 

@@ -10,10 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { fallbackGameDevItems } from "../components/ui/gamedev/common/data/items";
-import type {
-  GameDevItem,
-  GameDevVfxItem,
-} from "../components/ui/gamedev/common/data/types";
+import type { GameDevItem, GameDevVfxItem } from "../components/ui/gamedev/common/data/types";
 import { GameDevProjectHeaderMedia } from "../components/ui/gamedev/common/media/GameDevProjectHeaderMedia";
 import { GameDevProjectVfxSection } from "../components/ui/gamedev/common/media/GameDevProjectVfxSection";
 import {
@@ -221,8 +218,7 @@ export const GameDevProject = () => {
   const project = state.project;
   const comingSoon = isGameDevComingSoon(project);
   const summary = project.summary ?? buildGameDevSummary(project.description, 240);
-  const headerMediaUrl =
-    project.header_media_url?.trim() || project.media_url?.trim() || null;
+  const headerMediaUrl = project.header_media_url?.trim() || project.media_url?.trim() || null;
   const showVfxSection = project.show_vfx_section !== false && state.linkedVfx.length > 0;
 
   const projectNav = (

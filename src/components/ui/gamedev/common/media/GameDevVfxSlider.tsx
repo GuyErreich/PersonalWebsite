@@ -62,8 +62,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
 
     // Scroll only the thumb rail — never scrollIntoView, which can pan ancestor
     // tracks (GameDev overview ↔ all-projects) when centering edge thumbs.
-    const nextLeft =
-      activeThumb.offsetLeft - (rail.clientWidth - activeThumb.offsetWidth) / 2;
+    const nextLeft = activeThumb.offsetLeft - (rail.clientWidth - activeThumb.offsetWidth) / 2;
     const maxLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
     rail.scrollTo({
       left: Math.max(0, Math.min(maxLeft, nextLeft)),
@@ -117,13 +116,11 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
 
   return (
     <div className="gamedev-vfx-slider" data-no-swipe-page>
-      <div
+      <section
         className="gamedev-vfx-slider-deck-zone"
-        role="region"
         aria-roledescription="carousel"
         aria-label="Visual effects showcase"
         id={sliderRegionId}
-        tabIndex={0}
         onKeyDown={handleKeyDown}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
@@ -167,9 +164,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
                 className="gamedev-vfx-slider-deck-stack-card"
                 initial={false}
                 animate={
-                  primaryIsMid
-                    ? vfxDeckStackPose.back(stackDir)
-                    : vfxDeckStackPose.mid(stackDir)
+                  primaryIsMid ? vfxDeckStackPose.back(stackDir) : vfxDeckStackPose.mid(stackDir)
                 }
                 transition={stackTransition}
                 style={{ zIndex: primaryIsMid ? 1 : 2 }}
@@ -178,9 +173,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
                 className="gamedev-vfx-slider-deck-stack-card"
                 initial={false}
                 animate={
-                  primaryIsMid
-                    ? vfxDeckStackPose.mid(stackDir)
-                    : vfxDeckStackPose.back(stackDir)
+                  primaryIsMid ? vfxDeckStackPose.mid(stackDir) : vfxDeckStackPose.back(stackDir)
                 }
                 transition={stackTransition}
                 style={{ zIndex: primaryIsMid ? 2 : 1 }}
@@ -261,7 +254,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
             </motion.article>
           </AnimatePresence>
         </div>
-      </div>
+      </section>
 
       {items.length > 1 ? (
         <div className="gamedev-vfx-slider-rail-wrap">

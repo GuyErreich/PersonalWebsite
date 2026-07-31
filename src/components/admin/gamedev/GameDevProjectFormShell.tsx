@@ -9,10 +9,7 @@ import { Check } from "lucide-react";
 import { type ReactNode, useEffect, useRef } from "react";
 import { useMediaQuery } from "../../../hooks/responsive/useMediaQuery";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
-import {
-  GAMEDEV_FORM_SECTIONS,
-  type GameDevFormSectionId,
-} from "./formSections";
+import { GAMEDEV_FORM_SECTIONS, type GameDevFormSectionId } from "./formSections";
 
 interface GameDevProjectFormShellProps {
   mode: "wizard" | "sidebar";
@@ -74,9 +71,7 @@ export const GameDevProjectFormShell = ({
           : "flex items-center gap-2 rounded-md px-2 py-1 text-xs font-medium transition-colors";
 
     const activeClass =
-      variant === "sidebar"
-        ? "bg-cyan-500/20 text-cyan-100"
-        : "bg-cyan-500/20 text-cyan-200";
+      variant === "sidebar" ? "bg-cyan-500/20 text-cyan-100" : "bg-cyan-500/20 text-cyan-200";
 
     const inactiveClass =
       variant === "sidebar"
@@ -141,14 +136,14 @@ export const GameDevProjectFormShell = ({
       <div className="flex min-h-0 max-h-[min(80vh,760px)] flex-1 flex-col overflow-hidden">
         {isWizard ? (
           <>
-            <div
+            <nav
               className="mb-3 flex flex-wrap gap-1 border-b border-gray-700 pb-3"
               aria-label="Project creation steps"
             >
               {GAMEDEV_FORM_SECTIONS.map((section, index) =>
                 renderNavButton(section, index, "wizard"),
               )}
-            </div>
+            </nav>
             {sectionPanel}
           </>
         ) : isMobile ? (

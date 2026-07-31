@@ -6,11 +6,11 @@
 
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { seekThumbnailToVideoCenter } from "../../../../lib/media/seekThumbnailToVideoCenter";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
 import { inferMediaTypeFromUrl } from "../../mediaLibrary/mediaUrlDisplayName";
 import { SelectedMediaPreview } from "../../mediaLibrary/SelectedMediaPreview";
 import type { MediaLibraryRoleFilter } from "../formSections";
-import { seekThumbnailToVideoCenter } from "../../../../lib/media/seekThumbnailToVideoCenter";
 
 interface MediaRoleCardProps {
   title: string;
@@ -38,7 +38,8 @@ const MediaRoleCard = ({
   urlPlaceholder,
 }: MediaRoleCardProps) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const resolvedType = previewMediaType ?? (previewUrl ? inferMediaTypeFromUrl(previewUrl) : "image");
+  const resolvedType =
+    previewMediaType ?? (previewUrl ? inferMediaTypeFromUrl(previewUrl) : "image");
 
   return (
     <div className="flex flex-col rounded-lg border border-gray-700 bg-gray-900/40 p-3">
@@ -167,9 +168,7 @@ export const GameDevMediaSection = ({
   maxMediaSizeBytes,
 }: GameDevMediaSectionProps) => {
   const headerPreviewUrl =
-    mediaFile && pendingHeaderPreviewUrl
-      ? pendingHeaderPreviewUrl
-      : selectedHeaderMediaUrl;
+    mediaFile && pendingHeaderPreviewUrl ? pendingHeaderPreviewUrl : selectedHeaderMediaUrl;
 
   const headerPreviewType =
     mediaFile && pendingHeaderPreviewUrl
@@ -181,8 +180,8 @@ export const GameDevMediaSection = ({
   return (
     <div className="space-y-4">
       <p className="text-sm text-gray-400">
-        Assign hero media for the project page and gallery cards. Use Pick on each role or browse the
-        full library below.
+        Assign hero media for the project page and gallery cards. Use Pick on each role or browse
+        the full library below.
       </p>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -241,9 +240,7 @@ export const GameDevMediaSection = ({
           <SelectedMediaPreview
             label="Pending upload"
             url={pendingHeaderPreviewUrl}
-            mediaType={
-              mediaFile.type.toLowerCase().startsWith("video/") ? "video" : "image"
-            }
+            mediaType={mediaFile.type.toLowerCase().startsWith("video/") ? "video" : "image"}
             onClear={() => onMediaFileChange(null)}
           />
         ) : null}

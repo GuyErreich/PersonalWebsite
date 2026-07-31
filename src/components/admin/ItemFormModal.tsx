@@ -21,8 +21,16 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useDevOpsTechStacks } from "../../hooks/devops/useDevOpsTechStacks";
-import { buildGameDevStoredContent, dedupeGameDevVfxByMediaUrl, GAMEDEV_COMING_SOON_DEFAULT_SUMMARY, parseGameDevStoredContent } from "../../lib/gamedev";
-import { markVfxShownInLibrary, normalizeLinkedVfxIds, ensureVfxFromMediaLibraryItem } from "../../lib/gamedev/vfxLibrary";
+import {
+  buildGameDevStoredContent,
+  dedupeGameDevVfxByMediaUrl,
+  GAMEDEV_COMING_SOON_DEFAULT_SUMMARY,
+  parseGameDevStoredContent,
+} from "../../lib/gamedev";
+import {
+  ensureVfxFromMediaLibraryItem,
+  normalizeLinkedVfxIds,
+} from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
   playClickSound,
@@ -52,8 +60,8 @@ import { GameDevContentSection } from "./gamedev/sections/GameDevContentSection"
 import { GameDevDiscoverySection } from "./gamedev/sections/GameDevDiscoverySection";
 import { GameDevLinksSection } from "./gamedev/sections/GameDevLinksSection";
 import { GameDevMediaSection } from "./gamedev/sections/GameDevMediaSection";
-import { MediaLibraryPickerModal } from "./mediaLibrary/MediaLibraryPickerModal";
 import type { MediaLibraryPickerAction } from "./mediaLibrary/MediaLibraryPickerExplorer";
+import { MediaLibraryPickerModal } from "./mediaLibrary/MediaLibraryPickerModal";
 import type { AdminDevOpsProject, AdminGameDevProject, AdminGameDevVfx } from "./types";
 
 interface ItemFormModalProps {
@@ -280,9 +288,7 @@ export const ItemFormModal = ({
       setSelectedHeaderThumbnailUrl(gameDevItem.header_thumbnail_url ?? null);
       setSelectedCardThumbnailUrl(gameDevItem.thumbnail_url ?? null);
       setIsFeatured(gameDevItem.is_featured ?? false);
-      setFeaturedSort(
-        gameDevItem.featured_sort != null ? String(gameDevItem.featured_sort) : "",
-      );
+      setFeaturedSort(gameDevItem.featured_sort != null ? String(gameDevItem.featured_sort) : "");
       setShowVfxSection(
         gameDevItem.is_coming_soon ? false : (gameDevItem.show_vfx_section ?? true),
       );
@@ -889,7 +895,10 @@ export const ItemFormModal = ({
         const sourceGameDev = isEditingGameDev ? (editingItem as AdminGameDevProject) : null;
 
         let finalHeaderMediaUrl =
-          selectedHeaderMediaUrl ?? sourceGameDev?.header_media_url ?? sourceGameDev?.media_url ?? null;
+          selectedHeaderMediaUrl ??
+          sourceGameDev?.header_media_url ??
+          sourceGameDev?.media_url ??
+          null;
 
         if (mediaFile) {
           const { item } = await uploadOrReuseMediaLibraryItem({
@@ -909,13 +918,13 @@ export const ItemFormModal = ({
 
         const teaserMediaUrl = finalHeaderMediaUrl?.trim() ? finalHeaderMediaUrl.trim() : null;
         const teaserThumbnailUrl = isComingSoon
-          ? selectedCardThumbnailUrl ?? teaserMediaUrl ?? sourceGameDev?.thumbnail_url ?? null
-          : selectedCardThumbnailUrl ?? sourceGameDev?.thumbnail_url ?? null;
+          ? (selectedCardThumbnailUrl ?? teaserMediaUrl ?? sourceGameDev?.thumbnail_url ?? null)
+          : (selectedCardThumbnailUrl ?? sourceGameDev?.thumbnail_url ?? null);
 
         const projectPayload = {
           title: normalizedTitle,
           description: storedDescription,
-          media_url: isComingSoon ? teaserMediaUrl : sourceGameDev?.media_url ?? null,
+          media_url: isComingSoon ? teaserMediaUrl : (sourceGameDev?.media_url ?? null),
           thumbnail_url: teaserThumbnailUrl,
           header_media_url: isComingSoon ? teaserMediaUrl : teaserMediaUrl,
           header_thumbnail_url: selectedHeaderThumbnailUrl,
@@ -1027,10 +1036,6 @@ export const ItemFormModal = ({
             if (sortOrderError) {
               throw new Error(sortOrderError.message);
             }
-          }
-
-          if (showVfxSection && normalizedLinkedVfxIds.length > 0) {
-            await markVfxShownInLibrary(normalizedLinkedVfxIds);
           }
         };
 
@@ -1242,7 +1247,10 @@ export const ItemFormModal = ({
                     </div>
 
                     <div>
-                      <label htmlFor={itemTitleId} className="block text-sm font-medium text-gray-300">
+                      <label
+                        htmlFor={itemTitleId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
                         Title
                       </label>
                       <input
@@ -1421,31 +1429,31 @@ export const ItemFormModal = ({
 
             {type !== "gamedev" ? (
               <div className="border-t border-gray-600 bg-gray-700 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onMouseEnter={playHoverSound}
-                onClick={playClickSound}
-                disabled={loading}
-                className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 sm:ml-3 sm:w-auto sm:text-sm"
-              >
-                {loading ? "Saving..." : isEditing ? "Update Item" : "Save Item"}
-              </motion.button>
-              <motion.button
-                type="button"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onMouseEnter={playHoverSound}
-                onClick={() => {
-                  playClickSound();
-                  closeModal();
-                }}
-                disabled={loading}
-                className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-500 bg-transparent px-4 py-2 text-base font-medium text-gray-300 shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:ml-3 sm:mt-0 sm:w-auto sm:text-sm"
-              >
-                Cancel
-              </motion.button>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={playClickSound}
+                  disabled={loading}
+                  className="inline-flex w-full justify-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 sm:ml-3 sm:w-auto sm:text-sm"
+                >
+                  {loading ? "Saving..." : isEditing ? "Update Item" : "Save Item"}
+                </motion.button>
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onMouseEnter={playHoverSound}
+                  onClick={() => {
+                    playClickSound();
+                    closeModal();
+                  }}
+                  disabled={loading}
+                  className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-500 bg-transparent px-4 py-2 text-base font-medium text-gray-300 shadow-sm hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 sm:ml-3 sm:mt-0 sm:w-auto sm:text-sm"
+                >
+                  Cancel
+                </motion.button>
               </div>
             ) : null}
           </form>

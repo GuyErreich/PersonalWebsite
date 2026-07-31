@@ -6,10 +6,19 @@
 
 import { motion } from "framer-motion";
 import { Check, FolderOpen, Image as ImageIcon, Plus, Sparkles, Video, X } from "lucide-react";
-import { useCallback, useEffect, useId, useMemo, useState, type FormEvent } from "react";
-import { dedupeGameDevVfxByMediaUrl, inferMediaTypeFromFile, inferMediaTypeFromUrl } from "../../lib/gamedev";
+import { type FormEvent, useCallback, useEffect, useId, useMemo, useState } from "react";
+import {
+  dedupeGameDevVfxByMediaUrl,
+  inferMediaTypeFromFile,
+  inferMediaTypeFromUrl,
+} from "../../lib/gamedev";
 import { findVfxByMediaUrl } from "../../lib/gamedev/vfxLibrary";
-import { playClickSound, playHoverSound, playMenuCloseSound } from "../../lib/sound/interactionSounds";
+import { seekThumbnailToVideoCenter } from "../../lib/media/seekThumbnailToVideoCenter";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+} from "../../lib/sound/interactionSounds";
 import {
   type MediaLibraryItem,
   stripFileExtension,
@@ -21,7 +30,6 @@ import {
   R2_UPLOAD_POLICIES,
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
-import { seekThumbnailToVideoCenter } from "../../lib/media/seekThumbnailToVideoCenter";
 import { ConfirmDialog } from "./mediaLibrary/ConfirmDialog";
 import type { AdminGameDevVfx } from "./types";
 import { VfxLibraryCard } from "./vfx/VfxLibraryCard";
@@ -60,6 +68,11 @@ const inputClassName =
 
 export const VfxManager = () => {
   const formTitleId = useId();
+  const formDescriptionId = useId();
+  const formMediaFileId = useId();
+  const formThumbnailUrlId = useId();
+  const formSortOrderId = useId();
+  const formTagsId = useId();
   const [vfxItems, setVfxItems] = useState<AdminGameDevVfx[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -194,7 +207,7 @@ export const VfxManager = () => {
   };
 
   const pendingDeleteItem = pendingDeleteId
-    ? vfxItems.find((item) => item.id === pendingDeleteId) ?? null
+    ? (vfxItems.find((item) => item.id === pendingDeleteId) ?? null)
     : null;
 
   const handleSubmit = async (event: FormEvent) => {
@@ -334,8 +347,8 @@ export const VfxManager = () => {
           </div>
           <h4 className="text-base font-medium text-white">No VFX yet</h4>
           <p className="mt-2 max-w-md text-sm text-gray-400">
-            Upload clips or stills to build your reusable effects library for projects and the public
-            gallery.
+            Upload clips or stills to build your reusable effects library for projects and the
+            public gallery.
           </p>
           <motion.button
             type="button"
@@ -425,8 +438,14 @@ export const VfxManager = () => {
                 <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300">Title</label>
+                      <label
+                        htmlFor={formTitleId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Title
+                      </label>
                       <input
+                        id={formTitleId}
                         required
                         value={form.title}
                         onChange={(e) => setForm((c) => ({ ...c, title: e.target.value }))}
@@ -435,8 +454,14 @@ export const VfxManager = () => {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300">Description</label>
+                      <label
+                        htmlFor={formDescriptionId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Description
+                      </label>
                       <textarea
+                        id={formDescriptionId}
                         rows={3}
                         value={form.description}
                         onChange={(e) => setForm((c) => ({ ...c, description: e.target.value }))}
@@ -446,8 +471,14 @@ export const VfxManager = () => {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300">Upload media</label>
+                      <label
+                        htmlFor={formMediaFileId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Upload media
+                      </label>
                       <input
+                        id={formMediaFileId}
                         type="file"
                         accept={MEDIA_ACCEPT}
                         className="mt-1 block w-full text-sm text-gray-300 file:mr-3 file:rounded-lg file:border-0 file:bg-cyan-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-cyan-600"
@@ -569,7 +600,9 @@ export const VfxManager = () => {
                                   ) : (
                                     <ImageIcon className="h-3 w-3 shrink-0 text-cyan-300" />
                                   )}
-                                  <span className="truncate text-[11px] text-gray-200">{item.name}</span>
+                                  <span className="truncate text-[11px] text-gray-200">
+                                    {item.name}
+                                  </span>
                                 </div>
                               </motion.button>
                             );
@@ -579,10 +612,14 @@ export const VfxManager = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300">
+                      <label
+                        htmlFor={formThumbnailUrlId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
                         Poster thumbnail URL
                       </label>
                       <input
+                        id={formThumbnailUrlId}
                         value={form.thumbnailUrl ?? ""}
                         onChange={(e) =>
                           setForm((c) => ({ ...c, thumbnailUrl: e.target.value.trim() || null }))
@@ -593,8 +630,14 @@ export const VfxManager = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-300">Sort order</label>
+                      <label
+                        htmlFor={formSortOrderId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Sort order
+                      </label>
                       <input
+                        id={formSortOrderId}
                         type="number"
                         value={form.sortOrder}
                         onChange={(e) => setForm((c) => ({ ...c, sortOrder: e.target.value }))}
@@ -618,9 +661,15 @@ export const VfxManager = () => {
                     </div>
 
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-300">Tags</label>
+                      <label
+                        htmlFor={formTagsId}
+                        className="block text-sm font-medium text-gray-300"
+                      >
+                        Tags
+                      </label>
                       <div className="mt-1 flex gap-2">
                         <input
+                          id={formTagsId}
                           value={tagInput}
                           onChange={(e) => setTagInput(e.target.value)}
                           onKeyDown={(e) => {

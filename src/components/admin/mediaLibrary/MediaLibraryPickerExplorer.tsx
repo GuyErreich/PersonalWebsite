@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Check, FolderPlus, Image as ImageIcon, RefreshCw, Upload, Video } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useMediaLibraryExplorer } from "../../../hooks/mediaLibrary/useMediaLibraryExplorer";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 import { ExplorerBreadcrumbs } from "./ExplorerBreadcrumbs";
@@ -15,7 +16,6 @@ import { ExplorerToolbar } from "./ExplorerToolbar";
 import { FolderCard } from "./FolderCard";
 import { MediaPreviewModal } from "./MediaPreviewModal";
 import type { FolderEntry, MediaEntry } from "./types";
-import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 export interface MediaLibraryPickerAction {
   id: string;
@@ -62,20 +62,14 @@ const PickerMediaCard = ({ entry, actions, onPreview, onActionSelect }: PickerMe
     (action) => action.selectedUrl && action.selectedUrl === item.media_url,
   );
   const isAssigned = activeRoles.length > 0;
-  const assignedLabel = activeRoles
-    .map((action) => action.badgeLabel ?? action.label)
-    .join(", ");
+  const assignedLabel = activeRoles.map((action) => action.badgeLabel ?? action.label).join(", ");
 
   return (
     <article
       className={`flex flex-col rounded-lg border bg-gray-900/40 p-2 ${
-        isAssigned
-          ? "border-cyan-400/60 ring-1 ring-cyan-400/40"
-          : "border-gray-700"
+        isAssigned ? "border-cyan-400/60 ring-1 ring-cyan-400/40" : "border-gray-700"
       }`}
-      aria-label={
-        isAssigned ? `Currently used as ${assignedLabel}: ${item.name}` : undefined
-      }
+      aria-label={isAssigned ? `Currently used as ${assignedLabel}: ${item.name}` : undefined}
     >
       <motion.button
         type="button"

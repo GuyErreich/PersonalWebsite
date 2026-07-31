@@ -20,7 +20,10 @@ export const GameDevProjectHeaderMedia = ({
     "absolute inset-0 h-full w-full object-cover object-center pointer-events-none select-none";
 
   return (
-    <div className="gamedev-project-header-media absolute inset-0 overflow-hidden" aria-hidden="true">
+    <div
+      className="gamedev-project-header-media absolute inset-0 overflow-hidden"
+      aria-hidden="true"
+    >
       {mediaType === "video" ? (
         <video
           src={mediaUrl}

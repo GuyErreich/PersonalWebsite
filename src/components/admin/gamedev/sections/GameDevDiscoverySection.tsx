@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import { FolderOpen, Image, Play, Plus } from "lucide-react";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
 import type { AdminGameDevVfx } from "../../types";
 
@@ -37,6 +37,7 @@ export const GameDevDiscoverySection = ({
   onLinkedVfxIdsChange,
   onOpenVfxMediaLibrary,
 }: GameDevDiscoverySectionProps) => {
+  const featuredSortId = useId();
   const vfxById = useMemo(
     () => new Map(availableVfx.map((item) => [item.id, item])),
     [availableVfx],
@@ -77,8 +78,11 @@ export const GameDevDiscoverySection = ({
 
         {isFeatured ? (
           <div className="mt-3">
-            <label className="block text-xs text-gray-400">Featured order (lower appears first)</label>
+            <label htmlFor={featuredSortId} className="block text-xs text-gray-400">
+              Featured order (lower appears first)
+            </label>
             <input
+              id={featuredSortId}
               type="number"
               value={featuredSort}
               onChange={(e) => onFeaturedSortChange(e.target.value)}

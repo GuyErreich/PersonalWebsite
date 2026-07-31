@@ -6,9 +6,9 @@
 
 import { motion } from "framer-motion";
 import { useEffect } from "react";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import { inferMediaTypeFromUrl, mediaUrlDisplayName } from "./mediaUrlDisplayName";
-import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface SelectedMediaPreviewProps {
   label: string;
@@ -42,7 +42,9 @@ export const SelectedMediaPreview = ({
     <div className="mb-2 rounded-md border border-cyan-500/30 bg-cyan-500/10 p-2">
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-300/80">{label}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-cyan-300/80">
+            {label}
+          </p>
           <p className="truncate text-xs text-cyan-100">{displayName}</p>
         </div>
         <motion.button

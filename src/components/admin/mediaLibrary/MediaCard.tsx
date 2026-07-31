@@ -7,10 +7,10 @@
 import { motion } from "framer-motion";
 import { Image as ImageIcon, Video } from "lucide-react";
 import type { MouseEvent } from "react";
+import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 import { playClickSound, playHoverSound } from "../../../lib/sound/interactionSounds";
 import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 import type { MediaEntry } from "./types";
-import { seekThumbnailToVideoCenter } from "../../../lib/media/seekThumbnailToVideoCenter";
 
 interface Props {
   entry: MediaEntry;

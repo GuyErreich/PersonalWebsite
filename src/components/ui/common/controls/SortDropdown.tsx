@@ -5,7 +5,7 @@
  */
 
 import { ArrowUpDown } from "lucide-react";
-import { OptionDropdown, type DropdownOption } from "./OptionDropdown";
+import { type DropdownOption, OptionDropdown } from "./OptionDropdown";
 
 export type SortOption = DropdownOption;
 

@@ -104,14 +104,7 @@ export const GameDevVfxMedia = ({
 
   if (item.media_type === "video") {
     if (autoPlay) {
-      return (
-        <VfxLoopVideo
-          item={item}
-          autoPlay
-          className={className}
-          objectFit={objectFit}
-        />
-      );
+      return <VfxLoopVideo item={item} autoPlay className={className} objectFit={objectFit} />;
     }
 
     if (item.thumbnail_url) {

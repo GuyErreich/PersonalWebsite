@@ -6,18 +6,18 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Film, Layers, Sparkles } from "lucide-react";
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { type KeyboardEvent, useId, useRef, useState } from "react";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
+import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
+import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
 import {
   GAMEDEV_OVERVIEW_TAB_ORDER,
   type GameDevOverviewTab,
   getOverviewTabPulseMotion,
 } from "../../common/panels/overviewTabPulse";
-import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
-import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
 const slideVariants = {
@@ -36,7 +36,9 @@ export const GameDevOverviewMobileShort = ({
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
   const [activeTab, setActiveTab] = useState<GameDevOverviewTab>("showreel");
-  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(() => new Set(["showreel"]));
+  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(
+    () => new Set(["showreel"]),
+  );
   const tabPanelIdBase = useId();
   const showreelTabId = `${tabPanelIdBase}-tab-showreel`;
   const projectsTabId = `${tabPanelIdBase}-tab-projects`;

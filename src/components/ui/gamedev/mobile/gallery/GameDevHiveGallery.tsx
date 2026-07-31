@@ -15,7 +15,11 @@ import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
-import { buildGameDevProjectPath, buildGameDevSummary, isGameDevComingSoon } from "../../../../../lib/gamedev";
+import {
+  buildGameDevProjectPath,
+  buildGameDevSummary,
+  isGameDevComingSoon,
+} from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
@@ -694,22 +698,20 @@ export const GameDevHiveGallery = ({
         : null}
 
       <div className="gamedev-hive-meta">
-        {activeItemComingSoon ? (
-          <p className="inline-flex w-full items-center justify-center rounded-md border border-amber-400/30 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-amber-100">
-            Full project page coming soon
-          </p>
-        ) : (
-          <MotionLink
-            to={buildGameDevProjectPath(activeItem.id)}
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onMouseEnter={playHoverSound}
-            onClick={playClickSound}
-            className="gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
-          >
-            Open Project Page
-          </MotionLink>
-        )}
+        <MotionLink
+          to={buildGameDevProjectPath(activeItem.id)}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.96 }}
+          onMouseEnter={playHoverSound}
+          onClick={playClickSound}
+          className={`gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors${
+            activeItemComingSoon
+              ? " border border-amber-400/35 bg-amber-500/15 text-amber-100 hover:border-amber-300/60 hover:bg-amber-400/20"
+              : " border border-cyan-400/35 bg-cyan-500/15 text-cyan-100 hover:border-cyan-300/60 hover:bg-cyan-400/20"
+          }`}
+        >
+          {activeItemComingSoon ? "View Teaser" : "Open Project Page"}
+        </MotionLink>
 
         <div className="gamedev-hive-meta-row">
           <p className="gamedev-hive-caption">

@@ -90,9 +90,7 @@ export const ensureVfxFromMediaLibraryItem = async (
   };
 };
 
-export const findVfxByMediaUrl = async (
-  mediaUrl: string,
-): Promise<{ id: string } | null> => {
+export const findVfxByMediaUrl = async (mediaUrl: string): Promise<{ id: string } | null> => {
   const normalized = mediaUrl.trim();
   if (!normalized) {
     return null;
@@ -140,7 +138,12 @@ export const loadPublicVfxLibraryItems = async <
 /** Collapse linked IDs to one canonical row per media URL. */
 export const normalizeLinkedVfxIds = async (
   linkedIds: string[],
-  available: Array<{ id: string; media_url: string; sort_order?: number | null; created_at?: string }>,
+  available: Array<{
+    id: string;
+    media_url: string;
+    sort_order?: number | null;
+    created_at?: string;
+  }>,
 ): Promise<string[]> => {
   const availableById = new Map(available.map((item) => [item.id, item]));
   const missingIds = linkedIds.filter((id) => !availableById.has(id));
@@ -157,7 +160,12 @@ export const normalizeLinkedVfxIds = async (
     if (data && data.length > 0) {
       mergedAvailable = [
         ...available,
-        ...(data as Array<{ id: string; media_url: string; sort_order?: number | null; created_at?: string }>),
+        ...(data as Array<{
+          id: string;
+          media_url: string;
+          sort_order?: number | null;
+          created_at?: string;
+        }>),
       ];
     }
   }

@@ -5,8 +5,8 @@
  */
 
 import { Sparkles } from "lucide-react";
-import { GameDevVfxSlider } from "../media/GameDevVfxSlider";
 import type { GameDevVfxItem } from "../data/types";
+import { GameDevVfxSlider } from "../media/GameDevVfxSlider";
 import { GameDevVfxIntro } from "./GameDevVfxIntro";
 
 interface GameDevVfxShowcasePanelProps {

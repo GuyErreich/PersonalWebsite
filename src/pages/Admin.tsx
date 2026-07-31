@@ -23,12 +23,12 @@ import { ItemFormModal } from "../components/admin/ItemFormModal";
 import { ManagedProjectsList } from "../components/admin/ManagedProjectsList";
 import { MediaLibraryManager } from "../components/admin/MediaLibraryManager";
 import { ShowreelManager } from "../components/admin/ShowreelManager";
-import { VfxManager } from "../components/admin/VfxManager";
 import type {
   AdminDevOpsProject,
   AdminGameDevProject,
   AdminProjectListItem,
 } from "../components/admin/types";
+import { VfxManager } from "../components/admin/VfxManager";
 import { useAdminAuth } from "../hooks/auth/useAdminAuth";
 import { parseGameDevStoredContent } from "../lib/gamedev";
 import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";

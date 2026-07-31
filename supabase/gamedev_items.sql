@@ -29,12 +29,12 @@ create index if not exists gamedev_items_featured_idx
 -- Enable Row Level Security
 alter table public.gamedev_items enable row level security;
 
--- Public can read all items
+-- Public can read all items (coming soon is a teaser flag, not a draft lock)
 drop policy if exists "Public can read gamedev items" on public.gamedev_items;
 
 create policy "Public can read gamedev items"
   on public.gamedev_items for select
-  using (is_coming_soon = false);
+  using (true);
 
 drop policy if exists "Admins can read all gamedev items" on public.gamedev_items;
 

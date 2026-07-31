@@ -56,13 +56,13 @@ export const useGameDevSectionData = () => {
         if (itemsError) {
           const fallback = withSummary(fallbackGameDevItems);
           setGalleryItems(fallback);
-          setFeaturedItems(fallback);
+          setFeaturedItems(
+            sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)),
+          );
         } else {
           const normalized = withSummary((items ?? []) as GameDevItem[]);
           setGalleryItems(normalized);
-          setFeaturedItems(
-            sortFeaturedGameDevItems(normalized.filter((item) => item.is_featured)),
-          );
+          setFeaturedItems(sortFeaturedGameDevItems(normalized.filter((item) => item.is_featured)));
         }
       } catch {
         if (!isMounted) {
@@ -71,7 +71,7 @@ export const useGameDevSectionData = () => {
 
         const fallback = withSummary(fallbackGameDevItems);
         setGalleryItems(fallback);
-        setFeaturedItems(fallback);
+        setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
       } finally {
         if (isMounted) {
           setIsLoading(false);
