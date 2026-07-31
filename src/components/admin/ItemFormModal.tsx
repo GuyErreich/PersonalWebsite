@@ -27,10 +27,7 @@ import {
   GAMEDEV_COMING_SOON_DEFAULT_SUMMARY,
   parseGameDevStoredContent,
 } from "../../lib/gamedev";
-import {
-  ensureVfxFromMediaLibraryItem,
-  normalizeLinkedVfxIds,
-} from "../../lib/gamedev/vfxLibrary";
+import { ensureVfxFromMediaLibraryItem, normalizeLinkedVfxIds } from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
   playClickSound,

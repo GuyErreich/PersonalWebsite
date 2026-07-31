@@ -56,9 +56,7 @@ export const useGameDevSectionData = () => {
         if (itemsError) {
           const fallback = withSummary(fallbackGameDevItems);
           setGalleryItems(fallback);
-          setFeaturedItems(
-            sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)),
-          );
+          setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
         } else {
           const normalized = withSummary((items ?? []) as GameDevItem[]);
           setGalleryItems(normalized);
