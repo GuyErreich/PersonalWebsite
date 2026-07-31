@@ -44,6 +44,7 @@
 
   .gamedev-slider-viewport {
     @apply relative h-full w-full overflow-hidden;
+    overscroll-behavior: none;
   }
 
   .gamedev-slider-track {

@@ -44,8 +44,13 @@ export const useSwipeNavigation = ({
         startY.current = null;
         return;
       }
-      if (dx > threshold) onSwipeLeft();
-      else if (dx < -threshold) onSwipeRight();
+      if (dx > threshold) {
+        e.stopPropagation();
+        onSwipeLeft();
+      } else if (dx < -threshold) {
+        e.stopPropagation();
+        onSwipeRight();
+      }
       startX.current = null;
       startY.current = null;
     },

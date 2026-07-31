@@ -75,32 +75,19 @@
     @apply relative isolate flex min-h-0 flex-1 items-center justify-center overflow-hidden px-6 py-1 outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 sm:px-8 md:px-10;
     container-type: size;
     container-name: vfx-deck;
+    touch-action: pan-x;
   }
 
-  .gamedev-vfx-slider-deck-zone::before {
-    content: "";
-    @apply pointer-events-none absolute inset-[10%_12%] -z-10 rounded-[2.5rem] opacity-90;
-    background: radial-gradient(
-      ellipse 80% 70% at 50% 54%,
-      rgba(6, 182, 212, 0.2),
-      rgba(6, 182, 212, 0.05) 44%,
-      transparent 72%
-    );
-  }
-
+  .gamedev-vfx-slider-deck-zone::before,
   .gamedev-vfx-slider-deck-zone::after {
-    content: "";
-    @apply pointer-events-none absolute inset-0 -z-20 opacity-70;
-    background:
-      radial-gradient(ellipse 48% 38% at 14% 18%, rgba(168, 85, 247, 0.16), transparent 72%),
-      radial-gradient(ellipse 44% 36% at 86% 82%, rgba(6, 182, 212, 0.14), transparent 70%),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03), transparent 38%);
+    content: none;
   }
 
   .gamedev-vfx-slider-deck {
     @apply relative z-10 mx-auto max-h-full;
     width: min(100%, 18rem, 70cqh);
-    perspective: 1400px;
+    aspect-ratio: 3 / 4;
+    perspective: 1600px;
   }
 
   @media (min-width: 640px) {
@@ -120,41 +107,49 @@
   }
 
   .gamedev-vfx-slider-deck-stack-card {
-    @apply absolute bottom-0 w-[92%] rounded-[1.35rem] border border-white/8 bg-gradient-to-b from-slate-800/50 to-slate-950/70;
+    @apply absolute bottom-0 w-[94%] rounded-[1.35rem] border border-white/20;
     aspect-ratio: 3 / 4;
-    box-shadow: 0 16px 40px -28px rgba(0, 0, 0, 0.85);
-  }
-
-  .gamedev-vfx-slider-deck-stack-card--mid {
-    transform: translateY(6px) scale(0.97) rotate(-1deg);
-    opacity: 0.42;
-  }
-
-  .gamedev-vfx-slider-deck-stack-card--back {
-    transform: translateY(11px) scale(0.945) rotate(1deg);
-    opacity: 0.24;
+    background:
+      linear-gradient(160deg, rgba(148, 163, 184, 0.22), rgba(15, 23, 42, 0.55) 55%, rgba(2, 6, 23, 0.72)),
+      rgba(15, 23, 42, 0.45);
+    box-shadow:
+      0 22px 48px -24px rgba(0, 0, 0, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(6px);
+    transform-origin: center bottom;
+    will-change: transform, opacity;
   }
 
   .gamedev-vfx-slider-card {
-    @apply relative z-10 flex h-full w-full max-h-full flex-col overflow-hidden rounded-[1.35rem] border border-white/14 bg-slate-900/95 shadow-[0_32px_64px_-28px_rgba(0,0,0,0.9),0_0_0_1px_rgba(255,255,255,0.07),0_24px_48px_-20px_rgba(6,182,212,0.35)];
+    @apply absolute inset-0 z-10 flex h-full w-full flex-col overflow-visible rounded-[1.35rem] border-0 bg-transparent shadow-none;
     transform-style: preserve-3d;
-    aspect-ratio: 3 / 4;
+    will-change: transform, opacity, filter;
   }
 
   .gamedev-vfx-slider-card-media {
-    @apply relative min-h-0 flex-[1.15] overflow-hidden bg-black;
+    @apply relative min-h-0 flex-[1.15] overflow-hidden rounded-[1.35rem] border border-white/18 bg-slate-950/20;
+    box-shadow:
+      0 28px 56px -26px rgba(0, 0, 0, 0.85),
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 18px 40px -22px rgba(6, 182, 212, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  }
+
+  .gamedev-vfx-slider-card-media > :is(video, img) {
+    @apply h-full w-full rounded-[1.25rem] object-cover;
   }
 
   .gamedev-vfx-slider-card-shine {
-    @apply pointer-events-none absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent;
+    @apply pointer-events-none absolute inset-0 rounded-[1.35rem] bg-gradient-to-br from-white/16 via-white/5 to-transparent;
+    mix-blend-mode: soft-light;
   }
 
   .gamedev-vfx-slider-card-body {
-    @apply shrink-0 space-y-1 border-t border-white/10 bg-slate-950/90 px-4 py-3;
+    @apply shrink-0 space-y-1 border-0 bg-transparent px-4 py-3;
   }
 
   .gamedev-vfx-slider-nav {
-    @apply absolute top-1/2 z-20 inline-flex -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-slate-950/75 p-2 text-cyan-100 shadow-lg backdrop-blur-sm transition-colors hover:border-cyan-400/35 hover:bg-slate-900/90;
+    @apply absolute top-1/2 z-20 inline-flex -translate-y-1/2 items-center justify-center rounded-full border-0 bg-transparent p-2 text-cyan-100 shadow-none transition-colors hover:bg-transparent hover:text-cyan-50;
   }
 
   .gamedev-vfx-slider-nav--prev {
@@ -166,11 +161,11 @@
   }
 
   .gamedev-vfx-slider-type-badge {
-    @apply inline-flex items-center gap-1 rounded-md border border-white/10 bg-black/45 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100 backdrop-blur-sm;
+    @apply inline-flex items-center gap-1 rounded-md border-0 bg-transparent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-cyan-100;
   }
 
   .gamedev-vfx-slider-counter {
-    @apply rounded-md border border-white/10 bg-black/35 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-slate-300 backdrop-blur-sm;
+    @apply rounded-md border-0 bg-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-slate-300;
   }
 
   .gamedev-vfx-slider-title {
@@ -182,7 +177,7 @@
   }
 
   .gamedev-vfx-slider-tag {
-    @apply rounded-full border border-cyan-400/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-100;
+    @apply rounded-full border-0 bg-transparent px-2 py-0.5 text-[10px] font-medium text-cyan-100;
   }
 
   .gamedev-vfx-slider-rail-wrap {
@@ -197,6 +192,8 @@
     @apply flex gap-2 overflow-x-auto pb-1;
     scrollbar-width: thin;
     scrollbar-color: rgba(34, 211, 238, 0.35) transparent;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
   }
 
   .gamedev-vfx-slider-rail::-webkit-scrollbar {

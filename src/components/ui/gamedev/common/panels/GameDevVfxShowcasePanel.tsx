@@ -15,7 +15,7 @@ interface GameDevVfxShowcasePanelProps {
 }
 
 const VfxLoadingStage = () => (
-  <div className="gamedev-vfx-slider gamedev-vfx-slider--loading">
+  <div className="gamedev-vfx-slider gamedev-vfx-slider--loading" data-no-swipe-page>
     <div className="gamedev-vfx-slider-deck-zone">
       <div className="gamedev-vfx-slider-deck">
         <div className="gamedev-vfx-slider-card-skeleton animate-pulse" />
