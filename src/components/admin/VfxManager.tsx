@@ -275,6 +275,12 @@ export const VfxManager = () => {
       };
 
       if (editingId) {
+        const existing = await findVfxByMediaUrl(mediaUrl);
+
+        if (existing && existing.id !== editingId) {
+          throw new Error("VFX already exists for this media. Edit the existing entry instead.");
+        }
+
         const { error: updateError } = await supabase
           .from("gamedev_vfx")
           .update(payload)
@@ -429,11 +435,13 @@ export const VfxManager = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onMouseEnter={playHoverSound}
+                    disabled={isSaving}
                     onClick={() => {
+                      if (isSaving) return;
                       playClickSound();
                       closeModal();
                     }}
-                    className="rounded-lg border border-gray-600 p-2 text-gray-300 hover:border-gray-500"
+                    className="rounded-lg border border-gray-600 p-2 text-gray-300 hover:border-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="Close"
                   >
                     <X className="h-4 w-4" />
@@ -739,11 +747,13 @@ export const VfxManager = () => {
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.96 }}
                   onMouseEnter={playHoverSound}
+                  disabled={isSaving}
                   onClick={() => {
+                    if (isSaving) return;
                     playClickSound();
                     closeModal();
                   }}
-                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 hover:border-gray-500"
+                  className="rounded-lg border border-gray-600 px-4 py-2 text-sm text-gray-200 hover:border-gray-500 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Cancel
                 </motion.button>
