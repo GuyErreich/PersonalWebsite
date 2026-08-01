@@ -30,8 +30,7 @@ const shouldAutoplayVideo = (
   surface: GameDevVfxMediaProps["surface"],
   isActive: boolean,
   reduceMotion: boolean,
-): boolean =>
-  !reduceMotion && item.media_type === "video" && (surface === "hero" || isActive);
+): boolean => !reduceMotion && item.media_type === "video" && (surface === "hero" || isActive);
 
 interface VfxLoopVideoProps {
   item: GameDevVfxRenderable;
