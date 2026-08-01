@@ -32,7 +32,6 @@ import {
   ensureVfxFromMediaLibraryItem,
   markVfxShownInLibrary,
   normalizeLinkedVfxIds,
-  unpublishOrphanedVfxFromLibrary,
 } from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
@@ -147,8 +146,6 @@ export const ItemFormModal = ({
   const customStackInputId = `${formIdBase}-custom-stack-input`;
   const bodyAssetInputRef = useRef<HTMLInputElement>(null);
   const mediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
-  /** VFX IDs deleted from project links but not yet unpublished (retry-safe). */
-  const pendingOrphanUnpublishIdsRef = useRef<string[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -256,7 +253,6 @@ export const ItemFormModal = ({
     setActiveSection("basics");
     setIsComingSoon(false);
     setIsVfxLinksHydrated(true);
-    pendingOrphanUnpublishIdsRef.current = [];
     setError(null);
   }, []);
 
@@ -990,40 +986,10 @@ export const ItemFormModal = ({
           is_coming_soon: isComingSoon,
         };
 
-        const queueOrphanUnpublish = (ids: string[]) => {
-          pendingOrphanUnpublishIdsRef.current = [
-            ...new Set([...pendingOrphanUnpublishIdsRef.current, ...ids.filter(Boolean)]),
-          ];
-        };
-
-        const flushPendingOrphanUnpublish = async () => {
-          const ids = pendingOrphanUnpublishIdsRef.current;
-          if (ids.length === 0) {
-            return;
-          }
-
-          await unpublishOrphanedVfxFromLibrary(ids);
-          pendingOrphanUnpublishIdsRef.current = [];
-        };
-
         const syncProjectVfxLinks = async (projectId: string) => {
+          // Library visibility is owned by VfxManager / markVfxShownInLibrary — unlinking
+          // a project must not force show_in_library=false on curated entries.
           if (isComingSoon) {
-            const { data: existingLinks, error: fetchLinksError } = await supabase
-              .from("gamedev_project_vfx")
-              .select("gamedev_vfx_id")
-              .eq("gamedev_item_id", projectId);
-
-            if (fetchLinksError) {
-              throw new Error(fetchLinksError.message);
-            }
-
-            if ((existingLinks ?? []).length === 0) {
-              await flushPendingOrphanUnpublish();
-              return;
-            }
-
-            const clearedVfxIds = (existingLinks ?? []).map((link) => link.gamedev_vfx_id);
-
             const { error: clearLinksError } = await supabase
               .from("gamedev_project_vfx")
               .delete()
@@ -1033,8 +999,6 @@ export const ItemFormModal = ({
               throw new Error(clearLinksError.message);
             }
 
-            queueOrphanUnpublish(clearedVfxIds);
-            await flushPendingOrphanUnpublish();
             return;
           }
 
@@ -1052,7 +1016,6 @@ export const ItemFormModal = ({
 
           if (normalizedLinkedVfxIds.length === 0) {
             if (existingIds.length === 0) {
-              await flushPendingOrphanUnpublish();
               return;
             }
 
@@ -1065,8 +1028,6 @@ export const ItemFormModal = ({
               throw new Error(clearLinksError.message);
             }
 
-            queueOrphanUnpublish(existingIds);
-            await flushPendingOrphanUnpublish();
             return;
           }
 
@@ -1082,9 +1043,6 @@ export const ItemFormModal = ({
             if (removeLinksError) {
               throw new Error(removeLinksError.message);
             }
-
-            queueOrphanUnpublish(idsToRemove);
-            await flushPendingOrphanUnpublish();
           }
 
           const { error: upsertLinksError } = await supabase.from("gamedev_project_vfx").upsert(
