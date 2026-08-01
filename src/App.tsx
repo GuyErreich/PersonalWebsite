@@ -5,7 +5,7 @@
  */
 
 import { lazy, Suspense } from "react";
-import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router";
 import { useAdminIdleLogout } from "./hooks/auth/useAdminIdleLogout";
 import { Home } from "./pages/Home";
 

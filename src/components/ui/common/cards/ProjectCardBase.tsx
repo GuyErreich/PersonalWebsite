@@ -7,7 +7,7 @@
 import { motion, useInView } from "framer-motion";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useContext, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
 import { GitHubIcon } from "../icons/BrandIcons";
 import { SectionRevealContext } from "../sections/sectionRevealContext";

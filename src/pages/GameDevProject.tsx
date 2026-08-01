@@ -7,7 +7,7 @@
 import { motion } from "framer-motion";
 import { ArrowLeft, ExternalLink, Github, Layers3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router";
 import { MarkdownRenderer } from "../components/MarkdownRenderer";
 import { fallbackGameDevItems } from "../components/ui/gamedev/common/data/items";
 import type { GameDevItem, GameDevVfxItem } from "../components/ui/gamedev/common/data/types";
