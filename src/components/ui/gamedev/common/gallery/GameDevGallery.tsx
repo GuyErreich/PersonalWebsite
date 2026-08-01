@@ -57,6 +57,9 @@ const GalleryInfoCard = ({
   const teaserThumbnail =
     item.thumbnail_url ??
     (item.media_url && isImageUrl(item.media_url) ? item.media_url : undefined) ??
+    (item.header_media_url && isImageUrl(item.header_media_url)
+      ? item.header_media_url
+      : undefined) ??
     undefined;
 
   return (

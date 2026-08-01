@@ -925,9 +925,11 @@ export const ItemFormModal = ({
           return;
         }
 
-        const storedDescription = isComingSoon
-          ? normalizedSummary
-          : buildGameDevStoredContent(normalizedSummary, normalizedBody);
+        // Coming soon is a display flag — keep structured body when present so
+        // converting published → teaser does not wipe markdown permanently.
+        const storedDescription = normalizedBody
+          ? buildGameDevStoredContent(normalizedSummary, normalizedBody)
+          : normalizedSummary;
         if (storedDescription.length > MAX_DESCRIPTION_LENGTH) {
           setError(`Body content must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`);
           return;
@@ -965,12 +967,16 @@ export const ItemFormModal = ({
             imageOnlyUrl(teaserMediaUrl) ??
             imageOnlyUrl(sourceGameDev?.thumbnail_url) ??
             null)
-          : (selectedCardThumbnailUrl ?? sourceGameDev?.thumbnail_url ?? null);
+          : (selectedCardThumbnailUrl ??
+            sourceGameDev?.thumbnail_url ??
+            imageOnlyUrl(teaserMediaUrl) ??
+            null);
 
         const projectPayload = {
           title: normalizedTitle,
           description: storedDescription,
-          media_url: isComingSoon ? teaserMediaUrl : (sourceGameDev?.media_url ?? null),
+          // Keep card/legacy media_url aligned with header so new projects are not blank in gallery.
+          media_url: teaserMediaUrl ?? sourceGameDev?.media_url ?? null,
           thumbnail_url: teaserThumbnailUrl,
           header_media_url: teaserMediaUrl,
           header_thumbnail_url: selectedHeaderThumbnailUrl,
