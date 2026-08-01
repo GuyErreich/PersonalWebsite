@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { useReducedMotion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { seekThumbnailToVideoCenter } from "../../../../../lib/media/seekThumbnailToVideoCenter";
 
@@ -28,7 +29,9 @@ const shouldAutoplayVideo = (
   item: GameDevVfxRenderable,
   surface: GameDevVfxMediaProps["surface"],
   isActive: boolean,
-): boolean => item.media_type === "video" && (surface === "hero" || isActive);
+  reduceMotion: boolean,
+): boolean =>
+  !reduceMotion && item.media_type === "video" && (surface === "hero" || isActive);
 
 interface VfxLoopVideoProps {
   item: GameDevVfxRenderable;
@@ -100,7 +103,8 @@ export const GameDevVfxMedia = ({
   objectFit = "cover",
   imgLoading = "lazy",
 }: GameDevVfxMediaProps) => {
-  const autoPlay = shouldAutoplayVideo(item, surface, isActive);
+  const reduceMotion = useReducedMotion() ?? false;
+  const autoPlay = shouldAutoplayVideo(item, surface, isActive, reduceMotion);
 
   if (item.media_type === "video") {
     if (autoPlay) {

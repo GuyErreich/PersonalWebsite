@@ -407,12 +407,18 @@ export const ItemFormModal = ({
       return;
     }
 
+    let isMounted = true;
+
     void (async () => {
       const { data, error: vfxListError } = await supabase
         .from("gamedev_vfx")
         .select("*")
         .order("sort_order", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
+
+      if (!isMounted) {
+        return;
+      }
 
       if (vfxListError) {
         setError(vfxListError.message);
@@ -428,6 +434,10 @@ export const ItemFormModal = ({
         ),
       );
     })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [isOpen, type]);
 
   const closeModal = useCallback(() => {
@@ -748,8 +758,6 @@ export const ItemFormModal = ({
               setIsComingSoon(value);
               if (value) {
                 setShowVfxSection(false);
-                setLinkedVfxIds([]);
-                setLinkedVfxDetails([]);
                 if (description.trim().length === 0) {
                   setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
                 }

@@ -245,39 +245,41 @@ export const GameDevProject = () => {
         Back to GameDev
       </MotionLink>
 
-      <div className="flex items-center gap-2">
-        {project.github_url ? (
-          <motion.a
-            href={project.github_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onMouseEnter={playHoverSound}
-            onClick={playClickSound}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-sm backdrop-blur-sm hover:border-cyan-300/45"
-          >
-            <Github className="h-4 w-4" />
-            GitHub
-          </motion.a>
-        ) : null}
+      {!comingSoon ? (
+        <div className="flex items-center gap-2">
+          {project.github_url ? (
+            <motion.a
+              href={project.github_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-sm backdrop-blur-sm hover:border-cyan-300/45"
+            >
+              <Github className="h-4 w-4" />
+              GitHub
+            </motion.a>
+          ) : null}
 
-        {project.live_url ? (
-          <motion.a
-            href={project.live_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
-            onMouseEnter={playHoverSound}
-            onClick={playClickSound}
-            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-sm backdrop-blur-sm hover:border-cyan-300/45"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Live
-          </motion.a>
-        ) : null}
-      </div>
+          {project.live_url ? (
+            <motion.a
+              href={project.live_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onMouseEnter={playHoverSound}
+              onClick={playClickSound}
+              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/35 px-3 py-2 text-sm backdrop-blur-sm hover:border-cyan-300/45"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Live
+            </motion.a>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 

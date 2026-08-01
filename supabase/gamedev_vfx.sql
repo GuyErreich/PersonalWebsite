@@ -80,6 +80,11 @@ create policy "Public can read gamedev project vfx"
     )
   );
 
+drop policy if exists "Admins can read all gamedev project vfx" on public.gamedev_project_vfx;
+create policy "Admins can read all gamedev project vfx"
+  on public.gamedev_project_vfx for select
+  using ((select public.is_admin()));
+
 drop policy if exists "Admins can insert gamedev project vfx" on public.gamedev_project_vfx;
 create policy "Admins can insert gamedev project vfx"
   on public.gamedev_project_vfx for insert

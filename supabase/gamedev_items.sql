@@ -47,27 +47,18 @@ drop policy if exists "Admins can insert gamedev items" on public.gamedev_items;
 
 create policy "Admins can insert gamedev items"
   on public.gamedev_items for insert
-  with check (
-    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
-    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
-  );
+  with check ((select public.is_admin()));
 
 -- Only admins can update
 drop policy if exists "Admins can update gamedev items" on public.gamedev_items;
 
 create policy "Admins can update gamedev items"
   on public.gamedev_items for update
-  using (
-    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
-    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
-  );
+  using ((select public.is_admin()));
 
 -- Only admins can delete
 drop policy if exists "Admins can delete gamedev items" on public.gamedev_items;
 
 create policy "Admins can delete gamedev items"
   on public.gamedev_items for delete
-  using (
-    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
-    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
-  );
+  using ((select public.is_admin()));
