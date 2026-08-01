@@ -126,10 +126,7 @@ const compareNullableSort = (
   return 0;
 };
 
-const sortByNullableOrderThenNewest = <
-  T extends { created_at?: string },
-  K extends keyof T,
->(
+const sortByNullableOrderThenNewest = <T extends { created_at?: string }, K extends keyof T>(
   items: T[],
   orderKey: K,
 ): T[] =>

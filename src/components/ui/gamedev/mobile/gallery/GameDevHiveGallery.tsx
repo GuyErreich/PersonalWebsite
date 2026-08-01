@@ -15,7 +15,6 @@ import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router";
-import { ComingSoonBadge } from "../../../common/badges/ComingSoonBadge";
 import {
   buildGameDevProjectPath,
   buildGameDevSummary,
@@ -24,6 +23,7 @@ import {
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
+import { ComingSoonBadge } from "../../../common/badges/ComingSoonBadge";
 import type { GameDevIconMap, GameDevItem } from "../../common/data/types";
 
 const MotionLink = motion(Link);
