@@ -445,6 +445,20 @@ export const ItemFormModal = ({
     onClose();
   }, [onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || loading) return;
+      // Nested media pickers own Escape first.
+      if (isMediaLibraryOpen || isVfxMediaLibraryOpen) return;
+      closeModal();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [closeModal, isMediaLibraryOpen, isOpen, isVfxMediaLibraryOpen, loading]);
+
   const handleImportFromRepo = async () => {
     const normalizedRepoUrl = repoUrl.trim();
     if (!normalizedRepoUrl) {

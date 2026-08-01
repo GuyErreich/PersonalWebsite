@@ -6,8 +6,12 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, type LucideIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  playClickSound,
+  playHoverSound,
+  playMenuCloseSound,
+} from "../../../../lib/sound/interactionSounds";
 
 export interface DropdownOption {
   value: string;
@@ -46,14 +50,32 @@ export const OptionDropdown = ({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
+  const closeMenu = useCallback(() => {
+    playMenuCloseSound();
+    setOpen(false);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+
+    const handlePointerDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        closeMenu();
+      }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [open]);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      closeMenu();
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [closeMenu, open]);
 
   const isDefault = value === options[0]?.value;
 
@@ -68,7 +90,11 @@ export const OptionDropdown = ({
         onMouseEnter={playHoverSound}
         onClick={() => {
           playClickSound();
-          setOpen((current) => !current);
+          if (open) {
+            closeMenu();
+            return;
+          }
+          setOpen(true);
         }}
         className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition-colors ${
           !isDefault ? activeButtonClassName : INACTIVE_BUTTON_CLASS
@@ -102,7 +128,7 @@ export const OptionDropdown = ({
                     onClick={() => {
                       playClickSound();
                       onChange(option.value);
-                      setOpen(false);
+                      closeMenu();
                     }}
                     className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-xs transition-colors hover:bg-white/10 ${
                       isActive ? activeOptionClassName : "text-gray-300 hover:text-white"
