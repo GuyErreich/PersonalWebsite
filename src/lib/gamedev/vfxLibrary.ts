@@ -37,6 +37,38 @@ export const markVfxShownInLibrary = async (vfxIds: string[]): Promise<void> => 
   }
 };
 
+/** Hide VFX from the public library when they no longer link to any project. */
+export const unpublishOrphanedVfxFromLibrary = async (vfxIds: string[]): Promise<void> => {
+  const uniqueIds = [...new Set(vfxIds.filter(Boolean))];
+  if (uniqueIds.length === 0) {
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("gamedev_project_vfx")
+    .select("gamedev_vfx_id")
+    .in("gamedev_vfx_id", uniqueIds);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const stillLinked = new Set((data ?? []).map((row) => row.gamedev_vfx_id));
+  const orphanedIds = uniqueIds.filter((id) => !stillLinked.has(id));
+  if (orphanedIds.length === 0) {
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from("gamedev_vfx")
+    .update({ show_in_library: false })
+    .in("id", orphanedIds);
+
+  if (updateError) {
+    throw new Error(updateError.message);
+  }
+};
+
 export const ensureVfxFromMediaLibraryItem = async (
   item: Pick<MediaLibraryItem, "name" | "media_url" | "media_type">,
 ): Promise<GameDevVfxRecord> => {

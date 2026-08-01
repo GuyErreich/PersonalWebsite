@@ -25,12 +25,14 @@ import {
   buildGameDevStoredContent,
   dedupeGameDevVfxByMediaUrl,
   GAMEDEV_COMING_SOON_DEFAULT_SUMMARY,
+  isImageUrl,
   parseGameDevStoredContent,
 } from "../../lib/gamedev";
 import {
   ensureVfxFromMediaLibraryItem,
   markVfxShownInLibrary,
   normalizeLinkedVfxIds,
+  unpublishOrphanedVfxFromLibrary,
 } from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
 import {
@@ -944,8 +946,13 @@ export const ItemFormModal = ({
             : null;
 
         const teaserMediaUrl = finalHeaderMediaUrl?.trim() ? finalHeaderMediaUrl.trim() : null;
+        const imageOnlyUrl = (url: string | null | undefined): string | null =>
+          url && isImageUrl(url) ? url : null;
         const teaserThumbnailUrl = isComingSoon
-          ? (selectedCardThumbnailUrl ?? teaserMediaUrl ?? sourceGameDev?.thumbnail_url ?? null)
+          ? (imageOnlyUrl(selectedCardThumbnailUrl) ??
+            imageOnlyUrl(teaserMediaUrl) ??
+            imageOnlyUrl(sourceGameDev?.thumbnail_url) ??
+            null)
           : (selectedCardThumbnailUrl ?? sourceGameDev?.thumbnail_url ?? null);
 
         const projectPayload = {
@@ -980,6 +987,8 @@ export const ItemFormModal = ({
               return;
             }
 
+            const clearedVfxIds = (existingLinks ?? []).map((link) => link.gamedev_vfx_id);
+
             const { error: clearLinksError } = await supabase
               .from("gamedev_project_vfx")
               .delete()
@@ -989,6 +998,7 @@ export const ItemFormModal = ({
               throw new Error(clearLinksError.message);
             }
 
+            await unpublishOrphanedVfxFromLibrary(clearedVfxIds);
             return;
           }
 

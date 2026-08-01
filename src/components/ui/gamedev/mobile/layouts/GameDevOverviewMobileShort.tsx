@@ -21,6 +21,12 @@ const slideVariants = {
   exit: (dir: number) => ({ opacity: 0, x: dir * 40 }),
 };
 
+const reducedSlideVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
 export const GameDevOverviewMobileShort = ({
   showreelUrl,
   featuredItems,
@@ -36,6 +42,7 @@ export const GameDevOverviewMobileShort = ({
     handleTabListKeyDown,
     projectsPanelId,
     projectsTabId,
+    reduceMotion,
     showreelPanelId,
     showreelTabId,
     switchTab,
@@ -43,6 +50,11 @@ export const GameDevOverviewMobileShort = ({
     vfxPanelId,
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope: "mobile" });
+
+  const activeSlideVariants = reduceMotion ? reducedSlideVariants : slideVariants;
+  const slideTransition = reduceMotion
+    ? { duration: 0.15 }
+    : { duration: 0.28, ease: "easeInOut" as const };
 
   return (
     <div className="gamedev-overview-mobile-short-stack">
@@ -116,11 +128,11 @@ export const GameDevOverviewMobileShort = ({
               id={showreelPanelId}
               aria-labelledby={showreelTabId}
               custom={directionRef.current}
-              variants={slideVariants}
+              variants={activeSlideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={slideTransition}
               className="gamedev-mobile-short-panel"
             >
               <GameDevShowreelPanel showreelUrl={showreelUrl} />
@@ -132,11 +144,11 @@ export const GameDevOverviewMobileShort = ({
               id={projectsPanelId}
               aria-labelledby={projectsTabId}
               custom={directionRef.current}
-              variants={slideVariants}
+              variants={activeSlideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={slideTransition}
               className="gamedev-mobile-short-panel"
             >
               <GameDevPanelShell
@@ -165,11 +177,11 @@ export const GameDevOverviewMobileShort = ({
               id={vfxPanelId}
               aria-labelledby={vfxTabId}
               custom={directionRef.current}
-              variants={slideVariants}
+              variants={activeSlideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={slideTransition}
               className="gamedev-mobile-short-panel gamedev-mobile-short-panel--clip"
             >
               <div className="gamedev-vfx-showcase">

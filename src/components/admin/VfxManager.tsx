@@ -144,7 +144,7 @@ export const VfxManager = () => {
     [vfxItems],
   );
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     playMenuCloseSound();
     setIsModalOpen(false);
     setEditingId(null);
@@ -152,7 +152,19 @@ export const VfxManager = () => {
     setMediaFile(null);
     setTagInput("");
     setError(null);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!isModalOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || isSaving) return;
+      closeModal();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [closeModal, isModalOpen, isSaving]);
 
   const openCreate = () => {
     setEditingId(null);

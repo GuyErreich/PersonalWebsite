@@ -21,6 +21,12 @@ const slideVariants = {
   exit: (dir: number) => ({ opacity: 0, x: dir * 40 }),
 };
 
+const reducedSlideVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
 export const GameDevOverviewDesktop = ({
   showreelUrl,
   featuredItems,
@@ -36,6 +42,7 @@ export const GameDevOverviewDesktop = ({
     handleTabListKeyDown,
     projectsPanelId,
     projectsTabId,
+    reduceMotion,
     showreelPanelId,
     showreelTabId,
     switchTab,
@@ -43,6 +50,11 @@ export const GameDevOverviewDesktop = ({
     vfxPanelId,
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope: "desktop" });
+
+  const activeSlideVariants = reduceMotion ? reducedSlideVariants : slideVariants;
+  const slideTransition = reduceMotion
+    ? { duration: 0.15 }
+    : { duration: 0.28, ease: "easeInOut" as const };
 
   return (
     <div className="gamedev-overview-desktop-tabs-stack">
@@ -116,11 +128,11 @@ export const GameDevOverviewDesktop = ({
               id={showreelPanelId}
               aria-labelledby={showreelTabId}
               custom={directionRef.current}
-              variants={slideVariants}
+              variants={activeSlideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={slideTransition}
               className="h-full"
             >
               <GameDevShowreelPanel showreelUrl={showreelUrl} />
@@ -132,11 +144,11 @@ export const GameDevOverviewDesktop = ({
               id={projectsPanelId}
               aria-labelledby={projectsTabId}
               custom={directionRef.current}
-              variants={slideVariants}
+              variants={activeSlideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={slideTransition}
               className="h-full"
             >
               <div className="gamedev-panel-frame">
@@ -176,11 +188,11 @@ export const GameDevOverviewDesktop = ({
               id={vfxPanelId}
               aria-labelledby={vfxTabId}
               custom={directionRef.current}
-              variants={slideVariants}
+              variants={activeSlideVariants}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: 0.28, ease: "easeInOut" }}
+              transition={slideTransition}
               className="h-full"
             >
               <div className="gamedev-vfx-showcase">

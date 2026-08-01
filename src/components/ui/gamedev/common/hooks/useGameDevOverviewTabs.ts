@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { useReducedMotion } from "framer-motion";
 import { type KeyboardEvent, useId, useRef, useState } from "react";
 import { playClickSound } from "../../../../../lib/sound/interactionSounds";
 import {
@@ -18,6 +19,7 @@ interface UseGameDevOverviewTabsOptions {
 }
 
 export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOptions) => {
+  const reduceMotion = useReducedMotion();
   const [activeTab, setActiveTab] = useState<GameDevOverviewTab>("showreel");
   const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(
     () => new Set(["showreel"]),
@@ -43,7 +45,8 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
     setActiveTab(tab);
   };
 
-  const tabPulse = (tab: GameDevOverviewTab) => getOverviewTabPulseMotion(visitedTabs.has(tab));
+  const tabPulse = (tab: GameDevOverviewTab) =>
+    getOverviewTabPulseMotion(visitedTabs.has(tab), Boolean(reduceMotion));
 
   const getTabId = (tab: GameDevOverviewTab) => {
     if (tab === "showreel") return showreelTabId;
@@ -82,6 +85,7 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
     handleTabListKeyDown,
     projectsPanelId,
     projectsTabId,
+    reduceMotion: Boolean(reduceMotion),
     showreelPanelId,
     showreelTabId,
     switchTab,
