@@ -118,7 +118,6 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
         aria-roledescription="carousel"
         aria-label="Visual effects showcase"
         id={sliderRegionId}
-        tabIndex={0}
         onKeyDown={handleKeyDown}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
