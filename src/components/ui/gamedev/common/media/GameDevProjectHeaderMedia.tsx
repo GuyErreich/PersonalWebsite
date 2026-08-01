@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: MIT
  */
 
+import { useReducedMotion } from "framer-motion";
 import { inferMediaTypeFromUrl } from "../../../../../lib/gamedev";
 
 interface GameDevProjectHeaderMediaProps {
@@ -15,9 +16,11 @@ export const GameDevProjectHeaderMedia = ({
   mediaUrl,
   thumbnailUrl,
 }: GameDevProjectHeaderMediaProps) => {
+  const reduceMotion = useReducedMotion();
   const mediaType = inferMediaTypeFromUrl(mediaUrl);
   const mediaClassName =
     "absolute inset-0 h-full w-full object-cover object-center pointer-events-none select-none";
+  const posterUrl = thumbnailUrl?.trim() || undefined;
 
   return (
     <div
@@ -25,19 +28,23 @@ export const GameDevProjectHeaderMedia = ({
       aria-hidden="true"
     >
       {mediaType === "video" ? (
-        <video
-          src={mediaUrl}
-          poster={thumbnailUrl ?? undefined}
-          autoPlay
-          muted
-          playsInline
-          loop
-          preload="metadata"
-          disablePictureInPicture
-          disableRemotePlayback
-          tabIndex={-1}
-          className={mediaClassName}
-        />
+        reduceMotion && posterUrl ? (
+          <img src={posterUrl} alt="" loading="eager" className={mediaClassName} />
+        ) : (
+          <video
+            src={mediaUrl}
+            poster={posterUrl}
+            autoPlay={!reduceMotion}
+            muted
+            playsInline
+            loop={!reduceMotion}
+            preload="metadata"
+            disablePictureInPicture
+            disableRemotePlayback
+            tabIndex={-1}
+            className={mediaClassName}
+          />
+        )
       ) : (
         <img src={mediaUrl} alt="" loading="eager" className={mediaClassName} />
       )}

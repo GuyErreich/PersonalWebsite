@@ -1028,6 +1028,7 @@ export const ItemFormModal = ({
               throw new Error(clearLinksError.message);
             }
 
+            await unpublishOrphanedVfxFromLibrary(existingIds);
             return;
           }
 
@@ -1043,6 +1044,8 @@ export const ItemFormModal = ({
             if (removeLinksError) {
               throw new Error(removeLinksError.message);
             }
+
+            await unpublishOrphanedVfxFromLibrary(idsToRemove);
           }
 
           const { error: upsertLinksError } = await supabase.from("gamedev_project_vfx").upsert(
