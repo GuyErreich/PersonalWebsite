@@ -6,18 +6,13 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Film, Layers, Sparkles } from "lucide-react";
-import { type KeyboardEvent, useId, useRef, useState } from "react";
-import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
+import { playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
+import { useGameDevOverviewTabs } from "../../common/hooks/useGameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
-import {
-  GAMEDEV_OVERVIEW_TAB_ORDER,
-  type GameDevOverviewTab,
-  getOverviewTabPulseMotion,
-} from "../../common/panels/overviewTabPulse";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
 const slideVariants = {
@@ -35,63 +30,19 @@ export const GameDevOverviewMobileShort = ({
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
-  const [activeTab, setActiveTab] = useState<GameDevOverviewTab>("showreel");
-  const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(
-    () => new Set(["showreel"]),
-  );
-  const tabPanelIdBase = useId();
-  const showreelTabId = `${tabPanelIdBase}-tab-showreel`;
-  const projectsTabId = `${tabPanelIdBase}-tab-projects`;
-  const vfxTabId = `${tabPanelIdBase}-tab-vfx`;
-  const showreelPanelId = `${tabPanelIdBase}-tab-panel-showreel`;
-  const projectsPanelId = `${tabPanelIdBase}-tab-panel-projects`;
-  const vfxPanelId = `${tabPanelIdBase}-tab-panel-vfx`;
-  const directionRef = useRef(1);
-
-  const switchTab = (tab: GameDevOverviewTab) => {
-    const from = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(activeTab);
-    const to = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(tab);
-    directionRef.current = to > from ? 1 : -1;
-    setVisitedTabs((current) => {
-      if (current.has(tab)) return current;
-      return new Set([...current, tab]);
-    });
-    playClickSound();
-    setActiveTab(tab);
-  };
-
-  const tabPulse = (tab: GameDevOverviewTab) => getOverviewTabPulseMotion(visitedTabs.has(tab));
-
-  const getTabId = (tab: GameDevOverviewTab) => {
-    if (tab === "showreel") return showreelTabId;
-    if (tab === "projects") return projectsTabId;
-    return vfxTabId;
-  };
-
-  const handleTabListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const order = GAMEDEV_OVERVIEW_TAB_ORDER;
-    const currentIndex = order.indexOf(activeTab);
-    let nextIndex: number | null = null;
-
-    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
-      nextIndex = (currentIndex + 1) % order.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-      nextIndex = (currentIndex - 1 + order.length) % order.length;
-    } else if (event.key === "Home") {
-      nextIndex = 0;
-    } else if (event.key === "End") {
-      nextIndex = order.length - 1;
-    }
-
-    if (nextIndex === null || nextIndex === currentIndex) {
-      return;
-    }
-
-    event.preventDefault();
-    const nextTab = order[nextIndex];
-    switchTab(nextTab);
-    document.getElementById(getTabId(nextTab))?.focus();
-  };
+  const {
+    activeTab,
+    directionRef,
+    handleTabListKeyDown,
+    projectsPanelId,
+    projectsTabId,
+    showreelPanelId,
+    showreelTabId,
+    switchTab,
+    tabPulse,
+    vfxPanelId,
+    vfxTabId,
+  } = useGameDevOverviewTabs({ idScope: "mobile" });
 
   return (
     <div className="gamedev-overview-mobile-short-stack">

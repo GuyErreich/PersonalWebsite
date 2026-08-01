@@ -101,13 +101,23 @@ export const GameDevProject = () => {
 
         const typedProject = projectData as GameDevItem;
 
-        const { data: linkData } = await supabase
+        const { data: linkData, error: linkError } = await supabase
           .from("gamedev_project_vfx")
           .select("gamedev_vfx_id, sort_order")
           .eq("gamedev_item_id", id)
           .order("sort_order", { ascending: true, nullsFirst: false });
 
         let linkedVfx: GameDevVfxItem[] = [];
+
+        if (linkError) {
+          safeSetState({
+            project: typedProject,
+            linkedVfx: [],
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
 
         if (linkData && linkData.length > 0) {
           const vfxIds = linkData.map((link) => link.gamedev_vfx_id);

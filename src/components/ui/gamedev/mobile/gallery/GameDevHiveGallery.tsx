@@ -15,6 +15,7 @@ import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router";
+import { ComingSoonBadge } from "../../../common/badges/ComingSoonBadge";
 import {
   buildGameDevProjectPath,
   buildGameDevSummary,
@@ -667,11 +668,7 @@ export const GameDevHiveGallery = ({
                       <h4 className="gamedev-hive-focus-title">
                         <span className="inline-flex flex-wrap items-center gap-2">
                           <span>{activeItem.title}</span>
-                          {activeItemComingSoon ? (
-                            <span className="rounded-md border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
-                              Coming Soon
-                            </span>
-                          ) : null}
+                          {activeItemComingSoon ? <ComingSoonBadge /> : null}
                         </span>
                       </h4>
 

@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
+import { clampIndex } from "../../../../../lib/clampIndex";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { GameDevVfxItem } from "../data/types";
 import { GameDevVfxMedia } from "./GameDevVfxMedia";
@@ -14,11 +15,6 @@ import { GameDevVfxMedia } from "./GameDevVfxMedia";
 interface GameDevProjectVfxSectionProps {
   vfxItems: GameDevVfxItem[];
 }
-
-const clampIndex = (index: number, length: number) => {
-  if (length <= 0) return 0;
-  return Math.max(0, Math.min(length - 1, index));
-};
 
 export const GameDevProjectVfxSection = ({ vfxItems }: GameDevProjectVfxSectionProps) => {
   const [activeIndex, setActiveIndex] = useState(0);

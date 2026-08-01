@@ -112,15 +112,7 @@ export const findVfxByMediaUrl = async (mediaUrl: string): Promise<{ id: string 
   return data;
 };
 
-export const loadPublicVfxLibraryItems = async <
-  T extends {
-    id: string;
-    media_url: string;
-    sort_order?: number | null;
-    created_at?: string;
-    show_in_library?: boolean;
-  },
->(): Promise<T[]> => {
+export const loadPublicVfxLibraryItems = async (): Promise<GameDevVfxRecord[]> => {
   const { data, error } = await supabase
     .from("gamedev_vfx")
     .select("*")
@@ -132,7 +124,12 @@ export const loadPublicVfxLibraryItems = async <
     throw error;
   }
 
-  return dedupeGameDevVfxByMediaUrl((data ?? []) as unknown as T[]);
+  const rows = (data ?? []).map((item) => ({
+    ...(item as GameDevVfxRecord),
+    tags: (item as GameDevVfxRecord).tags ?? [],
+  }));
+
+  return dedupeGameDevVfxByMediaUrl(rows);
 };
 
 /** Collapse linked IDs to one canonical row per media URL. */

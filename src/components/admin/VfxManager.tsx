@@ -67,6 +67,7 @@ const inputClassName =
   "mt-1 w-full rounded-lg border border-gray-600 bg-gray-900/70 px-3 py-2 text-sm text-white shadow-inner focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30";
 
 export const VfxManager = () => {
+  const formHeadingId = useId();
   const formTitleId = useId();
   const formDescriptionId = useId();
   const formMediaFileId = useId();
@@ -385,7 +386,7 @@ export const VfxManager = () => {
           className="fixed inset-0 z-[60] overflow-y-auto"
           role="dialog"
           aria-modal="true"
-          aria-labelledby={formTitleId}
+          aria-labelledby={formHeadingId}
         >
           <button
             type="button"
@@ -404,7 +405,7 @@ export const VfxManager = () => {
               <div className="border-b border-gray-700/80 bg-gray-900/80 px-5 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <h4 id={formTitleId} className="text-lg font-semibold text-white">
+                    <h4 id={formHeadingId} className="text-lg font-semibold text-white">
                       {modalTitle}
                     </h4>
                     <p className="mt-1 text-xs text-gray-400">

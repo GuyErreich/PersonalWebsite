@@ -132,7 +132,7 @@ export const GameDevVfxMedia = ({
 
   return (
     <img
-      src={item.thumbnail_url ?? item.media_url}
+      src={surface === "hero" ? item.media_url : (item.thumbnail_url ?? item.media_url)}
       alt={surface === "hero" ? item.title : ""}
       loading={imgLoading}
       className={className}

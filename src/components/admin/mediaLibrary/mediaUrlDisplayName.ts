@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+export { inferMediaTypeFromUrl } from "../../../lib/gamedev";
+
 export const mediaUrlDisplayName = (url: string): string => {
   try {
     const pathname = new URL(url).pathname;
@@ -17,13 +19,4 @@ export const mediaUrlDisplayName = (url: string): string => {
 
   const fallback = url.split("/").filter(Boolean).at(-1);
   return fallback ? decodeURIComponent(fallback.split("?")[0]) : "media";
-};
-
-export const inferMediaTypeFromUrl = (url: string): "image" | "video" => {
-  const lower = url.toLowerCase();
-  if (/\.(mp4|webm|mov|m4v|ogg)(\?|$)/i.test(lower)) {
-    return "video";
-  }
-
-  return "image";
 };

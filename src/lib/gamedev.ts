@@ -126,31 +126,34 @@ const compareNullableSort = (
   return 0;
 };
 
+const sortByNullableOrderThenNewest = <
+  T extends { created_at?: string },
+  K extends keyof T,
+>(
+  items: T[],
+  orderKey: K,
+): T[] =>
+  [...items].sort((left, right) => {
+    const sortCompare = compareNullableSort(
+      left[orderKey] as number | null | undefined,
+      right[orderKey] as number | null | undefined,
+    );
+    if (sortCompare !== 0) return sortCompare;
+
+    const leftCreated = left.created_at ?? "";
+    const rightCreated = right.created_at ?? "";
+    return rightCreated.localeCompare(leftCreated);
+  });
+
 export const sortFeaturedGameDevItems = <
   T extends { featured_sort?: number | null; created_at?: string },
 >(
   items: T[],
-): T[] =>
-  [...items].sort((left, right) => {
-    const sortCompare = compareNullableSort(left.featured_sort, right.featured_sort);
-    if (sortCompare !== 0) return sortCompare;
-
-    const leftCreated = left.created_at ?? "";
-    const rightCreated = right.created_at ?? "";
-    return rightCreated.localeCompare(leftCreated);
-  });
+): T[] => sortByNullableOrderThenNewest(items, "featured_sort");
 
 export const sortGameDevVfxItems = <T extends { sort_order?: number | null; created_at?: string }>(
   items: T[],
-): T[] =>
-  [...items].sort((left, right) => {
-    const sortCompare = compareNullableSort(left.sort_order, right.sort_order);
-    if (sortCompare !== 0) return sortCompare;
-
-    const leftCreated = left.created_at ?? "";
-    const rightCreated = right.created_at ?? "";
-    return rightCreated.localeCompare(leftCreated);
-  });
+): T[] => sortByNullableOrderThenNewest(items, "sort_order");
 
 const normalizeVfxMediaUrl = (url: string): string => url.trim();
 

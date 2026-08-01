@@ -9,6 +9,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useContext, useRef } from "react";
 import { Link, useNavigate } from "react-router";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
+import { ComingSoonBadge } from "../badges/ComingSoonBadge";
 import { GitHubIcon } from "../icons/BrandIcons";
 import { SectionRevealContext } from "../sections/sectionRevealContext";
 
@@ -159,11 +160,7 @@ export const ProjectCardBase = ({
         <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>
           <span className="inline-flex flex-wrap items-center gap-2">
             <span>{title}</span>
-            {statusBadge ? (
-              <span className="rounded-md border border-amber-400/35 bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
-                {statusBadge}
-              </span>
-            ) : null}
+            {statusBadge ? <ComingSoonBadge>{statusBadge}</ComingSoonBadge> : null}
           </span>
         </h3>
 

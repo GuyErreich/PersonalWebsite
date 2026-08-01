@@ -40,7 +40,7 @@ create policy "Public can read gamedev vfx"
       select 1
       from public.gamedev_project_vfx p
       join public.gamedev_items i on i.id = p.gamedev_item_id
-      where p.gamedev_vfx_id = id
+      where p.gamedev_vfx_id = public.gamedev_vfx.id
         and i.is_coming_soon = false
     )
   );

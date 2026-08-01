@@ -13,6 +13,11 @@ interface UseSwipeNavigationOptions {
   onSwipeRight: () => void;
   /** Minimum horizontal distance in px needed to trigger a swipe (default: 50). */
   threshold?: number;
+  /**
+   * When true, stop touchend bubbling after a successful swipe.
+   * Opt-in for nested swipe surfaces (e.g. VFX slider inside another carousel).
+   */
+  stopPropagationOnSwipe?: boolean;
 }
 
 /**
@@ -24,6 +29,7 @@ export const useSwipeNavigation = ({
   onSwipeLeft,
   onSwipeRight,
   threshold = 50,
+  stopPropagationOnSwipe = false,
 }: UseSwipeNavigationOptions) => {
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null);
@@ -45,16 +51,20 @@ export const useSwipeNavigation = ({
         return;
       }
       if (dx > threshold) {
-        e.stopPropagation();
+        if (stopPropagationOnSwipe) {
+          e.stopPropagation();
+        }
         onSwipeLeft();
       } else if (dx < -threshold) {
-        e.stopPropagation();
+        if (stopPropagationOnSwipe) {
+          e.stopPropagation();
+        }
         onSwipeRight();
       }
       startX.current = null;
       startY.current = null;
     },
-    [onSwipeLeft, onSwipeRight, threshold],
+    [onSwipeLeft, onSwipeRight, stopPropagationOnSwipe, threshold],
   );
 
   return { onTouchStart, onTouchEnd };

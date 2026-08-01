@@ -87,13 +87,13 @@ export const useGameDevSectionData = () => {
 
     void (async () => {
       try {
-        const items = await loadPublicVfxLibraryItems<GameDevVfxItem>();
+        const items = await loadPublicVfxLibraryItems();
 
         if (!isMounted) {
           return;
         }
 
-        setVfxItems(items);
+        setVfxItems(items as GameDevVfxItem[]);
       } catch {
         if (!isMounted) {
           return;

@@ -11,7 +11,7 @@ create policy "Public can read gamedev vfx"
     or exists (
       select 1
       from public.gamedev_project_vfx p
-      where p.gamedev_vfx_id = id
+      where p.gamedev_vfx_id = public.gamedev_vfx.id
     )
   );
 

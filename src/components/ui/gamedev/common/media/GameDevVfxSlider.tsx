@@ -8,6 +8,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Play } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
+import { clampIndex } from "../../../../../lib/clampIndex";
 import {
   vfxDeckCardVariants,
   vfxDeckFloatAnimate,
@@ -22,11 +23,6 @@ import { GameDevVfxMedia } from "./GameDevVfxMedia";
 interface GameDevVfxSliderProps {
   items: GameDevVfxItem[];
 }
-
-const clampIndex = (index: number, length: number) => {
-  if (length <= 0) return 0;
-  return Math.max(0, Math.min(length - 1, index));
-};
 
 const DECK_SPRING = {
   type: "spring" as const,
@@ -95,6 +91,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
   const { onTouchStart, onTouchEnd } = useSwipeNavigation({
     onSwipeLeft: goNext,
     onSwipeRight: goPrev,
+    stopPropagationOnSwipe: true,
   });
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
