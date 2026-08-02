@@ -27,7 +27,7 @@ create policy "Public can read gamedev vfx"
     or exists (
       select 1
       from public.gamedev_project_vfx p
-      join public.gamedev_items i on i.id = p.gamedev_item_id
+      join public.gamedev_items_public i on i.id = p.gamedev_item_id
       where p.gamedev_vfx_id = public.gamedev_vfx.id
         and i.is_coming_soon = false
         and i.show_vfx_section = true
@@ -75,7 +75,7 @@ create policy "Public can read gamedev project vfx"
   using (
     exists (
       select 1
-      from public.gamedev_items i
+      from public.gamedev_items_public i
       where i.id = gamedev_item_id
         and i.is_coming_soon = false
         and i.show_vfx_section = true

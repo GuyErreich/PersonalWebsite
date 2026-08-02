@@ -27,7 +27,7 @@ create policy "Public can read gamedev item media"
   using (
     exists (
       select 1
-      from public.gamedev_items i
+      from public.gamedev_items_public i
       where i.id = public.gamedev_item_media.gamedev_item_id
         and i.is_coming_soon = false
     )
