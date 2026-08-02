@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint . && biome check .",
+    "lint:py": "uvx ruff check .cursor/hooks scripts && uvx ruff format --check .cursor/hooks scripts",
+    "typecheck:py": "uvx ty check .cursor/hooks scripts",
     "security:test:r2-presign": "node scripts/security/r2-presign-smoke.mjs",
     "security:test:github-seed": "node scripts/security/github-project-seed-smoke.mjs",
     "infra:apply-r2-cors": "node scripts/infra/apply-r2-cors.mjs",

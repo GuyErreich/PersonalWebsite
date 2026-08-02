@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Review lockfile: fingerprint, check, and record reviewer tiers (change / commit / pr)."""
+"""Review lockfile: fingerprint, check, and record reviewer tiers."""
 
 from __future__ import annotations
 
@@ -124,10 +124,6 @@ def cmd_fingerprint(root: Path, tier: str, as_json: bool) -> int:
 
     if as_json:
         print(json.dumps(payload))
-    elif tier == "change":
-        print(payload.get("fingerprint", ""))
-    elif tier == "commit":
-        print(payload.get("fingerprint", ""))
     else:
         print(payload.get("fingerprint", ""))
     return 0
@@ -154,7 +150,9 @@ def tier_matches(root: Path, tier: str, entry: dict) -> bool:
         return entry.get("sha") == current.get("sha") and bool(current.get("sha"))
     if not current.get("has_diff"):
         return True
-    return entry.get("fingerprint") == current.get("fingerprint") and entry.get("base") == current.get("base")
+    same_fp = entry.get("fingerprint") == current.get("fingerprint")
+    same_base = entry.get("base") == current.get("base")
+    return bool(same_fp and same_base)
 
 
 def cmd_check(root: Path, tier: str) -> int:

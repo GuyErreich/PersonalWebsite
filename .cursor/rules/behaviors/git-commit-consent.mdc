@@ -17,7 +17,7 @@ These do **not** count as commit consent on their own:
 - Finishing fixes or passing lint/build
 - Asking to push or open a PR (confirm the commit step explicitly)
 
-**Exception — pr-resolver:** approving the resolver plan or an explicit "resolve comments" request grants scoped commit consent for approved fix commits only. See `.cursor/skills/code/review/pr-resolver/SKILL.md` (`## Scoped consent`).
+**Exception — pr-resolver / pr-review-loop:** approving the resolver plan, an explicit "resolve comments" request, or invoking the autonomous PR review loop grants scoped commit consent for approved fix commits only. See `.cursor/skills/code/review/pr-resolver/SKILL.md` (`## Scoped consent`) and `.cursor/skills/code/ci/pr-review-loop/SKILL.md` (`## Scoped consent`).
 
 ## Workflow when committing is requested
 

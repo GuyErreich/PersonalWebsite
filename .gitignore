@@ -16,7 +16,9 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .cursor/review-lock.json
+.cursor/review-loop/
 .cursor/mcp.json
+.cursorrules
 .idea
 .DS_Store
 *.suo
@@ -27,3 +29,4 @@ dist-ssr
 .env
 scripts/infra/r2-cors.json
 supabase/.temp/
+__pycache__/

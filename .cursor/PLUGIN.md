@@ -12,6 +12,9 @@ This `.cursor/` tree is structured as a portable agent plugin plus a per-project
 .cursor/rules/ai-agent/**      # glob rules for agent-library hierarchy
 .cursor/rules/behaviors/**     # consent + review gate (always apply)
 .cursor/rules/code/**          # glob rules that load matching code skills
+.cursor/agents/**              # project subagents (pr-reviewer, pr-fixer)
+.cursor/hooks.json             # project hooks entrypoint
+.cursor/hooks/**               # review-loop budget / round / git-guard hooks
 ```
 
 ## Per-project overlay (keep in the application repo)
@@ -50,5 +53,5 @@ code/foundations/engineering   (code base — always)
   └─ web/ux                (motion, press, overlays, sound)
   └─ quality/{performance,security}
   └─ review/{reviewer,pr-resolver}
-  └─ ci/{commit,pr,push,local-review-loop}
+  └─ ci/{commit,pr,push,local-review-loop,pr-review-loop}
 ```
