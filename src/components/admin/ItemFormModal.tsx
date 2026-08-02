@@ -146,6 +146,7 @@ export const ItemFormModal = ({
   const customStackInputId = `${formIdBase}-custom-stack-input`;
   const bodyAssetInputRef = useRef<HTMLInputElement>(null);
   const mediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
+  const formGenerationRef = useRef(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -255,6 +256,10 @@ export const ItemFormModal = ({
     setIsVfxLinksHydrated(true);
     setError(null);
   }, []);
+
+  useEffect(() => {
+    formGenerationRef.current += 1;
+  }, [editingItem?.id, isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -582,10 +587,15 @@ export const ItemFormModal = ({
   }, []);
 
   const handleVfxMediaLibrarySelect = useCallback(async (item: MediaLibraryItem) => {
+    const generation = formGenerationRef.current;
     setError(null);
 
     try {
       const vfx = await ensureVfxFromMediaLibraryItem(item);
+
+      if (generation !== formGenerationRef.current) {
+        return;
+      }
 
       setAvailableVfx((prev) =>
         dedupeGameDevVfxByMediaUrl([
@@ -599,6 +609,10 @@ export const ItemFormModal = ({
 
       setLinkedVfxIds((prev) => (prev.includes(vfx.id) ? prev : [...prev, vfx.id]));
     } catch (err) {
+      if (generation !== formGenerationRef.current) {
+        return;
+      }
+
       setError(err instanceof Error ? err.message : "Unable to add VFX media.");
     }
   }, []);
