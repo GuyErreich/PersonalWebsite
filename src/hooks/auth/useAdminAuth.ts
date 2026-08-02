@@ -65,7 +65,13 @@ export const useAdminAuth = (): UseAdminAuthResult => {
       }
 
       if (!hasAdminRoleFromMetadata(session.user.app_metadata)) {
-        navigate("/");
+        void (async () => {
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError) {
+            console.error(signOutError.message);
+          }
+          navigate("/");
+        })();
       }
     });
 

@@ -60,7 +60,7 @@ const emptyForm = (): VfxFormState => ({
   mediaType: "video",
   tags: [],
   sortOrder: "",
-  showInLibrary: true,
+  showInLibrary: false,
 });
 
 const inputClassName =

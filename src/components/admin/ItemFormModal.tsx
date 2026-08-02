@@ -1003,16 +1003,9 @@ export const ItemFormModal = ({
         const syncProjectVfxLinks = async (projectId: string) => {
           // Library visibility is owned by VfxManager / markVfxShownInLibrary — unlinking
           // a project must not force show_in_library=false on curated entries.
+          // Coming soon is a display flag: keep project↔VFX links so flipping back to
+          // published does not wipe curation. Public reads already scope via RLS.
           if (isComingSoon) {
-            const { error: clearLinksError } = await supabase
-              .from("gamedev_project_vfx")
-              .delete()
-              .eq("gamedev_item_id", projectId);
-
-            if (clearLinksError) {
-              throw new Error(clearLinksError.message);
-            }
-
             return;
           }
 
