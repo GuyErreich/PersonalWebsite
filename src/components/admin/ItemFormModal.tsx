@@ -836,6 +836,7 @@ export const ItemFormModal = ({
             onBodyChange={setBody}
             activeBodyTab={activeBodyTab}
             onActiveBodyTabChange={setActiveBodyTab}
+            isComingSoon={isComingSoon}
             isUploadingBodyAsset={isUploadingBodyAsset}
             bodyAssetInputRef={bodyAssetInputRef}
             mediaAccept={MEDIA_ACCEPT}

@@ -18,6 +18,7 @@ interface GameDevContentSectionProps {
   onBodyChange: (value: string) => void;
   activeBodyTab: BodyEditorTab;
   onActiveBodyTabChange: (tab: BodyEditorTab) => void;
+  isComingSoon: boolean;
   isUploadingBodyAsset: boolean;
   bodyAssetInputRef: React.RefObject<HTMLInputElement | null>;
   mediaAccept: string;
@@ -33,6 +34,7 @@ export const GameDevContentSection = ({
   onBodyChange,
   activeBodyTab,
   onActiveBodyTabChange,
+  isComingSoon,
   isUploadingBodyAsset,
   bodyAssetInputRef,
   mediaAccept,
@@ -142,7 +144,7 @@ export const GameDevContentSection = ({
         {activeBodyTab === "write" ? (
           <textarea
             id={itemBodyId}
-            required
+            required={!isComingSoon}
             rows={14}
             className="block w-full rounded-md border-gray-600 bg-gray-700 px-3 py-2 text-white shadow-sm focus:border-blue-500 focus:ring-blue-500"
             value={body}
