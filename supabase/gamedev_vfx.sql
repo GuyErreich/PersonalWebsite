@@ -5,7 +5,7 @@ create table if not exists public.gamedev_vfx (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   description text not null default '',
-  media_url text not null,
+  media_url text not null unique,
   thumbnail_url text,
   media_type text not null check (media_type in ('image', 'video')),
   tags text[] not null default '{}',
