@@ -942,11 +942,9 @@ export const ItemFormModal = ({
 
         const sourceGameDev = isEditingGameDev ? (editingItem as AdminGameDevProject) : null;
 
-        let finalHeaderMediaUrl =
-          selectedHeaderMediaUrl ??
-          sourceGameDev?.header_media_url ??
-          sourceGameDev?.media_url ??
-          null;
+        // selected* is hydrated from the project on edit open and updated by Clear/pickers —
+        // treat null as intentional clear; do not fall back to sourceGameDev URLs.
+        let finalHeaderMediaUrl = selectedHeaderMediaUrl;
 
         if (mediaFile) {
           const { item } = await uploadOrReuseMediaLibraryItem({
@@ -967,21 +965,20 @@ export const ItemFormModal = ({
         const teaserMediaUrl = finalHeaderMediaUrl?.trim() ? finalHeaderMediaUrl.trim() : null;
         const imageOnlyUrl = (url: string | null | undefined): string | null =>
           url && isImageUrl(url) ? url : null;
-        const teaserThumbnailUrl = isComingSoon
-          ? (imageOnlyUrl(selectedCardThumbnailUrl) ??
-            imageOnlyUrl(teaserMediaUrl) ??
-            imageOnlyUrl(sourceGameDev?.thumbnail_url) ??
-            null)
-          : (selectedCardThumbnailUrl ??
-            sourceGameDev?.thumbnail_url ??
-            imageOnlyUrl(teaserMediaUrl) ??
-            null);
+        // New projects: derive card thumb from header when unset. Edit: persist Clear as null.
+        const teaserThumbnailUrl = isEditingGameDev
+          ? isComingSoon
+            ? imageOnlyUrl(selectedCardThumbnailUrl)
+            : selectedCardThumbnailUrl
+          : isComingSoon
+            ? (imageOnlyUrl(selectedCardThumbnailUrl) ?? imageOnlyUrl(teaserMediaUrl) ?? null)
+            : (selectedCardThumbnailUrl ?? imageOnlyUrl(teaserMediaUrl) ?? null);
 
         const projectPayload = {
           title: normalizedTitle,
           description: storedDescription,
           // Keep card/legacy media_url aligned with header so new projects are not blank in gallery.
-          media_url: teaserMediaUrl ?? sourceGameDev?.media_url ?? null,
+          media_url: teaserMediaUrl,
           thumbnail_url: teaserThumbnailUrl,
           header_media_url: teaserMediaUrl,
           header_thumbnail_url: selectedHeaderThumbnailUrl,
