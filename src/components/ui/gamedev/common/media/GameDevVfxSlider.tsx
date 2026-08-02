@@ -94,7 +94,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
     stopPropagationOnSwipe: true,
   });
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleNavKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       goPrev();
@@ -118,8 +118,6 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
         aria-roledescription="carousel"
         aria-label="Visual effects showcase"
         id={sliderRegionId}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
@@ -132,6 +130,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
               disabled={!canGoPrev}
               onMouseEnter={playHoverSound}
               onClick={goPrev}
+              onKeyDown={handleNavKeyDown}
               aria-label="Previous effect"
               aria-controls={sliderRegionId}
               className="gamedev-vfx-slider-nav gamedev-vfx-slider-nav--prev disabled:opacity-30"
@@ -146,6 +145,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
               disabled={!canGoNext}
               onMouseEnter={playHoverSound}
               onClick={goNext}
+              onKeyDown={handleNavKeyDown}
               aria-label="Next effect"
               aria-controls={sliderRegionId}
               className="gamedev-vfx-slider-nav gamedev-vfx-slider-nav--next disabled:opacity-30"
