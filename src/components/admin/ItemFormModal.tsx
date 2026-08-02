@@ -259,6 +259,9 @@ export const ItemFormModal = ({
 
   useEffect(() => {
     formGenerationRef.current += 1;
+    // Drop in-flight import/upload UI so a switched or closed form cannot stay locked.
+    setIsImportingRepo(false);
+    setIsUploadingBodyAsset(false);
   }, [editingItem?.id, isOpen]);
 
   useEffect(() => {
@@ -457,7 +460,7 @@ export const ItemFormModal = ({
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || loading) return;
+      if (event.key !== "Escape" || loading || isImportingRepo || isUploadingBodyAsset) return;
       // Nested media pickers own Escape first.
       if (isMediaLibraryOpen || isVfxMediaLibraryOpen) return;
       closeModal();
@@ -465,7 +468,15 @@ export const ItemFormModal = ({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeModal, isMediaLibraryOpen, isOpen, isVfxMediaLibraryOpen, loading]);
+  }, [
+    closeModal,
+    isImportingRepo,
+    isMediaLibraryOpen,
+    isOpen,
+    isUploadingBodyAsset,
+    isVfxMediaLibraryOpen,
+    loading,
+  ]);
 
   const handleImportFromRepo = async () => {
     const normalizedRepoUrl = repoUrl.trim();
@@ -474,11 +485,16 @@ export const ItemFormModal = ({
       return;
     }
 
+    const generation = formGenerationRef.current;
     setError(null);
     setIsImportingRepo(true);
 
     try {
       const seed = await fetchGitHubProjectSeed(normalizedRepoUrl);
+
+      if (generation !== formGenerationRef.current) {
+        return;
+      }
 
       setTitle(seed.title);
       setDescription(seed.description);
@@ -490,13 +506,19 @@ export const ItemFormModal = ({
       setGithubUrl(seed.githubUrl);
       setLiveUrl(seed.liveUrl ?? "");
     } catch (err) {
+      if (generation !== formGenerationRef.current) {
+        return;
+      }
+
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("Unable to import repository data.");
       }
     } finally {
-      setIsImportingRepo(false);
+      if (generation === formGenerationRef.current) {
+        setIsImportingRepo(false);
+      }
     }
   };
 
@@ -511,6 +533,7 @@ export const ItemFormModal = ({
   const handleBodyAssetUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
+    const generation = formGenerationRef.current;
     setError(null);
     setIsUploadingBodyAsset(true);
 
@@ -536,6 +559,11 @@ export const ItemFormModal = ({
           folderOrigin: "gamedev",
           preferredName: stripFileExtension(file.name),
         });
+
+        if (generation !== formGenerationRef.current) {
+          return;
+        }
+
         const alt =
           file.name
             .replace(/\.[^.]+$/, "")
@@ -551,13 +579,19 @@ export const ItemFormModal = ({
         await mediaLibraryReloadRef.current();
       }
     } catch (err) {
+      if (generation !== formGenerationRef.current) {
+        return;
+      }
+
       if (err instanceof Error) {
         setError(err.message);
       } else {
         setError("Unable to upload body media.");
       }
     } finally {
-      setIsUploadingBodyAsset(false);
+      if (generation === formGenerationRef.current) {
+        setIsUploadingBodyAsset(false);
+      }
     }
   };
 
@@ -1179,7 +1213,7 @@ export const ItemFormModal = ({
           aria-label="Close dialog"
           onMouseEnter={playHoverSound}
           onClick={() => {
-            if (loading) {
+            if (loading || isImportingRepo || isUploadingBodyAsset) {
               return;
             }
 
