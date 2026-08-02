@@ -12,9 +12,9 @@ import { GameDevGallery } from "../../common/gallery/GameDevGallery";
 import { useGameDevOverviewTabs } from "../../common/hooks/useGameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
-import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
+import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
 
 export const GameDevOverviewDesktop = ({
   showreelUrl,

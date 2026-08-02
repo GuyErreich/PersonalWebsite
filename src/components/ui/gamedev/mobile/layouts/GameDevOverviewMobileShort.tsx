@@ -11,9 +11,9 @@ import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { useGameDevOverviewTabs } from "../../common/hooks/useGameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
-import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
+import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
 
 export const GameDevOverviewMobileShort = ({
