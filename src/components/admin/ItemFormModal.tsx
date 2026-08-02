@@ -162,7 +162,7 @@ export const ItemFormModal = ({
   const [selectedCardThumbnailUrl, setSelectedCardThumbnailUrl] = useState<string | null>(null);
   const [isFeatured, setIsFeatured] = useState(false);
   const [featuredSort, setFeaturedSort] = useState("");
-  const [showVfxSection, setShowVfxSection] = useState(false);
+  const [showVfxSection, setShowVfxSection] = useState(true);
   const [linkedVfxIds, setLinkedVfxIds] = useState<string[]>([]);
   const [linkedVfxDetails, setLinkedVfxDetails] = useState<AdminGameDevVfx[]>([]);
   const [availableVfx, setAvailableVfx] = useState<AdminGameDevVfx[]>([]);
@@ -234,7 +234,7 @@ export const ItemFormModal = ({
     setSelectedCardThumbnailUrl(null);
     setIsFeatured(false);
     setFeaturedSort("");
-    setShowVfxSection(false);
+    setShowVfxSection(true);
     setLinkedVfxIds([]);
     setLinkedVfxDetails([]);
     setSelectedStacks([]);

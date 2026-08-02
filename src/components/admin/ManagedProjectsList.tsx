@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { Pencil } from "lucide-react";
 import { playClickSound, playHoverSound } from "../../lib/sound/interactionSounds";
+import { ComingSoonBadge } from "../ui/common/badges/ComingSoonBadge";
 import type { AdminProjectListItem } from "./types";
 
 interface ManagedProjectsListProps {
@@ -38,11 +39,7 @@ export const ManagedProjectsList = ({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h4 className="text-sm font-semibold text-white">{item.title}</h4>
-                    {item.is_coming_soon ? (
-                      <span className="rounded-md border border-amber-400/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-100">
-                        Coming Soon
-                      </span>
-                    ) : null}
+                    {item.is_coming_soon ? <ComingSoonBadge /> : null}
                     {item.is_featured ? (
                       <span className="rounded-md border border-emerald-500/35 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-200">
                         Selected

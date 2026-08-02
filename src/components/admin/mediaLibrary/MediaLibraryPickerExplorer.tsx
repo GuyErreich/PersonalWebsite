@@ -33,6 +33,7 @@ interface MediaLibraryPickerExplorerProps {
   description?: string;
   actions: MediaLibraryPickerAction[];
   onReady?: (api: { reload: () => Promise<void> }) => void;
+  onPreviewOpenChange?: (open: boolean) => void;
   previewOverlayClassName?: string;
 }
 
@@ -164,6 +165,7 @@ export const MediaLibraryPickerExplorer = ({
   description,
   actions,
   onReady,
+  onPreviewOpenChange,
   previewOverlayClassName,
 }: MediaLibraryPickerExplorerProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -196,6 +198,11 @@ export const MediaLibraryPickerExplorer = ({
 
     onReady?.({ reload: loadItems });
   }, [enabled, loadItems, onReady]);
+
+  useEffect(() => {
+    onPreviewOpenChange?.(Boolean(previewItem));
+    return () => onPreviewOpenChange?.(false);
+  }, [onPreviewOpenChange, previewItem]);
 
   useEffect(() => {
     if (!enabled) {

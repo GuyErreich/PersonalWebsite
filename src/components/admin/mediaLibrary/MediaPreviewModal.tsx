@@ -29,13 +29,16 @@ const MediaPreviewModalContent = ({ item, onClose, overlayClassName }: Props) =>
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      // Capture + stopImmediatePropagation so parent document Escape
+      // handlers (e.g. MediaLibraryPickerModal) do not also dismiss.
+      event.stopImmediatePropagation();
       playMenuCloseSound();
       onClose();
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [onClose]);
 
   return (

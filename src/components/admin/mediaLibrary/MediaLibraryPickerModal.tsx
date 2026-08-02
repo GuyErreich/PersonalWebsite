@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import { FolderOpen, X } from "lucide-react";
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   playClickSound,
@@ -40,19 +40,28 @@ export const MediaLibraryPickerModal = ({
   onReady,
 }: MediaLibraryPickerModalProps) => {
   const titleId = useId();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsPreviewOpen(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      // Nested media preview owns Escape first.
+      if (isPreviewOpen) return;
       playMenuCloseSound();
       onClose();
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isPreviewOpen, onClose]);
 
   if (!isOpen) {
     return null;
@@ -123,6 +132,7 @@ export const MediaLibraryPickerModal = ({
             variant="modal"
             actions={actions}
             onReady={onReady}
+            onPreviewOpenChange={setIsPreviewOpen}
             previewOverlayClassName="fixed inset-0 z-[70] flex items-center justify-center p-4"
           />
         </div>
