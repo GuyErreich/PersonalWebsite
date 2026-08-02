@@ -372,8 +372,13 @@ export const ItemFormModal = ({
             }));
           }
 
+          const normalizedLinkedIds = await normalizeLinkedVfxIds(orderedLinkedIds, rawVfx);
+          if (!isCurrent) {
+            return;
+          }
+
           setLinkedVfxDetails(linkedDetails);
-          setLinkedVfxIds(await normalizeLinkedVfxIds(orderedLinkedIds, rawVfx));
+          setLinkedVfxIds(normalizedLinkedIds);
           hydrateSucceeded = true;
         } catch (loadError) {
           if (isCurrent) {
