@@ -291,9 +291,7 @@ export const ItemFormModal = ({
       setSelectedCardThumbnailUrl(gameDevItem.thumbnail_url ?? null);
       setIsFeatured(gameDevItem.is_featured ?? false);
       setFeaturedSort(gameDevItem.featured_sort != null ? String(gameDevItem.featured_sort) : "");
-      setShowVfxSection(
-        gameDevItem.is_coming_soon ? false : (gameDevItem.show_vfx_section ?? true),
-      );
+      setShowVfxSection(gameDevItem.show_vfx_section ?? true);
       setIsComingSoon(gameDevItem.is_coming_soon ?? false);
       setSelectedGameTags(gameDevItem.tags ?? []);
       setSelectedStacks([]);
@@ -770,11 +768,8 @@ export const ItemFormModal = ({
             isComingSoon={isComingSoon}
             onComingSoonChange={(value) => {
               setIsComingSoon(value);
-              if (value) {
-                setShowVfxSection(false);
-                if (description.trim().length === 0) {
-                  setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
-                }
+              if (value && description.trim().length === 0) {
+                setDescription(GAMEDEV_COMING_SOON_DEFAULT_SUMMARY);
               }
             }}
           />

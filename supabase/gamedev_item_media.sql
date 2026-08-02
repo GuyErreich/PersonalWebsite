@@ -24,31 +24,35 @@ drop policy if exists "Public can read gamedev item media" on public.gamedev_ite
 
 create policy "Public can read gamedev item media"
   on public.gamedev_item_media for select
-  using (true);
+  using (
+    exists (
+      select 1
+      from public.gamedev_items i
+      where i.id = public.gamedev_item_media.gamedev_item_id
+        and i.is_coming_soon = false
+    )
+  );
+
+drop policy if exists "Admins can read all gamedev item media" on public.gamedev_item_media;
+
+create policy "Admins can read all gamedev item media"
+  on public.gamedev_item_media for select
+  using ((select public.is_admin()));
 
 drop policy if exists "Admins can insert gamedev item media" on public.gamedev_item_media;
 
 create policy "Admins can insert gamedev item media"
   on public.gamedev_item_media for insert
-  with check (
-    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
-    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
-  );
+  with check ((select public.is_admin()));
 
 drop policy if exists "Admins can update gamedev item media" on public.gamedev_item_media;
 
 create policy "Admins can update gamedev item media"
   on public.gamedev_item_media for update
-  using (
-    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
-    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
-  );
+  using ((select public.is_admin()));
 
 drop policy if exists "Admins can delete gamedev item media" on public.gamedev_item_media;
 
 create policy "Admins can delete gamedev item media"
   on public.gamedev_item_media for delete
-  using (
-    auth.jwt() -> 'app_metadata' ->> 'roles' = 'admin' OR
-    auth.jwt() -> 'app_metadata' -> 'roles' @> '"admin"'::jsonb
-  );
+  using ((select public.is_admin()));

@@ -11,21 +11,10 @@ import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { useGameDevOverviewTabs } from "../../common/hooks/useGameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
+import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
 import { GameDevHiveGallery } from "../gallery/GameDevHiveGallery";
-
-const slideVariants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir * -40 }),
-  center: { opacity: 1, x: 0 },
-  exit: (dir: number) => ({ opacity: 0, x: dir * 40 }),
-};
-
-const reducedSlideVariants = {
-  enter: { opacity: 0 },
-  center: { opacity: 1 },
-  exit: { opacity: 0 },
-};
 
 export const GameDevOverviewMobileShort = ({
   showreelUrl,
@@ -51,10 +40,8 @@ export const GameDevOverviewMobileShort = ({
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope: "mobile" });
 
-  const activeSlideVariants = reduceMotion ? reducedSlideVariants : slideVariants;
-  const slideTransition = reduceMotion
-    ? { duration: 0.15 }
-    : { duration: 0.28, ease: "easeInOut" as const };
+  const { variants: activeSlideVariants, transition: slideTransition } =
+    getOverviewSlideMotion(reduceMotion);
 
   return (
     <div className="gamedev-overview-mobile-short-stack">

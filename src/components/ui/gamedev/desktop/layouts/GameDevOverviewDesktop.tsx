@@ -12,20 +12,9 @@ import { GameDevGallery } from "../../common/gallery/GameDevGallery";
 import { useGameDevOverviewTabs } from "../../common/hooks/useGameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
+import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
-
-const slideVariants = {
-  enter: (dir: number) => ({ opacity: 0, x: dir * -40 }),
-  center: { opacity: 1, x: 0 },
-  exit: (dir: number) => ({ opacity: 0, x: dir * 40 }),
-};
-
-const reducedSlideVariants = {
-  enter: { opacity: 0 },
-  center: { opacity: 1 },
-  exit: { opacity: 0 },
-};
 
 export const GameDevOverviewDesktop = ({
   showreelUrl,
@@ -51,10 +40,8 @@ export const GameDevOverviewDesktop = ({
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope: "desktop" });
 
-  const activeSlideVariants = reduceMotion ? reducedSlideVariants : slideVariants;
-  const slideTransition = reduceMotion
-    ? { duration: 0.15 }
-    : { duration: 0.28, ease: "easeInOut" as const };
+  const { variants: activeSlideVariants, transition: slideTransition } =
+    getOverviewSlideMotion(reduceMotion);
 
   return (
     <div className="gamedev-overview-desktop-tabs-stack">
