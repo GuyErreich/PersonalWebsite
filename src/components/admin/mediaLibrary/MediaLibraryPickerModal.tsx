@@ -48,12 +48,19 @@ export const MediaLibraryPickerModal = ({
     }
   }, [isOpen]);
 
+  // Nested media preview owns dismiss first (Escape, backdrop, header Close).
+  const requestClose = () => {
+    if (isPreviewOpen) return;
+    playClickSound();
+    playMenuCloseSound();
+    onClose();
+  };
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      // Nested media preview owns Escape first.
       if (isPreviewOpen) return;
       playMenuCloseSound();
       onClose();
@@ -79,11 +86,7 @@ export const MediaLibraryPickerModal = ({
         whileHover={{ opacity: 1 }}
         whileTap={{ opacity: 0.95 }}
         onMouseEnter={playHoverSound}
-        onClick={() => {
-          playClickSound();
-          playMenuCloseSound();
-          onClose();
-        }}
+        onClick={requestClose}
         className="absolute inset-0 bg-black/80"
         aria-label="Close media library"
       />
@@ -112,11 +115,7 @@ export const MediaLibraryPickerModal = ({
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.96 }}
             onMouseEnter={playHoverSound}
-            onClick={() => {
-              playClickSound();
-              playMenuCloseSound();
-              onClose();
-            }}
+            onClick={requestClose}
             className="inline-flex shrink-0 items-center gap-1 rounded-md border border-gray-600 px-2.5 py-1.5 text-xs text-gray-200 hover:border-cyan-500/40"
           >
             <X className="h-3.5 w-3.5" />
