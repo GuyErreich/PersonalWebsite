@@ -30,6 +30,7 @@ create policy "Public can read gamedev vfx"
       join public.gamedev_items i on i.id = p.gamedev_item_id
       where p.gamedev_vfx_id = public.gamedev_vfx.id
         and i.is_coming_soon = false
+        and i.show_vfx_section = true
     )
   );
 
@@ -77,6 +78,7 @@ create policy "Public can read gamedev project vfx"
       from public.gamedev_items i
       where i.id = gamedev_item_id
         and i.is_coming_soon = false
+        and i.show_vfx_section = true
     )
   );
 

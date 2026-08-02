@@ -101,6 +101,18 @@ export const GameDevProject = () => {
 
         const typedProject = projectData as GameDevItem;
 
+        // Do not fetch project-linked VFX when the section is hidden — avoids
+        // leaking link/VFX payloads in the browser network panel for anon users.
+        if (typedProject.show_vfx_section === false) {
+          safeSetState({
+            project: typedProject,
+            linkedVfx: [],
+            isLoading: false,
+            error: null,
+          });
+          return;
+        }
+
         const { data: linkData, error: linkError } = await supabase
           .from("gamedev_project_vfx")
           .select("gamedev_vfx_id, sort_order")
