@@ -1003,8 +1003,8 @@ export const ItemFormModal = ({
         const syncProjectVfxLinks = async (projectId: string) => {
           // Library visibility is owned by VfxManager / markVfxShownInLibrary — unlinking
           // a project must not force show_in_library=false on curated entries.
-          // Coming soon is a display flag only: Discovery still edits linked VFX, so sync
-          // links on every save. Public reads already scope visibility via RLS.
+          // Coming soon still syncs Discovery links, but must not publish those effects
+          // into the public VFX gallery while the project page keeps VFX hidden.
           const { data: existingLinks, error: fetchLinksError } = await supabase
             .from("gamedev_project_vfx")
             .select("gamedev_vfx_id")
@@ -1061,7 +1061,7 @@ export const ItemFormModal = ({
             throw new Error(upsertLinksError.message);
           }
 
-          if (showVfxSection && normalizedLinkedVfxIds.length > 0) {
+          if (!isComingSoon && showVfxSection && normalizedLinkedVfxIds.length > 0) {
             await markVfxShownInLibrary(normalizedLinkedVfxIds);
           }
         };

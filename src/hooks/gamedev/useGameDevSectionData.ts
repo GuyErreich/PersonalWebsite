@@ -45,7 +45,7 @@ export const useGameDevSectionData = () => {
         }
 
         const { data: items, error: itemsError } = await supabase
-          .from("gamedev_items")
+          .from("gamedev_items_public")
           .select("*")
           .order("created_at", { ascending: false });
 

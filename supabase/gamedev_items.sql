@@ -29,18 +29,17 @@ create index if not exists gamedev_items_featured_idx
 -- Enable Row Level Security
 alter table public.gamedev_items enable row level security;
 
--- Public can read all items (coming soon is a teaser flag, not a draft lock)
+-- Public readers use gamedev_items_public (coming-soon body/links redacted).
+-- Base table SELECT is admin-only so preserved write-ups and URLs do not leak.
 drop policy if exists "Public can read gamedev items" on public.gamedev_items;
-
-create policy "Public can read gamedev items"
-  on public.gamedev_items for select
-  using (true);
 
 drop policy if exists "Admins can read all gamedev items" on public.gamedev_items;
 
 create policy "Admins can read all gamedev items"
   on public.gamedev_items for select
   using ((select public.is_admin()));
+
+revoke select on table public.gamedev_items from anon;
 
 -- Only admins can insert
 drop policy if exists "Admins can insert gamedev items" on public.gamedev_items;
@@ -62,3 +61,55 @@ drop policy if exists "Admins can delete gamedev items" on public.gamedev_items;
 create policy "Admins can delete gamedev items"
   on public.gamedev_items for delete
   using ((select public.is_admin()));
+
+-- Public catalog view: coming-soon rows expose teaser summary only (no BODY/links).
+create or replace function public.gamedev_public_teaser_description(p_description text)
+returns text
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select case
+    when p_description is null then null
+    when position(E'\n\n[//]: # (BODY)\n\n' in p_description) > 0 then
+      trim(
+        both
+        from left(
+          p_description,
+          position(E'\n\n[//]: # (BODY)\n\n' in p_description) - 1
+        )
+      )
+    else p_description
+  end;
+$$;
+
+drop view if exists public.gamedev_items_public;
+
+create view public.gamedev_items_public
+with (security_invoker = false)
+as
+select
+  i.id,
+  i.title,
+  case
+    when i.is_coming_soon then public.gamedev_public_teaser_description(i.description)
+    else i.description
+  end as description,
+  i.media_url,
+  i.thumbnail_url,
+  i.header_media_url,
+  i.header_thumbnail_url,
+  i.icon_name,
+  case when i.is_coming_soon then null else i.github_url end as github_url,
+  case when i.is_coming_soon then null else i.live_url end as live_url,
+  i.tags,
+  i.is_featured,
+  i.featured_sort,
+  i.show_vfx_section,
+  i.is_coming_soon,
+  i.created_at
+from public.gamedev_items i;
+
+revoke all on public.gamedev_items_public from public;
+grant select on public.gamedev_items_public to anon, authenticated;

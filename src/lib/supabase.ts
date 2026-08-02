@@ -261,7 +261,29 @@ interface Database {
         Relationships: [];
       };
     };
-    Views: Record<string, never>;
+    Views: {
+      gamedev_items_public: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          media_url: string | null;
+          thumbnail_url: string | null;
+          header_media_url: string | null;
+          header_thumbnail_url: string | null;
+          icon_name: string | null;
+          github_url: string | null;
+          live_url: string | null;
+          tags: string[];
+          is_coming_soon: boolean;
+          is_featured: boolean;
+          featured_sort: number | null;
+          show_vfx_section: boolean;
+          created_at: string;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
       media_library_move_folder_recursive: {
         Args: { p_source_path: string; p_target_parent_path: string };

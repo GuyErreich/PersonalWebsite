@@ -73,7 +73,7 @@ export const GameDevProject = () => {
 
       try {
         const { data: projectData, error: projectError } = await supabase
-          .from("gamedev_items")
+          .from("gamedev_items_public")
           .select("*")
           .eq("id", id)
           .single();
