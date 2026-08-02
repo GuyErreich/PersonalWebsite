@@ -25,7 +25,7 @@ Deep conventions live in two places — read them rather than duplicating here:
 | React | `code/web/libs/react` |
 | Three.js / R3F | `code/web/libs/threejs` |
 | Performance & security | `code/quality/performance`, `code/quality/security` |
-| Review & PR resolution | `code/review/reviewer`, `code/review/pr-resolver` |
+| Review & PR resolution | `code/review/reviewer` (staff bar + FE/BE/graphics/motion/TS lenses), `code/review/pr-resolver` |
 | Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop,pr-review-loop}` |
 | Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing`, `project/platform/deploy-secrets` |
 | Skill/rule maintenance | `~/.cursor/skills/ai-agent/improvement-protocol` |

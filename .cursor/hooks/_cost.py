@@ -7,6 +7,10 @@
 Cursor does not persist billed token counts. This reconstructs an estimate by
 modelling context re-send: every assistant turn re-sends prior messages. A
 naive character count would understate the bill.
+
+Pricing modes:
+- ``auto`` — Cursor Auto / inherit / Composer-on-plan (much cheaper effective $)
+- ``api`` — named frontier models at approximate API list rates
 """
 
 from __future__ import annotations
@@ -32,10 +36,166 @@ class CostEstimate:
     model: str
     assumptions: str
     known_model: bool
+    pricing_mode: str = "auto"
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize for state.json."""
         return asdict(self)
+
+
+# User-facing aliases → Task `model` slugs (keep `inherit` as the cheap default).
+MODEL_ALIASES: dict[str, str] = {
+    "auto": "inherit",
+    "inherit": "inherit",
+    "composer": "inherit",
+    "fast": "composer-2.5-fast",
+    "opus": "claude-opus-5-thinking-high",
+    "opus-5": "claude-opus-5-thinking-high",
+    "opus5": "claude-opus-5-thinking-high",
+    "claude-opus-5": "claude-opus-5-thinking-high",
+    "claude-opus-5-thinking-high": "claude-opus-5-thinking-high",
+    "sonnet": "claude-sonnet-5-thinking-high",
+    "sonnet-5": "claude-sonnet-5-thinking-high",
+    "sonnet5": "claude-sonnet-5-thinking-high",
+    "claude-sonnet-5": "claude-sonnet-5-thinking-high",
+    "claude-sonnet-5-thinking-high": "claude-sonnet-5-thinking-high",
+    "fable": "claude-fable-5-thinking-high",
+    "claude-fable-5-thinking-high": "claude-fable-5-thinking-high",
+    "grok": "cursor-grok-4.5-high-fast",
+    "cursor-grok-4.5-high-fast": "cursor-grok-4.5-high-fast",
+    "gpt": "gpt-5.6-sol-medium",
+    "gpt-5.6": "gpt-5.6-sol-medium",
+    "gpt-5.6-sol-medium": "gpt-5.6-sol-medium",
+    "gpt-5.6-terra-medium": "gpt-5.6-terra-medium",
+    "composer-2.5-fast": "composer-2.5-fast",
+}
+
+
+def normalize_loop_model(raw: str | None) -> str:
+    """Map a user/model hint to a Task ``model`` slug. Default: ``inherit``."""
+    text = (raw or "").strip().lower()
+    if not text:
+        return "inherit"
+    if text in MODEL_ALIASES:
+        return MODEL_ALIASES[text]
+    # Allow exact Task slugs that are not aliased yet.
+    if (
+        text.startswith("claude-")
+        or text.startswith("gpt-")
+        or text.startswith("cursor-")
+    ):
+        return text
+    return "inherit"
+
+
+def segment_pricing_mode(model: str | None) -> str:
+    """Return ``auto`` or ``api`` rates for one subagent model (segment honesty)."""
+    slug = normalize_loop_model(model)
+    if slug in {"inherit", "auto"} or "composer" in slug or "auto" in slug:
+        return "auto"
+    if any(
+        key in slug
+        for key in ("claude", "opus", "sonnet", "gpt", "o1", "o3", "gemini", "grok")
+    ):
+        return "api"
+    return "auto"
+
+
+def resolve_pricing_mode(
+    pricing: dict[str, Any],
+    *,
+    state: dict[str, Any] | None = None,
+    model: str | None = None,
+    explicit: str | None = None,
+) -> str:
+    """Return ``auto`` or ``api`` for budget/rate selection.
+
+    Priority: explicit arg → **model segment** (named frontier → api for that
+    estimate) → state.pricing_mode → pricing.default_mode → ``auto``.
+
+    Loop-level caps stay on ``state.pricing_mode`` (default auto) so people are
+    not pushed into expensive budgets; named-model *estimates* still use api
+    rates so projective checks stay honest.
+    """
+    if explicit in {"auto", "api"}:
+        return explicit
+    if model:
+        return segment_pricing_mode(model)
+    if state:
+        mode = str(state.get("pricing_mode") or "").strip().lower()
+        if mode in {"auto", "api"}:
+            return mode
+    default = str(pricing.get("default_mode") or "auto").strip().lower()
+    return default if default in {"auto", "api"} else "auto"
+
+
+def _as_dict(value: object) -> dict[str, Any]:
+    """Narrow an unknown value to a plain dict, else empty."""
+    if isinstance(value, dict):
+        return {str(k): v for k, v in value.items()}
+    return {}
+
+
+def resolve_model_key(
+    pricing: dict[str, Any],
+    model: str,
+    pricing_mode: str,
+) -> str:
+    """Map a raw model slug to a pricing.models key."""
+    models = _as_dict(pricing.get("models"))
+    slug = (model or "").strip().lower() or "default"
+
+    if pricing_mode == "auto":
+        auto_cfg = _as_dict(_as_dict(pricing.get("modes")).get("auto"))
+        preferred = str(auto_cfg.get("model_key") or "auto")
+        if preferred in models:
+            return preferred
+        if "auto" in models:
+            return "auto"
+        if "inherit" in models:
+            return "inherit"
+
+    normalized = normalize_loop_model(slug)
+    if normalized in models:
+        return normalized
+    if slug in models:
+        return slug
+    for key in models:
+        if key != "default" and key in slug:
+            return str(key)
+    # Map opus-5 / sonnet-5 Task slugs onto closest priced keys.
+    if "opus" in slug:
+        for candidate in ("claude-opus-5", "claude-opus-4", "default"):
+            if candidate in models:
+                return candidate
+    if "sonnet" in slug:
+        for candidate in ("claude-sonnet-5", "claude-sonnet-4", "default"):
+            if candidate in models:
+                return candidate
+    return "default"
+
+
+def mode_budget_defaults(
+    pricing: dict[str, Any], pricing_mode: str
+) -> dict[str, float]:
+    """Return recommended caps / cold-start projection for a pricing mode."""
+    modes = _as_dict(pricing.get("modes"))
+    cfg = _as_dict(modes.get(pricing_mode))
+    if pricing_mode == "auto":
+        return {
+            "max_tokens_est": float(cfg.get("max_tokens_est", 1_000_000) or 1_000_000),
+            "max_usd_est": float(cfg.get("max_usd_est", 2.0) or 2.0),
+            "cold_project_tokens": float(
+                cfg.get("cold_project_tokens", 120_000) or 120_000
+            ),
+            "cold_project_usd": float(cfg.get("cold_project_usd", 0.15) or 0.15),
+        }
+    return {
+        "max_tokens_est": float(cfg.get("max_tokens_est", 400_000) or 400_000),
+        "max_usd_est": float(cfg.get("max_usd_est", 3.0) or 3.0),
+        "cold_project_tokens": float(cfg.get("cold_project_tokens", 80_000) or 80_000),
+        "cold_project_usd": float(cfg.get("cold_project_usd", 0.75) or 0.75),
+    }
 
 
 def _message_text(message: dict[str, Any]) -> str:
@@ -65,17 +225,10 @@ def _count_tool_calls(message: dict[str, Any]) -> int:
         return 0
     count = 0
     for block in content:
-        if (
-            isinstance(block, dict)
-            and block.get("type")
-            in {
-                "tool_use",
-                "tool_call",
-                "function_call",
-            }
-            or isinstance(block, dict)
-            and "name" in block
-            and "input" in block
+        if not isinstance(block, dict):
+            continue
+        if block.get("type") in {"tool_use", "tool_call", "function_call"} or (
+            "name" in block and "input" in block
         ):
             count += 1
     return count
@@ -104,38 +257,36 @@ def estimate_transcript(
     path: Path,
     pricing: dict[str, Any],
     model: str = "default",
+    *,
+    pricing_mode: str | None = None,
+    state: dict[str, Any] | None = None,
 ) -> CostEstimate:
-    """Estimate cost for a single transcript with context re-send modelling.
+    """Estimate cost for a single transcript with context re-send modelling."""
+    mode = resolve_pricing_mode(
+        pricing, state=state, model=model, explicit=pricing_mode
+    )
+    model_key = resolve_model_key(pricing, model, mode)
 
-    Args:
-        path: Path to a ``*.jsonl`` transcript.
-        pricing: Loaded pricing table (chars_per_token, cached_prefix_discount,
-            models).
-        model: Model key for rate lookup.
-
-    Returns:
-        CostEstimate with token/dollar ranges expressed as point estimates and
-        assumptions string for canvas captions.
-    """
     chars_per_token = float(pricing.get("chars_per_token", 3.9) or 3.9)
     if chars_per_token <= 0:
         chars_per_token = 3.9
     discount = float(pricing.get("cached_prefix_discount", 0.5) or 0.5)
     discount = min(max(discount, 0.0), 1.0)
 
-    models_raw = pricing.get("models")
-    models: dict[str, Any] = models_raw if isinstance(models_raw, dict) else {}
-    model_rates = models.get(model)
+    models = _as_dict(pricing.get("models"))
+    model_rates = models.get(model_key)
     rates: dict[str, Any]
     if isinstance(model_rates, dict):
         rates = model_rates
         known_model = True
     else:
-        default_rates = models.get("default")
-        rates = default_rates if isinstance(default_rates, dict) else {}
+        rates = _as_dict(models.get("default"))
         known_model = False
     input_rate = float(rates.get("input_per_mtok", 2.0) or 2.0)
     output_rate = float(rates.get("output_per_mtok", 10.0) or 10.0)
+
+    mode_cfg = _as_dict(_as_dict(pricing.get("modes")).get(mode))
+    usd_multiplier = float(mode_cfg.get("usd_multiplier", 1.0) or 1.0)
 
     rows = read_transcript(path)
     cumulative_chars = 0
@@ -164,9 +315,7 @@ def estimate_transcript(
             cumulative_chars += chars
             continue
 
-        # assistant turn: bill cumulative context as input, this turn as output
         turns += 1
-        # Discount the repeated prefix (everything already in prior turns)
         fresh_chars = max(cumulative_chars - prior_prefix_chars, 0)
         cached_chars = prior_prefix_chars
         effective_input_chars = fresh_chars + (cached_chars * (1.0 - discount))
@@ -181,23 +330,19 @@ def estimate_transcript(
 
     usd = 0.0
     if known_model or "default" in models:
-        usd = (tokens_in_i / 1_000_000.0) * input_rate + (
-            tokens_out_i / 1_000_000.0
-        ) * output_rate
+        usd = (
+            (tokens_in_i / 1_000_000.0) * input_rate
+            + (tokens_out_i / 1_000_000.0) * output_rate
+        ) * usd_multiplier
 
     updated = str(pricing.get("updated", "unknown"))
+    mode_label = str(mode_cfg.get("label") or mode)
     assumptions = (
+        f"pricing_mode={mode} ({mode_label}); model_key={model_key}; "
         f"chars/token {chars_per_token}; cached_prefix_discount {discount}; "
-        f"prices dated {updated}; model={model}"
+        f"prices dated {updated}"
         + ("" if known_model else " (unknown model — default rates)")
     )
-
-    try:
-        mtime = path.stat().st_mtime
-        # wall clock unknown without start stamp; leave 0 here
-        _ = mtime
-    except OSError:
-        pass
 
     return CostEstimate(
         tokens_in_est=tokens_in_i,
@@ -207,9 +352,10 @@ def estimate_transcript(
         turns=turns,
         tool_calls=tool_calls,
         wall_clock_s=0.0,
-        model=model if known_model else f"{model}|default",
+        model=model_key if known_model else f"{model_key}|default",
         assumptions=assumptions,
         known_model=known_model,
+        pricing_mode=mode,
     )
 
 
@@ -217,15 +363,7 @@ def find_subagent_transcripts(
     started_at_iso: str | None = None,
     transcripts_root: Path | None = None,
 ) -> list[Path]:
-    """Find subagent JSONL files newer than started_at under agent-transcripts.
-
-    Args:
-        started_at_iso: ISO timestamp; only files with mtime >= this are kept.
-        transcripts_root: Override root (tests). Default walks Cursor projects.
-
-    Returns:
-        Newest-first list of matching transcript paths.
-    """
+    """Find subagent JSONL files newer than started_at under agent-transcripts."""
     roots: list[Path] = []
     if transcripts_root is not None:
         roots.append(transcripts_root)
@@ -249,7 +387,6 @@ def find_subagent_transcripts(
     for root in roots:
         sub = root / "agent-transcripts"
         if not sub.is_dir():
-            # also accept root itself as a chat dir
             candidates = list(root.glob("**/subagents/*.jsonl"))
         else:
             candidates = list(sub.glob("**/subagents/*.jsonl"))
@@ -269,8 +406,14 @@ def estimate_since(
     started_at_iso: str,
     model: str = "default",
     transcripts_root: Path | None = None,
+    *,
+    state: dict[str, Any] | None = None,
+    pricing_mode: str | None = None,
 ) -> CostEstimate:
     """Sum estimates for all subagent transcripts written since started_at."""
+    mode = resolve_pricing_mode(
+        pricing, state=state, model=model, explicit=pricing_mode
+    )
     paths = find_subagent_transcripts(started_at_iso, transcripts_root)
     if not paths:
         return CostEstimate(
@@ -284,21 +427,23 @@ def estimate_since(
             model=model,
             assumptions="no transcripts found since started_at",
             known_model=False,
+            pricing_mode=mode,
         )
 
-    # Prefer the newest single transcript if many (one subagent per stamp)
     primary = paths[0]
-    est = estimate_transcript(primary, pricing, model=model)
-    # If multiple new transcripts share the same stamp window, sum them
+    est = estimate_transcript(
+        primary, pricing, model=model, pricing_mode=mode, state=state
+    )
     if len(paths) > 1:
         for extra in paths[1:]:
-            # Only include if very close in time to primary (same round)
             try:
                 if abs(extra.stat().st_mtime - primary.stat().st_mtime) > 600:
                     continue
             except OSError:
                 continue
-            other = estimate_transcript(extra, pricing, model=model)
+            other = estimate_transcript(
+                extra, pricing, model=model, pricing_mode=mode, state=state
+            )
             est = CostEstimate(
                 tokens_in_est=est.tokens_in_est + other.tokens_in_est,
                 tokens_out_est=est.tokens_out_est + other.tokens_out_est,
@@ -310,19 +455,50 @@ def estimate_since(
                 model=est.model,
                 assumptions=est.assumptions,
                 known_model=est.known_model and other.known_model,
+                pricing_mode=mode,
             )
     return est
 
 
-def project_next_cost(state: dict[str, Any]) -> tuple[float, float]:
-    """Project next-round tokens and USD from prior rounds.
+def cold_projection(
+    state: dict[str, Any],
+    *,
+    model: str | None = None,
+) -> tuple[float, float]:
+    """Cold-start token/USD projection for the next subagent launch.
+
+    Uses loop ``pricing_mode`` for token/cold defaults (auto by default), then
+    scales USD up when the *upcoming* model is a named frontier segment so the
+    first launch is denied before spend if it would blow the cheap Auto cap.
+    """
+    loop_mode = str(state.get("pricing_mode") or "auto").strip().lower()
+    if loop_mode not in {"auto", "api"}:
+        loop_mode = "auto"
+    cold_t, cold_u = (120_000.0, 0.15) if loop_mode == "auto" else (80_000.0, 0.75)
+
+    upcoming = normalize_loop_model(
+        model or state.get("next_model") or state.get("reviewer_model") or "inherit"
+    )
+    if segment_pricing_mode(upcoming) == "api" and loop_mode == "auto":
+        # Named model under Auto caps — use api-ish cold USD so we alert early.
+        cold_u = max(cold_u, 0.75)
+    return cold_t, cold_u
+
+
+def project_next_cost(
+    state: dict[str, Any],
+    *,
+    model: str | None = None,
+) -> tuple[float, float]:
+    """Project next subagent tokens and USD from prior rounds (or cold start).
 
     Uses max(last round, running average). Returns (tokens, usd).
     """
+    cold_t, cold_u = cold_projection(state, model=model)
+
     rounds = state.get("rounds")
     if not isinstance(rounds, list) or not rounds:
-        # cold start projection — conservative half of default budget
-        return 80_000.0, 0.75
+        return cold_t, cold_u
 
     costs: list[tuple[float, float]] = []
     for entry in rounds:
@@ -338,7 +514,7 @@ def project_next_cost(state: dict[str, Any]) -> tuple[float, float]:
             )
         )
     if not costs:
-        return 80_000.0, 0.75
+        return cold_t, cold_u
 
     last_t, last_u = costs[-1]
     avg_t = sum(t for t, _ in costs) / len(costs)

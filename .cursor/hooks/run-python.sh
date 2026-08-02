@@ -1,7 +1,7 @@
 #!/bin/bash
 # Interpreter resolver for review-loop Python hooks.
+# Works as a project hook (cwd = repo) or user hook (cwd = ~/.cursor/).
 # Always exits 0 with valid JSON so failClosed only fires on genuine crashes.
-# Uses bash builtins for path/stdin so PATH=/nonexistent still degrades cleanly.
 set -eu
 
 case "$0" in
@@ -9,9 +9,6 @@ case "$0" in
   *) _self="$PWD/$0" ;;
 esac
 HOOKS_DIR="${_self%/*}"
-REPO_ROOT="${HOOKS_DIR%/*/*}"
-STATE_DIR="$REPO_ROOT/.cursor/review-loop"
-ALERT_MARKER="$STATE_DIR/.toolchain-alert"
 
 SCRIPT_NAME="${1:-}"
 if [ -z "$SCRIPT_NAME" ]; then
@@ -47,6 +44,57 @@ if [ ! -t 0 ]; then
   done
 fi
 
+# Resolve active workspace: REVIEW_LOOP_ROOT > workspace_roots[0] > git toplevel > cwd
+resolve_root() {
+  if [ -n "${REVIEW_LOOP_ROOT:-}" ] && [ -d "$REVIEW_LOOP_ROOT" ]; then
+    printf '%s\n' "$REVIEW_LOOP_ROOT"
+    return
+  fi
+  if command -v python3 >/dev/null 2>&1; then
+    root="$(REVIEW_LOOP_HOOK_INPUT="$INPUT" python3 - <<'PY' 2>/dev/null || true
+import json, os, subprocess
+from pathlib import Path
+raw = os.environ.get("REVIEW_LOOP_HOOK_INPUT", "")
+roots = []
+try:
+    data = json.loads(raw) if raw.strip() else {}
+    wr = data.get("workspace_roots") or []
+    if isinstance(wr, list):
+        roots = [str(x) for x in wr if x]
+except Exception:
+    pass
+for cand in roots:
+    p = Path(cand)
+    if p.is_dir():
+        print(p)
+        raise SystemExit(0)
+# Prefer git toplevel from cwd when it looks like a project checkout
+try:
+    r = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        capture_output=True, text=True, check=False,
+    )
+    if r.returncode == 0 and r.stdout.strip():
+        print(r.stdout.strip())
+        raise SystemExit(0)
+except Exception:
+    pass
+print(Path.cwd())
+PY
+)"
+    if [ -n "$root" ] && [ -d "$root" ]; then
+      printf '%s\n' "$root"
+      return
+    fi
+  fi
+  printf '%s\n' "$PWD"
+}
+
+REPO_ROOT="$(resolve_root)"
+export REVIEW_LOOP_ROOT="$REPO_ROOT"
+STATE_DIR="$REPO_ROOT/.cursor/review-loop"
+ALERT_MARKER="$STATE_DIR/.toolchain-alert"
+
 degraded_default() {
   case "$SCRIPT_NAME" in
     review_loop_budget.py) printf '%s\n' '{"permission":"allow"}' ;;
@@ -70,7 +118,8 @@ emit_alert_once() {
 run_with() {
   runner="$1"
   shift
-  printf '%s' "$INPUT" | $runner "$@" "$SCRIPT_PATH"
+  # Run from workspace root so relative .cursor/ paths resolve
+  ( cd "$REPO_ROOT" && printf '%s' "$INPUT" | $runner "$@" "$SCRIPT_PATH" )
 }
 
 if command -v uv >/dev/null 2>&1; then
