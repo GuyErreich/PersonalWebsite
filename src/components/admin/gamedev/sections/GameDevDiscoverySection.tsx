@@ -24,6 +24,9 @@ interface GameDevDiscoverySectionProps {
   onOpenVfxMediaLibrary: () => void;
   /** When true, block Add/Remove/Reorder and media-library open (e.g. links still hydrating). */
   vfxLinksDisabled?: boolean;
+  /** When true with vfxLinksDisabled, show failed-load messaging instead of "Loading…". */
+  vfxLinksLoadFailed?: boolean;
+  onRetryVfxLinksLoad?: () => void;
 }
 
 export const GameDevDiscoverySection = ({
@@ -39,6 +42,8 @@ export const GameDevDiscoverySection = ({
   onLinkedVfxIdsChange,
   onOpenVfxMediaLibrary,
   vfxLinksDisabled = false,
+  vfxLinksLoadFailed = false,
+  onRetryVfxLinksLoad,
 }: GameDevDiscoverySectionProps) => {
   const featuredSortId = useId();
   const vfxById = useMemo(
@@ -116,9 +121,28 @@ export const GameDevDiscoverySection = ({
             </div>
 
             {vfxLinksDisabled ? (
-              <p className="rounded-md border border-gray-600/50 bg-gray-800/60 px-3 py-2 text-xs text-gray-300">
-                Loading project VFX links…
-              </p>
+              <div className="space-y-2 rounded-md border border-gray-600/50 bg-gray-800/60 px-3 py-2">
+                <p className="text-xs text-gray-300">
+                  {vfxLinksLoadFailed
+                    ? "Failed to load project VFX links. Retry or cancel without saving."
+                    : "Loading project VFX links…"}
+                </p>
+                {vfxLinksLoadFailed && onRetryVfxLinksLoad ? (
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.96 }}
+                    onMouseEnter={playHoverSound}
+                    onClick={() => {
+                      playClickSound();
+                      onRetryVfxLinksLoad();
+                    }}
+                    className="inline-flex items-center rounded-md border border-cyan-500/35 bg-cyan-600/20 px-2.5 py-1 text-[11px] font-medium text-cyan-100 hover:bg-cyan-600/30"
+                  >
+                    Retry
+                  </motion.button>
+                ) : null}
+              </div>
             ) : null}
 
             {unresolvedLinkedCount > 0 ? (
