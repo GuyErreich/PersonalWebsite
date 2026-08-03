@@ -293,6 +293,9 @@ export const ItemFormModal = ({
     linkedVfxIdsEditedRef.current = false;
     setLinkedVfxIds([]);
     setLinkedVfxDetails([]);
+    // Drop catalog across close/reopen so deleted VFX cannot resurface as
+    // localOnly via mergeFetchedAvailableVfx; in-session create races still merge.
+    setAvailableVfx([]);
     setSelectedStacks([]);
     setCustomStackInput("");
     setSelectedGameTags([]);

@@ -41,7 +41,7 @@ create policy "Admins can read all gamedev items"
 
 revoke select on table public.gamedev_items from anon;
 -- Authenticated retain table SELECT; RLS still limits rows to admins.
--- Matches 20260803220000_gamedev_items_restore_authenticated_select.sql.
+-- Matches 20260803220000 + follow-up 20260804000000 (idempotent GRANT).
 grant select on table public.gamedev_items to authenticated;
 
 -- Only admins can insert
