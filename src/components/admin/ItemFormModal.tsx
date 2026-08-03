@@ -243,12 +243,18 @@ export const ItemFormModal = ({
     linkedVfxIdsEditedRef.current = true;
   }, []);
 
+  const canEditLinkedVfxIds = !isEditingGameDev || isVfxLinksHydrated;
+
   const handleLinkedVfxIdsChange = useCallback(
     (updater: (prev: string[]) => string[]) => {
+      // Ignore pre-hydrate edits so linkedVfxIdsEditedRef cannot block server IDs.
+      if (!canEditLinkedVfxIds) {
+        return;
+      }
       markLinkedVfxIdsEdited();
       setLinkedVfxIds(updater);
     },
-    [markLinkedVfxIdsEdited],
+    [canEditLinkedVfxIds, markLinkedVfxIdsEdited],
   );
 
   const clearHeaderMediaSelection = useCallback(() => {
@@ -684,10 +690,17 @@ export const ItemFormModal = ({
   }, []);
 
   const openVfxMediaLibrary = useCallback(() => {
+    if (!canEditLinkedVfxIds) {
+      return;
+    }
     setIsVfxMediaLibraryOpen(true);
-  }, []);
+  }, [canEditLinkedVfxIds]);
 
   const handleVfxMediaLibrarySelect = useCallback(async (item: MediaLibraryItem) => {
+    if (!canEditLinkedVfxIds) {
+      return;
+    }
+
     const generation = formGenerationRef.current;
     setError(null);
 
@@ -695,6 +708,11 @@ export const ItemFormModal = ({
       const vfx = await ensureVfxFromMediaLibraryItem(item);
 
       if (generation !== formGenerationRef.current) {
+        return;
+      }
+
+      // Re-check after await: hydrate may still be in flight for edit forms.
+      if (!canEditLinkedVfxIds) {
         return;
       }
 
@@ -717,7 +735,7 @@ export const ItemFormModal = ({
 
       setError(err instanceof Error ? err.message : "Unable to add VFX media.");
     }
-  }, [markLinkedVfxIdsEdited]);
+  }, [canEditLinkedVfxIds, markLinkedVfxIdsEdited]);
 
   const gameDevFormMode = isEditing ? "sidebar" : "wizard";
   const visibleGameDevSection =
@@ -947,6 +965,7 @@ export const ItemFormModal = ({
             linkedVfxIds={linkedVfxIds}
             onLinkedVfxIdsChange={handleLinkedVfxIdsChange}
             onOpenVfxMediaLibrary={openVfxMediaLibrary}
+            vfxLinksDisabled={!canEditLinkedVfxIds}
           />
         );
       case "links":

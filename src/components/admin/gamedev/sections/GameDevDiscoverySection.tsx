@@ -22,6 +22,8 @@ interface GameDevDiscoverySectionProps {
   linkedVfxIds: string[];
   onLinkedVfxIdsChange: (updater: (prev: string[]) => string[]) => void;
   onOpenVfxMediaLibrary: () => void;
+  /** When true, block Add/Remove/Reorder and media-library open (e.g. links still hydrating). */
+  vfxLinksDisabled?: boolean;
 }
 
 export const GameDevDiscoverySection = ({
@@ -36,6 +38,7 @@ export const GameDevDiscoverySection = ({
   linkedVfxIds,
   onLinkedVfxIdsChange,
   onOpenVfxMediaLibrary,
+  vfxLinksDisabled = false,
 }: GameDevDiscoverySectionProps) => {
   const featuredSortId = useId();
   const vfxById = useMemo(
@@ -112,6 +115,12 @@ export const GameDevDiscoverySection = ({
               </p>
             </div>
 
+            {vfxLinksDisabled ? (
+              <p className="rounded-md border border-gray-600/50 bg-gray-800/60 px-3 py-2 text-xs text-gray-300">
+                Loading project VFX links…
+              </p>
+            ) : null}
+
             {unresolvedLinkedCount > 0 ? (
               <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100">
                 {unresolvedLinkedCount} linked effect{unresolvedLinkedCount === 1 ? "" : "s"} could
@@ -120,9 +129,11 @@ export const GameDevDiscoverySection = ({
             ) : null}
 
             {linkedVfxItems.length === 0 ? (
-              <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-                Add at least one image or video before saving.
-              </p>
+              vfxLinksDisabled ? null : (
+                <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+                  Add at least one image or video before saving.
+                </p>
+              )
             ) : (
               <ul className="space-y-2">
                 {linkedVfxItems.map((vfx) => {
@@ -168,8 +179,11 @@ export const GameDevDiscoverySection = ({
                           type="button"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          disabled={linkIndex <= 0}
+                          disabled={vfxLinksDisabled || linkIndex <= 0}
                           onClick={() => {
+                            if (vfxLinksDisabled) {
+                              return;
+                            }
                             playClickSound();
                             onLinkedVfxIdsChange((prev) => {
                               const next = [...prev];
@@ -187,8 +201,11 @@ export const GameDevDiscoverySection = ({
                           type="button"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          disabled={linkIndex >= linkedVfxIds.length - 1}
+                          disabled={vfxLinksDisabled || linkIndex >= linkedVfxIds.length - 1}
                           onClick={() => {
+                            if (vfxLinksDisabled) {
+                              return;
+                            }
                             playClickSound();
                             onLinkedVfxIdsChange((prev) => {
                               const next = [...prev];
@@ -206,11 +223,15 @@ export const GameDevDiscoverySection = ({
                           type="button"
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
+                          disabled={vfxLinksDisabled}
                           onClick={() => {
+                            if (vfxLinksDisabled) {
+                              return;
+                            }
                             playClickSound();
                             onLinkedVfxIdsChange((prev) => prev.filter((id) => id !== vfx.id));
                           }}
-                          className="rounded border border-red-500/40 px-1.5 py-0.5 text-[10px] text-red-200"
+                          className="rounded border border-red-500/40 px-1.5 py-0.5 text-[10px] text-red-200 disabled:opacity-40"
                         >
                           Remove
                         </motion.button>
@@ -225,12 +246,16 @@ export const GameDevDiscoverySection = ({
               type="button"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.96 }}
+              disabled={vfxLinksDisabled}
               onMouseEnter={playHoverSound}
               onClick={() => {
+                if (vfxLinksDisabled) {
+                  return;
+                }
                 playClickSound();
                 onOpenVfxMediaLibrary();
               }}
-              className="inline-flex items-center gap-2 rounded-md border border-cyan-500/35 bg-cyan-600/20 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-600/30"
+              className="inline-flex items-center gap-2 rounded-md border border-cyan-500/35 bg-cyan-600/20 px-3 py-2 text-xs font-medium text-cyan-100 hover:bg-cyan-600/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FolderOpen className="h-3.5 w-3.5" aria-hidden="true" />
               Add from Media Library
@@ -252,14 +277,18 @@ export const GameDevDiscoverySection = ({
                         type="button"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
+                        disabled={vfxLinksDisabled}
                         onMouseEnter={playHoverSound}
                         onClick={() => {
+                          if (vfxLinksDisabled) {
+                            return;
+                          }
                           playClickSound();
                           onLinkedVfxIdsChange((prev) =>
                             prev.includes(vfx.id) ? prev : [...prev, vfx.id],
                           );
                         }}
-                        className="inline-flex items-center gap-1 rounded border border-cyan-500/35 px-2 py-0.5 text-[10px] text-cyan-100"
+                        className="inline-flex items-center gap-1 rounded border border-cyan-500/35 px-2 py-0.5 text-[10px] text-cyan-100 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plus className="h-3 w-3" aria-hidden="true" />
                         Add
