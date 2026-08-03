@@ -158,7 +158,8 @@ export const ItemFormModal = ({
   const customGameTagInputId = `${formIdBase}-custom-game-tag-input`;
   const customStackInputId = `${formIdBase}-custom-stack-input`;
   const bodyAssetInputRef = useRef<HTMLInputElement>(null);
-  const mediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
+  const headerMediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
+  const vfxMediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
   const formGenerationRef = useRef(0);
   const linkedVfxIdsEditedRef = useRef(false);
 
@@ -303,6 +304,8 @@ export const ItemFormModal = ({
     setUploadedBodyMedia([]);
     setIsMediaLibraryOpen(false);
     setIsVfxMediaLibraryOpen(false);
+    headerMediaLibraryReloadRef.current = null;
+    vfxMediaLibraryReloadRef.current = null;
     setMediaLibraryRoleFilter("all");
     setWizardStep(0);
     setActiveSection("basics");
@@ -631,8 +634,13 @@ export const ItemFormModal = ({
 
       setUploadedBodyMedia((prev) => [...prev, ...newMedia]);
 
-      if (mediaLibraryReloadRef.current) {
-        await mediaLibraryReloadRef.current();
+      // Separate refs so header/VFX pickers do not overwrite each other;
+      // cleared on close so reload never targets an unmounted explorer.
+      if (isMediaLibraryOpen && headerMediaLibraryReloadRef.current) {
+        await headerMediaLibraryReloadRef.current();
+      }
+      if (isVfxMediaLibraryOpen && vfxMediaLibraryReloadRef.current) {
+        await vfxMediaLibraryReloadRef.current();
       }
     } catch (err) {
       if (generation !== formGenerationRef.current) {
@@ -1325,20 +1333,24 @@ export const ItemFormModal = ({
                       onClose={() => {
                         setIsMediaLibraryOpen(false);
                         setMediaLibraryRoleFilter("all");
+                        headerMediaLibraryReloadRef.current = null;
                       }}
                       onReady={({ reload }) => {
-                        mediaLibraryReloadRef.current = reload;
+                        headerMediaLibraryReloadRef.current = reload;
                       }}
                       actions={filteredMediaLibraryActions}
                     />
 
                     <MediaLibraryPickerModal
                       isOpen={isVfxMediaLibraryOpen}
-                      onClose={() => setIsVfxMediaLibraryOpen(false)}
+                      onClose={() => {
+                        setIsVfxMediaLibraryOpen(false);
+                        vfxMediaLibraryReloadRef.current = null;
+                      }}
                       title="Add Project VFX"
                       description="Pick images or videos from the media library to show in this project's VFX section."
                       onReady={({ reload }) => {
-                        mediaLibraryReloadRef.current = reload;
+                        vfxMediaLibraryReloadRef.current = reload;
                       }}
                       actions={vfxMediaLibraryActions}
                     />

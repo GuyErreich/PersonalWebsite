@@ -40,6 +40,9 @@ create policy "Admins can read all gamedev items"
   using ((select public.is_admin()));
 
 revoke select on table public.gamedev_items from anon;
+-- Authenticated retain table SELECT; RLS still limits rows to admins.
+-- Matches 20260803220000_gamedev_items_restore_authenticated_select.sql.
+grant select on table public.gamedev_items to authenticated;
 
 -- Only admins can insert
 drop policy if exists "Admins can insert gamedev items" on public.gamedev_items;
