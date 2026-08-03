@@ -14,7 +14,8 @@ Reads JSON on stdin::
       "pricing_updated": "2026-08",
       "overrides": {
         "max_rounds": null,
-        "max_usd_est": 2.0
+        "max_usd_est": 2.0,
+        "manage_severity": "high"
       }
     }
 

@@ -1,6 +1,6 @@
 ---
 name: ci-pr-review-loop
-description: Autonomous PR review-fix loop — alternates a fresh reviewer subagent and a pr-resolver fixer subagent on the branch's open PR until findings reach zero, within a round and cost budget, escalating risky findings. Extends engineering.
+description: Autonomous PR review-fix loop — alternates a fresh reviewer subagent and a pr-resolver fixer subagent on the branch's open PR until findings reach zero, within a round and cost budget, escalating only when a real design/policy call is required. Extends engineering.
 disable-model-invocation: true
 ---
 
@@ -56,9 +56,9 @@ Hard rules, not defaults:
    - Default **`auto`** always (cheap caps). Do **not** flip the whole loop to `api` just because a role uses a named model.
    - Use **`api`** caps only when the user explicitly says so (`pricing api`).
    - Named-model *segments* still estimate at api-ish rates for honesty (hooks do this per transcript).
-7. Initialize state via **`.cursor/hooks/run-python.sh review_loop_init.py`** (stdin JSON with `pr_number`, `pr_url`, `branch`, `toolchain_mode`, `pricing_updated`, optional `overrides`). This loads durable `.cursor/review-loop/preferences.json` — **do not hand-write `max_rounds: 3`**. Invocation overrides (`max 2 rounds`, `budget $1.50`, **`budget-only` → `overrides.max_rounds: null`**) are merged into preferences and the new `state.json`. Missing preference keys default once; explicit `null` for unlimited rounds is preserved across runs.
+7. Initialize state via **`.cursor/hooks/run-python.sh review_loop_init.py`** (stdin JSON with `pr_number`, `pr_url`, `branch`, `toolchain_mode`, `pricing_updated`, optional `overrides`). This loads durable `.cursor/review-loop/preferences.json` — **do not hand-write `max_rounds: 3`**. Invocation overrides (`max 2 rounds`, `budget $1.50`, **`budget-only` → `overrides.max_rounds: null`**, **`manage high` → `overrides.manage_severity: "high"`**) are merged into preferences and the new `state.json`. Missing preference keys default once; explicit `null` for unlimited rounds is preserved across runs.
 8. **Cold budget gate (required before any round):** project the first subagent (reviewer) with `cold_projection` / mode defaults. If `projected > max_tokens_est` or `projected > max_usd_est` (with spent=0), **do not set `active: true`**, do not launch Task — escalate with spent/projected/cap and stop.
-9. Set `active: true` on the state from init (or re-save). Print: `pricing_mode`, `reviewer_model`, `fixer_model`, `max_rounds` (`unlimited` when null), `max_tokens_est`, `max_usd_est`, and the cold projection.
+9. Set `active: true` on the state from init (or re-save). Print: `pricing_mode`, `reviewer_model`, `fixer_model`, `manage_severity`, `max_rounds` (`unlimited` when null), `max_tokens_est`, `max_usd_est`, and the cold projection.
 
 ## Per-round protocol
 
@@ -72,9 +72,9 @@ Hard rules, not defaults:
 3. **Always** tell the user (verbatim or equivalent): *Subagent panel may stay blank — I'll continue when the review finishes.* Do **not** cancel because the panel shows Loading Chat / Waiting for subagent. Wait for the Task completion notification, then collect the findings table + stable signatures.
 4. **Closed-finding filter (required):** before triage or inline comments, drop any row whose signature is in `closed_findings`, or that restates the same closed defect at the same path. Still keep *different* issues in those files. Recurrence (`Source: recurrence`, defect still present) → escalate once — do not treat as a fresh auto-fix. Post to GitHub **only** for **new open** signatures. **Never** post clean-pass / “Review passed” / “0 findings” reviews, Verdict/Lint checklists, or “intended event” footnotes — those contaminate PR comment context.
 5. After the review (and only then): fetch unresolved threads; merge tagged `external`.
-6. Triage via `references/triage-policy.md`. Escalations → pause, alert, set `escalation_pending`, wait.
+6. Triage via `references/triage-policy.md` (severity floor → defer; unambiguous must-fix even at High/Critical → auto-fix; escalate **only** for design/policy ambiguity). Escalations → pause, alert, set `escalation_pending`, wait.
 7. If auto-approved rows remain: stamp `fixer_started_at`, set `next_model` to `fixer_model`, launch **`pr-fixer`** (`subagent_type: pr-fixer`, `run_in_background: true`, `model: <fixer_model>`). **Again** alert: *Subagent panel may stay blank — I'll continue when the fixer finishes.* Hand only those rows. Fixer skips pr-resolver's Plan-mode gate.
-8. Record round outcome into `state.json`. Append every **fixed** and **accepted** finding to `closed_findings` (and to `accepted_by_design` when by design). Cost estimate + fingerprint go on the round entry.
+8. Record round outcome into `state.json`. Append every **fixed**, **accepted**, and **deferred** (below `manage_severity`) finding to `closed_findings` (and to `accepted_by_design` when by design). Cost estimate + fingerprint go on the round entry.
 9. **Before the next round:** re-check projective budget (spent + projected next). If over cap → escalate; do not launch. The `subagentStart` hook enforces the same deny.
 10. Evaluate stop conditions (`consecutive_clean_passes` vs `clean_passes_required`, budget, escalation). If continuing, launch the next review round — **including after a single clean pass**.
 
@@ -125,7 +125,7 @@ Do **not** ask the user “what is by design?” — propose it. For every escal
 ## PR Review Loop — Escalation
 
 **Round:** N
-**Blocked auto-fix because:** <one sentence>
+**Blocked auto-fix because:** <design/policy ambiguity — never “because severity is High”>
 
 **Recommendations** (orchestrator proposes; user confirms or corrects):
 
@@ -168,4 +168,4 @@ Read `state.json` and write the canvas per `references/summary-canvas.md`. Set `
 
 ## Closed findings (do not re-poop)
 
-Once fixed or accepted, a finding's signature goes into `closed_findings`. Every later **full** review still scans those areas for **other** issues, but the same closed issue must not reappear in triage, fixer handoff, or new inline comments. True fix regressions use `Source: recurrence` and escalate once.
+Once fixed, accepted, or deferred (below severity floor), a finding's signature goes into `closed_findings`. Every later **full** review still scans those areas for **other** issues, but the same closed issue must not reappear in triage, fixer handoff, or new inline comments. True fix regressions use `Source: recurrence` and escalate once.

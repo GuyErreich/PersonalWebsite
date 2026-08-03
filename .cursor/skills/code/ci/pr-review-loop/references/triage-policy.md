@@ -2,9 +2,29 @@
 
 Orchestrator classifies every finding (and every external unresolved thread) before the fixer runs. Policy-based — no Plan-mode gate per round unless something escalates.
 
+Severity alone does **not** force escalation. Clear must-fixes auto-fix even at High/Critical. Escalate only when a real product/security design call is required.
+
+## Severity floor (`manage_severity`)
+
+Durable preference (and per-run override). Findings **below** this floor are not managed by the loop.
+
+| Value | Loop manages |
+|---|---|
+| `low` | Low, Medium, High, Critical |
+| `medium` (**default**) | Medium, High, Critical |
+| `high` | High, Critical |
+| `critical` | Critical only |
+
+Order: `low` < `medium` < `high` < `critical`.
+
+- Below floor → `Decision: Defer` — do not fix, do not escalate. Append to `closed_findings` with `status: "deferred"` so later rounds do not re-report them and clean-pass is not blocked.
+- At or above floor → apply Auto-fix / Escalate / By design below.
+
+Invocation overrides: `manage medium` / `manage high` / `manage_severity=high` / `only critical`. Printed at preflight with other caps.
+
 ## Auto-fix (no ask)
 
-When the change stays inside files already in the PR diff:
+When the finding is at/above `manage_severity`, the change stays inside files already in the PR diff, **and** the correct fix is unambiguous (best practice / stated project rule — not a product trade-off):
 
 - Lint, format, import order, and type errors
 - Missing cleanup of listeners, timers, or Three.js disposal
@@ -12,17 +32,21 @@ When the change stays inside files already in the PR diff:
 - Magic values and naming violations already codified in `AGENT.md`
 - Mechanical duplication extraction the `AGENT.md` mandatory-refactor rule already requires
 - Doc and comment drift
+- Clear security/logic defects with an obvious, local fix (e.g. missing `await`, wrong null check, hardcoded secret removal to env, missing dispose) — **including High/Critical** when there is no credible by-design reading
 
 Tag these `Decision: Fix` with a one-line rationale and hand them to `pr-fixer`.
 
+**Do not escalate** merely because severity is High or Critical. If the right action is obvious and does not change intentional product behavior, auto-fix.
+
 ## Escalate (pause and alert)
 
-Stop the loop and ask the user when any of:
+Stop the loop and ask the user **only** when judgment is required — not because the severity label is high:
 
-- Critical or High severity
-- Auth, secrets, RLS, migrations, or env config
-- Architectural refactors or changes to files outside the PR diff
-- Public API, props contract, or user-visible behavior changes
+- **Design / product call** — ambiguous whether to keep current behavior; by-design evidence is plausible but not certain; “do we still want this?”
+- **Security policy call** — trade-off between exposure and product need (e.g. whether a field should stay public), not a clear bug with a local fix
+- Auth, secrets, RLS, migrations, or env config when the fix would **change** access model or deploy contract (not a typo / missing `secrets.set` path already documented)
+- Architectural refactors or changes to files **outside** the PR diff
+- Public API, props contract, or **intentional** user-visible behavior changes where multiple valid designs exist
 - A finding that **recurs after a fix** (`Source: recurrence`, same closed signature / same defect still present) — escalate once; do not re-open as a fresh auto-fix loop
 - Lint or build failing after a fix (non-zero exit from raw `AGENT.md` validate commands)
 - Infrastructure failures: no open PR, push rejection, merge conflict
@@ -39,6 +63,7 @@ For every escalated finding, include:
 1. **Why this is an issue** — concrete harm or surprising behavior if left as-is.
 2. **Category** — exactly one of: `security` | `logic` | `performance` | `best-practices` | `code-style`.
 3. **Recommend** — Fix or By design, with fix shape or by-design evidence.
+4. **Blocked auto-fix because** — the specific design/policy ambiguity (never “because severity is High”).
 
 | Recommend | When |
 |---|---|
@@ -57,7 +82,7 @@ For each **By design** recommendation, write the rationale yourself (1–3 sente
 
 The user only **confirms, corrects, or stops** — they should not have to invent the “why.”
 
-## Closed findings (fixed or accepted)
+## Closed findings (fixed, accepted, or deferred)
 
 Anything already in `state.closed_findings` is **done for this loop run**.
 
@@ -83,8 +108,17 @@ Pre-existing Copilot or human threads (origin `external`) go through the same ma
 ```markdown
 | # | Origin | Location | Severity | Category | Finding | Decision | Rationale |
 |---|---|---|---|---|---|---|---|
-| 1 | loop | path:line | Medium | logic | ... | Fix | ... |
-| 2 | external | path:line | Low | code-style | ... | By design | intentional ... |
-| 3 | loop | path:line | High | security | ... | Escalate → recommend Fix | why it's an issue … |
-| 4 | loop | path:line | High | best-practices | ... | Escalate → recommend By design | <orchestrator-written why> |
+| 1 | loop | path:line | Medium | logic | ... | Fix | unambiguous null check |
+| 2 | loop | path:line | Low | code-style | ... | Defer | below manage_severity=medium |
+| 3 | loop | path:line | High | security | ... | Fix | clear missing dispose / no design ambiguity |
+| 4 | loop | path:line | High | security | ... | Escalate → recommend Fix | public API exposure trade-off |
+| 5 | external | path:line | Medium | best-practices | ... | By design | intentional … |
 ```
+
+## Decision order (orchestrator)
+
+1. Closed-finding filter (drop re-reports / handle recurrence).
+2. Below `manage_severity` → **Defer**.
+3. Unambiguous must-fix inside PR diff → **Fix** (any severity).
+4. Clear intentional trade-off → **By design**.
+5. Real design/policy ambiguity or infra/budget/recurrence → **Escalate**.

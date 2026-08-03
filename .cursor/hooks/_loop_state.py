@@ -42,7 +42,20 @@ PREFERENCE_KEYS = (
     "reviewer_model",
     "fixer_model",
     "clean_passes_required",
+    "manage_severity",
 )
+
+# Minimum severity the loop manages (auto-fix / escalate). Below → Defer.
+MANAGE_SEVERITY_ORDER = ("low", "medium", "high", "critical")
+MANAGE_SEVERITY_ALIASES = {
+    "low": "low",
+    "all": "low",
+    "medium": "medium",
+    "med": "medium",
+    "high": "high",
+    "critical": "critical",
+    "crit": "critical",
+}
 
 
 def now_iso() -> str:
@@ -117,7 +130,32 @@ def default_preferences() -> dict[str, Any]:
         "reviewer_model": "inherit",
         "fixer_model": "inherit",
         "clean_passes_required": 2,
+        "manage_severity": "medium",
     }
+
+
+def normalize_manage_severity(value: Any) -> str:
+    """Return a canonical manage_severity floor (`low`|`medium`|`high`|`critical`)."""
+    if value is None:
+        return "medium"
+    raw = str(value).strip().lower()
+    if raw in MANAGE_SEVERITY_ALIASES:
+        return MANAGE_SEVERITY_ALIASES[raw]
+    if raw in MANAGE_SEVERITY_ORDER:
+        return raw
+    return "medium"
+
+
+def severity_meets_floor(severity: Any, floor: Any) -> bool:
+    """True when finding severity is at or above the manage_severity floor."""
+    sev = str(severity or "").strip().lower()
+    floor_norm = normalize_manage_severity(floor)
+    if sev not in MANAGE_SEVERITY_ORDER:
+        # Unknown labels are managed (safe default — do not silently drop).
+        return True
+    return MANAGE_SEVERITY_ORDER.index(sev) >= MANAGE_SEVERITY_ORDER.index(
+        floor_norm
+    )
 
 
 def load_preferences(root: Path | None = None) -> dict[str, Any]:
@@ -139,6 +177,9 @@ def load_preferences(root: Path | None = None) -> dict[str, Any]:
         # Allow explicit null for max_rounds (unlimited).
         if key == "max_rounds" or data[key] is not None:
             prefs[key] = data[key]
+    prefs["manage_severity"] = normalize_manage_severity(
+        prefs.get("manage_severity")
+    )
     return prefs
 
 
@@ -149,6 +190,9 @@ def save_preferences(data: dict[str, Any], root: Path | None = None) -> None:
     for key in PREFERENCE_KEYS:
         if key in data:
             merged[key] = data[key]
+    merged["manage_severity"] = normalize_manage_severity(
+        merged.get("manage_severity")
+    )
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(merged, indent=2) + "\n", encoding="utf-8")
@@ -170,8 +214,15 @@ def apply_preference_overrides(
         if key == "max_rounds":
             merged[key] = overrides[key]
             continue
+        if key == "manage_severity":
+            merged[key] = normalize_manage_severity(overrides[key])
+            continue
         if overrides[key] is not None:
             merged[key] = overrides[key]
+    if "manage_severity" in merged:
+        merged["manage_severity"] = normalize_manage_severity(
+            merged.get("manage_severity")
+        )
     return merged
 
 
@@ -208,6 +259,9 @@ def start_loop_state(
         "max_tokens_est": prefs.get("max_tokens_est", 1_000_000),
         "max_usd_est": prefs.get("max_usd_est", 2.0),
         "clean_passes_required": int(prefs.get("clean_passes_required") or 2),
+        "manage_severity": normalize_manage_severity(
+            prefs.get("manage_severity", "medium")
+        ),
         "consecutive_clean_passes": 0,
         "round": 0,
         "escalation_pending": False,

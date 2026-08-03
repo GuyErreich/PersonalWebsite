@@ -538,3 +538,43 @@ class TestRoundFollowup:
         )
         assert state["clean_passes_required"] == 2
         assert state["consecutive_clean_passes"] == 0
+        assert state["manage_severity"] == "medium"
+
+
+class TestManageSeverity:
+    """Severity floor preference + helpers."""
+
+    def test_default_and_override_persist(self, tmp_path: Path) -> None:
+        from _loop_state import load_preferences, start_loop_state
+
+        first = start_loop_state(
+            pr_number=1,
+            pr_url="u",
+            branch="b",
+            overrides={"manage_severity": "high"},
+            root=tmp_path,
+        )
+        assert first["manage_severity"] == "high"
+        assert load_preferences(tmp_path)["manage_severity"] == "high"
+
+        second = start_loop_state(
+            pr_number=2,
+            pr_url="u2",
+            branch="b2",
+            root=tmp_path,
+        )
+        assert second["manage_severity"] == "high"
+
+    def test_aliases_and_floor_check(self) -> None:
+        from _loop_state import normalize_manage_severity, severity_meets_floor
+
+        assert normalize_manage_severity("HIGH") == "high"
+        assert normalize_manage_severity("crit") == "critical"
+        assert normalize_manage_severity("all") == "low"
+        assert normalize_manage_severity("nope") == "medium"
+
+        assert severity_meets_floor("High", "medium") is True
+        assert severity_meets_floor("Low", "medium") is False
+        assert severity_meets_floor("Medium", "high") is False
+        assert severity_meets_floor("Critical", "critical") is True
+        assert severity_meets_floor("Weird", "medium") is True

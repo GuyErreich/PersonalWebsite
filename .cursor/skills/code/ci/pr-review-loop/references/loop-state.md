@@ -18,11 +18,18 @@ Runtime files under `.cursor/review-loop/` (gitignored):
   "pricing_mode": "auto",
   "reviewer_model": "inherit",
   "fixer_model": "inherit",
-  "clean_passes_required": 2
+  "clean_passes_required": 2,
+  "manage_severity": "medium"
 }
 ```
 
+| Key | Default | Purpose |
+|---|---|---|
+| `manage_severity` | `medium` | Minimum finding severity the loop manages (`low` \| `medium` \| `high` \| `critical`). Below → Defer (see `triage-policy.md`). |
+
 Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior `max_rounds: null` (budget-only) is not overwritten with `3`. Only missing keys take factory defaults; invocation `overrides` update both preferences and the new state.
+
+Invocation overrides for severity: `manage medium` / `manage high` / `only critical` / `manage_severity=high`.
 
 ## State schema (per run)
 
@@ -41,6 +48,7 @@ Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior
   "max_tokens_est": 1000000,
   "max_usd_est": 2.0,
   "clean_passes_required": 2,
+  "manage_severity": "medium",
   "round": 0,
   "escalation_pending": false,
   "toolchain_mode": "uv",
@@ -137,7 +145,7 @@ Every finding that was **fixed** or **accepted by design** is appended here for 
   "signature": "...",
   "location": "path:line",
   "finding": "...",
-  "status": "fixed|accepted",
+  "status": "fixed|accepted|deferred",
   "closed_in_round": 2,
   "rationale": "optional — required when status is accepted"
 }
@@ -145,7 +153,7 @@ Every finding that was **fixed** or **accepted by design** is appended here for 
 
 Orchestrator rules:
 
-1. After each fix or by-design decision, append the finding to `closed_findings` (and to `accepted_by_design` when status is `accepted`).
+1. After each fix, by-design decision, or severity-floor defer, append the finding to `closed_findings` (and to `accepted_by_design` when status is `accepted`).
 2. Pass the full `closed_findings` list into every `pr-reviewer` launch.
 3. Before triage, drop any returned row whose `signature` is already in `closed_findings` (or is clearly the same underlying defect at the same path with restated wording). Do not hand those to the fixer or re-post as new inline comments.
 4. Exception — **recurrence**: the reviewer tagged `Source: recurrence` and the defect is still present after a fix → escalate once (do not auto-fix in a loop). Do not treat restated closed issues as fresh findings.
@@ -156,7 +164,7 @@ Orchestrator rules:
 { "signature": "...", "location": "path:line", "finding": "...", "rationale": "..." }
 ```
 
-`accepted_by_design` remains the rationale store for by-design keeps; those signatures also appear in `closed_findings` with `status: "accepted"`.
+`accepted_by_design` remains the rationale store for by-design keeps; those signatures also appear in `closed_findings` with `status: "accepted"`. Severity-floor skips use `status: "deferred"`.
 
 ## Defaults and overrides
 
