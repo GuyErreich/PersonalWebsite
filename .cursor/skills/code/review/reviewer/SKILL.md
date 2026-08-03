@@ -61,7 +61,7 @@ Load a skill only when the diff matches; load lens files for every match; load s
 | 6 | Domain | `threejs`, supabase, project skills — path-matched |
 | 7 | Logic & regression | `references/logic-pass.md` |
 | 8 | Threat model | `references/threat-pass.md` |
-| 9 | Validate | raw lint + build from repo `AGENT.md` |
+| 9 | Validate | raw lint + build from repo `AGENT.md` — **or skip** when loop state fingerprint still matches last pass (orchestrator / PR loop) |
 | 10 | Coverage gate | `references/thoroughness-pass.md` — **required before any clean verdict** |
 
 Run all applicable phases in one session. Do not fix findings unless the user explicitly asked. If there is no diff at all, report one sentence and stop.

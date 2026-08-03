@@ -19,17 +19,19 @@ Runtime files under `.cursor/review-loop/` (gitignored):
   "reviewer_model": "inherit",
   "fixer_model": "inherit",
   "clean_passes_required": 2,
-  "manage_severity": "medium"
+  "manage_severity": "medium",
+  "post_fix_focus": "delta"
 }
 ```
 
 | Key | Default | Purpose |
 |---|---|---|
 | `manage_severity` | `medium` | Minimum finding severity the loop manages (`low` \| `medium` \| `high` \| `critical`). Below → Defer (see `triage-policy.md`). |
+| `post_fix_focus` | `delta` | Reviewer focus after a fixer round (`delta` \| `full`). |
 
 Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior `max_rounds: null` (budget-only) is not overwritten with `3`. Only missing keys take factory defaults; invocation `overrides` update both preferences and the new state.
 
-Invocation overrides for severity: `manage medium` / `manage high` / `only critical` / `manage_severity=high`.
+Invocation overrides: `manage medium` / `manage high` / `only critical` / `manage_severity=high` / `post_fix_focus=full` / `focus delta`.
 
 ## State schema (per run)
 
@@ -49,11 +51,15 @@ Invocation overrides for severity: `manage medium` / `manage high` / `only criti
   "max_usd_est": 2.0,
   "clean_passes_required": 2,
   "manage_severity": "medium",
+  "post_fix_focus": "delta",
   "round": 0,
   "escalation_pending": false,
   "toolchain_mode": "uv",
   "pricing_updated": "",
   "last_fingerprint": "",
+  "last_validate_fingerprint": "",
+  "last_lint": "",
+  "last_build": "",
   "accepted_by_design": [],
   "closed_findings": [],
   "consecutive_clean_passes": 0,
@@ -68,6 +74,15 @@ Invocation overrides for severity: `manage medium` / `manage high` / `only criti
   }
 }
 ```
+
+### Init-once validate fields
+
+| Field | Meaning |
+|---|---|
+| `last_validate_fingerprint` | PR fingerprint from last successful lint+build |
+| `last_lint` / `last_build` | `pass` \| `fail` \| `""` |
+
+Orchestrator runs baseline validate at preflight; fixer updates after commit validate. Reviewers skip phase 9 when `validate_still_fresh(state, current_fp)` is true — including `full` / `confirm`.
 
 ### Role models
 
@@ -177,21 +192,25 @@ Orchestrator rules:
 | `max_tokens_est` | 1000000 | 400000 | "budget 200k tokens" |
 | `max_usd_est` | 2.00 | 3.00 | "budget $1.50" |
 | `clean_passes_required` | 2 | 2 | `"1 clean pass"` (faster, riskier) / `"3 clean passes"` |
+| `post_fix_focus` | `delta` | `delta` | `"post_fix_focus=full"` to restore full review after every fixer |
 
 When `max_rounds` is unlimited, stop conditions are **budget + consecutive clean reviews** — the loop may run round 4+ until projected spend would cross the token/USD caps, or until `consecutive_clean_passes >= clean_passes_required`. Do **not** stop on a single clean review, “no new signatures”, or fingerprint alone.
 
 ## Round focus (reviewer → developer until zero)
 
-Each round is the same cycle: **full reviewer pass** → triage → **developer fixer** (when needed) → next full review. Success is **`clean_passes_required` consecutive** full reviews with zero **open** findings (default 2). Later rounds still scan previously flagged areas for *other* issues — they must not re-report the same closed finding.
+Default cycle: **full → (fix) → delta → … → confirm**. Success is **`clean_passes_required` consecutive** reviews with zero **open** findings (default 2).
 
 | When | Focus | Scope |
 |---|---|---|
-| Every round by default | `full` | From-scratch full-branch review — all reviewer phases across `merge-base...HEAD`. Round number does **not** shrink scope. |
-| After a clean pass but below `clean_passes_required` | `full` | Another full review immediately — this is the confirm gate, not an early exit. |
-| User says `focus delta` / “cheap delta pass” | `delta` | Opt-in only: fixer diff + previously flagged files. Never the default for round 2+. |
-| User says `confirm` | `confirm` | Opt-in label only; default success gate uses repeated `full` reviews. |
+| Round 1 | `full` | Whole branch diff — all applicable phases. No mandatory re-lint if init validate fingerprint still matches. |
+| After a fixer | `post_fix_focus` (default `delta`) | Fixer diff + hotspots + previously flagged paths |
+| After first clean | `confirm` | Adversarial pass over changed code files |
+| Coverage fail / out-of-hotspot issues | `full` | One recovery full pass |
+| User override | `full` / `delta` / `confirm` | Invocation wins |
 
-Orchestrator rule: `focus = invocation override if present else "full"`.
+Use `_loop_state.resolve_round_focus(...)`. Do **not** force `full` every round.
+
+Orchestrator rule: `focus = resolve_round_focus(...)` unless the user overrode focus for this launch.
 ## Projective budget check
 
 Alert **before** spending — never start a loop/round that is already projected over cap.

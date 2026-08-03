@@ -15,7 +15,8 @@ Reads JSON on stdin::
       "overrides": {
         "max_rounds": null,
         "max_usd_est": 2.0,
-        "manage_severity": "high"
+        "manage_severity": "high",
+        "post_fix_focus": "delta"
       }
     }
 

@@ -43,6 +43,7 @@ PREFERENCE_KEYS = (
     "fixer_model",
     "clean_passes_required",
     "manage_severity",
+    "post_fix_focus",
 )
 
 # Minimum severity the loop manages (auto-fix / escalate). Below → Defer.
@@ -55,6 +56,13 @@ MANAGE_SEVERITY_ALIASES = {
     "high": "high",
     "critical": "critical",
     "crit": "critical",
+}
+
+POST_FIX_FOCUS_VALUES = ("delta", "full")
+POST_FIX_FOCUS_ALIASES = {
+    "delta": "delta",
+    "cheap": "delta",
+    "full": "full",
 }
 
 
@@ -131,6 +139,7 @@ def default_preferences() -> dict[str, Any]:
         "fixer_model": "inherit",
         "clean_passes_required": 2,
         "manage_severity": "medium",
+        "post_fix_focus": "delta",
     }
 
 
@@ -144,6 +153,61 @@ def normalize_manage_severity(value: Any) -> str:
     if raw in MANAGE_SEVERITY_ORDER:
         return raw
     return "medium"
+
+
+def normalize_post_fix_focus(value: Any) -> str:
+    """Return canonical post_fix_focus (`delta`|`full`)."""
+    if value is None:
+        return "delta"
+    raw = str(value).strip().lower()
+    if raw in POST_FIX_FOCUS_ALIASES:
+        return POST_FIX_FOCUS_ALIASES[raw]
+    if raw in POST_FIX_FOCUS_VALUES:
+        return raw
+    return "delta"
+
+
+def resolve_round_focus(
+    *,
+    round_n: int,
+    consecutive_clean_passes: int,
+    just_finished_fixer: bool,
+    post_fix_focus: Any = "delta",
+    invocation_focus: Any = None,
+    force_full: bool = False,
+) -> str:
+    """Pick reviewer focus for the next round.
+
+    Defaults: round 1 → full; after fixer → post_fix_focus (delta);
+    after first clean → confirm; force_full (coverage miss) → full.
+    """
+    if invocation_focus is not None:
+        raw = str(invocation_focus).strip().lower()
+        if raw in {"full", "delta", "confirm"}:
+            return raw
+    if force_full:
+        return "full"
+    if consecutive_clean_passes >= 1:
+        return "confirm"
+    if just_finished_fixer:
+        return normalize_post_fix_focus(post_fix_focus)
+    if round_n <= 1:
+        return "full"
+    return normalize_post_fix_focus(post_fix_focus)
+
+
+def validate_still_fresh(
+    state: dict[str, Any], current_fingerprint: str
+) -> bool:
+    """True when stored lint+build pass matches the current PR fingerprint."""
+    if not current_fingerprint:
+        return False
+    if str(state.get("last_validate_fingerprint") or "") != current_fingerprint:
+        return False
+    return (
+        str(state.get("last_lint") or "") == "pass"
+        and str(state.get("last_build") or "") == "pass"
+    )
 
 
 def severity_meets_floor(severity: Any, floor: Any) -> bool:
@@ -180,6 +244,9 @@ def load_preferences(root: Path | None = None) -> dict[str, Any]:
     prefs["manage_severity"] = normalize_manage_severity(
         prefs.get("manage_severity")
     )
+    prefs["post_fix_focus"] = normalize_post_fix_focus(
+        prefs.get("post_fix_focus")
+    )
     return prefs
 
 
@@ -192,6 +259,9 @@ def save_preferences(data: dict[str, Any], root: Path | None = None) -> None:
             merged[key] = data[key]
     merged["manage_severity"] = normalize_manage_severity(
         merged.get("manage_severity")
+    )
+    merged["post_fix_focus"] = normalize_post_fix_focus(
+        merged.get("post_fix_focus")
     )
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -217,11 +287,18 @@ def apply_preference_overrides(
         if key == "manage_severity":
             merged[key] = normalize_manage_severity(overrides[key])
             continue
+        if key == "post_fix_focus":
+            merged[key] = normalize_post_fix_focus(overrides[key])
+            continue
         if overrides[key] is not None:
             merged[key] = overrides[key]
     if "manage_severity" in merged:
         merged["manage_severity"] = normalize_manage_severity(
             merged.get("manage_severity")
+        )
+    if "post_fix_focus" in merged:
+        merged["post_fix_focus"] = normalize_post_fix_focus(
+            merged.get("post_fix_focus")
         )
     return merged
 
@@ -262,12 +339,18 @@ def start_loop_state(
         "manage_severity": normalize_manage_severity(
             prefs.get("manage_severity", "medium")
         ),
+        "post_fix_focus": normalize_post_fix_focus(
+            prefs.get("post_fix_focus", "delta")
+        ),
         "consecutive_clean_passes": 0,
         "round": 0,
         "escalation_pending": False,
         "toolchain_mode": toolchain_mode,
         "pricing_updated": pricing_updated,
         "last_fingerprint": "",
+        "last_validate_fingerprint": "",
+        "last_lint": "",
+        "last_build": "",
         "accepted_by_design": [],
         "closed_findings": [],
         "escalations": [],

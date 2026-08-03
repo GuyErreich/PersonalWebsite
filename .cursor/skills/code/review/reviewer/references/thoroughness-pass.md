@@ -1,74 +1,78 @@
 # Coverage & Thoroughness Gate
 
-False “Review passed” results are worse than noisy findings. This gate runs **before** you may declare zero findings.
+False “Review passed” results are worse than noisy findings. This gate runs **before** you may declare zero findings. Scope **M** by round focus.
 
-## 1. Materialize the full surface
+## Focus-scoped surface (M)
 
-Before judging anything:
+| Focus | M (denominator) |
+|---|---|
+| `full` | All non-trivial changed code files in `merge-base...HEAD` |
+| `delta` | Files in fixer diff ∪ `fix_hotspots` ∪ previously flagged paths only |
+| `confirm` | All non-trivial changed code files in `merge-base...HEAD` (pure docs/config may be skimmed) |
 
-1. List every path in the tier diff (`merge-base...HEAD` for PR tier).
-2. Group by routing signal (TS/React/a11y/Three/security/etc.).
-3. Read the **current file contents** for each non-trivial changed path — not only the patch hunk. Hunks hide broken call sites, stale siblings, and incomplete cleanups in the same file.
+Lint/build are **not** part of coverage M — validate may be skipped when the orchestrator fingerprint still matches (including on `full` / `confirm`). Do not fail coverage solely because validate was skipped.
 
-Skipping a changed file because “the fixer already touched it” or “lint passed” is a process failure.
+## 1. Materialize the surface for this focus
 
-## 2. Anti-shallow traps (do not do these)
+1. List paths in the focus set above.
+2. Group by routing signal.
+3. Read **current file contents** for each non-trivial path in the set — not only the patch hunk.
+
+Skipping a file in M because “the fixer already touched it” or “lint passed” is a process failure.
+
+## 2. Anti-shallow traps
 
 | Trap | Why it creates false cleans |
 |---|---|
 | Stopping after lint + build green | Most logic/a11y/contract bugs never fail CI |
-| Only reading the last commit / fixer diff on a `full` review | Earlier branch commits stay unreviewed |
-| Assuming prior-round fixes mean the file is done | Fixes often leave sibling bugs or incomplete root causes |
-| Re-checking only previously flagged lines | New issues live in adjacent handlers, props, and shared helpers |
-| Declaring clean because the last review was clean | Independent passes must re-earn clean; do not inherit verdict |
-| Treating “no obvious crash” as pass | Missing keyboard path, wrong default, stale state still count |
+| Only reading the last commit on a `full` review | Earlier branch commits stay unreviewed |
+| Assuming prior-round fixes mean the file is done | Sibling bugs / incomplete root causes |
+| Re-checking only previously flagged lines | Adjacent handlers and shared helpers |
+| Declaring clean because the last review was clean | Independent passes must re-earn clean |
+| Treating “no obvious crash” as pass | Missing keyboard path, wrong default, stale state |
 
-## 3. Per-file minimum (changed code files)
+## 3. Per-file minimum (code files in M)
 
-For each changed `*.{ts,tsx,js,jsx}` (and equivalent app code), explicitly check:
+For each `*.{ts,tsx,js,jsx}` (and equivalent) in M:
 
-1. **Contracts** — props, return values, and error paths match callers in the diff
-2. **State / effects** — stale closures, missing cleanup, wrong dependency intent
-3. **UI / a11y** (components) — keyboard, roles, focus, non-interactive tabIndex, labels
-4. **Resource lifetime** — listeners, timers, R3F/Three disposables, subscriptions
-5. **Edge paths** — empty data, loading/error, unmount mid-async
+1. **Contracts** — props, returns, error paths vs callers
+2. **State / effects** — stale closures, cleanup, deps intent
+3. **UI / a11y** (components) — keyboard, roles, focus, labels
+4. **Resource lifetime** — listeners, timers, R3F disposables
+5. **Edge paths** — empty, loading/error, unmount mid-async
 
-If a file is pure types/config/docs, note it as skimmed; do not pretend it was a deep pass.
+Pure types/config/docs: skim and note; do not pretend deep pass.
 
 ## 4. Hotspots from closed / fixed findings
 
-When the orchestrator passes `closed_findings` (or recent fix paths):
+1. Verify each `status: fixed` — still present ⇒ `Source: recurrence`.
+2. Expand one hop for *different* issues.
+3. Do not re-report closed wording.
 
-1. **Verify** each `status: fixed` item in the current code — if the defect remains, report `Source: recurrence` (reuse signature when possible).
-2. **Expand** one hop: same file, same hook/module, callers/callees touched by the fix. Look for *different* issues (incomplete migration, copy-pasted antipattern, missing twin handler).
-3. Do **not** re-report the closed wording as a new finding.
+## 5. Confirm / second-clean mindset
 
-## 5. Second+ clean / confirm mindset
+When `consecutive_clean_passes >= 1` or focus is `confirm`, treat the prior clean as probably wrong: Medium+ logic/a11y/security; different lens (user flow, failure, keyboard).
 
-When `consecutive_clean_passes >= 1` or focus is confirm-like, treat the prior clean as **probably wrong**:
+## 6. Lenses
 
-- Prefer hunting Medium+ logic/a11y/security over Low style.
-- Re-walk every changed component and data path once more with a different lens (user flow, failure path, mobile/keyboard).
-- Only then may you return zero findings.
+Activate staff-bar plus every specialist lens that matches **at least one file in M**. Skip lenses with zero files in the focus set (especially on `delta`).
 
-## 6. Clean verdict requires evidence
+## 7. Clean verdict requires evidence
 
-You may return **Review passed** only if all are true:
+**Review passed** only if:
 
-1. Every applicable phase 0–10 was actually run (including lenses, logic, threat, raw lint/build, coverage).
-2. Every non-trivial changed file was opened and checked against §3.
-3. Closed/fixed hotspots were verified (§4) when provided.
-4. Every matching specialist lens was activated (see `lenses/README.md`).
-5. You can list the files and lenses you reviewed (counts are enough in the report).
+1. Applicable phases for this focus were run (validate may be `skip` when fingerprint-matched).
+2. Every non-trivial file in **M** was opened and checked (§3).
+3. Hotspots verified when provided (§4).
+4. Every matching in-scope lens was activated (§6).
+5. You can report N/M and lenses.
 
-If time/context pressure would force a skim, **do not claim clean** — report what you could not cover as findings (Medium: “unreviewed surface: …”) or fail the review for incomplete coverage. A thin clean is not allowed.
+If you would skim M, do not claim clean — report unreviewed surface or fail coverage.
 
-## 7. Report fragment (required on PR / loop reviews)
-
-Include before the findings table (chat / parent report only — never on GitHub):
+## 8. Report fragment
 
 ```markdown
-**Coverage:** N/M changed code files reviewed · hotspots checked: K · phases: 0–10 · lenses: staff-bar+…
+**Coverage:** N/M changed code files reviewed (focus=…) · hotspots checked: K · phases: … · lenses: staff-bar+… · validate: pass|fail|skip
 ```
 
-If `N < M` for non-trivial code files, or a matching lens was skipped, verdict cannot be Review passed.
+If `N < M` for non-trivial code files in M, or an in-scope lens was skipped, verdict cannot be Review passed.

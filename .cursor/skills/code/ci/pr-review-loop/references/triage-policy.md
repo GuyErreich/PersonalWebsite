@@ -2,7 +2,18 @@
 
 Orchestrator classifies every finding (and every external unresolved thread) before the fixer runs. Policy-based — no Plan-mode gate per round unless something escalates.
 
-Severity alone does **not** force escalation. Clear must-fixes auto-fix even at High/Critical. Escalate only when a real product/security design call is required.
+## Hard litmus (read first — non-negotiable)
+
+1. Can you state **Recommend: Fix** with a concrete fix shape? → **`Decision: Fix`** → hand to `pr-fixer`. **Never escalate.**
+2. Are you unsure whether the current behavior is intentional product policy? → Escalate (propose Fix vs By design with your rationale).
+3. **Forbidden blocked / Decision rationales:** anything whose pause reason is only severity or impact — e.g. “High severity…”, “Critical…”, “High — …”, “data-loss…”, “security…” alone. A blocked reason must name a **design ambiguity** (“unclear if X should remain”) or the finding must auto-fix.
+4. Multiple equivalent safe fixes → pick the **simplest conservative** shape; do not escalate to ask which.
+
+**Ask only when unsure of intent.** Importance, severity, and “easy important fix” are reasons to auto-fix, not to pause.
+
+Before posting any escalation to the user: self-check — if you already wrote Recommend: Fix, **abort escalate and launch `pr-fixer`**.
+
+Severity alone does **not** force escalation. Clear must-fixes auto-fix even at High/Critical.
 
 ## Severity floor (`manage_severity`)
 
@@ -24,7 +35,7 @@ Invocation overrides: `manage medium` / `manage high` / `manage_severity=high` /
 
 ## Auto-fix (no ask)
 
-When the finding is at/above `manage_severity`, the change stays inside files already in the PR diff, **and** the correct fix is unambiguous (best practice / stated project rule — not a product trade-off):
+When the finding is at/above `manage_severity`, **and** the correct fix is unambiguous (best practice / stated project rule — not a product trade-off):
 
 - Lint, format, import order, and type errors
 - Missing cleanup of listeners, timers, or Three.js disposal
@@ -33,24 +44,28 @@ When the finding is at/above `manage_severity`, the change stays inside files al
 - Mechanical duplication extraction the `AGENT.md` mandatory-refactor rule already requires
 - Doc and comment drift
 - Clear security/logic defects with an obvious, local fix (e.g. missing `await`, wrong null check, hardcoded secret removal to env, missing dispose) — **including High/Critical** when there is no credible by-design reading
+- **Follow-up migrations** — add a later timestamped migration with the intended SQL; never rewrite an already-applied migration version in place
+- **Hydration / race / data-loss bugs** with a clear gate (e.g. disable edits until `isHydrated`) — pick the conservative shape; no user ask
+- Documented secrets-map / deploy wiring when the path is already in project skills
 
-Tag these `Decision: Fix` with a one-line rationale and hand them to `pr-fixer`.
+Tag these `Decision: Fix` with a one-line rationale (include the chosen fix shape) and hand them to `pr-fixer`.
 
-**Do not escalate** merely because severity is High or Critical. If the right action is obvious and does not change intentional product behavior, auto-fix.
+Stay inside the PR diff when possible; a **new** migration file that completes an in-diff schema change is allowed when that is the safe shape.
 
 ## Escalate (pause and alert)
 
 Stop the loop and ask the user **only** when judgment is required — not because the severity label is high:
 
 - **Design / product call** — ambiguous whether to keep current behavior; by-design evidence is plausible but not certain; “do we still want this?”
-- **Security policy call** — trade-off between exposure and product need (e.g. whether a field should stay public), not a clear bug with a local fix
-- Auth, secrets, RLS, migrations, or env config when the fix would **change** access model or deploy contract (not a typo / missing `secrets.set` path already documented)
-- Architectural refactors or changes to files **outside** the PR diff
-- Public API, props contract, or **intentional** user-visible behavior changes where multiple valid designs exist
+- **Security / access policy call** — trade-off between exposure and product need (e.g. unclear whether a role should keep SELECT), not a clear bug with a local fix
+- Architectural refactors or changes to files **outside** the PR diff when the correct scope is unclear
+- Public API, props contract, or **intentional** user-visible behavior changes where multiple valid **product** designs exist (not multiple equivalent bugfix shapes)
 - A finding that **recurs after a fix** (`Source: recurrence`, same closed signature / same defect still present) — escalate once; do not re-open as a fresh auto-fix loop
 - Lint or build failing after a fix (non-zero exit from raw `AGENT.md` validate commands)
 - Infrastructure failures: no open PR, push rejection, merge conflict
 - Projected next-round spend would cross `max_tokens_est` or `max_usd_est`
+
+Do **not** escalate merely because the path is a migration, RLS, auth, or “data-loss” if Recommend would be Fix with a concrete safe shape.
 
 Tag these `Decision: Escalate`. Set `escalation_pending: true` in `state.json`. The budget hook refuses new subagents until cleared.
 
@@ -63,11 +78,11 @@ For every escalated finding, include:
 1. **Why this is an issue** — concrete harm or surprising behavior if left as-is.
 2. **Category** — exactly one of: `security` | `logic` | `performance` | `best-practices` | `code-style`.
 3. **Recommend** — Fix or By design, with fix shape or by-design evidence.
-4. **Blocked auto-fix because** — the specific design/policy ambiguity (never “because severity is High”).
+4. **Blocked auto-fix because** — the specific **design/policy ambiguity** only. If you cannot name an ambiguity, do not escalate — auto-fix instead.
 
 | Recommend | When |
 |---|---|
-| **Fix** | Clear bug / security gap / inconsistent behavior relative to stated product rules |
+| **Fix** | Clear bug / security gap / inconsistent behavior relative to stated product rules — **if you pick Fix here, you must auto-fix, not escalate** |
 | **By design** | Evidence in the PR, UI copy, comments, migrations, or prior accepted items that this is intentional |
 
 | Category | Use when |
@@ -78,7 +93,7 @@ For every escalated finding, include:
 | `best-practices` | Architecture, surprising UX, maintainability, a11y patterns |
 | `code-style` | Naming, formatting, local conventions (rare to escalate) |
 
-For each **By design** recommendation, write the rationale yourself (1–3 sentences): what product rule it matches, where you saw that intent, and why auto-fix would be wrong. For each **Fix** recommendation, state the minimal fix shape.
+For each **By design** recommendation, write the rationale yourself (1–3 sentences). For escalations that are truly ambiguous, state both options; never escalate with Recommend: Fix as the only path.
 
 The user only **confirms, corrects, or stops** — they should not have to invent the “why.”
 
@@ -111,14 +126,15 @@ Pre-existing Copilot or human threads (origin `external`) go through the same ma
 | 1 | loop | path:line | Medium | logic | ... | Fix | unambiguous null check |
 | 2 | loop | path:line | Low | code-style | ... | Defer | below manage_severity=medium |
 | 3 | loop | path:line | High | security | ... | Fix | clear missing dispose / no design ambiguity |
-| 4 | loop | path:line | High | security | ... | Escalate → recommend Fix | public API exposure trade-off |
-| 5 | external | path:line | Medium | best-practices | ... | By design | intentional … |
+| 4 | loop | path:line | High | logic | ... | Fix | disable UI until hydrated (conservative) |
+| 5 | loop | path:line | High | security | ... | Escalate → recommend By design or Fix | unclear if role should keep SELECT |
+| 6 | external | path:line | Medium | best-practices | ... | By design | intentional … |
 ```
 
 ## Decision order (orchestrator)
 
 1. Closed-finding filter (drop re-reports / handle recurrence).
 2. Below `manage_severity` → **Defer**.
-3. Unambiguous must-fix inside PR diff → **Fix** (any severity).
+3. Unambiguous must-fix (Recommend would be Fix) → **Fix** (any severity) — including migrations/hydration/data-loss with a clear shape.
 4. Clear intentional trade-off → **By design**.
-5. Real design/policy ambiguity or infra/budget/recurrence → **Escalate**.
+5. Real design/policy **ambiguity** or infra/budget/recurrence → **Escalate**.

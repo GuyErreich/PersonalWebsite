@@ -539,6 +539,8 @@ class TestRoundFollowup:
         assert state["clean_passes_required"] == 2
         assert state["consecutive_clean_passes"] == 0
         assert state["manage_severity"] == "medium"
+        assert state["post_fix_focus"] == "delta"
+        assert state["last_validate_fingerprint"] == ""
 
 
 class TestManageSeverity:
@@ -578,3 +580,76 @@ class TestManageSeverity:
         assert severity_meets_floor("Medium", "high") is False
         assert severity_meets_floor("Critical", "critical") is True
         assert severity_meets_floor("Weird", "medium") is True
+
+    def test_post_fix_focus_and_round_focus(self, tmp_path: Path) -> None:
+        from _loop_state import (
+            normalize_post_fix_focus,
+            resolve_round_focus,
+            start_loop_state,
+            validate_still_fresh,
+        )
+
+        assert normalize_post_fix_focus("FULL") == "full"
+        assert normalize_post_fix_focus("cheap") == "delta"
+
+        state = start_loop_state(
+            pr_number=1,
+            pr_url="u",
+            branch="b",
+            overrides={"post_fix_focus": "delta"},
+            root=tmp_path,
+        )
+        assert state["post_fix_focus"] == "delta"
+        assert state["last_validate_fingerprint"] == ""
+
+        assert (
+            resolve_round_focus(
+                round_n=1,
+                consecutive_clean_passes=0,
+                just_finished_fixer=False,
+            )
+            == "full"
+        )
+        assert (
+            resolve_round_focus(
+                round_n=2,
+                consecutive_clean_passes=0,
+                just_finished_fixer=True,
+                post_fix_focus="delta",
+            )
+            == "delta"
+        )
+        assert (
+            resolve_round_focus(
+                round_n=3,
+                consecutive_clean_passes=1,
+                just_finished_fixer=False,
+            )
+            == "confirm"
+        )
+        assert (
+            resolve_round_focus(
+                round_n=2,
+                consecutive_clean_passes=0,
+                just_finished_fixer=True,
+                force_full=True,
+            )
+            == "full"
+        )
+        assert (
+            resolve_round_focus(
+                round_n=2,
+                consecutive_clean_passes=0,
+                just_finished_fixer=True,
+                invocation_focus="confirm",
+            )
+            == "confirm"
+        )
+
+        state["last_validate_fingerprint"] = "abc"
+        state["last_lint"] = "pass"
+        state["last_build"] = "pass"
+        assert validate_still_fresh(state, "abc") is True
+        assert validate_still_fresh(state, "xyz") is False
+        state["last_lint"] = "fail"
+        assert validate_still_fresh(state, "abc") is False
