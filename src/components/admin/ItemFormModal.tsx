@@ -147,6 +147,7 @@ export const ItemFormModal = ({
   const bodyAssetInputRef = useRef<HTMLInputElement>(null);
   const mediaLibraryReloadRef = useRef<(() => Promise<void>) | null>(null);
   const formGenerationRef = useRef(0);
+  const linkedVfxIdsEditedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -224,6 +225,45 @@ export const ItemFormModal = ({
     return `Add New ${type === "gamedev" ? "Game Dev Project" : "DevOps Project"}`;
   }, [isComingSoon, isEditing, type]);
 
+  const markLinkedVfxIdsEdited = useCallback(() => {
+    linkedVfxIdsEditedRef.current = true;
+  }, []);
+
+  const handleLinkedVfxIdsChange = useCallback(
+    (updater: (prev: string[]) => string[]) => {
+      markLinkedVfxIdsEdited();
+      setLinkedVfxIds(updater);
+    },
+    [markLinkedVfxIdsEdited],
+  );
+
+  const clearHeaderMediaSelection = useCallback(() => {
+    setSelectedHeaderMediaUrl(null);
+    setSelectedHeaderThumbnailUrl(null);
+  }, []);
+
+  const handleHeaderMediaUrlChange = useCallback((url: string | null) => {
+    setSelectedHeaderMediaUrl(url);
+    if (url === null) {
+      setSelectedHeaderThumbnailUrl(null);
+    }
+  }, []);
+
+  const handleHeaderMediaLibrarySelect = useCallback((item: MediaLibraryItem) => {
+    setSelectedHeaderMediaUrl(item.media_url);
+    setMediaFile(null);
+    setSelectedHeaderThumbnailUrl(null);
+  }, []);
+
+  const handleMediaFileChange = useCallback((file: File | null) => {
+    setMediaFile(file);
+    if (file) {
+      // Replacing header via upload invalidates any poster tied to prior header media.
+      setSelectedHeaderMediaUrl(null);
+      setSelectedHeaderThumbnailUrl(null);
+    }
+  }, []);
+
   const resetForm = useCallback(() => {
     setTitle("");
     setDescription("");
@@ -236,6 +276,7 @@ export const ItemFormModal = ({
     setIsFeatured(false);
     setFeaturedSort("");
     setShowVfxSection(true);
+    linkedVfxIdsEditedRef.current = false;
     setLinkedVfxIds([]);
     setLinkedVfxDetails([]);
     setSelectedStacks([]);
@@ -303,6 +344,7 @@ export const ItemFormModal = ({
       setIsComingSoon(gameDevItem.is_coming_soon ?? false);
       setSelectedGameTags(gameDevItem.tags ?? []);
       setSelectedStacks([]);
+      linkedVfxIdsEditedRef.current = false;
       setIsVfxLinksHydrated(false);
 
       let isCurrent = true;
@@ -386,7 +428,9 @@ export const ItemFormModal = ({
           }
 
           setLinkedVfxDetails(linkedDetails);
-          setLinkedVfxIds(normalizedLinkedIds);
+          if (!linkedVfxIdsEditedRef.current) {
+            setLinkedVfxIds(normalizedLinkedIds);
+          }
           hydrateSucceeded = true;
         } catch (loadError) {
           if (isCurrent) {
@@ -641,6 +685,7 @@ export const ItemFormModal = ({
         ]),
       );
 
+      markLinkedVfxIdsEdited();
       setLinkedVfxIds((prev) => (prev.includes(vfx.id) ? prev : [...prev, vfx.id]));
     } catch (err) {
       if (generation !== formGenerationRef.current) {
@@ -649,7 +694,7 @@ export const ItemFormModal = ({
 
       setError(err instanceof Error ? err.message : "Unable to add VFX media.");
     }
-  }, []);
+  }, [markLinkedVfxIdsEdited]);
 
   const gameDevFormMode = isEditing ? "sidebar" : "wizard";
   const visibleGameDevSection =
@@ -695,11 +740,8 @@ export const ItemFormModal = ({
         label: "Use as Header",
         badgeLabel: "Header",
         selectedUrl: selectedHeaderMediaUrl,
-        onClear: () => setSelectedHeaderMediaUrl(null),
-        onSelect: (item) => {
-          setSelectedHeaderMediaUrl(item.media_url);
-          setMediaFile(null);
-        },
+        onClear: clearHeaderMediaSelection,
+        onSelect: handleHeaderMediaLibrarySelect,
       },
       {
         id: "thumbnail",
@@ -735,6 +777,8 @@ export const ItemFormModal = ({
     selectedHeaderMediaUrl,
     selectedCardThumbnailUrl,
     selectedHeaderThumbnailUrl,
+    clearHeaderMediaSelection,
+    handleHeaderMediaLibrarySelect,
     insertLibraryMedia,
   ]);
 
@@ -854,8 +898,8 @@ export const ItemFormModal = ({
             selectedHeaderMediaUrl={selectedHeaderMediaUrl}
             pendingHeaderPreviewUrl={pendingMediaPreviewUrl}
             mediaFile={mediaFile}
-            onHeaderMediaUrlChange={setSelectedHeaderMediaUrl}
-            onMediaFileChange={setMediaFile}
+            onHeaderMediaUrlChange={handleHeaderMediaUrlChange}
+            onMediaFileChange={handleMediaFileChange}
             onMediaValidationError={setError}
             selectedCardThumbnailUrl={selectedCardThumbnailUrl}
             onCardThumbnailUrlChange={setSelectedCardThumbnailUrl}
@@ -878,7 +922,7 @@ export const ItemFormModal = ({
             availableVfx={availableVfx}
             linkedVfxDetails={linkedVfxDetails}
             linkedVfxIds={linkedVfxIds}
-            onLinkedVfxIdsChange={setLinkedVfxIds}
+            onLinkedVfxIdsChange={handleLinkedVfxIdsChange}
             onOpenVfxMediaLibrary={openVfxMediaLibrary}
           />
         );

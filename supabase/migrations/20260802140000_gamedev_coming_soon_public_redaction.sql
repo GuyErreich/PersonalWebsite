@@ -71,3 +71,4 @@ create policy "Admins can read all gamedev items"
   using ((select public.is_admin()));
 
 revoke select on table public.gamedev_items from anon;
+revoke select on table public.gamedev_items from authenticated;
