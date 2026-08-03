@@ -100,6 +100,19 @@ const MAX_TITLE_LENGTH = 120;
 const MAX_DESCRIPTION_LENGTH = 50000;
 const MAX_STACK_LENGTH = 40;
 
+/**
+ * Merge a server fetch into the in-modal catalog without dropping rows added
+ * via in-modal VFX create while the fetch was in flight.
+ */
+const mergeFetchedAvailableVfx = (
+  prev: AdminGameDevVfx[],
+  fetched: AdminGameDevVfx[],
+): AdminGameDevVfx[] => {
+  const fetchedIds = new Set(fetched.map((item) => item.id));
+  const localOnly = prev.filter((item) => !fetchedIds.has(item.id));
+  return dedupeGameDevVfxByMediaUrl([...fetched, ...localOnly]);
+};
+
 type BodyEditorTab = "write" | "preview";
 
 const escapeMarkdownImageLabel = (value: string) =>
@@ -387,7 +400,7 @@ export const ItemFormModal = ({
           }));
           const dedupedVfx = dedupeGameDevVfxByMediaUrl(rawVfx);
 
-          setAvailableVfx(dedupedVfx);
+          setAvailableVfx((prev) => mergeFetchedAvailableVfx(prev, dedupedVfx));
 
           const orderedLinks = [...(linkData ?? [])].sort((left, right) => {
             const leftOrder = left.sort_order ?? Number.MAX_SAFE_INTEGER;
@@ -480,14 +493,13 @@ export const ItemFormModal = ({
         return;
       }
 
-      setAvailableVfx(
-        dedupeGameDevVfxByMediaUrl(
-          ((data ?? []) as AdminGameDevVfx[]).map((item) => ({
-            ...item,
-            tags: item.tags ?? [],
-          })),
-        ),
+      const fetched = dedupeGameDevVfxByMediaUrl(
+        ((data ?? []) as AdminGameDevVfx[]).map((item) => ({
+          ...item,
+          tags: item.tags ?? [],
+        })),
       );
+      setAvailableVfx((prev) => mergeFetchedAvailableVfx(prev, fetched));
     })();
 
     return () => {
