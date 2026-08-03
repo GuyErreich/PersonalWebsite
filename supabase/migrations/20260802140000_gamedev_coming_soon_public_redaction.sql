@@ -3,7 +3,8 @@
 
 -- Coming-soon teasers stay publicly listed, but write-up body + repo/live URLs
 -- must not leak through anon SELECT on the base table. Public clients read the
--- redacting view; admins keep full-row access on gamedev_items.
+-- redacting view. Authenticated (admin JWTs) keep SELECT on gamedev_items;
+-- the admin RLS policy gates full-row access — table GRANT is required for RLS.
 
 create or replace function public.gamedev_public_teaser_description(p_description text)
 returns text
@@ -57,7 +58,7 @@ select
 from public.gamedev_items i;
 
 comment on view public.gamedev_items_public is
-  'Public GameDev catalog with coming-soon body/links redacted. Admins read gamedev_items for full rows.';
+  'Public GameDev catalog with coming-soon body/links redacted. Admins use gamedev_items (GRANT + admin RLS).';
 
 revoke all on public.gamedev_items_public from public;
 grant select on public.gamedev_items_public to anon, authenticated;
@@ -71,4 +72,3 @@ create policy "Admins can read all gamedev items"
   using ((select public.is_admin()));
 
 revoke select on table public.gamedev_items from anon;
-revoke select on table public.gamedev_items from authenticated;
