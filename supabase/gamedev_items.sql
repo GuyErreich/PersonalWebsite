@@ -66,6 +66,8 @@ create policy "Admins can delete gamedev items"
   using ((select public.is_admin()));
 
 -- Public catalog view: coming-soon rows expose teaser summary only (no BODY/links).
+-- Fail closed: missing BODY marker yields null (never the full description).
+-- Marker must match GAMEDEV_BODY_MARKER in src/lib/gamedev.ts.
 create or replace function public.gamedev_public_teaser_description(p_description text)
 returns text
 language sql
@@ -83,9 +85,13 @@ as $$
           position(E'\n\n[//]: # (BODY)\n\n' in p_description) - 1
         )
       )
-    else p_description
+    else null
   end;
 $$;
+
+comment on function public.gamedev_public_teaser_description(text) is
+  'Fail-closed teaser for coming-soon: returns text before GAMEDEV_BODY_MARKER, or null when the marker is absent. Marker must match src/lib/gamedev.ts.';
+
 
 drop view if exists public.gamedev_items_public;
 

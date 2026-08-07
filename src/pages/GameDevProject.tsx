@@ -101,9 +101,10 @@ export const GameDevProject = () => {
 
         const typedProject = projectData as GameDevItem;
 
-        // Do not fetch project-linked VFX when the section is hidden — avoids
-        // leaking link/VFX payloads in the browser network panel for anon users.
-        if (typedProject.show_vfx_section === false) {
+        // Do not fetch project-linked VFX when the section is hidden or the
+        // project is coming-soon — defense-in-depth so anon clients never load
+        // link/VFX payloads they will not render.
+        if (typedProject.show_vfx_section === false || isGameDevComingSoon(typedProject)) {
           safeSetState({
             project: typedProject,
             linkedVfx: [],
