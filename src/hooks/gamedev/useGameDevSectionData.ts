@@ -14,6 +14,7 @@ import { supabase } from "../../lib/supabase";
 const withSummary = (items: GameDevItem[]): GameDevItem[] =>
   items.map((item) => ({
     ...item,
+    description: item.description ?? "",
     summary: item.summary ?? buildGameDevSummary(item.description),
   }));
 
