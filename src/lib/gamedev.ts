@@ -55,20 +55,21 @@ export const markdownToPlainText = (content: string): string => {
 };
 
 export const parseGameDevStoredContent = (
-  content: string,
+  content: string | null | undefined,
 ): { summary: string; body: string; hasStructuredBody: boolean } => {
-  const markerIndex = content.indexOf(GAMEDEV_BODY_MARKER);
+  const normalized = content ?? "";
+  const markerIndex = normalized.indexOf(GAMEDEV_BODY_MARKER);
 
   if (markerIndex < 0) {
     return {
-      summary: markdownToPlainText(content).slice(0, 180),
-      body: content,
+      summary: markdownToPlainText(normalized).slice(0, 180),
+      body: normalized,
       hasStructuredBody: false,
     };
   }
 
-  const summary = content.slice(0, markerIndex).trim();
-  const body = content.slice(markerIndex + GAMEDEV_BODY_MARKER.length).trim();
+  const summary = normalized.slice(0, markerIndex).trim();
+  const body = normalized.slice(markerIndex + GAMEDEV_BODY_MARKER.length).trim();
 
   return {
     summary,
@@ -82,12 +83,17 @@ export const buildGameDevStoredContent = (summary: string, body: string): string
   const normalizedBody = body.trim();
 
   if (!normalizedSummary) return normalizedBody;
-  if (!normalizedBody) return normalizedSummary;
+  // Teaser-only saves still need the BODY marker so fail-closed public SELECT
+  // keeps the row (summary without marker is treated as unpublished).
+  if (!normalizedBody) return `${normalizedSummary}${GAMEDEV_BODY_MARKER}`;
 
   return `${normalizedSummary}${GAMEDEV_BODY_MARKER}${normalizedBody}`;
 };
 
-export const buildGameDevSummary = (content: string, maxLength = 180): string => {
+export const buildGameDevSummary = (
+  content: string | null | undefined,
+  maxLength = 180,
+): string => {
   const parsed = parseGameDevStoredContent(content);
   const source = parsed.summary.length > 0 ? parsed.summary : parsed.body;
   const plain = markdownToPlainText(source);

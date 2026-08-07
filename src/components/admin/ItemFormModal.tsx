@@ -1111,9 +1111,12 @@ export const ItemFormModal = ({
 
         // Coming soon is a display flag — keep structured body when present so
         // converting published → teaser does not wipe markdown permanently.
-        const storedDescription = normalizedBody
-          ? buildGameDevStoredContent(normalizedSummary, normalizedBody)
-          : normalizedSummary;
+        // Always persist the BODY marker (even with empty body) so fail-closed
+        // public SELECT does not null teaser-only descriptions.
+        const storedDescription = buildGameDevStoredContent(
+          normalizedSummary,
+          normalizedBody,
+        );
         if (storedDescription.length > MAX_DESCRIPTION_LENGTH) {
           setError(`Body content must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`);
           return;
