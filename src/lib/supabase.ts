@@ -266,7 +266,7 @@ interface Database {
         Row: {
           id: string;
           title: string;
-          description: string;
+          description: string | null;
           media_url: string | null;
           thumbnail_url: string | null;
           header_media_url: string | null;
