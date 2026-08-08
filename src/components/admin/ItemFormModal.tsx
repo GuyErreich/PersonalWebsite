@@ -1234,25 +1234,34 @@ export const ItemFormModal = ({
             throw new Error(upsertLinksError.message);
           }
 
-          // Only newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
+          // Newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
+          // Coming-soon → published is first eligibility for already-linked teaser VFX, so mark all.
           const existingIdSet = new Set(existingIds);
           const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
-          if (!isComingSoon && showVfxSection && newlyLinkedVfxIds.length > 0) {
+          const wasComingSoon = Boolean(sourceGameDev?.is_coming_soon);
+          const becomingEligible = wasComingSoon && !isComingSoon;
+          const vfxIdsToMarkInLibrary =
+            !isComingSoon && showVfxSection
+              ? becomingEligible
+                ? normalizedLinkedVfxIds
+                : newlyLinkedVfxIds
+              : [];
+          if (vfxIdsToMarkInLibrary.length > 0) {
             try {
-              await markVfxShownInLibrary(newlyLinkedVfxIds);
+              await markVfxShownInLibrary(vfxIdsToMarkInLibrary);
             } catch (markError) {
-              // Roll back just-created links so a retry still treats them as new and re-marks.
+              // Roll back links attempted this save so a retry can re-mark them.
               const { error: compensateError } = await supabase
                 .from("gamedev_project_vfx")
                 .delete()
                 .eq("gamedev_item_id", projectId)
-                .in("gamedev_vfx_id", newlyLinkedVfxIds);
+                .in("gamedev_vfx_id", vfxIdsToMarkInLibrary);
 
               if (compensateError) {
                 const markMessage =
                   markError instanceof Error ? markError.message : String(markError);
                 throw new Error(
-                  `${markMessage} (also failed to roll back new VFX links: ${compensateError.message})`,
+                  `${markMessage} (also failed to roll back VFX links: ${compensateError.message})`,
                 );
               }
 
