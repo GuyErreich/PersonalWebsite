@@ -1271,6 +1271,25 @@ export const ItemFormModal = ({
                 }
               }
 
+              // Restore pre-save eligibility so a retry still detects becomingEligible.
+              if (becomingEligible && sourceGameDev) {
+                const { error: eligibilityRollbackError } = await supabase
+                  .from("gamedev_items")
+                  .update({
+                    is_coming_soon: sourceGameDev.is_coming_soon ?? false,
+                    show_vfx_section: sourceGameDev.show_vfx_section ?? false,
+                  })
+                  .eq("id", projectId);
+
+                if (eligibilityRollbackError) {
+                  const markMessage =
+                    markError instanceof Error ? markError.message : String(markError);
+                  throw new Error(
+                    `${markMessage} (also failed to roll back project eligibility: ${eligibilityRollbackError.message})`,
+                  );
+                }
+              }
+
               throw markError instanceof Error ? markError : new Error(String(markError));
             }
           }
