@@ -1335,7 +1335,26 @@ export const ItemFormModal = ({
             throw new Error(insertError?.message ?? "Failed to create game dev project.");
           }
 
-          await syncProjectVfxLinks(insertedItem.id);
+          try {
+            await syncProjectVfxLinks(insertedItem.id);
+          } catch (syncError) {
+            // Roll back the inserted project on any sync failure (fetch/upsert/remove/mark)
+            // so a retry does not create a duplicate. Links cascade on gamedev_items delete.
+            const { error: orphanDeleteError } = await supabase
+              .from("gamedev_items")
+              .delete()
+              .eq("id", insertedItem.id);
+
+            if (orphanDeleteError) {
+              const syncMessage =
+                syncError instanceof Error ? syncError.message : String(syncError);
+              throw new Error(
+                `${syncMessage} (also failed to roll back created project: ${orphanDeleteError.message})`,
+              );
+            }
+
+            throw syncError instanceof Error ? syncError : new Error(String(syncError));
+          }
         }
       } else {
         const normalizedDescription = description.trim();
