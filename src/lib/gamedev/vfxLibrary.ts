@@ -81,6 +81,26 @@ export const ensureVfxFromMediaLibraryItem = async (
     .single();
 
   if (error || !data) {
+    if (error?.code === "23505") {
+      const conflictExisting = await findVfxByMediaUrl(item.media_url);
+      if (conflictExisting) {
+        const { data: conflictRow, error: conflictLookupError } = await supabase
+          .from("gamedev_vfx")
+          .select("*")
+          .eq("id", conflictExisting.id)
+          .single();
+
+        if (conflictLookupError || !conflictRow) {
+          throw new Error(conflictLookupError?.message ?? "VFX entry not found.");
+        }
+
+        return {
+          ...(conflictRow as GameDevVfxRecord),
+          tags: (conflictRow as GameDevVfxRecord).tags ?? [],
+        };
+      }
+    }
+
     throw new Error(error?.message ?? "Failed to create VFX entry.");
   }
 

@@ -67,13 +67,17 @@ export const OptionDropdown = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       closeMenu();
+      // Capture + stop so parent document Escape handlers (e.g. MediaLibraryPickerModal)
+      // do not also dismiss while the listbox is open.
+      e.stopPropagation();
+      e.stopImmediatePropagation();
     };
 
     document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("keydown", handleKeyDown, true);
     };
   }, [closeMenu, open]);
 
