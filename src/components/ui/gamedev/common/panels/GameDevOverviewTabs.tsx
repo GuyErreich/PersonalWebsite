@@ -9,8 +9,8 @@ import { Film, Layers, Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
 import { playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import { useGameDevOverviewTabs } from "../hooks/useGameDevOverviewTabs";
-import type { GameDevOverviewTab } from "./overviewTabPulse";
 import { getOverviewSlideMotion } from "./overviewSlideVariants";
+import type { GameDevOverviewTab } from "./overviewTabPulse";
 
 export interface GameDevOverviewTabsClassNames {
   root: string;

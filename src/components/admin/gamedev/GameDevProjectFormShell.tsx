@@ -184,7 +184,7 @@ export const GameDevProjectFormShell = ({
             playClickSound();
             onCancel();
           }}
-          disabled={isFormDisabled}
+          disabled={loading}
           className="inline-flex justify-center rounded-md border border-gray-500 bg-gray-700 px-4 py-2 text-sm font-medium text-gray-200 hover:bg-gray-600 disabled:opacity-50"
         >
           Cancel
