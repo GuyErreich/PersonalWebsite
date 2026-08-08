@@ -1180,7 +1180,7 @@ export const ItemFormModal = ({
           // into the public VFX gallery while the project page keeps VFX hidden.
           const { data: existingLinks, error: fetchLinksError } = await supabase
             .from("gamedev_project_vfx")
-            .select("gamedev_vfx_id")
+            .select("gamedev_vfx_id, sort_order")
             .eq("gamedev_item_id", projectId);
 
           if (fetchLinksError) {
@@ -1208,6 +1208,14 @@ export const ItemFormModal = ({
           }
 
           const idsToRemove = existingIds.filter((id) => !desiredIdSet.has(id));
+          // Capture rows before delete so upsert/mark failures can restore associations.
+          const removedLinksToRestore = (existingLinks ?? [])
+            .filter((link) => !desiredIdSet.has(link.gamedev_vfx_id))
+            .map((link) => ({
+              gamedev_item_id: projectId,
+              gamedev_vfx_id: link.gamedev_vfx_id,
+              sort_order: link.sort_order,
+            }));
 
           if (idsToRemove.length > 0) {
             const { error: removeLinksError } = await supabase
@@ -1231,6 +1239,20 @@ export const ItemFormModal = ({
           );
 
           if (upsertLinksError) {
+            if (removedLinksToRestore.length > 0) {
+              const { error: restoreRemovedError } = await supabase
+                .from("gamedev_project_vfx")
+                .upsert(removedLinksToRestore, {
+                  onConflict: "gamedev_item_id,gamedev_vfx_id",
+                });
+
+              if (restoreRemovedError) {
+                throw new Error(
+                  `${upsertLinksError.message} (also failed to restore removed VFX links: ${restoreRemovedError.message})`,
+                );
+              }
+            }
+
             throw new Error(upsertLinksError.message);
           }
 
@@ -1257,6 +1279,22 @@ export const ItemFormModal = ({
               const markMessage =
                 markError instanceof Error ? markError.message : String(markError);
               const secondaryFailures: string[] = [];
+
+              // Restore associations deleted before upsert so a failed mark does not
+              // permanently drop prior project↔VFX links.
+              if (removedLinksToRestore.length > 0) {
+                const { error: restoreRemovedError } = await supabase
+                  .from("gamedev_project_vfx")
+                  .upsert(removedLinksToRestore, {
+                    onConflict: "gamedev_item_id,gamedev_vfx_id",
+                  });
+
+                if (restoreRemovedError) {
+                  secondaryFailures.push(
+                    `failed to restore removed VFX links: ${restoreRemovedError.message}`,
+                  );
+                }
+              }
 
               // Roll back only links added this save; keep pre-existing associations.
               if (newlyLinkedVfxIds.length > 0) {
