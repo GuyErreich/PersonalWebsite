@@ -1323,25 +1323,37 @@ export const ItemFormModal = ({
             throw new Error(updateError.message);
           }
 
+          // Only roll back eligibility when this save was an ineligible→eligible
+          // transition. Restricting saves (live→coming-soon / hide VFX section) must
+          // keep the committed restricted flags if sync fails mid-way.
+          const wasComingSoon = Boolean(sourceGameDev.is_coming_soon);
+          const wasShowVfxSection = Boolean(sourceGameDev.show_vfx_section);
+          const becomingEligible =
+            !isComingSoon &&
+            showVfxSection &&
+            ((wasComingSoon && !isComingSoon) || (!wasShowVfxSection && showVfxSection));
+
           try {
             await syncProjectVfxLinks(sourceGameDev.id);
           } catch (syncError) {
-            // Restore pre-save eligibility so a retry still detects becomingEligible
-            // after fetch/remove/upsert failures (mark-path already compensates).
-            const { error: eligibilityRollbackError } = await supabase
-              .from("gamedev_items")
-              .update({
-                is_coming_soon: sourceGameDev.is_coming_soon ?? false,
-                show_vfx_section: sourceGameDev.show_vfx_section ?? false,
-              })
-              .eq("id", sourceGameDev.id);
+            if (becomingEligible) {
+              // Restore pre-save eligibility so a retry still detects becomingEligible
+              // after fetch/remove/upsert failures (mark-path already compensates).
+              const { error: eligibilityRollbackError } = await supabase
+                .from("gamedev_items")
+                .update({
+                  is_coming_soon: sourceGameDev.is_coming_soon ?? false,
+                  show_vfx_section: sourceGameDev.show_vfx_section ?? false,
+                })
+                .eq("id", sourceGameDev.id);
 
-            if (eligibilityRollbackError) {
-              const syncMessage =
-                syncError instanceof Error ? syncError.message : String(syncError);
-              throw new Error(
-                `${syncMessage} (also failed to roll back project eligibility: ${eligibilityRollbackError.message})`,
-              );
+              if (eligibilityRollbackError) {
+                const syncMessage =
+                  syncError instanceof Error ? syncError.message : String(syncError);
+                throw new Error(
+                  `${syncMessage} (also failed to roll back project eligibility: ${eligibilityRollbackError.message})`,
+                );
+              }
             }
 
             throw syncError instanceof Error ? syncError : new Error(String(syncError));
