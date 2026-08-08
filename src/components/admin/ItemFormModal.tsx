@@ -992,6 +992,7 @@ export const ItemFormModal = ({
             linkedVfxIds={linkedVfxIds}
             onLinkedVfxIdsChange={handleLinkedVfxIdsChange}
             onOpenVfxMediaLibrary={openVfxMediaLibrary}
+            isComingSoon={isComingSoon}
             vfxLinksDisabled={!canEditLinkedVfxIds}
             vfxLinksLoadFailed={vfxLinksHydrateFailed}
             onRetryVfxLinksLoad={

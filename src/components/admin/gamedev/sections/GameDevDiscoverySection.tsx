@@ -22,6 +22,8 @@ interface GameDevDiscoverySectionProps {
   linkedVfxIds: string[];
   onLinkedVfxIdsChange: (updater: (prev: string[]) => string[]) => void;
   onOpenVfxMediaLibrary: () => void;
+  /** When true, empty VFX is allowed (matches save/wizard validation). */
+  isComingSoon?: boolean;
   /** When true, block Add/Remove/Reorder and media-library open (e.g. links still hydrating). */
   vfxLinksDisabled?: boolean;
   /** When true with vfxLinksDisabled, show failed-load messaging instead of "Loading…". */
@@ -41,6 +43,7 @@ export const GameDevDiscoverySection = ({
   linkedVfxIds,
   onLinkedVfxIdsChange,
   onOpenVfxMediaLibrary,
+  isComingSoon = false,
   vfxLinksDisabled = false,
   vfxLinksLoadFailed = false,
   onRetryVfxLinksLoad,
@@ -153,7 +156,7 @@ export const GameDevDiscoverySection = ({
             ) : null}
 
             {linkedVfxItems.length === 0 ? (
-              vfxLinksDisabled ? null : (
+              vfxLinksDisabled || isComingSoon ? null : (
                 <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
                   Add at least one image or video before saving.
                 </p>
