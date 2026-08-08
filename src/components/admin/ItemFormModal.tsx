@@ -1289,12 +1289,23 @@ export const ItemFormModal = ({
                     `failed to roll back project eligibility: ${eligibilityRollbackError.message}`,
                   );
                 }
+              } else if (!sourceGameDev) {
+                // Create path: remove the orphan project so a retry does not insert a duplicate.
+                // gamedev_project_vfx rows cascade on gamedev_items delete.
+                const { error: createRollbackError } = await supabase
+                  .from("gamedev_items")
+                  .delete()
+                  .eq("id", projectId);
+
+                if (createRollbackError) {
+                  secondaryFailures.push(
+                    `failed to roll back created project: ${createRollbackError.message}`,
+                  );
+                }
               }
 
               if (secondaryFailures.length > 0) {
-                throw new Error(
-                  `${markMessage} (also ${secondaryFailures.join("; ")})`,
-                );
+                throw new Error(`${markMessage} (also ${secondaryFailures.join("; ")})`);
               }
 
               throw markError instanceof Error ? markError : new Error(markMessage);
