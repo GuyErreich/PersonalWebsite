@@ -17,8 +17,8 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router";
 import {
   buildGameDevProjectPath,
-  buildGameDevSummary,
   isGameDevComingSoon,
+  resolveGameDevTeaserSummary,
 } from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
@@ -673,7 +673,7 @@ export const GameDevHiveGallery = ({
                       </h4>
 
                       <p className="gamedev-hive-focus-description">
-                        {activeItem.summary ?? buildGameDevSummary(activeItem.description, 210)}
+                        {resolveGameDevTeaserSummary(activeItem, 210)}
                       </p>
 
                       {activeItem.tags?.length ? (

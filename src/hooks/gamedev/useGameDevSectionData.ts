@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { fallbackGameDevItems } from "../../components/ui/gamedev/common/data/items";
 import type { GameDevItem, GameDevVfxItem } from "../../components/ui/gamedev/common/data/types";
-import { buildGameDevSummary, sortFeaturedGameDevItems } from "../../lib/gamedev";
+import { resolveGameDevTeaserSummary, sortFeaturedGameDevItems } from "../../lib/gamedev";
 import { loadPublicVfxLibraryItems } from "../../lib/gamedev/vfxLibrary";
 import { supabase } from "../../lib/supabase";
 
@@ -15,7 +15,7 @@ const withSummary = (items: GameDevItem[]): GameDevItem[] =>
   items.map((item) => ({
     ...item,
     description: item.description ?? "",
-    summary: item.summary ?? buildGameDevSummary(item.description),
+    summary: resolveGameDevTeaserSummary(item),
   }));
 
 export const useGameDevSectionData = () => {

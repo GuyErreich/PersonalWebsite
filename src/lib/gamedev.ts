@@ -103,6 +103,29 @@ export const buildGameDevSummary = (
   return `${plain.slice(0, maxLength - 1).trimEnd()}…`;
 };
 
+/**
+ * Resolves the public teaser text for a Game Dev item.
+ * Coming-soon rows with empty summary/description fall back to the default copy.
+ */
+export const resolveGameDevTeaserSummary = (
+  item: {
+    summary?: string | null;
+    description?: string | null;
+    is_coming_soon?: boolean | null;
+  },
+  maxLength = 180,
+): string => {
+  const trimmedSummary = item.summary?.trim() ?? "";
+  if (trimmedSummary) return trimmedSummary;
+
+  const fromDescription = buildGameDevSummary(item.description, maxLength);
+  if (fromDescription) return fromDescription;
+
+  if (isGameDevComingSoon(item)) return GAMEDEV_COMING_SOON_DEFAULT_SUMMARY;
+
+  return "";
+};
+
 export const isVideoUrl = (url: string): boolean => {
   const extension = getMediaExtension(url);
   return VIDEO_EXTENSIONS.includes(extension);

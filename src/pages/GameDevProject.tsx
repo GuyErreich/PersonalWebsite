@@ -14,10 +14,10 @@ import type { GameDevItem, GameDevVfxItem } from "../components/ui/gamedev/commo
 import { GameDevProjectHeaderMedia } from "../components/ui/gamedev/common/media/GameDevProjectHeaderMedia";
 import { GameDevProjectVfxSection } from "../components/ui/gamedev/common/media/GameDevProjectVfxSection";
 import {
-  buildGameDevSummary,
   dedupeGameDevVfxPreservingOrder,
   isGameDevComingSoon,
   parseGameDevStoredContent,
+  resolveGameDevTeaserSummary,
 } from "../lib/gamedev";
 import { playClickSound, playHoverSound } from "../lib/sound/interactionSounds";
 import { supabase } from "../lib/supabase";
@@ -240,7 +240,7 @@ export const GameDevProject = () => {
 
   const project = state.project;
   const comingSoon = isGameDevComingSoon(project);
-  const summary = project.summary ?? buildGameDevSummary(project.description, 240);
+  const summary = resolveGameDevTeaserSummary(project, 240);
   const headerMediaUrl = project.header_media_url?.trim() || project.media_url?.trim() || null;
   const showVfxSection = project.show_vfx_section !== false && state.linkedVfx.length > 0;
 

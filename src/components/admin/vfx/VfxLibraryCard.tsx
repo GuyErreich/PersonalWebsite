@@ -67,24 +67,41 @@ export const VfxLibraryCard = ({ item, onEdit, onDelete }: VfxLibraryCardProps) 
           </span>
         ) : null}
 
-        <div className="absolute inset-x-0 bottom-0 p-3">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 p-3">
           <h4 className="truncate text-sm font-semibold text-white">{item.title}</h4>
           {item.description ? (
             <p className="mt-1 line-clamp-2 text-xs text-gray-300/90">{item.description}</p>
           ) : null}
         </div>
+      </div>
 
-        <div className="absolute inset-0 flex items-center justify-center gap-2 bg-gray-950/55 opacity-0 backdrop-blur-[2px] transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-800/80 px-3 py-2.5">
+        {item.tags.length > 0 ? (
+          <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+            {item.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-100"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="min-w-0 flex-1 text-[11px] text-gray-500">No tags</p>
+        )}
+
+        <div className="flex shrink-0 items-center gap-1.5">
           <motion.button
             type="button"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
             onMouseEnter={playHoverSound}
             onClick={() => {
               playClickSound();
               onEdit();
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-400/40 bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-50 shadow-lg"
+            className="inline-flex items-center gap-1 rounded-md border border-blue-500/40 bg-blue-600/20 px-2.5 py-1 text-xs font-medium text-blue-200 hover:bg-blue-600/30"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
             Edit
@@ -92,37 +109,20 @@ export const VfxLibraryCard = ({ item, onEdit, onDelete }: VfxLibraryCardProps) 
 
           <motion.button
             type="button"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.95 }}
             onMouseEnter={playHoverSound}
             onClick={() => {
               playClickSound();
               onDelete();
             }}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-red-400/35 bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-100 shadow-lg"
+            className="inline-flex items-center gap-1 rounded-md border border-red-400/35 bg-red-500/15 px-2.5 py-1 text-xs font-medium text-red-100 hover:bg-red-500/25"
           >
             <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             Delete
           </motion.button>
         </div>
       </div>
-
-      {item.tags.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5 border-t border-gray-800/80 px-3 py-2.5">
-          {item.tags.map((tag) => (
-            <span
-              key={tag}
-              className="rounded-full border border-cyan-500/25 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium text-cyan-100"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <div className="border-t border-gray-800/80 px-3 py-2.5">
-          <p className="text-[11px] text-gray-500">No tags</p>
-        </div>
-      )}
     </article>
   );
 };

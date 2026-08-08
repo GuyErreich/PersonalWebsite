@@ -12,9 +12,9 @@ import { useMediaQuery } from "../../../../../hooks/responsive/useMediaQuery";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
 import {
   buildGameDevProjectPath,
-  buildGameDevSummary,
   isGameDevComingSoon,
   isImageUrl,
+  resolveGameDevTeaserSummary,
 } from "../../../../../lib/gamedev";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
@@ -65,7 +65,7 @@ const GalleryInfoCard = ({
   return (
     <GameDevProjectCard
       title={item.title}
-      description={item.summary ?? buildGameDevSummary(item.description)}
+      description={resolveGameDevTeaserSummary(item)}
       tags={item.tags}
       link={comingSoon ? null : item.github_url}
       detailsLink={buildGameDevProjectPath(item.id)}

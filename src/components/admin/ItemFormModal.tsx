@@ -247,8 +247,7 @@ export const ItemFormModal = ({
     linkedVfxIdsEditedRef.current = true;
   }, []);
 
-  const canEditLinkedVfxIds =
-    !isEditingGameDev || (isVfxLinksHydrated && !vfxLinksHydrateFailed);
+  const canEditLinkedVfxIds = !isEditingGameDev || (isVfxLinksHydrated && !vfxLinksHydrateFailed);
   const isVfxLinksLoading = isEditingGameDev && !isVfxLinksHydrated;
 
   const handleLinkedVfxIdsChange = useCallback(
@@ -721,46 +720,49 @@ export const ItemFormModal = ({
     setIsVfxMediaLibraryOpen(true);
   }, [canEditLinkedVfxIds]);
 
-  const handleVfxMediaLibrarySelect = useCallback(async (item: MediaLibraryItem) => {
-    if (!canEditLinkedVfxIds) {
-      return;
-    }
-
-    const generation = formGenerationRef.current;
-    setError(null);
-
-    try {
-      const vfx = await ensureVfxFromMediaLibraryItem(item);
-
-      if (generation !== formGenerationRef.current) {
-        return;
-      }
-
-      // Re-check after await: hydrate may still be in flight for edit forms.
+  const handleVfxMediaLibrarySelect = useCallback(
+    async (item: MediaLibraryItem) => {
       if (!canEditLinkedVfxIds) {
         return;
       }
 
-      setAvailableVfx((prev) =>
-        dedupeGameDevVfxByMediaUrl([
-          ...prev.filter((entry) => entry.id !== vfx.id),
-          {
-            ...vfx,
-            tags: vfx.tags ?? [],
-          },
-        ]),
-      );
+      const generation = formGenerationRef.current;
+      setError(null);
 
-      markLinkedVfxIdsEdited();
-      setLinkedVfxIds((prev) => (prev.includes(vfx.id) ? prev : [...prev, vfx.id]));
-    } catch (err) {
-      if (generation !== formGenerationRef.current) {
-        return;
+      try {
+        const vfx = await ensureVfxFromMediaLibraryItem(item);
+
+        if (generation !== formGenerationRef.current) {
+          return;
+        }
+
+        // Re-check after await: hydrate may still be in flight for edit forms.
+        if (!canEditLinkedVfxIds) {
+          return;
+        }
+
+        setAvailableVfx((prev) =>
+          dedupeGameDevVfxByMediaUrl([
+            ...prev.filter((entry) => entry.id !== vfx.id),
+            {
+              ...vfx,
+              tags: vfx.tags ?? [],
+            },
+          ]),
+        );
+
+        markLinkedVfxIdsEdited();
+        setLinkedVfxIds((prev) => (prev.includes(vfx.id) ? prev : [...prev, vfx.id]));
+      } catch (err) {
+        if (generation !== formGenerationRef.current) {
+          return;
+        }
+
+        setError(err instanceof Error ? err.message : "Unable to add VFX media.");
       }
-
-      setError(err instanceof Error ? err.message : "Unable to add VFX media.");
-    }
-  }, [canEditLinkedVfxIds, markLinkedVfxIdsEdited]);
+    },
+    [canEditLinkedVfxIds, markLinkedVfxIdsEdited],
+  );
 
   const gameDevFormMode = isEditing ? "sidebar" : "wizard";
   const visibleGameDevSection =
@@ -1113,10 +1115,7 @@ export const ItemFormModal = ({
         // converting published → teaser does not wipe markdown permanently.
         // Always persist the BODY marker (even with empty body) so fail-closed
         // public SELECT does not null teaser-only descriptions.
-        const storedDescription = buildGameDevStoredContent(
-          normalizedSummary,
-          normalizedBody,
-        );
+        const storedDescription = buildGameDevStoredContent(normalizedSummary, normalizedBody);
         if (storedDescription.length > MAX_DESCRIPTION_LENGTH) {
           setError(`Body content must be ${MAX_DESCRIPTION_LENGTH} characters or fewer.`);
           return;
