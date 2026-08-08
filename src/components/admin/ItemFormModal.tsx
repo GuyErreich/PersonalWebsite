@@ -1238,7 +1238,26 @@ export const ItemFormModal = ({
           const existingIdSet = new Set(existingIds);
           const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
           if (!isComingSoon && showVfxSection && newlyLinkedVfxIds.length > 0) {
-            await markVfxShownInLibrary(newlyLinkedVfxIds);
+            try {
+              await markVfxShownInLibrary(newlyLinkedVfxIds);
+            } catch (markError) {
+              // Roll back just-created links so a retry still treats them as new and re-marks.
+              const { error: compensateError } = await supabase
+                .from("gamedev_project_vfx")
+                .delete()
+                .eq("gamedev_item_id", projectId)
+                .in("gamedev_vfx_id", newlyLinkedVfxIds);
+
+              if (compensateError) {
+                const markMessage =
+                  markError instanceof Error ? markError.message : String(markError);
+                throw new Error(
+                  `${markMessage} (also failed to roll back new VFX links: ${compensateError.message})`,
+                );
+              }
+
+              throw markError instanceof Error ? markError : new Error(String(markError));
+            }
           }
         };
 
