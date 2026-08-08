@@ -780,7 +780,7 @@ export const ItemFormModal = ({
               selectedCardThumbnailUrl ||
               selectedHeaderThumbnailUrl,
           ),
-      discovery: isComingSoon || isFeatured || !showVfxSection || linkedVfxIds.length > 0,
+      discovery: isComingSoon || !showVfxSection || linkedVfxIds.length > 0,
       links: Boolean(githubUrl.trim() || liveUrl.trim() || repoUrl.trim()),
     }),
     [
@@ -792,7 +792,6 @@ export const ItemFormModal = ({
       mediaFile,
       selectedCardThumbnailUrl,
       selectedHeaderThumbnailUrl,
-      isFeatured,
       linkedVfxIds,
       showVfxSection,
       githubUrl,
