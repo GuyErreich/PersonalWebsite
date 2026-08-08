@@ -4,17 +4,23 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Film, Layers, Sparkles } from "lucide-react";
-import { playHoverSound } from "../../../../../lib/sound/interactionSounds";
+import { ArrowRight } from "lucide-react";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevGallery } from "../../common/gallery/GameDevGallery";
-import { useGameDevOverviewTabs } from "../../common/hooks/useGameDevOverviewTabs";
+import { GameDevOverviewTabs } from "../../common/panels/GameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
 import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
-import { getOverviewSlideMotion } from "../../common/panels/overviewSlideVariants";
+
+const DESKTOP_OVERVIEW_TAB_CLASS_NAMES = {
+  root: "gamedev-overview-desktop-tabs-stack",
+  tabList: "gamedev-desktop-overview-tabs",
+  tab: "gamedev-desktop-overview-tab",
+  tabActive: "gamedev-desktop-overview-tab--active",
+  content: "gamedev-desktop-overview-content",
+  panel: "h-full",
+} as const;
 
 export const GameDevOverviewDesktop = ({
   showreelUrl,
@@ -25,170 +31,48 @@ export const GameDevOverviewDesktop = ({
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
-  const {
-    activeTab,
-    directionRef,
-    handleTabListKeyDown,
-    projectsPanelId,
-    projectsTabId,
-    reduceMotion,
-    showreelPanelId,
-    showreelTabId,
-    switchTab,
-    tabPulse,
-    vfxPanelId,
-    vfxTabId,
-  } = useGameDevOverviewTabs({ idScope: "desktop" });
-
-  const { variants: activeSlideVariants, transition: slideTransition } =
-    getOverviewSlideMotion(reduceMotion);
-
   return (
-    <div className="gamedev-overview-desktop-tabs-stack">
-      <div
-        className="gamedev-desktop-overview-tabs"
-        role="tablist"
-        aria-label="GameDev overview"
-        onKeyDown={handleTabListKeyDown}
-      >
-        <motion.button
-          id={showreelTabId}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "showreel"}
-          aria-controls={showreelPanelId}
-          tabIndex={activeTab === "showreel" ? 0 : -1}
-          {...tabPulse("showreel")}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => switchTab("showreel")}
-          className={`gamedev-desktop-overview-tab${activeTab === "showreel" ? " gamedev-desktop-overview-tab--active" : ""}`}
-        >
-          <Film className="h-4 w-4" />
-          Showreel
-        </motion.button>
-
-        <motion.button
-          id={projectsTabId}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "projects"}
-          aria-controls={projectsPanelId}
-          tabIndex={activeTab === "projects" ? 0 : -1}
-          {...tabPulse("projects")}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => switchTab("projects")}
-          className={`gamedev-desktop-overview-tab${activeTab === "projects" ? " gamedev-desktop-overview-tab--active" : ""}`}
-        >
-          <Layers className="h-4 w-4" />
-          Selected Work
-        </motion.button>
-
-        <motion.button
-          id={vfxTabId}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "vfx"}
-          aria-controls={vfxPanelId}
-          tabIndex={activeTab === "vfx" ? 0 : -1}
-          {...tabPulse("vfx")}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => switchTab("vfx")}
-          className={`gamedev-desktop-overview-tab${activeTab === "vfx" ? " gamedev-desktop-overview-tab--active" : ""}`}
-        >
-          <Sparkles className="h-4 w-4" />
-          VFX
-        </motion.button>
-      </div>
-
-      <div className="gamedev-desktop-overview-content">
-        <AnimatePresence mode="wait" custom={directionRef.current}>
-          {activeTab === "showreel" ? (
-            <motion.div
-              key="showreel"
-              role="tabpanel"
-              id={showreelPanelId}
-              aria-labelledby={showreelTabId}
-              custom={directionRef.current}
-              variants={activeSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={slideTransition}
-              className="h-full"
-            >
-              <GameDevShowreelPanel showreelUrl={showreelUrl} />
-            </motion.div>
-          ) : activeTab === "projects" ? (
-            <motion.div
-              key="projects"
-              role="tabpanel"
-              id={projectsPanelId}
-              aria-labelledby={projectsTabId}
-              custom={directionRef.current}
-              variants={activeSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={slideTransition}
-              className="h-full"
-            >
-              <div className="gamedev-panel-frame">
-                <GameDevPanelShell
-                  eyebrow="Featured Gallery"
-                  title="Selected Work"
-                  clipScroll
-                  rightAction={
-                    <div className="flex shrink-0 flex-col items-end gap-2">
-                      {featuredItems.length > 0 ? (
-                        <p className="gamedev-panel-meta">{featuredItems.length} items</p>
-                      ) : null}
-                      <GameDevPanelButton
-                        variant="primary"
-                        hoverX={3}
-                        onClick={onViewAll}
-                        icon={<ArrowRight className="h-4 w-4" />}
-                      >
-                        View All Projects
-                      </GameDevPanelButton>
-                    </div>
-                  }
+    <GameDevOverviewTabs
+      idScope="desktop"
+      classNames={DESKTOP_OVERVIEW_TAB_CLASS_NAMES}
+      tabIconClassName="h-4 w-4"
+      showreel={<GameDevShowreelPanel showreelUrl={showreelUrl} />}
+      projects={
+        <div className="gamedev-panel-frame">
+          <GameDevPanelShell
+            eyebrow="Featured Gallery"
+            title="Selected Work"
+            clipScroll
+            rightAction={
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                {featuredItems.length > 0 ? (
+                  <p className="gamedev-panel-meta">{featuredItems.length} items</p>
+                ) : null}
+                <GameDevPanelButton
+                  variant="primary"
+                  hoverX={3}
+                  onClick={onViewAll}
+                  icon={<ArrowRight className="h-4 w-4" />}
                 >
-                  <GameDevGallery
-                    items={featuredItems}
-                    iconMap={iconMap}
-                    isLoading={isLoading}
-                    denseCards
-                  />
-                </GameDevPanelShell>
+                  View All Projects
+                </GameDevPanelButton>
               </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="vfx"
-              role="tabpanel"
-              id={vfxPanelId}
-              aria-labelledby={vfxTabId}
-              custom={directionRef.current}
-              variants={activeSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={slideTransition}
-              className="h-full"
-            >
-              <div className="gamedev-vfx-showcase">
-                <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-    </div>
+            }
+          >
+            <GameDevGallery
+              items={featuredItems}
+              iconMap={iconMap}
+              isLoading={isLoading}
+              denseCards
+            />
+          </GameDevPanelShell>
+        </div>
+      }
+      vfx={
+        <div className="gamedev-vfx-showcase">
+          <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
+        </div>
+      }
+    />
   );
 };

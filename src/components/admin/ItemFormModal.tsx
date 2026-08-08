@@ -1265,18 +1265,20 @@ export const ItemFormModal = ({
           }
 
           // Newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
-          // First eligibility (ineligible → eligible) marks all linked VFX once.
+          // First publish from coming-soon marks all linked VFX once. Re-enable section /
+          // re-publish after prior eligibility only marks newly linked rows so curated hides stick.
           const existingIdSet = new Set(existingIds);
           const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
           const wasComingSoon = Boolean(sourceGameDev?.is_coming_soon);
           const wasShowVfxSection = Boolean(sourceGameDev?.show_vfx_section);
+          const leavingComingSoon = wasComingSoon && !isComingSoon;
+          const enablingVfxSection = !wasShowVfxSection && showVfxSection;
           const becomingEligible =
-            !isComingSoon &&
-            showVfxSection &&
-            ((wasComingSoon && !isComingSoon) || (!wasShowVfxSection && showVfxSection));
+            !isComingSoon && showVfxSection && (leavingComingSoon || enablingVfxSection);
+          const firstPublishFromComingSoon = !isComingSoon && showVfxSection && leavingComingSoon;
           const vfxIdsToMarkInLibrary =
             !isComingSoon && showVfxSection
-              ? becomingEligible
+              ? firstPublishFromComingSoon
                 ? normalizedLinkedVfxIds
                 : newlyLinkedVfxIds
               : [];
@@ -1390,10 +1392,10 @@ export const ItemFormModal = ({
           // keep the committed restricted flags if sync fails mid-way.
           const wasComingSoon = Boolean(sourceGameDev.is_coming_soon);
           const wasShowVfxSection = Boolean(sourceGameDev.show_vfx_section);
+          const leavingComingSoon = wasComingSoon && !isComingSoon;
+          const enablingVfxSection = !wasShowVfxSection && showVfxSection;
           const becomingEligible =
-            !isComingSoon &&
-            showVfxSection &&
-            ((wasComingSoon && !isComingSoon) || (!wasShowVfxSection && showVfxSection));
+            !isComingSoon && showVfxSection && (leavingComingSoon || enablingVfxSection);
 
           try {
             await syncProjectVfxLinks(sourceGameDev.id);
