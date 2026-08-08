@@ -1235,11 +1235,15 @@ export const ItemFormModal = ({
           }
 
           // Newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
-          // Coming-soon → published is first eligibility for already-linked teaser VFX, so mark all.
+          // First eligibility (ineligible → eligible) marks all linked VFX once.
           const existingIdSet = new Set(existingIds);
           const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
           const wasComingSoon = Boolean(sourceGameDev?.is_coming_soon);
-          const becomingEligible = wasComingSoon && !isComingSoon;
+          const wasShowVfxSection = Boolean(sourceGameDev?.show_vfx_section);
+          const becomingEligible =
+            !isComingSoon &&
+            showVfxSection &&
+            ((wasComingSoon && !isComingSoon) || (!wasShowVfxSection && showVfxSection));
           const vfxIdsToMarkInLibrary =
             !isComingSoon && showVfxSection
               ? becomingEligible
@@ -1250,19 +1254,21 @@ export const ItemFormModal = ({
             try {
               await markVfxShownInLibrary(vfxIdsToMarkInLibrary);
             } catch (markError) {
-              // Roll back links attempted this save so a retry can re-mark them.
-              const { error: compensateError } = await supabase
-                .from("gamedev_project_vfx")
-                .delete()
-                .eq("gamedev_item_id", projectId)
-                .in("gamedev_vfx_id", vfxIdsToMarkInLibrary);
+              // Roll back only links added this save; keep pre-existing associations.
+              if (newlyLinkedVfxIds.length > 0) {
+                const { error: compensateError } = await supabase
+                  .from("gamedev_project_vfx")
+                  .delete()
+                  .eq("gamedev_item_id", projectId)
+                  .in("gamedev_vfx_id", newlyLinkedVfxIds);
 
-              if (compensateError) {
-                const markMessage =
-                  markError instanceof Error ? markError.message : String(markError);
-                throw new Error(
-                  `${markMessage} (also failed to roll back VFX links: ${compensateError.message})`,
-                );
+                if (compensateError) {
+                  const markMessage =
+                    markError instanceof Error ? markError.message : String(markError);
+                  throw new Error(
+                    `${markMessage} (also failed to roll back VFX links: ${compensateError.message})`,
+                  );
+                }
               }
 
               throw markError instanceof Error ? markError : new Error(String(markError));
