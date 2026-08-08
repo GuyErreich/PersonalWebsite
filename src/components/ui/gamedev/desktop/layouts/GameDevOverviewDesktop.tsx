@@ -64,6 +64,7 @@ export const GameDevOverviewDesktop = ({
               iconMap={iconMap}
               isLoading={isLoading}
               denseCards
+              emptyMessage="No featured projects yet."
             />
           </GameDevPanelShell>
         </div>

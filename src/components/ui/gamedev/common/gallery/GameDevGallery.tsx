@@ -91,6 +91,7 @@ interface GameDevGalleryProps {
   denseCards?: boolean;
   maxCompactItems?: number;
   mobileItemsPerPage?: number;
+  emptyMessage?: string;
 }
 
 export const GameDevGallery = ({
@@ -101,6 +102,7 @@ export const GameDevGallery = ({
   denseCards = false,
   maxCompactItems = 4,
   mobileItemsPerPage = 1,
+  emptyMessage = "No projects added yet.",
 }: GameDevGalleryProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const mobilePageSize = Math.max(1, mobileItemsPerPage);
@@ -268,7 +270,7 @@ export const GameDevGallery = ({
             ))
           ) : items.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-700 p-6 text-center text-sm text-gray-500">
-              No projects added yet.
+              {emptyMessage}
             </div>
           ) : (
             <>
@@ -387,7 +389,7 @@ export const GameDevGallery = ({
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-gray-700 p-8 text-gray-500">
-            No projects added yet.
+            {emptyMessage}
           </div>
         )}
       </div>
@@ -424,7 +426,7 @@ export const GameDevGallery = ({
         </div>
       ) : items.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-700 p-8 text-center text-gray-500">
-          No projects added yet.
+          {emptyMessage}
         </div>
       ) : (
         <>

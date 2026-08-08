@@ -57,7 +57,12 @@ export const GameDevOverviewMobileShort = ({
             </GameDevPanelButton>
           }
         >
-          <GameDevHiveGallery items={featuredItems} iconMap={iconMap} isLoading={isLoading} />
+          <GameDevHiveGallery
+            items={featuredItems}
+            iconMap={iconMap}
+            isLoading={isLoading}
+            emptyMessage="No featured projects yet."
+          />
         </GameDevPanelShell>
       }
       vfx={

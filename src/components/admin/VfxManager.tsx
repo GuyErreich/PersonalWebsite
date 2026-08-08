@@ -5,7 +5,7 @@
  */
 
 import { motion } from "framer-motion";
-import { Check, FolderOpen, Image as ImageIcon, Plus, Sparkles, Video, X } from "lucide-react";
+import { FolderOpen, Plus, Sparkles, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useId, useMemo, useState } from "react";
 import {
   dedupeGameDevVfxByMediaUrl,
@@ -13,7 +13,6 @@ import {
   inferMediaTypeFromUrl,
 } from "../../lib/gamedev";
 import { findVfxByMediaUrl } from "../../lib/gamedev/vfxLibrary";
-import { seekThumbnailToVideoCenter } from "../../lib/media/seekThumbnailToVideoCenter";
 import {
   playClickSound,
   playHoverSound,
@@ -31,6 +30,8 @@ import {
 } from "../../lib/storage/r2UploadPolicies";
 import { supabase } from "../../lib/supabase";
 import { ConfirmDialog } from "./mediaLibrary/ConfirmDialog";
+import type { MediaLibraryPickerAction } from "./mediaLibrary/MediaLibraryPickerExplorer";
+import { MediaLibraryPickerModal } from "./mediaLibrary/MediaLibraryPickerModal";
 import type { AdminGameDevVfx } from "./types";
 import { VfxLibraryCard } from "./vfx/VfxLibraryCard";
 import { VfxLibrarySkeleton } from "./vfx/VfxLibrarySkeleton";
@@ -39,7 +40,6 @@ const ALLOWED_MEDIA_MIME_TYPES = new Set(getMimeTypesForFolder(R2_UPLOAD_FOLDERS
 const MEDIA_ACCEPT = getMimeTypesForFolder(R2_UPLOAD_FOLDERS.gameDevAssets).join(",");
 const MAX_MEDIA_SIZE_BYTES = R2_UPLOAD_POLICIES[R2_UPLOAD_FOLDERS.gameDevAssets].maxBytes;
 const MAX_MEDIA_SIZE_MB = Math.round(MAX_MEDIA_SIZE_BYTES / (1024 * 1024));
-const MEDIA_LIBRARY_PICKER_LIMIT = 48;
 
 interface VfxFormState {
   title: string;
@@ -83,8 +83,7 @@ export const VfxManager = () => {
   const [form, setForm] = useState<VfxFormState>(emptyForm);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [tagInput, setTagInput] = useState("");
-  const [mediaLibraryItems, setMediaLibraryItems] = useState<MediaLibraryItem[]>([]);
-  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+  const [isMediaLibraryOpen, setIsMediaLibraryOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const loadVfx = useCallback(async () => {
@@ -117,26 +116,6 @@ export const VfxManager = () => {
     void loadVfx();
   }, [loadVfx]);
 
-  const loadMediaLibrary = useCallback(async () => {
-    setIsLoadingLibrary(true);
-    const { data, error: libraryError } = await supabase
-      .from("media_library")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(MEDIA_LIBRARY_PICKER_LIMIT);
-
-    if (!libraryError) {
-      setMediaLibraryItems((data ?? []) as MediaLibraryItem[]);
-    }
-
-    setIsLoadingLibrary(false);
-  }, []);
-
-  useEffect(() => {
-    if (!isModalOpen) return;
-    void loadMediaLibrary();
-  }, [isModalOpen, loadMediaLibrary]);
-
   const modalTitle = editingId ? "Edit VFX" : "Add VFX";
   const selectedMediaUrl = mediaFile ? null : form.mediaUrl;
   const publicCount = useMemo(
@@ -146,6 +125,7 @@ export const VfxManager = () => {
 
   const closeModal = useCallback(() => {
     playMenuCloseSound();
+    setIsMediaLibraryOpen(false);
     setIsModalOpen(false);
     setEditingId(null);
     setForm(emptyForm());
@@ -154,17 +134,47 @@ export const VfxManager = () => {
     setError(null);
   }, []);
 
+  const handleMediaLibrarySelect = useCallback((item: MediaLibraryItem) => {
+    setMediaFile(null);
+    setForm((current) => ({
+      ...current,
+      mediaUrl: item.media_url,
+      mediaType: item.media_type,
+    }));
+    setIsMediaLibraryOpen(false);
+  }, []);
+
+  const clearMediaLibrarySelection = useCallback(() => {
+    setMediaFile(null);
+    setForm((current) => ({ ...current, mediaUrl: null }));
+  }, []);
+
+  const mediaLibraryActions = useMemo((): MediaLibraryPickerAction[] => {
+    return [
+      {
+        id: "vfx-media",
+        label: "Use as VFX Media",
+        badgeLabel: "VFX",
+        selectedUrl: selectedMediaUrl,
+        onClear: clearMediaLibrarySelection,
+        onSelect: handleMediaLibrarySelect,
+      },
+    ];
+  }, [clearMediaLibrarySelection, handleMediaLibrarySelect, selectedMediaUrl]);
+
   useEffect(() => {
     if (!isModalOpen) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || isSaving) return;
+      // Nested media picker owns Escape first.
+      if (isMediaLibraryOpen) return;
       closeModal();
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [closeModal, isModalOpen, isSaving]);
+  }, [closeModal, isMediaLibraryOpen, isModalOpen, isSaving]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -401,7 +411,7 @@ export const VfxManager = () => {
 
       {isModalOpen ? (
         <div
-          className="fixed inset-0 z-[60] overflow-y-auto"
+          className="fixed inset-0 z-50 overflow-y-auto"
           role="dialog"
           aria-modal="true"
           aria-labelledby={formHeadingId}
@@ -552,84 +562,21 @@ export const VfxManager = () => {
                       </div>
                     ) : null}
 
-                    <div className="sm:col-span-2 rounded-xl border border-gray-700 bg-gray-950/40 p-3">
-                      <div className="mb-3 flex items-center gap-2 text-sm font-medium text-gray-200">
-                        <FolderOpen className="h-4 w-4 text-cyan-300" aria-hidden="true" />
-                        Pick from Media Library
-                      </div>
-
-                      {isLoadingLibrary ? (
-                        <p className="text-xs text-gray-400">Loading library...</p>
-                      ) : mediaLibraryItems.length === 0 ? (
-                        <p className="text-xs text-gray-500">No media in the library yet.</p>
-                      ) : (
-                        <div className="grid max-h-56 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
-                          {mediaLibraryItems.map((item) => {
-                            const isSelected = selectedMediaUrl === item.media_url;
-
-                            return (
-                              <motion.button
-                                key={item.id}
-                                type="button"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onMouseEnter={playHoverSound}
-                                onClick={() => {
-                                  playClickSound();
-                                  setMediaFile(null);
-                                  setForm((c) => ({
-                                    ...c,
-                                    mediaUrl: item.media_url,
-                                    mediaType: item.media_type,
-                                  }));
-                                }}
-                                className={`overflow-hidden rounded-lg border text-left transition-colors ${
-                                  isSelected
-                                    ? "border-cyan-400/70 ring-1 ring-cyan-400/50"
-                                    : "border-gray-700 hover:border-cyan-500/35"
-                                }`}
-                              >
-                                <div className="relative aspect-video bg-black">
-                                  {item.media_type === "video" ? (
-                                    <video
-                                      src={item.media_url}
-                                      muted
-                                      playsInline
-                                      preload="metadata"
-                                      onLoadedMetadata={seekThumbnailToVideoCenter}
-                                      className="h-full w-full object-cover"
-                                    />
-                                  ) : (
-                                    <img
-                                      src={item.media_url}
-                                      alt={item.name}
-                                      loading="lazy"
-                                      className="h-full w-full object-cover"
-                                    />
-                                  )}
-
-                                  {isSelected ? (
-                                    <span className="absolute right-1.5 top-1.5 rounded-full bg-cyan-500 p-1 text-white shadow">
-                                      <Check className="h-3 w-3" aria-hidden="true" />
-                                    </span>
-                                  ) : null}
-                                </div>
-
-                                <div className="flex items-center gap-1.5 px-2 py-1.5">
-                                  {item.media_type === "video" ? (
-                                    <Video className="h-3 w-3 shrink-0 text-cyan-300" />
-                                  ) : (
-                                    <ImageIcon className="h-3 w-3 shrink-0 text-cyan-300" />
-                                  )}
-                                  <span className="truncate text-[11px] text-gray-200">
-                                    {item.name}
-                                  </span>
-                                </div>
-                              </motion.button>
-                            );
-                          })}
-                        </div>
-                      )}
+                    <div className="sm:col-span-2">
+                      <motion.button
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onMouseEnter={playHoverSound}
+                        onClick={() => {
+                          playClickSound();
+                          setIsMediaLibraryOpen(true);
+                        }}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-md border border-cyan-500/35 bg-cyan-600/15 px-3 py-2.5 text-sm font-medium text-cyan-100 hover:bg-cyan-600/25"
+                      >
+                        <FolderOpen className="h-4 w-4" aria-hidden="true" />
+                        Browse Media Library
+                      </motion.button>
                     </div>
 
                     <div>
@@ -773,6 +720,14 @@ export const VfxManager = () => {
           </div>
         </div>
       ) : null}
+
+      <MediaLibraryPickerModal
+        isOpen={isMediaLibraryOpen}
+        onClose={() => setIsMediaLibraryOpen(false)}
+        title="Pick VFX Media"
+        description="Browse folders and select an image or video from the media library for this effect."
+        actions={mediaLibraryActions}
+      />
 
       {pendingDeleteItem ? (
         <ConfirmDialog
