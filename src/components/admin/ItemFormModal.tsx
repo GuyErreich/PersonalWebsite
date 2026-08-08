@@ -1254,6 +1254,10 @@ export const ItemFormModal = ({
             try {
               await markVfxShownInLibrary(vfxIdsToMarkInLibrary);
             } catch (markError) {
+              const markMessage =
+                markError instanceof Error ? markError.message : String(markError);
+              const secondaryFailures: string[] = [];
+
               // Roll back only links added this save; keep pre-existing associations.
               if (newlyLinkedVfxIds.length > 0) {
                 const { error: compensateError } = await supabase
@@ -1263,15 +1267,14 @@ export const ItemFormModal = ({
                   .in("gamedev_vfx_id", newlyLinkedVfxIds);
 
                 if (compensateError) {
-                  const markMessage =
-                    markError instanceof Error ? markError.message : String(markError);
-                  throw new Error(
-                    `${markMessage} (also failed to roll back VFX links: ${compensateError.message})`,
+                  secondaryFailures.push(
+                    `failed to roll back VFX links: ${compensateError.message}`,
                   );
                 }
               }
 
-              // Restore pre-save eligibility so a retry still detects becomingEligible.
+              // Always restore pre-save eligibility so a retry still detects becomingEligible,
+              // even when newlyLinked link compensate failed.
               if (becomingEligible && sourceGameDev) {
                 const { error: eligibilityRollbackError } = await supabase
                   .from("gamedev_items")
@@ -1282,15 +1285,19 @@ export const ItemFormModal = ({
                   .eq("id", projectId);
 
                 if (eligibilityRollbackError) {
-                  const markMessage =
-                    markError instanceof Error ? markError.message : String(markError);
-                  throw new Error(
-                    `${markMessage} (also failed to roll back project eligibility: ${eligibilityRollbackError.message})`,
+                  secondaryFailures.push(
+                    `failed to roll back project eligibility: ${eligibilityRollbackError.message}`,
                   );
                 }
               }
 
-              throw markError instanceof Error ? markError : new Error(String(markError));
+              if (secondaryFailures.length > 0) {
+                throw new Error(
+                  `${markMessage} (also ${secondaryFailures.join("; ")})`,
+                );
+              }
+
+              throw markError instanceof Error ? markError : new Error(markMessage);
             }
           }
         };
