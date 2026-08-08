@@ -1216,6 +1216,14 @@ export const ItemFormModal = ({
               gamedev_vfx_id: link.gamedev_vfx_id,
               sort_order: link.sort_order,
             }));
+          // Kept associations may have new sort_order after upsert; restore pre-save order on mark failure.
+          const keptLinksToRestore = (existingLinks ?? [])
+            .filter((link) => desiredIdSet.has(link.gamedev_vfx_id))
+            .map((link) => ({
+              gamedev_item_id: projectId,
+              gamedev_vfx_id: link.gamedev_vfx_id,
+              sort_order: link.sort_order,
+            }));
 
           if (idsToRemove.length > 0) {
             const { error: removeLinksError } = await supabase
@@ -1292,6 +1300,22 @@ export const ItemFormModal = ({
                 if (restoreRemovedError) {
                   secondaryFailures.push(
                     `failed to restore removed VFX links: ${restoreRemovedError.message}`,
+                  );
+                }
+              }
+
+              // Restore pre-save sort_order for kept (existing ∩ desired) links so a failed
+              // mark does not permanently reorder remaining project VFX.
+              if (keptLinksToRestore.length > 0) {
+                const { error: restoreKeptError } = await supabase
+                  .from("gamedev_project_vfx")
+                  .upsert(keptLinksToRestore, {
+                    onConflict: "gamedev_item_id,gamedev_vfx_id",
+                  });
+
+                if (restoreKeptError) {
+                  secondaryFailures.push(
+                    `failed to restore kept VFX link sort order: ${restoreKeptError.message}`,
                   );
                 }
               }
