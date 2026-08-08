@@ -1234,8 +1234,11 @@ export const ItemFormModal = ({
             throw new Error(upsertLinksError.message);
           }
 
-          if (!isComingSoon && showVfxSection && normalizedLinkedVfxIds.length > 0) {
-            await markVfxShownInLibrary(normalizedLinkedVfxIds);
+          // Only newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
+          const existingIdSet = new Set(existingIds);
+          const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
+          if (!isComingSoon && showVfxSection && newlyLinkedVfxIds.length > 0) {
+            await markVfxShownInLibrary(newlyLinkedVfxIds);
           }
         };
 
