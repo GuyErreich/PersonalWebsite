@@ -736,9 +736,7 @@ export const ItemFormModal = ({
       const localMatch = availableVfx.find((entry) => entry.media_url.trim() === mediaUrl);
       if (localMatch) {
         markLinkedVfxIdsEdited();
-        setLinkedVfxIds((prev) =>
-          prev.includes(localMatch.id) ? prev : [...prev, localMatch.id],
-        );
+        setLinkedVfxIds((prev) => (prev.includes(localMatch.id) ? prev : [...prev, localMatch.id]));
         return;
       }
 

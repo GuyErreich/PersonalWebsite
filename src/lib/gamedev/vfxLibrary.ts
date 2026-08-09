@@ -24,8 +24,7 @@ export interface GameDevVfxRecord {
 /** Client-only catalog picks that must not hit `gamedev_vfx` until project save. */
 export const PROVISIONAL_VFX_ID_PREFIX = "provisional:" as const;
 
-export const isProvisionalVfxId = (id: string): boolean =>
-  id.startsWith(PROVISIONAL_VFX_ID_PREFIX);
+export const isProvisionalVfxId = (id: string): boolean => id.startsWith(PROVISIONAL_VFX_ID_PREFIX);
 
 export const makeProvisionalVfxId = (mediaUrl: string): string =>
   `${PROVISIONAL_VFX_ID_PREFIX}${mediaUrl.trim()}`;
@@ -178,8 +177,7 @@ export const materializeProvisionalLinkedVfx = async (
       }
 
       const entry =
-        availableById.get(id) ??
-        available.find((item) => item.media_url.trim() === mediaUrl);
+        availableById.get(id) ?? available.find((item) => item.media_url.trim() === mediaUrl);
 
       const alreadyPersisted = await getVfxByMediaUrl(mediaUrl);
       if (alreadyPersisted) {
@@ -279,11 +277,30 @@ export const normalizeLinkedVfxIds = async (
 ): Promise<string[]> => {
   const availableById = new Map(available.map((item) => [item.id, item]));
   const missingIds = linkedIds.filter((id) => !availableById.has(id));
+  const provisionalMissingIds = missingIds.filter(isProvisionalVfxId);
+  const dbMissingIds = missingIds.filter((id) => !isProvisionalVfxId(id));
 
-  let mergedAvailable = available;
+  let mergedAvailable = [...available];
 
-  if (missingIds.length > 0) {
-    const { data, error } = await supabase.from("gamedev_vfx").select("*").in("id", missingIds);
+  // Provisional IDs embed media_url; resolve them locally so they never hit `.in('id')`
+  // (Postgres uuid parse error) when catalog merge dropped them from `available`.
+  for (const id of provisionalMissingIds) {
+    const mediaUrl = provisionalVfxMediaUrl(id)?.trim();
+    if (!mediaUrl) {
+      continue;
+    }
+
+    const mediaMatch = mergedAvailable.find((item) => item.media_url.trim() === mediaUrl);
+    mergedAvailable.push({
+      id,
+      media_url: mediaUrl,
+      sort_order: mediaMatch?.sort_order ?? null,
+      created_at: mediaMatch?.created_at,
+    });
+  }
+
+  if (dbMissingIds.length > 0) {
+    const { data, error } = await supabase.from("gamedev_vfx").select("*").in("id", dbMissingIds);
 
     if (error) {
       throw new Error(error.message);
@@ -291,7 +308,7 @@ export const normalizeLinkedVfxIds = async (
 
     if (data && data.length > 0) {
       mergedAvailable = [
-        ...available,
+        ...mergedAvailable,
         ...(data as Array<{
           id: string;
           media_url: string;

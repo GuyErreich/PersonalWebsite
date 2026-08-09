@@ -7,11 +7,7 @@
 import { motion } from "framer-motion";
 import { FolderOpen, Plus, Sparkles, X } from "lucide-react";
 import { type FormEvent, useCallback, useEffect, useId, useMemo, useState } from "react";
-import {
-  dedupeGameDevVfxByMediaUrl,
-  inferMediaTypeFromFile,
-  inferMediaTypeFromUrl,
-} from "../../lib/gamedev";
+import { dedupeGameDevVfxByMediaUrl, inferMediaTypeFromFile } from "../../lib/gamedev";
 import { findVfxByMediaUrl } from "../../lib/gamedev/vfxLibrary";
 import {
   playClickSound,
@@ -268,9 +264,8 @@ export const VfxManager = () => {
         return;
       }
 
-      if (!mediaFile) {
-        mediaType = inferMediaTypeFromUrl(mediaUrl);
-      }
+      // When not uploading a new file, keep form/media-library media_type.
+      // URL inference is unreliable for extensionless or atypical video URLs.
 
       const sortOrder = form.sortOrder.trim() ? Number(form.sortOrder) : null;
       const payload = {
