@@ -21,6 +21,38 @@ export interface GameDevVfxRecord {
   created_at: string;
 }
 
+/** Client-only catalog picks that must not hit `gamedev_vfx` until project save. */
+export const PROVISIONAL_VFX_ID_PREFIX = "provisional:" as const;
+
+export const isProvisionalVfxId = (id: string): boolean =>
+  id.startsWith(PROVISIONAL_VFX_ID_PREFIX);
+
+export const makeProvisionalVfxId = (mediaUrl: string): string =>
+  `${PROVISIONAL_VFX_ID_PREFIX}${mediaUrl.trim()}`;
+
+export const provisionalVfxMediaUrl = (id: string): string | null =>
+  isProvisionalVfxId(id) ? id.slice(PROVISIONAL_VFX_ID_PREFIX.length) : null;
+
+export const buildProvisionalVfxFromMediaLibraryItem = (
+  item: Pick<MediaLibraryItem, "name" | "media_url" | "media_type">,
+): GameDevVfxRecord => {
+  const mediaUrl = item.media_url.trim();
+
+  return {
+    id: makeProvisionalVfxId(mediaUrl),
+    title: item.name.trim() || "VFX",
+    description: "",
+    media_url: mediaUrl,
+    thumbnail_url: null,
+    media_type: item.media_type,
+    tags: [],
+    sort_order: null,
+    show_in_library: false,
+    // Epoch so a persisted row with the same media_url wins catalog dedupe.
+    created_at: new Date(0).toISOString(),
+  };
+};
+
 export const markVfxShownInLibrary = async (vfxIds: string[]): Promise<void> => {
   const uniqueIds = [...new Set(vfxIds.filter(Boolean))];
   if (uniqueIds.length === 0) {
@@ -37,30 +69,41 @@ export const markVfxShownInLibrary = async (vfxIds: string[]): Promise<void> => 
   }
 };
 
+const toVfxRecord = (data: GameDevVfxRecord): GameDevVfxRecord => ({
+  ...data,
+  tags: data.tags ?? [],
+});
+
+/** Load a persisted catalog row by media URL without inserting. */
+export const getVfxByMediaUrl = async (mediaUrl: string): Promise<GameDevVfxRecord | null> => {
+  const existing = await findVfxByMediaUrl(mediaUrl);
+  if (!existing) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("gamedev_vfx")
+    .select("*")
+    .eq("id", existing.id)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  return toVfxRecord(data as GameDevVfxRecord);
+};
+
 export const ensureVfxFromMediaLibraryItem = async (
   item: Pick<MediaLibraryItem, "name" | "media_url" | "media_type">,
-): Promise<GameDevVfxRecord> => {
-  const existing = await findVfxByMediaUrl(item.media_url);
-
+): Promise<{ record: GameDevVfxRecord; created: boolean }> => {
+  const existing = await getVfxByMediaUrl(item.media_url);
   if (existing) {
-    const { data, error } = await supabase
-      .from("gamedev_vfx")
-      .select("*")
-      .eq("id", existing.id)
-      .single();
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    if (!data) {
-      throw new Error("VFX entry not found.");
-    }
-
-    return {
-      ...(data as GameDevVfxRecord),
-      tags: (data as GameDevVfxRecord).tags ?? [],
-    };
+    return { record: existing, created: false };
   }
 
   const { data, error } = await supabase
@@ -82,31 +125,103 @@ export const ensureVfxFromMediaLibraryItem = async (
 
   if (error || !data) {
     if (error?.code === "23505") {
-      const conflictExisting = await findVfxByMediaUrl(item.media_url);
+      const conflictExisting = await getVfxByMediaUrl(item.media_url);
       if (conflictExisting) {
-        const { data: conflictRow, error: conflictLookupError } = await supabase
-          .from("gamedev_vfx")
-          .select("*")
-          .eq("id", conflictExisting.id)
-          .single();
-
-        if (conflictLookupError || !conflictRow) {
-          throw new Error(conflictLookupError?.message ?? "VFX entry not found.");
-        }
-
-        return {
-          ...(conflictRow as GameDevVfxRecord),
-          tags: (conflictRow as GameDevVfxRecord).tags ?? [],
-        };
+        return { record: conflictExisting, created: false };
       }
     }
 
     throw new Error(error?.message ?? "Failed to create VFX entry.");
   }
 
+  return { record: toVfxRecord(data as GameDevVfxRecord), created: true };
+};
+
+/**
+ * Persist provisional project-form VFX picks. Returns remapped IDs plus any rows
+ * this call newly inserted (for cleanup if link sync fails afterward).
+ */
+export const materializeProvisionalLinkedVfx = async (
+  linkedIds: string[],
+  available: Array<{
+    id: string;
+    title: string;
+    media_url: string;
+    media_type: "video" | "image";
+  }>,
+): Promise<{
+  linkedIds: string[];
+  available: Array<{
+    id: string;
+    title: string;
+    media_url: string;
+    media_type: "video" | "image";
+    sort_order?: number | null;
+    created_at?: string;
+  }>;
+  createdVfxIds: string[];
+}> => {
+  const availableById = new Map(available.map((item) => [item.id, item]));
+  const idMap = new Map<string, string>();
+  const createdVfxIds: string[] = [];
+  const materializedRows: GameDevVfxRecord[] = [];
+
+  try {
+    for (const id of linkedIds) {
+      if (!isProvisionalVfxId(id) || idMap.has(id)) {
+        continue;
+      }
+
+      const mediaUrl = provisionalVfxMediaUrl(id);
+      if (!mediaUrl) {
+        throw new Error("Provisional VFX pick is missing media.");
+      }
+
+      const entry =
+        availableById.get(id) ??
+        available.find((item) => item.media_url.trim() === mediaUrl);
+
+      const alreadyPersisted = await getVfxByMediaUrl(mediaUrl);
+      if (alreadyPersisted) {
+        idMap.set(id, alreadyPersisted.id);
+        materializedRows.push(alreadyPersisted);
+        continue;
+      }
+
+      if (!entry) {
+        throw new Error("Provisional VFX pick is missing from the in-modal catalog.");
+      }
+
+      const { record: vfx, created } = await ensureVfxFromMediaLibraryItem({
+        name: entry.title,
+        media_url: mediaUrl,
+        media_type: entry.media_type,
+      });
+
+      if (created) {
+        createdVfxIds.push(vfx.id);
+      }
+      idMap.set(id, vfx.id);
+      materializedRows.push(vfx);
+    }
+  } catch (error) {
+    if (createdVfxIds.length > 0) {
+      await supabase.from("gamedev_vfx").delete().in("id", createdVfxIds);
+    }
+    throw error;
+  }
+
+  if (idMap.size === 0) {
+    return { linkedIds, available, createdVfxIds };
+  }
+
+  const remappedLinkedIds = linkedIds.map((id) => idMap.get(id) ?? id);
+  const withoutProvisionals = available.filter((item) => !isProvisionalVfxId(item.id));
+
   return {
-    ...(data as GameDevVfxRecord),
-    tags: (data as GameDevVfxRecord).tags ?? [],
+    linkedIds: remappedLinkedIds,
+    available: [...withoutProvisionals, ...materializedRows],
+    createdVfxIds,
   };
 };
 

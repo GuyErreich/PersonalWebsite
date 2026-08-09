@@ -29,8 +29,10 @@ import {
   parseGameDevStoredContent,
 } from "../../lib/gamedev";
 import {
-  ensureVfxFromMediaLibraryItem,
+  buildProvisionalVfxFromMediaLibraryItem,
+  getVfxByMediaUrl,
   markVfxShownInLibrary,
+  materializeProvisionalLinkedVfx,
   normalizeLinkedVfxIds,
 } from "../../lib/gamedev/vfxLibrary";
 import { fetchGitHubProjectSeed } from "../../lib/github/fetchRepoSeed";
@@ -727,10 +729,21 @@ export const ItemFormModal = ({
       }
 
       const generation = formGenerationRef.current;
+      const mediaUrl = item.media_url.trim();
       setError(null);
 
+      // Reuse an in-modal row (persisted or provisional) — never insert on pick.
+      const localMatch = availableVfx.find((entry) => entry.media_url.trim() === mediaUrl);
+      if (localMatch) {
+        markLinkedVfxIdsEdited();
+        setLinkedVfxIds((prev) =>
+          prev.includes(localMatch.id) ? prev : [...prev, localMatch.id],
+        );
+        return;
+      }
+
       try {
-        const vfx = await ensureVfxFromMediaLibraryItem(item);
+        const existing = await getVfxByMediaUrl(mediaUrl);
 
         if (generation !== formGenerationRef.current) {
           return;
@@ -741,9 +754,11 @@ export const ItemFormModal = ({
           return;
         }
 
+        const vfx = existing ?? buildProvisionalVfxFromMediaLibraryItem(item);
+
         setAvailableVfx((prev) =>
           dedupeGameDevVfxByMediaUrl([
-            ...prev.filter((entry) => entry.id !== vfx.id),
+            ...prev.filter((entry) => entry.id !== vfx.id && entry.media_url.trim() !== mediaUrl),
             {
               ...vfx,
               tags: vfx.tags ?? [],
@@ -761,7 +776,7 @@ export const ItemFormModal = ({
         setError(err instanceof Error ? err.message : "Unable to add VFX media.");
       }
     },
-    [canEditLinkedVfxIds, markLinkedVfxIdsEdited],
+    [availableVfx, canEditLinkedVfxIds, markLinkedVfxIdsEdited],
   );
 
   const gameDevFormMode = isEditing ? "sidebar" : "wizard";
@@ -1178,120 +1193,92 @@ export const ItemFormModal = ({
           // a project must not force show_in_library=false on curated entries.
           // Coming soon still syncs Discovery links, but must not publish those effects
           // into the public VFX gallery while the project page keeps VFX hidden.
-          const { data: existingLinks, error: fetchLinksError } = await supabase
-            .from("gamedev_project_vfx")
-            .select("gamedev_vfx_id, sort_order")
-            .eq("gamedev_item_id", projectId);
+          // Persist provisional media-library picks only after the project row exists.
+          const materialized = await materializeProvisionalLinkedVfx(linkedVfxIds, availableVfx);
+          const normalizedLinkedVfxIds = await normalizeLinkedVfxIds(
+            materialized.linkedIds,
+            materialized.available,
+          );
+          const createdVfxIds = materialized.createdVfxIds;
 
-          if (fetchLinksError) {
-            throw new Error(fetchLinksError.message);
-          }
-
-          const existingIds = (existingLinks ?? []).map((link) => link.gamedev_vfx_id);
-          const desiredIdSet = new Set(normalizedLinkedVfxIds);
-
-          if (normalizedLinkedVfxIds.length === 0) {
-            if (existingIds.length === 0) {
+          const cleanupCreatedVfx = async () => {
+            if (createdVfxIds.length === 0) {
               return;
             }
 
-            const { error: clearLinksError } = await supabase
+            await supabase.from("gamedev_vfx").delete().in("id", createdVfxIds);
+          };
+
+          try {
+            const { data: existingLinks, error: fetchLinksError } = await supabase
               .from("gamedev_project_vfx")
-              .delete()
+              .select("gamedev_vfx_id, sort_order")
               .eq("gamedev_item_id", projectId);
 
-            if (clearLinksError) {
-              throw new Error(clearLinksError.message);
+            if (fetchLinksError) {
+              throw new Error(fetchLinksError.message);
             }
 
-            return;
-          }
+            const existingIds = (existingLinks ?? []).map((link) => link.gamedev_vfx_id);
+            const desiredIdSet = new Set(normalizedLinkedVfxIds);
 
-          const idsToRemove = existingIds.filter((id) => !desiredIdSet.has(id));
-          // Capture rows before delete so upsert/mark failures can restore associations.
-          const removedLinksToRestore = (existingLinks ?? [])
-            .filter((link) => !desiredIdSet.has(link.gamedev_vfx_id))
-            .map((link) => ({
-              gamedev_item_id: projectId,
-              gamedev_vfx_id: link.gamedev_vfx_id,
-              sort_order: link.sort_order,
-            }));
-          // Kept associations may have new sort_order after upsert; restore pre-save order on mark failure.
-          const keptLinksToRestore = (existingLinks ?? [])
-            .filter((link) => desiredIdSet.has(link.gamedev_vfx_id))
-            .map((link) => ({
-              gamedev_item_id: projectId,
-              gamedev_vfx_id: link.gamedev_vfx_id,
-              sort_order: link.sort_order,
-            }));
+            if (normalizedLinkedVfxIds.length === 0) {
+              if (existingIds.length === 0) {
+                return;
+              }
 
-          if (idsToRemove.length > 0) {
-            const { error: removeLinksError } = await supabase
-              .from("gamedev_project_vfx")
-              .delete()
-              .eq("gamedev_item_id", projectId)
-              .in("gamedev_vfx_id", idsToRemove);
-
-            if (removeLinksError) {
-              throw new Error(removeLinksError.message);
-            }
-          }
-
-          const { error: upsertLinksError } = await supabase.from("gamedev_project_vfx").upsert(
-            normalizedLinkedVfxIds.map((vfxId, index) => ({
-              gamedev_item_id: projectId,
-              gamedev_vfx_id: vfxId,
-              sort_order: index,
-            })),
-            { onConflict: "gamedev_item_id,gamedev_vfx_id" },
-          );
-
-          if (upsertLinksError) {
-            if (removedLinksToRestore.length > 0) {
-              const { error: restoreRemovedError } = await supabase
+              const { error: clearLinksError } = await supabase
                 .from("gamedev_project_vfx")
-                .upsert(removedLinksToRestore, {
-                  onConflict: "gamedev_item_id,gamedev_vfx_id",
-                });
+                .delete()
+                .eq("gamedev_item_id", projectId);
 
-              if (restoreRemovedError) {
-                throw new Error(
-                  `${upsertLinksError.message} (also failed to restore removed VFX links: ${restoreRemovedError.message})`,
-                );
+              if (clearLinksError) {
+                throw new Error(clearLinksError.message);
+              }
+
+              return;
+            }
+
+            const idsToRemove = existingIds.filter((id) => !desiredIdSet.has(id));
+            // Capture rows before delete so upsert/mark failures can restore associations.
+            const removedLinksToRestore = (existingLinks ?? [])
+              .filter((link) => !desiredIdSet.has(link.gamedev_vfx_id))
+              .map((link) => ({
+                gamedev_item_id: projectId,
+                gamedev_vfx_id: link.gamedev_vfx_id,
+                sort_order: link.sort_order,
+              }));
+            // Kept associations may have new sort_order after upsert; restore pre-save order on mark failure.
+            const keptLinksToRestore = (existingLinks ?? [])
+              .filter((link) => desiredIdSet.has(link.gamedev_vfx_id))
+              .map((link) => ({
+                gamedev_item_id: projectId,
+                gamedev_vfx_id: link.gamedev_vfx_id,
+                sort_order: link.sort_order,
+              }));
+
+            if (idsToRemove.length > 0) {
+              const { error: removeLinksError } = await supabase
+                .from("gamedev_project_vfx")
+                .delete()
+                .eq("gamedev_item_id", projectId)
+                .in("gamedev_vfx_id", idsToRemove);
+
+              if (removeLinksError) {
+                throw new Error(removeLinksError.message);
               }
             }
 
-            throw new Error(upsertLinksError.message);
-          }
+            const { error: upsertLinksError } = await supabase.from("gamedev_project_vfx").upsert(
+              normalizedLinkedVfxIds.map((vfxId, index) => ({
+                gamedev_item_id: projectId,
+                gamedev_vfx_id: vfxId,
+                sort_order: index,
+              })),
+              { onConflict: "gamedev_item_id,gamedev_vfx_id" },
+            );
 
-          // Newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
-          // First publish from coming-soon marks all linked VFX once. Re-enable section /
-          // re-publish after prior eligibility only marks newly linked rows so curated hides stick.
-          const existingIdSet = new Set(existingIds);
-          const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
-          const wasComingSoon = Boolean(sourceGameDev?.is_coming_soon);
-          const wasShowVfxSection = Boolean(sourceGameDev?.show_vfx_section);
-          const leavingComingSoon = wasComingSoon && !isComingSoon;
-          const enablingVfxSection = !wasShowVfxSection && showVfxSection;
-          const becomingEligible =
-            !isComingSoon && showVfxSection && (leavingComingSoon || enablingVfxSection);
-          const firstPublishFromComingSoon = !isComingSoon && showVfxSection && leavingComingSoon;
-          const vfxIdsToMarkInLibrary =
-            !isComingSoon && showVfxSection
-              ? firstPublishFromComingSoon
-                ? normalizedLinkedVfxIds
-                : newlyLinkedVfxIds
-              : [];
-          if (vfxIdsToMarkInLibrary.length > 0) {
-            try {
-              await markVfxShownInLibrary(vfxIdsToMarkInLibrary);
-            } catch (markError) {
-              const markMessage =
-                markError instanceof Error ? markError.message : String(markError);
-              const secondaryFailures: string[] = [];
-
-              // Restore associations deleted before upsert so a failed mark does not
-              // permanently drop prior project↔VFX links.
+            if (upsertLinksError) {
               if (removedLinksToRestore.length > 0) {
                 const { error: restoreRemovedError } = await supabase
                   .from("gamedev_project_vfx")
@@ -1300,80 +1287,129 @@ export const ItemFormModal = ({
                   });
 
                 if (restoreRemovedError) {
-                  secondaryFailures.push(
-                    `failed to restore removed VFX links: ${restoreRemovedError.message}`,
+                  throw new Error(
+                    `${upsertLinksError.message} (also failed to restore removed VFX links: ${restoreRemovedError.message})`,
                   );
                 }
               }
 
-              // Restore pre-save sort_order for kept (existing ∩ desired) links so a failed
-              // mark does not permanently reorder remaining project VFX.
-              if (keptLinksToRestore.length > 0) {
-                const { error: restoreKeptError } = await supabase
-                  .from("gamedev_project_vfx")
-                  .upsert(keptLinksToRestore, {
-                    onConflict: "gamedev_item_id,gamedev_vfx_id",
-                  });
-
-                if (restoreKeptError) {
-                  secondaryFailures.push(
-                    `failed to restore kept VFX link sort order: ${restoreKeptError.message}`,
-                  );
-                }
-              }
-
-              // Roll back only links added this save; keep pre-existing associations.
-              if (newlyLinkedVfxIds.length > 0) {
-                const { error: compensateError } = await supabase
-                  .from("gamedev_project_vfx")
-                  .delete()
-                  .eq("gamedev_item_id", projectId)
-                  .in("gamedev_vfx_id", newlyLinkedVfxIds);
-
-                if (compensateError) {
-                  secondaryFailures.push(
-                    `failed to roll back VFX links: ${compensateError.message}`,
-                  );
-                }
-              }
-
-              // Always restore pre-save eligibility so a retry still detects becomingEligible,
-              // even when newlyLinked link compensate failed.
-              if (becomingEligible && sourceGameDev) {
-                const { error: eligibilityRollbackError } = await supabase
-                  .from("gamedev_items")
-                  .update({
-                    is_coming_soon: sourceGameDev.is_coming_soon ?? false,
-                    show_vfx_section: sourceGameDev.show_vfx_section ?? false,
-                  })
-                  .eq("id", projectId);
-
-                if (eligibilityRollbackError) {
-                  secondaryFailures.push(
-                    `failed to roll back project eligibility: ${eligibilityRollbackError.message}`,
-                  );
-                }
-              } else if (!sourceGameDev) {
-                // Create path: remove the orphan project so a retry does not insert a duplicate.
-                // gamedev_project_vfx rows cascade on gamedev_items delete.
-                const { error: createRollbackError } = await supabase
-                  .from("gamedev_items")
-                  .delete()
-                  .eq("id", projectId);
-
-                if (createRollbackError) {
-                  secondaryFailures.push(
-                    `failed to roll back created project: ${createRollbackError.message}`,
-                  );
-                }
-              }
-
-              if (secondaryFailures.length > 0) {
-                throw new Error(`${markMessage} (also ${secondaryFailures.join("; ")})`);
-              }
-
-              throw markError instanceof Error ? markError : new Error(markMessage);
+              throw new Error(upsertLinksError.message);
             }
+
+            // Newly linked VFX get show_in_library=true; VfxManager owns ongoing visibility.
+            // First publish from coming-soon marks all linked VFX once. Re-enable section /
+            // re-publish after prior eligibility only marks newly linked rows so curated hides stick.
+            const existingIdSet = new Set(existingIds);
+            const newlyLinkedVfxIds = normalizedLinkedVfxIds.filter((id) => !existingIdSet.has(id));
+            const wasComingSoon = Boolean(sourceGameDev?.is_coming_soon);
+            const wasShowVfxSection = Boolean(sourceGameDev?.show_vfx_section);
+            const leavingComingSoon = wasComingSoon && !isComingSoon;
+            const enablingVfxSection = !wasShowVfxSection && showVfxSection;
+            const becomingEligible =
+              !isComingSoon && showVfxSection && (leavingComingSoon || enablingVfxSection);
+            const firstPublishFromComingSoon = !isComingSoon && showVfxSection && leavingComingSoon;
+            const vfxIdsToMarkInLibrary =
+              !isComingSoon && showVfxSection
+                ? firstPublishFromComingSoon
+                  ? normalizedLinkedVfxIds
+                  : newlyLinkedVfxIds
+                : [];
+            if (vfxIdsToMarkInLibrary.length > 0) {
+              try {
+                await markVfxShownInLibrary(vfxIdsToMarkInLibrary);
+              } catch (markError) {
+                const markMessage =
+                  markError instanceof Error ? markError.message : String(markError);
+                const secondaryFailures: string[] = [];
+
+                // Restore associations deleted before upsert so a failed mark does not
+                // permanently drop prior project↔VFX links.
+                if (removedLinksToRestore.length > 0) {
+                  const { error: restoreRemovedError } = await supabase
+                    .from("gamedev_project_vfx")
+                    .upsert(removedLinksToRestore, {
+                      onConflict: "gamedev_item_id,gamedev_vfx_id",
+                    });
+
+                  if (restoreRemovedError) {
+                    secondaryFailures.push(
+                      `failed to restore removed VFX links: ${restoreRemovedError.message}`,
+                    );
+                  }
+                }
+
+                // Restore pre-save sort_order for kept (existing ∩ desired) links so a failed
+                // mark does not permanently reorder remaining project VFX.
+                if (keptLinksToRestore.length > 0) {
+                  const { error: restoreKeptError } = await supabase
+                    .from("gamedev_project_vfx")
+                    .upsert(keptLinksToRestore, {
+                      onConflict: "gamedev_item_id,gamedev_vfx_id",
+                    });
+
+                  if (restoreKeptError) {
+                    secondaryFailures.push(
+                      `failed to restore kept VFX link sort order: ${restoreKeptError.message}`,
+                    );
+                  }
+                }
+
+                // Roll back only links added this save; keep pre-existing associations.
+                if (newlyLinkedVfxIds.length > 0) {
+                  const { error: compensateError } = await supabase
+                    .from("gamedev_project_vfx")
+                    .delete()
+                    .eq("gamedev_item_id", projectId)
+                    .in("gamedev_vfx_id", newlyLinkedVfxIds);
+
+                  if (compensateError) {
+                    secondaryFailures.push(
+                      `failed to roll back VFX links: ${compensateError.message}`,
+                    );
+                  }
+                }
+
+                // Always restore pre-save eligibility so a retry still detects becomingEligible,
+                // even when newlyLinked link compensate failed.
+                if (becomingEligible && sourceGameDev) {
+                  const { error: eligibilityRollbackError } = await supabase
+                    .from("gamedev_items")
+                    .update({
+                      is_coming_soon: sourceGameDev.is_coming_soon ?? false,
+                      show_vfx_section: sourceGameDev.show_vfx_section ?? false,
+                    })
+                    .eq("id", projectId);
+
+                  if (eligibilityRollbackError) {
+                    secondaryFailures.push(
+                      `failed to roll back project eligibility: ${eligibilityRollbackError.message}`,
+                    );
+                  }
+                } else if (!sourceGameDev) {
+                  // Create path: remove the orphan project so a retry does not insert a duplicate.
+                  // gamedev_project_vfx rows cascade on gamedev_items delete.
+                  const { error: createRollbackError } = await supabase
+                    .from("gamedev_items")
+                    .delete()
+                    .eq("id", projectId);
+
+                  if (createRollbackError) {
+                    secondaryFailures.push(
+                      `failed to roll back created project: ${createRollbackError.message}`,
+                    );
+                  }
+                }
+
+                if (secondaryFailures.length > 0) {
+                  throw new Error(`${markMessage} (also ${secondaryFailures.join("; ")})`);
+                }
+
+                throw markError instanceof Error ? markError : new Error(markMessage);
+              }
+            }
+          } catch (syncError) {
+            await cleanupCreatedVfx();
+            throw syncError;
           }
         };
 
