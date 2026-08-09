@@ -136,6 +136,22 @@ export const isImageUrl = (url: string): boolean => {
   return IMAGE_EXTENSIONS.includes(extension);
 };
 
+/**
+ * Resolves a still image for gallery teasers / hive nodes.
+ * Prefers an explicit thumbnail, then image media / header media URLs.
+ */
+export const resolveGameDevTeaserThumbnail = (item: {
+  thumbnail_url?: string | null;
+  media_url?: string | null;
+  header_media_url?: string | null;
+}): string | undefined =>
+  item.thumbnail_url ??
+  (item.media_url && isImageUrl(item.media_url) ? item.media_url : undefined) ??
+  (item.header_media_url && isImageUrl(item.header_media_url)
+    ? item.header_media_url
+    : undefined) ??
+  undefined;
+
 export const inferMediaTypeFromUrl = (url: string): "video" | "image" => {
   if (isVideoUrl(url)) return "video";
   return "image";

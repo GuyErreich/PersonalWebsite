@@ -13,8 +13,8 @@ import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
 import {
   buildGameDevProjectPath,
   isGameDevComingSoon,
-  isImageUrl,
   resolveGameDevTeaserSummary,
+  resolveGameDevTeaserThumbnail,
 } from "../../../../../lib/gamedev";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
@@ -54,13 +54,7 @@ const GalleryInfoCard = ({
   ) as React.ComponentType<{ className?: string }>;
 
   const comingSoon = isGameDevComingSoon(item);
-  const teaserThumbnail =
-    item.thumbnail_url ??
-    (item.media_url && isImageUrl(item.media_url) ? item.media_url : undefined) ??
-    (item.header_media_url && isImageUrl(item.header_media_url)
-      ? item.header_media_url
-      : undefined) ??
-    undefined;
+  const teaserThumbnail = resolveGameDevTeaserThumbnail(item);
 
   return (
     <GameDevProjectCard

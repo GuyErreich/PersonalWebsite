@@ -19,6 +19,7 @@ import {
   buildGameDevProjectPath,
   isGameDevComingSoon,
   resolveGameDevTeaserSummary,
+  resolveGameDevTeaserThumbnail,
 } from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
@@ -584,7 +585,8 @@ export const GameDevHiveGallery = ({
               const showLabel =
                 ringDistance <
                 gridConfig.labelThreshold + (isSpreadMode ? gridConfig.spreadLabelBoost : 0);
-              const showThumbnail = !!item.thumbnail_url;
+              const teaserThumbnail = resolveGameDevTeaserThumbnail(item);
+              const showThumbnail = !!teaserThumbnail;
               const ProjectIcon = (
                 item.icon_name ? (iconMap[item.icon_name] ?? Gamepad2) : Gamepad2
               ) as React.ComponentType<{ className?: string }>;
@@ -617,7 +619,7 @@ export const GameDevHiveGallery = ({
                   {showThumbnail ? (
                     <div
                       className="gamedev-hive-node-thumb"
-                      style={{ backgroundImage: `url(${item.thumbnail_url})` }}
+                      style={{ backgroundImage: `url(${teaserThumbnail})` }}
                     />
                   ) : (
                     <div className="gamedev-hive-node-icon">
