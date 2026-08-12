@@ -36,7 +36,7 @@ If the repo ships a review-dedup helper (for example `scripts/review-lock.py`), 
 
 1. `check <tier>` — if it reports the tier already reviewed on the current tree, reply one line and stop, unless the user asked for a forced re-review.
 2. Run the phases on the tier scope.
-3. `record <tier> --verdict passed|failed` — record the outcome (failed if findings > 0 or lint/build fail).
+3. `record <tier> --verdict passed|failed` — record the outcome (failed if findings > 0 or Validate suite fails).
 4. After a commit with no further edits, the commit tier can inherit the change-tier verdict.
 
 This is advisory: never let the lockfile substitute for an actual review when the tree has changed, and never let its absence block work.

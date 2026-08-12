@@ -33,6 +33,23 @@ Order: `low` < `medium` < `high` < `critical`.
 
 Invocation overrides: `manage medium` / `manage high` / `manage_severity=high` / `only critical`. Printed at preflight with other caps.
 
+## Diminishing returns (round-based ratchet)
+
+After enough fix/review cycles, lingering non-Critical findings become follow-ups instead of blocking forever. Two durable preferences (also overridable per run):
+
+| Preference | Default | Purpose |
+|---|---|---|
+| `diminishing_returns_round` | `4` | Round number at/after which the ratchet applies |
+| `diminishing_returns_floor` | one tier above `manage_severity` (capped at `critical`) | Minimum severity still auto-fixed / escalated after that round. Below → Defer |
+
+Examples with default `manage_severity=medium` → derived floor `high`:
+- Round 1–3: Medium+ still managed as usual.
+- Round ≥ 4: Medium (and Low) → `Decision: Defer (diminishing returns)`; High/Critical still Fix/Escalate.
+
+Overrides: `"diminishing after round 3"` · `diminishing_returns_round=5` · `diminishing_returns_floor=high` · `diminishing_returns_floor=critical`. Floor is fully independent of `manage_severity` when set explicitly.
+
+Deferred findings use the same `closed_findings` / `status: "deferred"` path as the severity floor, with rationale noting the round + floor so the summary canvas can list them as follow-ups.
+
 ## Auto-fix (no ask)
 
 When the finding is at/above `manage_severity`, **and** the correct fix is unambiguous (best practice / stated project rule — not a product trade-off):
@@ -61,7 +78,8 @@ Stop the loop and ask the user **only** when judgment is required — not becaus
 - Architectural refactors or changes to files **outside** the PR diff when the correct scope is unclear
 - Public API, props contract, or **intentional** user-visible behavior changes where multiple valid **product** designs exist (not multiple equivalent bugfix shapes)
 - A finding that **recurs after a fix** (`Source: recurrence`, same closed signature / same defect still present) — escalate once; do not re-open as a fresh auto-fix loop
-- Lint or build failing after a fix (non-zero exit from raw `AGENT.md` validate commands)
+- A finding that **contests a deliberate prior fix shape** (`Source: contested` — later reviewer wants to undo/rework what the fixer introduced per `closed_findings[].fix_shape`) — escalate once with both shapes; **never** auto-fix in the opposite direction
+- Lint or Validate suite failing after a fix (non-zero exit from raw `AGENT.md` Validate commands)
 - Infrastructure failures: no open PR, push rejection, merge conflict
 - Projected next-round spend would cross `max_tokens_est` or `max_usd_est`
 
@@ -112,7 +130,7 @@ Intentional trade-offs, false positives, stylistic preferences already accepted,
 
 When the orchestrator can classify by design **without** needing a security/product call, do that in the triage table immediately — do not escalate just to ask for a rationale.
 
-After a successful fix, append the finding to `closed_findings` with `status: "fixed"`.
+After a successful fix, append the finding to `closed_findings` with `status: "fixed"` **and** a non-empty `fix_shape` (persists to the durable PR ledger immediately).
 
 ## External threads
 
@@ -125,16 +143,22 @@ Pre-existing Copilot or human threads (origin `external`) go through the same ma
 |---|---|---|---|---|---|---|---|
 | 1 | loop | path:line | Medium | logic | ... | Fix | unambiguous null check |
 | 2 | loop | path:line | Low | code-style | ... | Defer | below manage_severity=medium |
-| 3 | loop | path:line | High | security | ... | Fix | clear missing dispose / no design ambiguity |
-| 4 | loop | path:line | High | logic | ... | Fix | disable UI until hydrated (conservative) |
-| 5 | loop | path:line | High | security | ... | Escalate → recommend By design or Fix | unclear if role should keep SELECT |
-| 6 | external | path:line | Medium | best-practices | ... | By design | intentional … |
+| 3 | loop | path:line | Medium | best-practices | ... | Defer (diminishing returns) | round≥4, below diminishing_returns_floor=high |
+| 4 | loop | path:line | High | security | ... | Fix | clear missing dispose / no design ambiguity |
+| 5 | loop | path:line | High | logic | ... | Fix | disable UI until hydrated (conservative) |
+| 6 | loop | path:line | High | security | ... | Escalate → recommend By design or Fix | unclear if role should keep SELECT |
+| 7 | external | path:line | Medium | best-practices | ... | By design | intentional … |
 ```
 
 ## Decision order (orchestrator)
 
-1. Closed-finding filter (drop re-reports / handle recurrence).
-2. Below `manage_severity` → **Defer**.
-3. Unambiguous must-fix (Recommend would be Fix) → **Fix** (any severity) — including migrations/hydration/data-loss with a clear shape.
-4. Clear intentional trade-off → **By design**.
-5. Real design/policy **ambiguity** or infra/budget/recurrence → **Escalate**.
+1. Closed-finding filter (drop re-reports; keep `recurrence` / `contested` open via `filter_open_findings`).
+2. **Anti-thrash path guard:** if `_loop_state.is_contested_against_ledger(finding, state)` (path already closed as `fixed` with a non-empty `fix_shape`) → tag `Source: contested` / **Escalate once** with both shapes — **never** `Decision: Fix`. Do not silently reverse a prior deliberate fix.
+3. Below `manage_severity` → **Defer**.
+4. Round ≥ `diminishing_returns_round` and severity below `diminishing_returns_floor` → **Defer (diminishing returns)** — same `closed_findings` / `status: deferred` as the severity floor; tag rationale with the round + floor (use `_loop_state.should_defer_for_diminishing_returns`).
+5. `Source: recurrence` or `Source: contested` → **Escalate once** (never auto-fix / never reverse a deliberate fix shape). After the user decides, append to `closed_findings` with the decided shape so it cannot reopen.
+6. Unambiguous must-fix (Recommend would be Fix) → **Fix** (any severity) — including migrations/hydration/data-loss with a clear shape.
+7. Clear intentional trade-off → **By design**.
+8. Real design/policy **ambiguity** or infra/budget → **Escalate**.
+
+After a successful fixer report, `append_closed_finding(..., status="fixed", fix_shape=<What changed / Why>)` is **required**. Empty `fix_shape` on `status=fixed` is a process bug (breaks anti-thrash).

@@ -10,7 +10,7 @@ False “Review passed” results are worse than noisy findings. This gate runs 
 | `delta` | Files in fixer diff ∪ `fix_hotspots` ∪ previously flagged paths only |
 | `confirm` | All non-trivial changed code files in `merge-base...HEAD` (pure docs/config may be skimmed) |
 
-Lint/build are **not** part of coverage M — validate may be skipped when the orchestrator fingerprint still matches (including on `full` / `confirm`). Do not fail coverage solely because validate was skipped.
+Lint/Validate are **not** part of coverage M — validate may be skipped when the orchestrator fingerprint still matches (including on `full` / `confirm`). Do not fail coverage solely because validate was skipped.
 
 ## 1. Materialize the surface for this focus
 
@@ -24,7 +24,7 @@ Skipping a file in M because “the fixer already touched it” or “lint passe
 
 | Trap | Why it creates false cleans |
 |---|---|
-| Stopping after lint + build green | Most logic/a11y/contract bugs never fail CI |
+| Stopping after Validate green | Most logic/a11y/contract bugs never fail CI |
 | Only reading the last commit on a `full` review | Earlier branch commits stay unreviewed |
 | Assuming prior-round fixes mean the file is done | Sibling bugs / incomplete root causes |
 | Re-checking only previously flagged lines | Adjacent handlers and shared helpers |
@@ -48,10 +48,17 @@ Pure types/config/docs: skim and note; do not pretend deep pass.
 1. Verify each `status: fixed` — still present ⇒ `Source: recurrence`.
 2. Expand one hop for *different* issues.
 3. Do not re-report closed wording.
+4. **Contested fix shape** — if you would flag code a prior round deliberately introduced as the fix (see `closed_findings[].fix_shape`), tag `Source: contested`, describe both shapes, and never propose a plain revert. A different bug in a previously fixed file stays a normal finding.
 
 ## 5. Confirm / second-clean mindset
 
-When `consecutive_clean_passes >= 1` or focus is `confirm`, treat the prior clean as probably wrong: Medium+ logic/a11y/security; different lens (user flow, failure, keyboard).
+When `consecutive_clean_passes >= 1` or focus is `confirm`:
+
+1. **Verify hotspots** — every `status: fixed` finding actually landed and did not regress (§4). Still present ⇒ `Source: recurrence`.
+2. **One honest independent pass** over the rest of **M** for genuine correctness, security, and a11y defects (contracts, state/effects, keyboard/focus, disposal, empty/error paths).
+3. **Manufactured-finding guard** — a confirm-pass finding must name a **concrete, reproducible defect** with clear user-facing or security harm, statable in one sentence. Style, naming, “could be improved,” or subjective best-practice preferences do **not** qualify on a confirm pass — those belong to `full` reviews only, and even then must clear `manage_severity`.
+
+Do **not** invent a finding just because this is a second pass. An empty findings table after a real verify + honest scan is a valid confirm outcome.
 
 ## 6. Lenses
 

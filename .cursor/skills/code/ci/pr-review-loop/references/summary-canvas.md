@@ -14,14 +14,19 @@ Read `.cursor/review-loop/state.json` in full. Optionally run `rtk gain -p -f js
 
 ## Required sections
 
-1. **Verdict header** — passed / stopped (escalation | budget | round cap | unchanged) · PR number · branch · rounds run.
+1. **Verdict header** — passed / stopped (escalation | budget | round cap | unchanged) · PR number · branch · rounds run. Note when `seeded_from_ledger` was true or round 1 used the unchanged-fingerprint short-circuit.
 2. **Findings by severity and source** — counts table or compact chart. Omit if zero findings total.
 3. **Per-round breakdown** — found / fixed / accepted / escalated per round.
 4. **Fixes** — each fix: what changed, why, what it improved. One row per fixed finding. Omit section if none.
 5. **Accepted by design** — list with rationale. Omit if empty.
-6. **Escalations** — list with category, why-it-is-an-issue, orchestrator recommendations (Fix vs By design), and the user’s final choice. Omit if empty.
-7. **Lint / build / commit trail** — per-round lint+build and commit SHAs.
-8. **Cost panel** (always when any round ran):
+6. **Follow-ups (deferred)** — findings closed as `status: "deferred"`. Distinguish:
+   - **Severity floor** — below `manage_severity` (never managed this run).
+   - **Diminishing returns** — round ≥ `diminishing_returns_round` and severity below `diminishing_returns_floor` (rationale should note round + floor).
+   Omit section if none. These are intentional leftover work — surface them; do not bury silently.
+7. **Escalations** — list with category, why-it-is-an-issue, orchestrator recommendations (Fix vs By design), and the user’s final choice. Call out **contested** escalations (opposite of a prior `fix_shape`) separately when present. Omit if empty.
+8. **Seeded memory / anti-thrash** — when relevant: how many closed findings were seeded from the durable ledger; short-circuit confirm used or not; contested path guards that blocked auto-fix. Omit if none of those applied.
+9. **Validate / commit trail** — per-round Validate suite results and commit SHAs.
+10. **Cost panel** (always when any round ran):
    - Estimated tokens per round (input vs output) — labeled chart
    - Loop totals vs `max_tokens_est` / `max_usd_est`
    - Role models used (`reviewer_model` / `fixer_model`) and `pricing_mode`

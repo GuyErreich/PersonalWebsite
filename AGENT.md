@@ -49,11 +49,17 @@ For UI-heavy features, prefer:
 ## Validate
 
 - Base branch for branch/PR diffs: `dev`.
-- Lint: `npm run lint` — 0 errors required.
+- Lint: `npm run lint` — 0 errors required. Prefer this script over ad-hoc eslint/biome invocations.
 - Build / type-check: `npm run build` (`tsc -b && vite build`) — must succeed.
+- Audit: `npm audit --audit-level=high` — must succeed (same bar as CI).
 - Dev server: `npm run dev`.
 
-Reviewer and CI skills read these commands and the base branch from this block.
+CI and milestone skills read these commands and the base branch from this block.
+
+- Run the full Validate suite (lint, build, audit) at review / commit / PR milestones.
+- After `package.json`, `package-lock.json`, or `npm-shrinkwrap.json` changes — or any install/update/uninstall that rewrites the lockfile — audit is required before work is complete (project stop hook enforces this).
+- Do not silence audit with `npm audit fix --force`, `--audit-level=none`, or lockfile surgery without user consent.
+- Record pass/fail from raw shell exit codes (do not trust wrappers that mask exit status).
 
 ## Review scope
 

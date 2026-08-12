@@ -540,6 +540,8 @@ class TestRoundFollowup:
         assert state["consecutive_clean_passes"] == 0
         assert state["manage_severity"] == "medium"
         assert state["post_fix_focus"] == "delta"
+        assert state["diminishing_returns_round"] == 4
+        assert state["diminishing_returns_floor"] == "high"
         assert state["last_validate_fingerprint"] == ""
 
 
@@ -653,3 +655,455 @@ class TestManageSeverity:
         assert validate_still_fresh(state, "xyz") is False
         state["last_lint"] = "fail"
         assert validate_still_fresh(state, "abc") is False
+
+
+class TestDiminishingReturns:
+    """Round-based ratchet helpers + preference round-trip."""
+
+    def test_default_floor_one_tier_above(self) -> None:
+        from _loop_state import default_diminishing_returns_floor
+
+        assert default_diminishing_returns_floor("low") == "medium"
+        assert default_diminishing_returns_floor("medium") == "high"
+        assert default_diminishing_returns_floor("high") == "critical"
+        assert default_diminishing_returns_floor("critical") == "critical"
+
+    def test_normalize_floor_aliases_and_fallback(self) -> None:
+        from _loop_state import normalize_diminishing_returns_floor
+
+        assert normalize_diminishing_returns_floor(None, "medium") == "high"
+        assert normalize_diminishing_returns_floor("auto", "low") == "medium"
+        assert normalize_diminishing_returns_floor("HIGH", "medium") == "high"
+        assert normalize_diminishing_returns_floor("crit", "medium") == "critical"
+        assert normalize_diminishing_returns_floor("nope", "high") == "critical"
+
+    def test_should_defer_respects_round_and_floor(self) -> None:
+        from _loop_state import should_defer_for_diminishing_returns
+
+        state = {
+            "manage_severity": "medium",
+            "diminishing_returns_round": 4,
+            "diminishing_returns_floor": "high",
+        }
+        # Below threshold — never defer via ratchet.
+        assert should_defer_for_diminishing_returns(3, "Medium", state) is False
+        assert should_defer_for_diminishing_returns(1, "Low", state) is False
+
+        # At/above threshold — defer below floor; keep High/Critical.
+        assert should_defer_for_diminishing_returns(4, "Medium", state) is True
+        assert should_defer_for_diminishing_returns(5, "Low", state) is True
+        assert should_defer_for_diminishing_returns(4, "High", state) is False
+        assert should_defer_for_diminishing_returns(4, "Critical", state) is False
+
+    def test_preference_round_trip(self, tmp_path: Path) -> None:
+        from _loop_state import (
+            apply_preference_overrides,
+            default_preferences,
+            load_preferences,
+            start_loop_state,
+        )
+
+        first = start_loop_state(
+            pr_number=1,
+            pr_url="u",
+            branch="b",
+            overrides={
+                "diminishing_returns_round": 3,
+                "diminishing_returns_floor": "critical",
+            },
+            root=tmp_path,
+        )
+        assert first["diminishing_returns_round"] == 3
+        assert first["diminishing_returns_floor"] == "critical"
+        prefs = load_preferences(tmp_path)
+        assert prefs["diminishing_returns_round"] == 3
+        assert prefs["diminishing_returns_floor"] == "critical"
+
+        second = start_loop_state(
+            pr_number=2,
+            pr_url="u2",
+            branch="b2",
+            root=tmp_path,
+        )
+        assert second["diminishing_returns_round"] == 3
+        assert second["diminishing_returns_floor"] == "critical"
+
+        # Changing manage_severity without an explicit floor re-derives the floor.
+        derived = apply_preference_overrides(
+            default_preferences(),
+            {"manage_severity": "high"},
+        )
+        assert derived["manage_severity"] == "high"
+        assert derived["diminishing_returns_floor"] == "critical"
+
+        # Explicit floor wins even when manage_severity changes.
+        kept = apply_preference_overrides(
+            default_preferences(),
+            {
+                "manage_severity": "low",
+                "diminishing_returns_floor": "critical",
+            },
+        )
+        assert kept["manage_severity"] == "low"
+        assert kept["diminishing_returns_floor"] == "critical"
+
+
+class TestCleanPassScope:
+    """Only wide-scope reviews may credit consecutive_clean_passes."""
+
+    def test_clean_pass_counts(self) -> None:
+        from _loop_state import clean_pass_counts
+
+        assert clean_pass_counts("delta") is False
+        assert clean_pass_counts("full") is True
+        assert clean_pass_counts("confirm") is True
+        assert clean_pass_counts("FULL") is True
+        assert clean_pass_counts(None) is False
+
+    def test_apply_clean_pass_scopes(self) -> None:
+        from _loop_state import apply_clean_pass
+
+        state: dict = {"consecutive_clean_passes": 0}
+        assert apply_clean_pass(state, focus="delta", coverage_ok=True) == 0
+        assert state["consecutive_clean_passes"] == 0
+
+        assert apply_clean_pass(state, focus="full", coverage_ok=True) == 1
+        assert state["consecutive_clean_passes"] == 1
+
+        assert apply_clean_pass(state, focus="confirm", coverage_ok=False) == 1
+        assert state["consecutive_clean_passes"] == 1
+
+        assert apply_clean_pass(state, focus="confirm", coverage_ok=True) == 2
+        assert state["consecutive_clean_passes"] == 2
+
+    def test_resolve_focus_after_clean_delta(self) -> None:
+        from _loop_state import resolve_round_focus
+
+        assert (
+            resolve_round_focus(
+                round_n=3,
+                consecutive_clean_passes=0,
+                just_finished_fixer=False,
+                last_focus="delta",
+                last_round_clean=True,
+            )
+            == "confirm"
+        )
+        # Must not fall through to post_fix_focus=delta.
+        assert (
+            resolve_round_focus(
+                round_n=3,
+                consecutive_clean_passes=0,
+                just_finished_fixer=False,
+                post_fix_focus="delta",
+                last_focus="delta",
+                last_round_clean=True,
+            )
+            == "confirm"
+        )
+        # Clean full already counted — confirm stays next.
+        assert (
+            resolve_round_focus(
+                round_n=3,
+                consecutive_clean_passes=1,
+                just_finished_fixer=False,
+                last_focus="full",
+                last_round_clean=True,
+            )
+            == "confirm"
+        )
+
+
+class TestContestedFindings:
+    """Contested sources stay open; fix_shape / fixed_locations ledger."""
+
+    def test_filter_keeps_contested_open(self) -> None:
+        from _loop_state import append_closed_finding, filter_open_findings
+
+        state: dict = {"closed_findings": [], "accepted_by_design": []}
+        append_closed_finding(
+            state,
+            signature="abc123deadbeef00",
+            location="src/a.ts:10",
+            finding="missing cleanup",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="added dispose in useEffect cleanup",
+        )
+        open_rows, dropped = filter_open_findings(
+            [
+                {
+                    "signature": "abc123deadbeef00",
+                    "source": "contested",
+                    "finding": "prefer onUnmount helper instead",
+                },
+                {
+                    "signature": "abc123deadbeef00",
+                    "finding": "missing cleanup again",
+                },
+            ],
+            state,
+        )
+        assert len(dropped) == 1
+        assert len(open_rows) == 1
+        assert open_rows[0]["source"] == "contested"
+
+    def test_append_persists_fix_shape_and_fixed_locations(self) -> None:
+        from _loop_state import append_closed_finding, fixed_locations
+
+        state: dict = {"closed_findings": [], "accepted_by_design": []}
+        append_closed_finding(
+            state,
+            signature="sig-fix",
+            location="src/comp.tsx:42",
+            finding="race on hydrate",
+            status="fixed",
+            closed_in_round=2,
+            fix_shape="disable edits until isHydrated",
+        )
+        append_closed_finding(
+            state,
+            signature="sig-accept",
+            location="src/other.ts:1",
+            finding="intentional",
+            status="accepted",
+            closed_in_round=2,
+            rationale="by design",
+        )
+        entry = state["closed_findings"][0]
+        assert entry["fix_shape"] == "disable edits until isHydrated"
+        locs = fixed_locations(state)
+        assert "src/comp.tsx:42" in locs
+        assert "src/comp.tsx" in locs
+        assert "src/other.ts:1" not in locs
+        assert "src/other.ts" not in locs
+
+
+class TestDurableClosedLedger:
+    """PR-scoped closed memory survives across start_loop_state runs."""
+
+    def test_second_start_seeds_prior_closed_and_fix_shape(
+        self, tmp_path: Path
+    ) -> None:
+        from _loop_state import append_closed_finding, start_loop_state
+
+        first = start_loop_state(
+            pr_number=60,
+            pr_url="u",
+            branch="feature/x",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            first,
+            signature="sig-seed-1",
+            location="src/a.ts:10",
+            finding="missing cleanup",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="added dispose in useEffect",
+            root=tmp_path,
+        )
+
+        second = start_loop_state(
+            pr_number=60,
+            pr_url="u",
+            branch="feature/x",
+            root=tmp_path,
+        )
+        assert second["seeded_from_ledger"] is True
+        assert len(second["closed_findings"]) == 1
+        assert second["closed_findings"][0]["signature"] == "sig-seed-1"
+        assert (
+            second["closed_findings"][0]["fix_shape"]
+            == "added dispose in useEffect"
+        )
+
+    def test_append_persists_across_fresh_start(self, tmp_path: Path) -> None:
+        from _loop_state import (
+            append_closed_finding,
+            load_pr_closed_memory,
+            start_loop_state,
+        )
+
+        state = start_loop_state(
+            pr_number=7,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            state,
+            signature="persist-sig",
+            location="src/b.ts:2",
+            finding="n+1 query",
+            status="fixed",
+            closed_in_round=2,
+            fix_shape="batch with Promise.all",
+            root=tmp_path,
+        )
+        memory = load_pr_closed_memory(7, tmp_path)
+        assert any(e.get("signature") == "persist-sig" for e in memory["closed_findings"])
+
+        again = start_loop_state(
+            pr_number=7,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        assert any(
+            e.get("signature") == "persist-sig" for e in again["closed_findings"]
+        )
+
+    def test_short_circuit_only_on_matching_fingerprint(
+        self, tmp_path: Path
+    ) -> None:
+        from _loop_state import (
+            mark_run_outcome,
+            should_short_circuit_confirm,
+            start_loop_state,
+        )
+
+        state = start_loop_state(
+            pr_number=3,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        mark_run_outcome(state, "confirmed_clean", "fp-abc", root=tmp_path)
+        seeded = start_loop_state(
+            pr_number=3,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        assert should_short_circuit_confirm(seeded, "fp-abc") is True
+        assert should_short_circuit_confirm(seeded, "fp-other") is False
+        assert should_short_circuit_confirm(seeded, "") is False
+
+        dirty = start_loop_state(
+            pr_number=3,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        mark_run_outcome(dirty, "stopped", "fp-abc", root=tmp_path)
+        again = start_loop_state(
+            pr_number=3,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        assert should_short_circuit_confirm(again, "fp-abc") is False
+
+    def test_different_pr_does_not_inherit_ledger(self, tmp_path: Path) -> None:
+        from _loop_state import append_closed_finding, start_loop_state
+
+        a = start_loop_state(
+            pr_number=10,
+            pr_url="u",
+            branch="a",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            a,
+            signature="only-pr-10",
+            location="src/a.ts:1",
+            finding="x",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="shape-a",
+            root=tmp_path,
+        )
+        b = start_loop_state(
+            pr_number=11,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        assert b["closed_findings"] == []
+        assert b["seeded_from_ledger"] is False
+
+    def test_is_contested_against_ledger_path_rules(self, tmp_path: Path) -> None:
+        from _loop_state import (
+            append_closed_finding,
+            is_contested_against_ledger,
+            start_loop_state,
+        )
+
+        state = start_loop_state(
+            pr_number=20,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            state,
+            signature="with-shape",
+            location="src/fixed.ts:10",
+            finding="race",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="gate on isReady",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            state,
+            signature="no-shape",
+            location="src/bare.ts:5",
+            finding="nit",
+            status="fixed",
+            closed_in_round=1,
+            root=tmp_path,
+        )
+        assert (
+            is_contested_against_ledger(
+                {"location": "src/fixed.ts:99", "finding": "prefer other gate"},
+                state,
+            )
+            is True
+        )
+        assert (
+            is_contested_against_ledger(
+                {"location": "src/other.ts:1", "finding": "unrelated"},
+                state,
+            )
+            is False
+        )
+        assert (
+            is_contested_against_ledger(
+                {"location": "src/bare.ts:5", "finding": "still nit"},
+                state,
+            )
+            is False
+        )
+
+    def test_format_fix_ledger_includes_location_and_shape(
+        self, tmp_path: Path
+    ) -> None:
+        from _loop_state import (
+            append_closed_finding,
+            format_fix_ledger_for_prompt,
+            start_loop_state,
+        )
+
+        state = start_loop_state(
+            pr_number=21,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            state,
+            signature="ledger-sig",
+            location="src/comp.tsx:42",
+            finding="hydrate race",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="disable edits until hydrated",
+            root=tmp_path,
+        )
+        text = format_fix_ledger_for_prompt(state)
+        assert "src/comp.tsx:42" in text
+        assert "disable edits until hydrated" in text
+        assert "ledger-sig" in text
+        assert "Fix ledger" in text

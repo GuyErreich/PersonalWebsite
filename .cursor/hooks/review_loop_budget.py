@@ -21,8 +21,11 @@ from _loop_state import (  # noqa: E402
     is_active,
     is_loop_subagent,
     load_state,
+    loop_subagent_type,
+    now_iso,
     read_stdin_json,
     resolve_max_rounds,
+    save_state,
 )
 
 
@@ -44,6 +47,27 @@ def current_pr_fingerprint() -> str:
     except json.JSONDecodeError:
         return ""
     return str(data.get("fingerprint", "") or "")
+
+
+def resolve_upcoming_model(
+    state: dict[str, Any],
+    event: dict[str, Any] | None = None,
+    *,
+    extra_fallback: str | None = None,
+) -> str:
+    """Resolve the model slug for an upcoming / just-started loop subagent.
+
+    Priority: ``subagent_model`` → ``model`` → ``state.next_model`` →
+    optional ``extra_fallback`` (e.g. ``reviewer_model``) → ``inherit``.
+    """
+    event = event or {}
+    return str(
+        event.get("subagent_model")
+        or event.get("model")
+        or state.get("next_model")
+        or extra_fallback
+        or "inherit"
+    )
 
 
 def decide_subagent_start(
@@ -136,11 +160,10 @@ def decide_subagent_start(
     spent_t = float(raw_t) if isinstance(raw_t, int | float | str) else 0.0
     spent_u = float(raw_u) if isinstance(raw_u, int | float | str) else 0.0
 
-    upcoming_model = str(
-        event.get("model")
-        or state.get("next_model")
-        or state.get("reviewer_model")
-        or "inherit"
+    upcoming_model = resolve_upcoming_model(
+        state,
+        event,
+        extra_fallback=str(state.get("reviewer_model") or "") or None,
     )
     proj_t, proj_u = project_next_cost(state, model=upcoming_model)
     max_t = float(state.get("max_tokens_est", 1_000_000) or 1_000_000)
@@ -162,11 +185,38 @@ def decide_subagent_start(
     return {"permission": "allow"}
 
 
+def record_subagent_start(
+    state: dict[str, Any],
+    event: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    """Build a ``_pending_subagent`` bridge record for an allowed loop start.
+
+    Returns ``None`` when the event is not a loop subagent (or inactive) —
+    callers must not persist anything in that case. Ground-truth model and
+    start time come from the hook payload so cost accounting does not depend
+    on the orchestrator stamping ``*_started_at`` into state.
+    """
+    event = event or {}
+    if not is_active(state) or not is_loop_subagent(event):
+        return None
+    return {
+        "type": loop_subagent_type(event),
+        "model": resolve_upcoming_model(state, event),
+        "started_at": now_iso(),
+    }
+
+
 def main() -> int:
     """Deny new subagents when loop caps or escalations block progress."""
     event = read_stdin_json()
     state = load_state()
-    emit(decide_subagent_start(state, event))
+    decision = decide_subagent_start(state, event)
+    if decision.get("permission") == "allow":
+        pending = record_subagent_start(state, event)
+        if pending is not None:
+            state["_pending_subagent"] = pending
+            save_state(state)
+    emit(decision)
     return 0
 
 

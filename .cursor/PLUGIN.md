@@ -46,7 +46,7 @@ foundations/hierarchy     (domain-agnostic folder taxonomy — always)
 ai-agent/hierarchy        (agent container tiers — deepen vs widen)
 ai-agent/improvement-protocol
 code/foundations/engineering   (code base — always)
-  └─ languages/nodejs      (TS/JS syntax + tooling)
+  └─ languages/nodejs      (TS/JS syntax + npm tooling)
        └─ web/libs/react   (hooks, components)
             └─ web/libs/threejs
   └─ web/ui                (layout, a11y, responsive)

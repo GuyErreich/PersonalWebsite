@@ -21,7 +21,7 @@ These do **not** count as commit consent on their own:
 
 ## Workflow when committing is requested
 
-1. Run the commit workflow (`.cursor/skills/code/ci/commit/SKILL.md`): consent confirmed, review at change tier, draft message, commit.
+1. Run the commit workflow (`.cursor/skills/code/ci/commit/SKILL.md`): consent confirmed, review at change tier, **split by logic into one or more commits**, draft messages, commit.
 2. Do not stage files likely to contain secrets (`.env`, credentials, local MCP config). Warn if asked.
 3. Do not push afterward unless pr-resolver Step 6 applies — general pushes need separate explicit consent (`git-push-consent.mdc`).
 

@@ -409,11 +409,29 @@ def estimate_since(
     *,
     state: dict[str, Any] | None = None,
     pricing_mode: str | None = None,
+    transcript_path: str | Path | None = None,
 ) -> CostEstimate:
-    """Sum estimates for all subagent transcripts written since started_at."""
+    """Estimate cost for a finished subagent.
+
+    Prefer ``transcript_path`` (from ``subagentStop.agent_transcript_path``)
+    when readable — that is the authoritative file. Fall back to an mtime
+    scan of subagent transcripts newer than ``started_at_iso`` only when
+    the explicit path is missing or unreadable.
+    """
     mode = resolve_pricing_mode(
         pricing, state=state, model=model, explicit=pricing_mode
     )
+
+    if transcript_path:
+        path = Path(transcript_path)
+        # Cursor may pass a path without the .jsonl suffix.
+        if not path.is_file() and path.with_suffix(".jsonl").is_file():
+            path = path.with_suffix(".jsonl")
+        if path.is_file():
+            return estimate_transcript(
+                path, pricing, model=model, pricing_mode=mode, state=state
+            )
+
     paths = find_subagent_transcripts(started_at_iso, transcripts_root)
     if not paths:
         return CostEstimate(

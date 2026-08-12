@@ -18,6 +18,7 @@ STATE_DIR = Path(".cursor/review-loop")
 STATE_PATH = STATE_DIR / "state.json"
 PRICING_PATH = STATE_DIR / "pricing.json"
 PREFERENCES_PATH = STATE_DIR / "preferences.json"
+CLOSED_LEDGER_PATH = STATE_DIR / "closed-ledger.json"
 DEFAULT_PRICING_REL = Path(
     ".cursor/skills/code/ci/pr-review-loop/assets/pricing.default.json"
 )
@@ -44,6 +45,8 @@ PREFERENCE_KEYS = (
     "clean_passes_required",
     "manage_severity",
     "post_fix_focus",
+    "diminishing_returns_round",
+    "diminishing_returns_floor",
 )
 
 # Minimum severity the loop manages (auto-fix / escalate). Below → Defer.
@@ -64,6 +67,12 @@ POST_FIX_FOCUS_ALIASES = {
     "cheap": "delta",
     "full": "full",
 }
+
+# Only these focuses may credit consecutive_clean_passes.
+WIDE_FOCUS_VALUES = ("full", "confirm")
+
+# Finding sources that stay open even when their signature is already closed.
+ESCALATING_SOURCES = frozenset({"recurrence", "contested"})
 
 
 def now_iso() -> str:
@@ -128,8 +137,183 @@ def preferences_path(root: Path | None = None) -> Path:
     return base / PREFERENCES_PATH
 
 
+def ledger_path(root: Path | None = None) -> Path:
+    """Return absolute path to closed-ledger.json (durable per-PR memory)."""
+    base = root or repo_root()
+    return base / CLOSED_LEDGER_PATH
+
+
+def load_closed_ledger(root: Path | None = None) -> dict[str, Any]:
+    """Load the durable closed-findings ledger; empty dict on missing/invalid."""
+    path = ledger_path(root)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {"by_pr": {}}
+    if not isinstance(data, dict):
+        return {"by_pr": {}}
+    by_pr = data.get("by_pr")
+    if not isinstance(by_pr, dict):
+        data["by_pr"] = {}
+    return data
+
+
+def save_closed_ledger(data: dict[str, Any], root: Path | None = None) -> None:
+    """Persist closed-ledger.json; never raise."""
+    path = ledger_path(root)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if "by_pr" not in data or not isinstance(data.get("by_pr"), dict):
+            data = {"by_pr": data.get("by_pr") if isinstance(data.get("by_pr"), dict) else {}}
+        path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    except OSError as exc:
+        print(
+            f"review-loop: could not write closed-ledger.json: {exc}",
+            file=sys.stderr,
+        )
+
+
+def load_pr_closed_memory(
+    pr_number: int, root: Path | None = None
+) -> dict[str, Any]:
+    """Return the ledger entry for one PR, or an empty template."""
+    ledger = load_closed_ledger(root)
+    by_pr = ledger.get("by_pr") if isinstance(ledger.get("by_pr"), dict) else {}
+    key = str(int(pr_number))
+    raw = by_pr.get(key)
+    if not isinstance(raw, dict):
+        return {
+            "pr_number": int(pr_number),
+            "branch": "",
+            "updated_at": "",
+            "last_clean_fingerprint": "",
+            "last_outcome": "",
+            "closed_findings": [],
+            "accepted_by_design": [],
+        }
+    return {
+        "pr_number": int(raw.get("pr_number") or pr_number),
+        "branch": str(raw.get("branch") or ""),
+        "updated_at": str(raw.get("updated_at") or ""),
+        "last_clean_fingerprint": str(raw.get("last_clean_fingerprint") or ""),
+        "last_outcome": str(raw.get("last_outcome") or ""),
+        "closed_findings": list(raw.get("closed_findings") or [])
+        if isinstance(raw.get("closed_findings"), list)
+        else [],
+        "accepted_by_design": list(raw.get("accepted_by_design") or [])
+        if isinstance(raw.get("accepted_by_design"), list)
+        else [],
+    }
+
+
+def _merge_closed_lists(
+    existing: list[Any], incoming: list[Any]
+) -> list[dict[str, Any]]:
+    """Merge closed/accepted entries idempotently by signature."""
+    by_sig: dict[str, dict[str, Any]] = {}
+    for row in existing + incoming:
+        if not isinstance(row, dict):
+            continue
+        sig = str(row.get("signature") or "").strip()
+        if not sig:
+            continue
+        prev = by_sig.get(sig)
+        if prev is None:
+            by_sig[sig] = dict(row)
+            continue
+        # Prefer newer / richer fields (fix_shape, rationale).
+        merged = dict(prev)
+        for key, value in row.items():
+            if value in (None, "", [], {}):
+                continue
+            if key not in merged or not merged.get(key):
+                merged[key] = value
+            elif key in {"fix_shape", "rationale", "status", "location", "finding"}:
+                merged[key] = value
+        by_sig[sig] = merged
+    return list(by_sig.values())
+
+
+def merge_closed_memory(
+    state: dict[str, Any], root: Path | None = None
+) -> dict[str, Any]:
+    """Write state closed/accepted into the durable PR ledger (idempotent)."""
+    try:
+        pr_number = int(state.get("pr_number") or 0)
+    except (TypeError, ValueError):
+        pr_number = 0
+    if pr_number <= 0:
+        return state
+
+    ledger = load_closed_ledger(root)
+    by_pr = ledger.setdefault("by_pr", {})
+    if not isinstance(by_pr, dict):
+        by_pr = {}
+        ledger["by_pr"] = by_pr
+
+    key = str(pr_number)
+    prior = load_pr_closed_memory(pr_number, root)
+    closed = _merge_closed_lists(
+        prior.get("closed_findings") or [],
+        list(state.get("closed_findings") or []),
+    )
+    accepted = _merge_closed_lists(
+        prior.get("accepted_by_design") or [],
+        list(state.get("accepted_by_design") or []),
+    )
+    entry = {
+        "pr_number": pr_number,
+        "branch": str(state.get("branch") or prior.get("branch") or ""),
+        "updated_at": now_iso(),
+        "last_clean_fingerprint": str(
+            state.get("last_clean_fingerprint")
+            or prior.get("last_clean_fingerprint")
+            or ""
+        ),
+        "last_outcome": str(
+            state.get("last_outcome") or prior.get("last_outcome") or ""
+        ),
+        "closed_findings": closed,
+        "accepted_by_design": accepted,
+    }
+    by_pr[key] = entry
+    save_closed_ledger(ledger, root)
+    return state
+
+
+def mark_run_outcome(
+    state: dict[str, Any],
+    outcome: str,
+    fingerprint: str = "",
+    root: Path | None = None,
+) -> dict[str, Any]:
+    """Record loop outcome on state and durable ledger."""
+    normalized = str(outcome or "").strip().lower()
+    state["last_outcome"] = normalized
+    if fingerprint:
+        state["last_clean_fingerprint"] = str(fingerprint).strip()
+        if normalized == "confirmed_clean":
+            # Keep last_fingerprint in sync for budget guards.
+            state["last_fingerprint"] = str(fingerprint).strip()
+    merge_closed_memory(state, root)
+    return state
+
+
+def should_short_circuit_confirm(
+    state: dict[str, Any], current_fingerprint: str
+) -> bool:
+    """True when prior run confirmed clean at this exact PR fingerprint."""
+    fp = str(current_fingerprint or "").strip()
+    if not fp:
+        return False
+    if str(state.get("last_outcome") or "").strip().lower() != "confirmed_clean":
+        return False
+    return str(state.get("last_clean_fingerprint") or "").strip() == fp
+
+
 def default_preferences() -> dict[str, Any]:
     """Built-in defaults used only when preferences.json is missing a key."""
+    manage = "medium"
     return {
         "max_rounds": 3,
         "max_tokens_est": 1_000_000,
@@ -138,8 +322,10 @@ def default_preferences() -> dict[str, Any]:
         "reviewer_model": "inherit",
         "fixer_model": "inherit",
         "clean_passes_required": 2,
-        "manage_severity": "medium",
+        "manage_severity": manage,
         "post_fix_focus": "delta",
+        "diminishing_returns_round": 4,
+        "diminishing_returns_floor": default_diminishing_returns_floor(manage),
     }
 
 
@@ -155,6 +341,54 @@ def normalize_manage_severity(value: Any) -> str:
     return "medium"
 
 
+def default_diminishing_returns_floor(manage_severity: Any) -> str:
+    """One severity tier above manage_severity, capped at critical."""
+    base = normalize_manage_severity(manage_severity)
+    idx = MANAGE_SEVERITY_ORDER.index(base)
+    return MANAGE_SEVERITY_ORDER[min(idx + 1, len(MANAGE_SEVERITY_ORDER) - 1)]
+
+
+def normalize_diminishing_returns_floor(value: Any, manage_severity: Any) -> str:
+    """Canonical diminishing_returns_floor; derive from manage_severity when unset."""
+    if value is None:
+        return default_diminishing_returns_floor(manage_severity)
+    raw = str(value).strip().lower()
+    if raw in {"", "auto", "default", "derived"}:
+        return default_diminishing_returns_floor(manage_severity)
+    if raw in MANAGE_SEVERITY_ALIASES:
+        return MANAGE_SEVERITY_ALIASES[raw]
+    if raw in MANAGE_SEVERITY_ORDER:
+        return raw
+    return default_diminishing_returns_floor(manage_severity)
+
+
+def normalize_diminishing_returns_round(value: Any) -> int:
+    """Return a positive int round threshold (default 4)."""
+    if value is None:
+        return 4
+    try:
+        parsed = int(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return 4
+    return max(1, parsed)
+
+
+def should_defer_for_diminishing_returns(
+    round_n: int, severity: Any, state: dict[str, Any]
+) -> bool:
+    """True when round has crossed the threshold and severity is below the ratcheted floor."""
+    try:
+        threshold = int(state.get("diminishing_returns_round", 4) or 4)
+    except (TypeError, ValueError):
+        threshold = 4
+    if round_n < threshold:
+        return False
+    floor = normalize_diminishing_returns_floor(
+        state.get("diminishing_returns_floor"), state.get("manage_severity")
+    )
+    return not severity_meets_floor(severity, floor)
+
+
 def normalize_post_fix_focus(value: Any) -> str:
     """Return canonical post_fix_focus (`delta`|`full`)."""
     if value is None:
@@ -167,6 +401,31 @@ def normalize_post_fix_focus(value: Any) -> str:
     return "delta"
 
 
+def clean_pass_counts(focus: Any) -> bool:
+    """Only wide-scope reviews (full / confirm) may credit a clean pass."""
+    return str(focus or "").strip().lower() in WIDE_FOCUS_VALUES
+
+
+def apply_clean_pass(
+    state: dict[str, Any],
+    *,
+    focus: Any,
+    coverage_ok: bool = True,
+) -> int:
+    """Increment consecutive_clean_passes only for wide, coverage-OK reviews.
+
+    A clean ``delta`` leaves the counter untouched (fix verified, not a clean
+    pass). Returns the resulting consecutive_clean_passes value.
+    """
+    current = int(state.get("consecutive_clean_passes", 0) or 0)
+    if not coverage_ok or not clean_pass_counts(focus):
+        state["consecutive_clean_passes"] = current
+        return current
+    current += 1
+    state["consecutive_clean_passes"] = current
+    return current
+
+
 def resolve_round_focus(
     *,
     round_n: int,
@@ -175,11 +434,14 @@ def resolve_round_focus(
     post_fix_focus: Any = "delta",
     invocation_focus: Any = None,
     force_full: bool = False,
+    last_focus: Any = None,
+    last_round_clean: bool = False,
 ) -> str:
     """Pick reviewer focus for the next round.
 
     Defaults: round 1 → full; after fixer → post_fix_focus (delta);
-    after first clean → confirm; force_full (coverage miss) → full.
+    after first *counted* clean → confirm; force_full (coverage miss) → full.
+    A clean narrow (delta) pass never counts — next focus is confirm.
     """
     if invocation_focus is not None:
         raw = str(invocation_focus).strip().lower()
@@ -187,6 +449,9 @@ def resolve_round_focus(
             return raw
     if force_full:
         return "full"
+    # A clean narrow pass never counts — go wide next to earn a real clean.
+    if last_round_clean and not clean_pass_counts(last_focus):
+        return "confirm"
     if consecutive_clean_passes >= 1:
         return "confirm"
     if just_finished_fixer:
@@ -247,6 +512,13 @@ def load_preferences(root: Path | None = None) -> dict[str, Any]:
     prefs["post_fix_focus"] = normalize_post_fix_focus(
         prefs.get("post_fix_focus")
     )
+    prefs["diminishing_returns_round"] = normalize_diminishing_returns_round(
+        prefs.get("diminishing_returns_round")
+    )
+    prefs["diminishing_returns_floor"] = normalize_diminishing_returns_floor(
+        prefs.get("diminishing_returns_floor"),
+        prefs.get("manage_severity"),
+    )
     return prefs
 
 
@@ -262,6 +534,13 @@ def save_preferences(data: dict[str, Any], root: Path | None = None) -> None:
     )
     merged["post_fix_focus"] = normalize_post_fix_focus(
         merged.get("post_fix_focus")
+    )
+    merged["diminishing_returns_round"] = normalize_diminishing_returns_round(
+        merged.get("diminishing_returns_round")
+    )
+    merged["diminishing_returns_floor"] = normalize_diminishing_returns_floor(
+        merged.get("diminishing_returns_floor"),
+        merged.get("manage_severity"),
     )
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -290,6 +569,13 @@ def apply_preference_overrides(
         if key == "post_fix_focus":
             merged[key] = normalize_post_fix_focus(overrides[key])
             continue
+        if key == "diminishing_returns_round":
+            merged[key] = normalize_diminishing_returns_round(overrides[key])
+            continue
+        if key == "diminishing_returns_floor":
+            # Normalized after manage_severity is settled below.
+            merged[key] = overrides[key]
+            continue
         if overrides[key] is not None:
             merged[key] = overrides[key]
     if "manage_severity" in merged:
@@ -299,6 +585,20 @@ def apply_preference_overrides(
     if "post_fix_focus" in merged:
         merged["post_fix_focus"] = normalize_post_fix_focus(
             merged.get("post_fix_focus")
+        )
+    if "diminishing_returns_round" in merged:
+        merged["diminishing_returns_round"] = normalize_diminishing_returns_round(
+            merged.get("diminishing_returns_round")
+        )
+    # Re-derive floor when manage_severity changed and floor was not explicitly overridden.
+    if "diminishing_returns_floor" not in overrides and "manage_severity" in overrides:
+        merged["diminishing_returns_floor"] = default_diminishing_returns_floor(
+            merged.get("manage_severity")
+        )
+    else:
+        merged["diminishing_returns_floor"] = normalize_diminishing_returns_floor(
+            merged.get("diminishing_returns_floor"),
+            merged.get("manage_severity"),
         )
     return merged
 
@@ -318,9 +618,17 @@ def start_loop_state(
     Does **not** reset preferences to factory defaults. Invocation overrides
     (e.g. budget-only → ``max_rounds: null``) are written into both
     ``preferences.json`` and the new ``state.json``.
+
+    Seeds ``closed_findings`` / ``accepted_by_design`` from the PR closed
+    ledger so a new loop run retains prior fixes and does not rediscover them.
     """
     prefs = apply_preference_overrides(load_preferences(root), overrides or {})
     save_preferences(prefs, root)
+
+    memory = load_pr_closed_memory(pr_number, root)
+    seeded_closed = list(memory.get("closed_findings") or [])
+    seeded_accepted = list(memory.get("accepted_by_design") or [])
+    seeded = bool(seeded_closed or seeded_accepted)
 
     state: dict[str, Any] = {
         "active": False,
@@ -342,6 +650,13 @@ def start_loop_state(
         "post_fix_focus": normalize_post_fix_focus(
             prefs.get("post_fix_focus", "delta")
         ),
+        "diminishing_returns_round": normalize_diminishing_returns_round(
+            prefs.get("diminishing_returns_round", 4)
+        ),
+        "diminishing_returns_floor": normalize_diminishing_returns_floor(
+            prefs.get("diminishing_returns_floor"),
+            prefs.get("manage_severity", "medium"),
+        ),
         "consecutive_clean_passes": 0,
         "round": 0,
         "escalation_pending": False,
@@ -351,8 +666,11 @@ def start_loop_state(
         "last_validate_fingerprint": "",
         "last_lint": "",
         "last_build": "",
-        "accepted_by_design": [],
-        "closed_findings": [],
+        "last_clean_fingerprint": str(memory.get("last_clean_fingerprint") or ""),
+        "last_outcome": str(memory.get("last_outcome") or ""),
+        "seeded_from_ledger": seeded,
+        "accepted_by_design": seeded_accepted,
+        "closed_findings": seeded_closed,
         "escalations": [],
         "rounds": [],
         "totals": {
@@ -394,11 +712,15 @@ def append_closed_finding(
     status: str,
     closed_in_round: int,
     rationale: str = "",
+    fix_shape: str = "",
+    root: Path | None = None,
 ) -> dict[str, Any]:
     """Record a fixed or accepted finding so later rounds do not re-report it.
 
     Idempotent on ``signature``. When ``status`` is ``accepted``, also mirrors
-    into ``accepted_by_design``.
+    into ``accepted_by_design``. ``fix_shape`` records what the fixer changed
+    so later rounds can detect contested reverse-fixes. Persists into the
+    durable PR closed ledger immediately.
     """
     sig = signature.strip()
     if not sig:
@@ -415,6 +737,8 @@ def append_closed_finding(
     }
     if rationale:
         entry["rationale"] = rationale
+    if fix_shape:
+        entry["fix_shape"] = fix_shape
 
     closed = list(state.get("closed_findings") or [])
     closed.append(entry)
@@ -431,7 +755,124 @@ def append_closed_finding(
             }
         )
         state["accepted_by_design"] = accepted
+
+    merge_closed_memory(state, root)
     return state
+
+
+def fixed_locations(state: dict[str, Any]) -> set[str]:
+    """Return paths and path:line locations closed with status fixed this run."""
+    out: set[str] = set()
+    for entry in state.get("closed_findings") or []:
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("status") or "").strip().lower() != "fixed":
+            continue
+        loc = str(entry.get("location") or "").strip()
+        if not loc:
+            continue
+        out.add(loc)
+        path = finding_path(loc)
+        if path:
+            out.add(path)
+    return out
+
+
+def finding_path(location: Any) -> str:
+    """Strip ``:line`` (and optional column) from a location string."""
+    text = str(location or "").strip()
+    if not text:
+        return ""
+    # Windows drive letters: C:\foo — only split on : when looking like path:line
+    if len(text) >= 3 and text[1] == ":" and text[0].isalpha():
+        # Keep drive; split remaining on last :digits if present
+        rest = text[2:]
+        if ":" in rest:
+            maybe_path, maybe_line = rest.rsplit(":", 1)
+            if maybe_line.isdigit() or (
+                maybe_line.count(":") == 0 and maybe_line.replace(".", "", 1).isdigit()
+            ):
+                return text[:2] + maybe_path
+        return text
+    if ":" in text:
+        path, maybe_line = text.rsplit(":", 1)
+        if maybe_line.isdigit():
+            return path.strip()
+    return text
+
+
+def fix_ledger_entries(state: dict[str, Any]) -> list[dict[str, Any]]:
+    """Compact rows for prompt context: fixed entries with a fix_shape."""
+    rows: list[dict[str, Any]] = []
+    for entry in state.get("closed_findings") or []:
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("status") or "").strip().lower() != "fixed":
+            continue
+        shape = str(entry.get("fix_shape") or "").strip()
+        if not shape:
+            continue
+        loc = str(entry.get("location") or "").strip()
+        rows.append(
+            {
+                "location": loc,
+                "path": finding_path(loc),
+                "signature": str(entry.get("signature") or "").strip(),
+                "status": "fixed",
+                "fix_shape": shape,
+            }
+        )
+    return rows
+
+
+def format_fix_ledger_for_prompt(state: dict[str, Any]) -> str:
+    """Markdown table of deliberate fix shapes for reviewer/fixer prompts."""
+    rows = fix_ledger_entries(state)
+    if not rows:
+        return (
+            "## Fix ledger\n\n"
+            "_No fixed shapes recorded yet this PR (or shapes lack fix_shape)._\n"
+        )
+    lines = [
+        "## Fix ledger (do not silently reverse)",
+        "",
+        "| Location | Signature | Fix shape |",
+        "|---|---|---|",
+    ]
+    for row in rows:
+        loc = row["location"].replace("|", "\\|")
+        sig = row["signature"].replace("|", "\\|")
+        shape = row["fix_shape"].replace("|", "\\|").replace("\n", " ")
+        lines.append(f"| {loc} | `{sig}` | {shape} |")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def is_contested_against_ledger(
+    finding: dict[str, Any] | None, state: dict[str, Any]
+) -> bool:
+    """True when a finding targets a path already fixed with a non-empty fix_shape.
+
+    Those must escalate as contested — never auto-fix in the opposite direction.
+    """
+    if not isinstance(finding, dict):
+        return False
+    loc = str(
+        finding.get("location")
+        or finding.get("Location")
+        or finding.get("path")
+        or ""
+    ).strip()
+    path = finding_path(loc)
+    if not path:
+        return False
+    for entry in fix_ledger_entries(state):
+        if entry["path"] == path or entry["location"] == loc:
+            return True
+        # Also match when finding is path-only and ledger has path:line
+        if finding_path(entry["location"]) == path:
+            return True
+    return False
 
 
 def filter_open_findings(
@@ -440,8 +881,9 @@ def filter_open_findings(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Split findings into (open, dropped_as_closed) by signature.
 
-    Rows with ``source`` / ``Source`` equal to ``recurrence`` stay open so the
-    orchestrator can escalate them once.
+    Rows whose ``source`` / ``Source`` is in ``ESCALATING_SOURCES``
+    (``recurrence``, ``contested``) stay open so the orchestrator can
+    escalate them once.
     """
     closed = closed_signatures(state)
     open_rows: list[dict[str, Any]] = []
@@ -451,7 +893,7 @@ def filter_open_findings(
             continue
         source = str(row.get("source") or row.get("Source") or "").strip().lower()
         sig = str(row.get("signature") or row.get("Signature") or "").strip()
-        if source == "recurrence":
+        if source in ESCALATING_SOURCES:
             open_rows.append(row)
             continue
         if sig and sig in closed:

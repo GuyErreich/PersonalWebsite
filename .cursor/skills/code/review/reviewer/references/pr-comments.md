@@ -4,7 +4,7 @@ When the user asks to review **the PR** (or tier is **pr** with an open PR), spl
 
 | Where | What |
 |---|---|
-| **Agent chat only** | Full findings table, counts, lint/build detail, verdict rationale, own-PR event notes |
+| **Agent chat only** | Full findings table, counts, Validate detail, verdict rationale, own-PR event notes |
 | **GitHub PR review** | **Only when there is ≥1 finding to attach inline** — short human body + inline comments on those lines |
 
 Do **not** put the findings table (or duplicate finding prose) in the PR review body.
@@ -16,12 +16,12 @@ Do **not** put the findings table (or duplicate finding prose) in the PR review 
 | Forbidden on a clean pass | Why |
 |---|---|
 | `APPROVE` / `COMMENT` / `REQUEST_CHANGES` with “Review passed” | Contaminates the PR timeline; later fetches look like the code is certified clean |
-| Empty or status-only bodies (`Verdict` / `Lint/build` / `0 new findings`) | Bot checklist noise |
+| Empty or status-only bodies (`Verdict` / `Validate` / `0 new findings`) | Bot checklist noise |
 | `gh pr comment` “all clear” notes | Same problem |
 
 Report the clean verdict **in chat only** (and to the parent orchestrator). Leave the PR conversation untouched.
 
-Lint/build failure with no line-level finding still stays **chat only** unless you can attach a concrete inline comment on a changed file.
+Validate failure with no line-level finding still stays **chat only** unless you can attach a concrete inline comment on a changed file.
 
 ## 1. Resolve the current open PR
 
@@ -55,7 +55,7 @@ Post **exactly one** pull request review per review pass **that has ≥1 inline 
 | Findings table in the review body | Belongs in chat only |
 | Separate summary review after inline comments | One submission only |
 | Submitting before all inline comments are attached | Use pending review flow |
-| Status-report bodies (`**Verdict:**`, round numbers, “0 new findings”, lint/build checklists) | Sounds like a bot; confuses later comment fetches |
+| Status-report bodies (`**Verdict:**`, round numbers, “0 new findings”, Validate checklists) | Sounds like a bot; confuses later comment fetches |
 | Meta about GitHub event mechanics on the PR | e.g. “(Intended event: REQUEST_CHANGES; posted as COMMENT because …)” — **chat only**, never on the PR |
 
 ### Preferred flow (pending review — gh or GitHub MCP)
@@ -97,7 +97,7 @@ Write like a concise human reviewer: the issue and, when helpful, the fix shape 
 Severity can lead when it helps triage; keep it light:
 
 ```markdown
-**High** — Biome fails here (`useImportType`); breaks `npm run lint` / CI. Use a type-only import.
+**High** — Import type required by the project linter; breaks `AGENT.md` lint / CI. Use a type-only import.
 ```
 
 **Line resolution:**
@@ -129,7 +129,7 @@ If you cannot write a useful one-liner, use an empty body and let the inline thr
 | Situation | Event |
 |---|---|
 | Zero findings to post | **Do not post** (§0) — never `APPROVE` for “all clear” |
-| ≥1 finding on someone else’s PR | `REQUEST_CHANGES` when any Critical/High or lint/build fail; else `COMMENT` |
+| ≥1 finding on someone else’s PR | `REQUEST_CHANGES` when any Critical/High or Validate suite fail; else `COMMENT` |
 | ≥1 finding on **your own** PR | Always `COMMENT` (GitHub blocks `REQUEST_CHANGES` on own PRs) |
 
 **Own PR:** use `COMMENT` silently. Record “would have been REQUEST_CHANGES” **in chat / parent report only** — never in the review body, never as a parenthetical on the PR.

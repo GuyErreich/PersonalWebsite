@@ -30,9 +30,16 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first. Do not contra
 | No-`any` patterns, typed refs, vendor API extension, timer-handle typing, type packages | `references/typescript.md` |
 | Promise chains → async/await conversions, `useEffect` async patterns | `references/async-await.md` |
 | Empty catch, unused vars, fast-refresh exports, console rules, ESLint conventions | `references/lint-hygiene.md` |
+| npm scripts, lint/audit cadence, lockfile changes | `references/npm-tooling.md` |
 
 Load a reference only when a rule above surfaces an issue you need patterns for. Do not preload.
 
 ## Validation
 
-Run the project's lint and build commands (see the repository `AGENT.md`) and require zero errors before considering work complete.
+Before considering work complete, run the project's **Validate** commands from the repository `AGENT.md` and require zero errors.
+
+- **Lint** after JS/TS changes.
+- **Build** when types or the build surface were touched.
+- **Audit** when `package.json` / lockfile changed, and when Validate includes audit at milestones.
+
+Load `references/npm-tooling.md` for npm script and audit discipline.

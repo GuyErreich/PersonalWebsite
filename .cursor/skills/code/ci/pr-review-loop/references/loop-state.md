@@ -20,7 +20,9 @@ Runtime files under `.cursor/review-loop/` (gitignored):
   "fixer_model": "inherit",
   "clean_passes_required": 2,
   "manage_severity": "medium",
-  "post_fix_focus": "delta"
+  "post_fix_focus": "delta",
+  "diminishing_returns_round": 4,
+  "diminishing_returns_floor": "high"
 }
 ```
 
@@ -28,10 +30,12 @@ Runtime files under `.cursor/review-loop/` (gitignored):
 |---|---|---|
 | `manage_severity` | `medium` | Minimum finding severity the loop manages (`low` \| `medium` \| `high` \| `critical`). Below → Defer (see `triage-policy.md`). |
 | `post_fix_focus` | `delta` | Reviewer focus after a fixer round (`delta` \| `full`). |
+| `diminishing_returns_round` | `4` | Round at/after which lingering findings below `diminishing_returns_floor` are deferred as follow-ups. |
+| `diminishing_returns_floor` | one tier above `manage_severity` (capped at `critical`) | Minimum severity still fixed/escalated after the ratchet round. Fully overridable. |
 
 Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior `max_rounds: null` (budget-only) is not overwritten with `3`. Only missing keys take factory defaults; invocation `overrides` update both preferences and the new state.
 
-Invocation overrides: `manage medium` / `manage high` / `only critical` / `manage_severity=high` / `post_fix_focus=full` / `focus delta`.
+Invocation overrides: `manage medium` / `manage high` / `only critical` / `manage_severity=high` / `post_fix_focus=full` / `focus delta` / `diminishing after round 3` / `diminishing_returns_round=5` / `diminishing_returns_floor=high`.
 
 ## State schema (per run)
 
@@ -52,6 +56,8 @@ Invocation overrides: `manage medium` / `manage high` / `only critical` / `manag
   "clean_passes_required": 2,
   "manage_severity": "medium",
   "post_fix_focus": "delta",
+  "diminishing_returns_round": 4,
+  "diminishing_returns_floor": "high",
   "round": 0,
   "escalation_pending": false,
   "toolchain_mode": "uv",
@@ -60,6 +66,9 @@ Invocation overrides: `manage medium` / `manage high` / `only critical` / `manag
   "last_validate_fingerprint": "",
   "last_lint": "",
   "last_build": "",
+  "last_clean_fingerprint": "",
+  "last_outcome": "",
+  "seeded_from_ledger": false,
   "accepted_by_design": [],
   "closed_findings": [],
   "consecutive_clean_passes": 0,
@@ -79,8 +88,8 @@ Invocation overrides: `manage medium` / `manage high` / `only critical` / `manag
 
 | Field | Meaning |
 |---|---|
-| `last_validate_fingerprint` | PR fingerprint from last successful lint+build |
-| `last_lint` / `last_build` | `pass` \| `fail` \| `""` |
+| `last_validate_fingerprint` | PR fingerprint from last successful Validate suite |
+| `last_lint` / `last_build` | Opaque Validate-suite pass/fail slots (`pass` \| `fail` \| `""`). Success means **all** `AGENT.md` Validate commands passed. |
 
 Orchestrator runs baseline validate at preflight; fixer updates after commit validate. Reviewers skip phase 9 when `validate_still_fresh(state, current_fp)` is true — including `full` / `confirm`.
 
@@ -121,6 +130,7 @@ Token estimates are mode-invariant (same transcript math). Dollar estimates for 
 {
   "n": 1,
   "focus": "full",
+  "counted_clean": false,
   "started_at": "",
   "reviewer_started_at": "",
   "fixer_started_at": "",
@@ -147,13 +157,38 @@ Token estimates are mode-invariant (same transcript math). Dollar estimates for 
 }
 ```
 
+`counted_clean` is `true` only when this review had zero open findings, coverage OK, **and** focus was `full` or `confirm` (`_loop_state.apply_clean_pass`). A clean `delta` is fix-verified (`counted_clean: false`) and does **not** increment `consecutive_clean_passes`.
+
+`started_at` / `reviewer_started_at` / `fixer_started_at` on the round entry (and loop-level `started_at`) are **informational / debug only**. Cost accounting does **not** require the orchestrator to stamp them.
+
+### Cost accounting (authoritative inputs)
+
+| Source | Field | Role |
+|---|---|---|
+| `subagentStart` hook | `subagent_model` | Model actually used for this launch |
+| `subagentStart` hook → state | `_pending_subagent` | Internal bridge: `{type, model, started_at}` written on allow; cleared on stop. Trusted only when `type` matches the stop event's `subagent_type` |
+| `subagentStop` hook | `agent_transcript_path` | Exact transcript file to estimate — preferred over any filesystem mtime scan |
+| `subagentStop` hook | `duration_ms`, `message_count`, `tool_call_count` | Ground-truth wall clock / turns / tool calls (override transcript re-parse when present) |
+| `subagentStop` hook | `status` | `completed` \| `error` \| `aborted` — non-completed stops still record cost but follow-up advises retry/escalate, not normal triage |
+| Fallback only | round `*_started_at` / loop `started_at` | Cutoff for the mtime scan when `agent_transcript_path` is missing/unreadable |
+
+`_pending_subagent` is hook-owned — do not invent it from orchestrator prose. After ≥1 completed loop subagent, `totals.tokens_est` / `usd_est` must be > 0 and `project_next_cost` must leave cold defaults.
+
+Internal hook-bridge fields (not orchestrator-written):
+
+| Field | Role |
+|---|---|
+| `_pending_subagent` | Start→stop cost bridge (see above) |
+| `_cost_warnings` | Appended when a completed stop yields 0 tokens with a discovery miss (`no transcripts found`). Prefixed onto the `subagentStop` follow-up message so the orchestrator/user sees it immediately |
+| `_last_round_hook_at` | Dedup guard when user + project hooks both fire |
+
 ### Finding signature
 
 Stable id for dedup across rounds: `sha256(path + "|" + normalized_finding_text)[:16]`. Store on each finding as `signature`.
 
 ### Closed findings (do not re-poop)
 
-Every finding that was **fixed** or **accepted by design** is appended here for the rest of the run. Later full reviews still **scan** those files/areas for *other* issues, but must not re-report the same closed issue.
+Every finding that was **fixed**, **accepted by design**, or **deferred** is appended here. Memory is **durable across loop runs** for the same PR via `.cursor/review-loop/closed-ledger.json` (gitignored with the rest of `review-loop/`).
 
 ```json
 {
@@ -162,16 +197,49 @@ Every finding that was **fixed** or **accepted by design** is appended here for 
   "finding": "...",
   "status": "fixed|accepted|deferred",
   "closed_in_round": 2,
-  "rationale": "optional — required when status is accepted"
+  "rationale": "optional — required when status is accepted",
+  "fix_shape": "required when status=fixed — what the fixer changed; used to detect contested reverse-fixes"
 }
 ```
 
+#### Durable PR ledger (`closed-ledger.json`)
+
+```json
+{
+  "by_pr": {
+    "60": {
+      "pr_number": 60,
+      "branch": "feature/…",
+      "updated_at": "…",
+      "last_clean_fingerprint": "abc…",
+      "last_outcome": "confirmed_clean|stopped|escalation",
+      "closed_findings": [],
+      "accepted_by_design": []
+    }
+  }
+}
+```
+
+Helpers (`_loop_state`):
+
+| Helper | Role |
+|---|---|
+| `load_pr_closed_memory` / `merge_closed_memory` | Read / idempotent write of the PR entry |
+| `mark_run_outcome(state, outcome, fingerprint)` | Persist exit outcome + clean fingerprint |
+| `should_short_circuit_confirm(state, fingerprint)` | Prior `confirmed_clean` at same fingerprint → round-1 `confirm` |
+| `fix_ledger_entries` / `format_fix_ledger_for_prompt` | Compact table for every reviewer/fixer launch |
+| `finding_path` / `is_contested_against_ledger` | Path-level anti-thrash: prior `fix_shape` → escalate, never Fix |
+| `append_closed_finding(..., fix_shape=)` | Closes a finding **and** merges into the durable ledger immediately |
+
+`start_loop_state` seeds `closed_findings` / `accepted_by_design` from the ledger (dedupe by signature), sets `seeded_from_ledger`, and copies `last_clean_fingerprint` / `last_outcome` when present.
+
 Orchestrator rules:
 
-1. After each fix, by-design decision, or severity-floor defer, append the finding to `closed_findings` (and to `accepted_by_design` when status is `accepted`).
-2. Pass the full `closed_findings` list into every `pr-reviewer` launch.
-3. Before triage, drop any returned row whose `signature` is already in `closed_findings` (or is clearly the same underlying defect at the same path with restated wording). Do not hand those to the fixer or re-post as new inline comments.
-4. Exception — **recurrence**: the reviewer tagged `Source: recurrence` and the defect is still present after a fix → escalate once (do not auto-fix in a loop). Do not treat restated closed issues as fresh findings.
+1. After each fix, by-design decision, or severity-floor / diminishing-returns defer, append via `append_closed_finding` (and to `accepted_by_design` when status is `accepted`). **`fix_shape` is required** from the fixer's "What changed / Why" when status is `fixed` — empty is a process bug.
+2. Pass the full `closed_findings` list **and** `format_fix_ledger_for_prompt(state)` into every `pr-reviewer` and `pr-fixer` launch.
+3. Before triage, drop re-reports via `filter_open_findings`. Then run `is_contested_against_ledger` — if true, escalate contested; never auto-fix the opposite shape.
+4. Exceptions that stay open for one escalation — **recurrence** and **contested**. Never auto-fix either in a loop. After the user decides, append with the decided shape so it cannot reopen.
+5. On confirmed clean / stop / escalation exit, call `mark_run_outcome`.
 
 ### Accepted-by-design entry
 
@@ -179,7 +247,7 @@ Orchestrator rules:
 { "signature": "...", "location": "path:line", "finding": "...", "rationale": "..." }
 ```
 
-`accepted_by_design` remains the rationale store for by-design keeps; those signatures also appear in `closed_findings` with `status: "accepted"`. Severity-floor skips use `status: "deferred"`.
+`accepted_by_design` remains the rationale store for by-design keeps; those signatures also appear in `closed_findings` with `status: "accepted"`. Severity-floor skips and diminishing-returns skips use `status: "deferred"` (rationale should note which).
 
 ## Defaults and overrides
 
@@ -193,22 +261,26 @@ Orchestrator rules:
 | `max_usd_est` | 2.00 | 3.00 | "budget $1.50" |
 | `clean_passes_required` | 2 | 2 | `"1 clean pass"` (faster, riskier) / `"3 clean passes"` |
 | `post_fix_focus` | `delta` | `delta` | `"post_fix_focus=full"` to restore full review after every fixer |
+| `diminishing_returns_round` | 4 | 4 | `"diminishing after round 3"` / `diminishing_returns_round=5` |
+| `diminishing_returns_floor` | one above `manage_severity` | one above `manage_severity` | `diminishing_returns_floor=high` / `diminishing_returns_floor=critical` |
 
-When `max_rounds` is unlimited, stop conditions are **budget + consecutive clean reviews** — the loop may run round 4+ until projected spend would cross the token/USD caps, or until `consecutive_clean_passes >= clean_passes_required`. Do **not** stop on a single clean review, “no new signatures”, or fingerprint alone.
+When `max_rounds` is unlimited, stop conditions are **budget + consecutive clean reviews** — the loop may run round 4+ until projected spend would cross the token/USD caps, or until `consecutive_clean_passes >= clean_passes_required`. Do **not** stop on a single clean review, “no new signatures”, or fingerprint alone. After `diminishing_returns_round`, findings below `diminishing_returns_floor` are deferred (follow-ups) and do not block clean.
 
 ## Round focus (reviewer → developer until zero)
 
-Default cycle: **full → (fix) → delta → … → confirm**. Success is **`clean_passes_required` consecutive** reviews with zero **open** findings (default 2).
+Default cycle: **full → (fix) → delta → … → confirm**. Success is **`clean_passes_required` consecutive counted** reviews with zero **open** findings (default 2). Only `full` / `confirm` may increment `consecutive_clean_passes`.
 
 | When | Focus | Scope |
 |---|---|---|
-| Round 1 | `full` | Whole branch diff — all applicable phases. No mandatory re-lint if init validate fingerprint still matches. |
+| Round 1 (default) | `full` | Whole branch diff — all applicable phases. No mandatory re-lint if init validate fingerprint still matches. |
+| Round 1 when `should_short_circuit_confirm` | `confirm` | Prior run confirmed clean at this fingerprint — confirm only; if clean, meet `clean_passes_required` and stop |
 | After a fixer | `post_fix_focus` (default `delta`) | Fixer diff + hotspots + previously flagged paths |
-| After first clean | `confirm` | Adversarial pass over changed code files |
+| After a clean `delta` (fix verified) | `confirm` | Wide pass — narrow clean does not count toward consecutive cleans |
+| After first counted clean | `confirm` | Verify fixed hotspots + one honest pass; only concrete reproducible defects (thoroughness-pass §5) |
 | Coverage fail / out-of-hotspot issues | `full` | One recovery full pass |
 | User override | `full` / `delta` / `confirm` | Invocation wins |
 
-Use `_loop_state.resolve_round_focus(...)`. Do **not** force `full` every round.
+Use `_loop_state.resolve_round_focus(...)` (pass `last_focus` / `last_round_clean` after a clean delta). Do **not** force `full` every round.
 
 Orchestrator rule: `focus = resolve_round_focus(...)` unless the user overrode focus for this launch.
 ## Projective budget check

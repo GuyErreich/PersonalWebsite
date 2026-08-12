@@ -52,7 +52,7 @@ Load a skill only when the diff matches; load lens files for every match; load s
 |---|---|---|
 | 0 | Engineering | `engineering` |
 | 0b | Staff bar + specialist lenses | `references/lenses/*` (all matches) |
-| 1 | Language / lint | `code/languages/nodejs` + typescript lens |
+| 1 | Language | path-matched language skill + lens |
 | 2 | React structure | `code/web/libs/react` + frontend lens |
 | 3 | UI / a11y | `code/web/ui` + frontend lens |
 | 3b | UX / interactivity | `code/web/ux` + frontend / motion-vfx lenses |
@@ -61,12 +61,12 @@ Load a skill only when the diff matches; load lens files for every match; load s
 | 6 | Domain | `threejs`, supabase, project skills — path-matched |
 | 7 | Logic & regression | `references/logic-pass.md` |
 | 8 | Threat model | `references/threat-pass.md` |
-| 9 | Validate | raw lint + build from repo `AGENT.md` — **or skip** when loop state fingerprint still matches last pass (orchestrator / PR loop) |
+| 9 | Validate | raw shell: every command in the repo `AGENT.md` **Validate** section — **or skip** when loop state fingerprint still matches last pass (orchestrator / PR loop) |
 | 10 | Coverage gate | `references/thoroughness-pass.md` — **required before any clean verdict** |
 
 Run all applicable phases in one session. Do not fix findings unless the user explicitly asked. If there is no diff at all, report one sentence and stop.
 
-**False cleans are a defect in the review.** Lint/build green and “looks fine after the fixer” are not enough. Obey `thoroughness-pass.md` and the staff-bar lens before **Review passed**.
+**False cleans are a defect in the review.** Validate green and “looks fine after the fixer” are not enough. Obey `thoroughness-pass.md` and the staff-bar lens before **Review passed**.
 
 ## Why not separate reviewer agents per domain?
 
@@ -99,6 +99,6 @@ Produce one unified findings table:
 - **Location** — `path:line` (line optional).
 - **Finding** — one concise sentence with a concrete failure mode.
 
-Deduplicate overlapping findings into one row with a combined source. After the table, give: coverage line (files + **activated lenses** + phases), lint/build pass or fail, counts per source, and a one-line verdict — **Review passed** (zero findings, lint+build pass, **and** coverage gate satisfied) or **Review failed** (any finding, lint/build failure, or incomplete coverage).
+Deduplicate overlapping findings into one row with a combined source. After the table, give: coverage line (files + **activated lenses** + phases), Validate suite pass or fail (from `AGENT.md`), counts per source, and a one-line verdict — **Review passed** (zero findings, Validate pass, **and** coverage gate satisfied) or **Review failed** (any finding, Validate failure, or incomplete coverage).
 
 **Chat only** for the table and for clean passes. On PR tier with findings, post concise inline comments only; see `references/pr-comments.md`.

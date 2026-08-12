@@ -100,6 +100,7 @@ degraded_default() {
     review_loop_budget.py) printf '%s\n' '{"permission":"allow"}' ;;
     review_loop_round.py) printf '%s\n' '{}' ;;
     review_loop_git_guard.py) printf '%s\n' '{"permission":"ask","user_message":"Review-loop hooks degraded (no usable Python). Approve shell commands carefully."}' ;;
+    npm_dep_gate.py) printf '%s\n' '{}' ;;
     *) printf '%s\n' '{"permission":"allow"}' ;;
   esac
 }

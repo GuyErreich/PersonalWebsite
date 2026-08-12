@@ -19,7 +19,7 @@ Invoking this skill (or an explicit "run the PR review loop" request) grants sco
 ## Loop
 
 ```
-preflight (auth, toolchain, pricing, baseline lint+build, cold budget)
+preflight (auth, toolchain, pricing, baseline Validate from AGENT.md, cold budget)
   → Round N: pr-reviewer (focus: full | delta | confirm)
   → post inline comments only when there are new open findings
   → fetch unresolved threads (after review)
@@ -34,7 +34,7 @@ Success stop: **`clean_passes_required` consecutive** reviews with zero open fin
 ## Performance (do not undo)
 
 - **Focus progression** — not `full` every round. See below.
-- **Init-once env/CI** — lint/build, `gh auth`, toolchain, pricing run at preflight (and after tree change / fixer). Reviewers skip phase-9 validate when fingerprint still matches — **including `full` / `confirm`**.
+- **Init-once env/CI** — Validate suite from `AGENT.md`, `gh auth`, toolchain, pricing run at preflight (and after tree change / fixer). Reviewers skip phase-9 validate when fingerprint still matches — **including `full` / `confirm`**.
 - **Triage** — `Recommend: Fix` + concrete shape never pauses the user.
 
 ## Review first — never resolve before reviewing
@@ -55,39 +55,44 @@ Hard rules, not defaults:
 5. Resolve **role models** (default both **`inherit`**):
    - Aliases: `auto`/`inherit` → `inherit`; `opus`/`opus-5` → `claude-opus-5-thinking-high`; `sonnet`/`sonnet-5` → `claude-sonnet-5-thinking-high`; see `references/loop-state.md`
 6. Detect **pricing mode** for loop caps (`auto` default; `api` only when user says so).
-7. Initialize state via **`.cursor/hooks/run-python.sh review_loop_init.py`**. Overrides: `max 2 rounds`, `budget $1.50`, `budget-only` → `max_rounds: null`, `manage high`, `post_fix_focus=full`.
-8. **Baseline validate (required once):** run raw `npm run lint` + `npm run build` (or `AGENT.md` commands). Store `last_validate_fingerprint`, `last_lint`, `last_build` on `state.json`. Fingerprint via `python3 scripts/review-lock.py fingerprint pr --json`.
+7. Initialize state via **`.cursor/hooks/run-python.sh review_loop_init.py`**. Overrides: `max 2 rounds`, `budget $1.50`, `budget-only` → `max_rounds: null`, `manage high`, `post_fix_focus=full`, `diminishing after round 3`, `diminishing_returns_floor=high`.
+8. **Baseline validate (required once):** run every command in the repo `AGENT.md` **Validate** section via **raw** shell. Store `last_validate_fingerprint`, `last_lint`, `last_build` on `state.json` (`last_lint` / `last_build` are opaque pass/fail slots for the Validate suite — success means **all** listed commands passed). Fingerprint via `python3 scripts/review-lock.py fingerprint pr --json`.
 9. **Cold budget gate** before round 1. If over cap → escalate and stop; do not set `active: true`.
-10. Set `active: true`. Print: `pricing_mode`, models, `manage_severity`, `post_fix_focus`, `max_rounds`, caps, cold projection, and validate status.
+10. Set `active: true`. Print: `pricing_mode`, models, `manage_severity`, `post_fix_focus`, `diminishing_returns_round`, `diminishing_returns_floor`, `max_rounds`, caps, cold projection, validate status, and whether `seeded_from_ledger` / short-circuit confirm applies.
+11. **Short-circuit check:** if `should_short_circuit_confirm(state, current_fingerprint)` → round 1 focus = `confirm` (see Focus progression).
 
 ## Focus progression
 
 | Situation | Default focus |
 |---|---|
-| Round 1 | `full` |
+| Round 1 (default) | `full` |
+| Round 1 when `should_short_circuit_confirm(state, fingerprint)` | `confirm` |
 | After a fixer this run | `post_fix_focus` (default **`delta`**) |
-| After first clean (`consecutive_clean_passes == 1`) | `confirm` |
+| After a clean `delta` (fix verified, not counted) | `confirm` |
+| After first **counted** clean (`consecutive_clean_passes == 1`) | `confirm` |
 | Coverage failed / issues outside hotspot set | `full` once |
+
+**Unchanged-fingerprint short-circuit:** after init, if `_loop_state.should_short_circuit_confirm(state, current_fingerprint)` is true (prior run `last_outcome == confirmed_clean` at the same fingerprint), round 1 focus is **`confirm`** — not `full`. If that confirm is clean → set `consecutive_clean_passes = clean_passes_required`, canvas, `mark_run_outcome(..., "confirmed_clean", fingerprint)`, stop. If confirm finds real new/contested items → continue with the seeded closed set (do **not** wipe the ledger).
 
 Invocation overrides (`focus full` / `focus delta` / `focus confirm`) win. Preference `post_fix_focus`: `delta` (default) or `full`.
 
-Use `_loop_state.resolve_round_focus(...)` when deciding the next launch.
+Use `_loop_state.resolve_round_focus(...)` when deciding the next launch. Only `full` / `confirm` may increment `consecutive_clean_passes` (`clean_pass_counts` / `apply_clean_pass`).
 
 ## Per-round protocol
 
-1. Stamp `started_at` / `reviewer_started_at`. Set `next_model` to `reviewer_model`.
+1. Best-effort debug: optionally stamp `started_at` / `reviewer_started_at` (informational only — cost accounting uses hook `_pending_subagent` + `agent_transcript_path`). Set `next_model` to `reviewer_model`.
 2. Resolve **focus** via progression above. Launch **`pr-reviewer`**:
    - `run_in_background: true`, `model: <reviewer_model>`
-   - Pass: PR, round, focus, `closed_findings`, `accepted_by_design`, `fix_hotspots`, `consecutive_clean_passes`, **`last_validate_fingerprint` / `last_lint` / `last_build`**, and whether validate may be skipped.
+   - Pass: PR, round, focus, `closed_findings`, `accepted_by_design`, `fix_hotspots`, `consecutive_clean_passes`, **`last_validate_fingerprint` / `last_lint` / `last_build`**, whether validate may be skipped, and the compact **fix ledger** from `_loop_state.format_fix_ledger_for_prompt(state)` (required every launch — not only the raw JSON dump).
    - Fresh context. Do **not** pass prior fixer reasoning. Say when this is post-fixer or second-clean so it stays adversarial.
 3. Alert: *Subagent panel may stay blank — I'll continue when the review finishes.* Wait for Task completion.
-4. **Closed-finding filter.** Recurrence → escalate once. Post GitHub **only** for new open signatures. Never post clean-pass reviews on the PR.
+4. **Closed-finding filter.** Recurrence or contested → escalate once. Before Fix, run `is_contested_against_ledger` — if true, tag contested and escalate (never auto-fix). Post GitHub **only** for new open signatures. Never post clean-pass reviews on the PR.
 5. Fetch unresolved threads; merge tagged `external`.
-6. Triage via `references/triage-policy.md`. **Self-check before escalate:** if Recommend is Fix with a concrete shape → `Decision: Fix` and launch fixer — never pause for High/Critical alone.
-7. Auto-approved rows → `pr-fixer` (`run_in_background: true`). Fixer always validates before commit; then orchestrator updates `last_validate_*`.
-8. Record round outcome; append fixed / accepted / deferred to `closed_findings`.
+6. Triage via `references/triage-policy.md`. **Self-check before escalate:** if Recommend is Fix with a concrete shape → `Decision: Fix` and launch fixer — never pause for High/Critical alone. Exception: contested-against-ledger → Escalate.
+7. Auto-approved rows → `pr-fixer` (`run_in_background: true`). Include the same **fix ledger** table in the fixer prompt. Fixer always validates before commit; then orchestrator updates `last_validate_*`.
+8. Record round outcome; append fixed / accepted / deferred to `closed_findings` via `append_closed_finding`. **`fix_shape` is required** on every `status=fixed` close (from the fixer's What changed / Why) — empty `fix_shape` on fixed is a process bug.
 9. Projective budget before next launch.
-10. Stop conditions; if continuing, launch next review with resolved focus (including after a single clean → `confirm`).
+10. Stop conditions; if continuing, launch next review with resolved focus (including after a single clean → `confirm`). On confirmed clean / stop / escalation exit, call `mark_run_outcome(state, outcome, fingerprint)`.
 
 ### Subagent launch contract (required)
 
@@ -95,16 +100,17 @@ Use `_loop_state.resolve_round_focus(...)` when deciding the next launch.
 - Never nest Task inside `pr-reviewer` / `pr-fixer`.
 - Fallback to `generalPurpose` only after two failed custom starts; re-check budget yourself (hooks won't match).
 - Pass the role model on every Task call.
+- Every `pr-reviewer` and `pr-fixer` prompt **must** include `format_fix_ledger_for_prompt(state)`.
 
 ### Validate ownership
 
 | Who | When |
 |---|---|
-| Orchestrator init | Baseline lint+build once |
+| Orchestrator init | Baseline Validate suite once |
 | `pr-reviewer` | Skip if fingerprint matches stored pass; else re-run and update state |
-| `pr-fixer` | Always raw lint+build before commit; update `last_validate_*` on success |
+| `pr-fixer` | Always raw Validate suite before commit; update `last_validate_*` on success |
 
-Never trust `rtk`-wrapped exit codes for pass/fail. Never record `lint: pass` when the command failed.
+Never trust `rtk`-wrapped exit codes for pass/fail. Never record Validate `pass` when any command failed.
 
 ## Stop conditions
 
@@ -114,17 +120,21 @@ Keep looping until one of:
 - Projected spend would cross caps
 - Round cap (if set)
 - Escalation pending (design ambiguity only)
-- Lint/build failed and not fixed in-round
+- Validate suite failed and not fixed in-round
 
-**Do not stop as “passed” when:** only one clean landed; open findings with no new signatures (recurrence); unchanged fingerprint after a no-op fix.
+**Do not stop as “passed” when:** only one clean landed; the only zero-finding rounds were narrow (`delta`); open findings with no new signatures (recurrence/contested); unchanged fingerprint after a no-op fix.
+
+Findings deferred below `manage_severity` or by the diminishing-returns ratchet (`triage-policy.md`) are **closed** for this run — they do **not** block a clean verdict. List them on the summary canvas as follow-ups.
 
 ### After each reviewer report (orchestrator)
 
-1. Write findings / fingerprint / coverage into the round entry.
-2. Closed-finding filter.
+1. Write findings / fingerprint / coverage / focus into the round entry (`counted_clean` set in step 5).
+2. Closed-finding filter (`filter_open_findings` — keeps `recurrence` / `contested` open).
 3. Open findings → `consecutive_clean_passes = 0`, triage, fixer.
 4. Zero open but coverage failed → not clean; next focus `full`.
-5. Zero open + coverage OK → increment consecutive cleans; if below required, next focus `confirm`; if at requirement → canvas + `active: false`.
+5. Zero open + coverage OK:
+   - focus `full` / `confirm` → `apply_clean_pass(...)` (`counted_clean: true`); if below required, next focus `confirm`; if at requirement → canvas + `active: false`.
+   - focus `delta` → **fix verified, not a clean pass** (`counted_clean: false`; counter untouched); next focus `confirm`.
 
 ## Escalation format
 
@@ -162,4 +172,4 @@ Read `state.json` and write the canvas per `references/summary-canvas.md`. Set `
 
 ## Closed findings (do not re-poop)
 
-Once fixed, accepted, or deferred, a finding's signature goes into `closed_findings`. Later reviews still scan for *other* issues but must not re-report the same closed defect. True regressions use `Source: recurrence` and escalate once.
+Once fixed, accepted, or deferred, a finding's signature goes into `closed_findings` and the durable PR ledger (`.cursor/review-loop/closed-ledger.json`). A new loop on the same PR **seeds** that memory at init — do not rediscover fixed work. Later reviews still scan for *other* issues but must not re-report the same closed defect. True regressions use `Source: recurrence` and escalate once. Opposite-shape findings on a path with a prior `fix_shape` are contested (`is_contested_against_ledger`) — escalate, never auto-revert.

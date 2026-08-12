@@ -28,7 +28,7 @@ reviewer(pr) on the branch diff
   → wait for explicit user approval
   → implement ONLY approved "fix" rows (minimal, root-cause)
   → post fix summary in chat (see Step 4)
-  → validate (lint/build from AGENT.md)
+  → validate (AGENT.md Validate suite)
   → commit (change-tier review — ci/commit) when code changed
   → push (PR-tier review — ci/push) so CI and reviewers see the fix
   → post threaded replies; resolve threads per the rules below
@@ -84,7 +84,7 @@ One row per approved **Fix** thread. For **By design** / **Blocked**, add a shor
 
 ## Step 5 — Validate
 
-Run the project's lint and build (see the repo `AGENT.md`) when the approved plan changed code. Skip when there were no code changes. Do not commit or push until validation passes.
+Run every command in the repo `AGENT.md` **Validate** section when the approved plan changed code. Skip when there were no code changes. Do not commit or push until validation passes.
 
 ## Step 6 — Commit & push
 
