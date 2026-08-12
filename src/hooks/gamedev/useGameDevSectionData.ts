@@ -18,6 +18,9 @@ const withSummary = (items: GameDevItem[]): GameDevItem[] =>
     summary: resolveGameDevTeaserSummary(item),
   }));
 
+const isSupabaseNotConfiguredError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes("Supabase is not configured");
+
 export const useGameDevSectionData = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
@@ -54,23 +57,21 @@ export const useGameDevSectionData = () => {
           return;
         }
 
-        if (itemsError) {
-          const fallback = withSummary(fallbackGameDevItems);
-          setGalleryItems(fallback);
-          setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
-        } else {
+        if (!itemsError) {
           const normalized = withSummary((items ?? []) as GameDevItem[]);
           setGalleryItems(normalized);
           setFeaturedItems(sortFeaturedGameDevItems(normalized.filter((item) => item.is_featured)));
         }
-      } catch {
+      } catch (error) {
         if (!isMounted) {
           return;
         }
 
-        const fallback = withSummary(fallbackGameDevItems);
-        setGalleryItems(fallback);
-        setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
+        if (isSupabaseNotConfiguredError(error)) {
+          const fallback = withSummary(fallbackGameDevItems);
+          setGalleryItems(fallback);
+          setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
