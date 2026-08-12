@@ -1268,3 +1268,53 @@ class TestPostFixVerifyFilter:
         assert "src/a.ts" in surface
         assert "src/dep.ts" in surface
         assert "src/a.ts:10" not in surface
+
+
+class TestRuntimeDirOutsideCursor:
+    """Runtime cache lives in .review-loop/, not .cursor/."""
+
+    def test_start_writes_under_dot_review_loop(self, tmp_path: Path) -> None:
+        from _loop_state import STATE_DIR, start_loop_state
+
+        start_loop_state(
+            pr_number=1,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        assert (tmp_path / STATE_DIR / "state.json").is_file()
+        assert (tmp_path / STATE_DIR / "preferences.json").is_file()
+        assert not (tmp_path / ".cursor" / "review-loop").exists()
+
+    def test_migrates_legacy_cursor_dir(self, tmp_path: Path) -> None:
+        from _loop_state import STATE_DIR, load_preferences, migrate_legacy_runtime_dir
+
+        legacy = tmp_path / ".cursor" / "review-loop"
+        legacy.mkdir(parents=True)
+        (legacy / "preferences.json").write_text(
+            '{"max_rounds": 9, "max_usd_est": 1.5}\n',
+            encoding="utf-8",
+        )
+        (legacy / "closed-ledger.json").write_text(
+            '{"by_pr": {"1": {"pr_number": 1, "closed_findings": [], '
+            '"accepted_by_design": []}}}\n',
+            encoding="utf-8",
+        )
+        migrate_legacy_runtime_dir(tmp_path)
+        prefs = load_preferences(tmp_path)
+        assert prefs["max_rounds"] == 9
+        assert (tmp_path / STATE_DIR / "preferences.json").is_file()
+        assert (tmp_path / STATE_DIR / "closed-ledger.json").is_file()
+
+    def test_does_not_overwrite_newer_files(self, tmp_path: Path) -> None:
+        from _loop_state import STATE_DIR, migrate_legacy_runtime_dir
+
+        legacy = tmp_path / ".cursor" / "review-loop"
+        legacy.mkdir(parents=True)
+        (legacy / "preferences.json").write_text('{"max_rounds": 1}\n', encoding="utf-8")
+        dest = tmp_path / STATE_DIR
+        dest.mkdir(parents=True)
+        (dest / "preferences.json").write_text('{"max_rounds": 99}\n', encoding="utf-8")
+        migrate_legacy_runtime_dir(tmp_path)
+        text = (dest / "preferences.json").read_text(encoding="utf-8")
+        assert '"max_rounds": 99' in text

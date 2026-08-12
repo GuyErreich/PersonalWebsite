@@ -10,7 +10,7 @@ Follow the canvas skill: single `.canvas.tsx`, import only from `cursor/canvas`,
 
 ## Data source
 
-Read `.cursor/review-loop/state.json` in full. Optionally run `rtk gain -p -f json` for the savings offset (skip silently if rtk unavailable).
+Read `.review-loop/state.json` in full. Optionally run `rtk gain -p -f json` for the savings offset (skip silently if rtk unavailable).
 
 ## Required sections
 

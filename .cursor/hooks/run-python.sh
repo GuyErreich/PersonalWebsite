@@ -92,7 +92,7 @@ PY
 
 REPO_ROOT="$(resolve_root)"
 export REVIEW_LOOP_ROOT="$REPO_ROOT"
-STATE_DIR="$REPO_ROOT/.cursor/review-loop"
+STATE_DIR="$REPO_ROOT/.review-loop"
 ALERT_MARKER="$STATE_DIR/.toolchain-alert"
 
 degraded_default() {
@@ -119,7 +119,7 @@ emit_alert_once() {
 run_with() {
   runner="$1"
   shift
-  # Run from workspace root so relative .cursor/ paths resolve
+  # Run from workspace root so relative .review-loop/ paths resolve
   ( cd "$REPO_ROOT" && printf '%s' "$INPUT" | $runner "$@" "$SCRIPT_PATH" )
 }
 

@@ -15,7 +15,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 TIERS = frozenset({"change", "commit", "pr"})
-LOCK_PATH = Path(".cursor/review-lock.json")
+LOCK_PATH = Path(".review-loop/review-lock.json")
+LEGACY_LOCK_PATHS = (
+    Path(".cursor/review-lock.json"),
+    Path(".cursor/review-loop/review-lock.json"),
+)
 BASE_REFS = ("main", "master", "dev", "origin/main", "origin/master", "origin/dev")
 
 
@@ -89,7 +93,24 @@ def fingerprint_pr(root: Path) -> tuple[str, str, bool]:
 
 
 def lock_file(root: Path) -> Path:
-    return root / LOCK_PATH
+    """Return the lock path under ``.review-loop/``, migrating legacy if needed."""
+    dest = root / LOCK_PATH
+    if dest.is_file():
+        return dest
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return dest
+    for legacy in LEGACY_LOCK_PATHS:
+        src = root / legacy
+        if not src.is_file():
+            continue
+        try:
+            dest.write_bytes(src.read_bytes())
+        except OSError:
+            continue
+        break
+    return dest
 
 
 def load_lock(path: Path) -> dict:

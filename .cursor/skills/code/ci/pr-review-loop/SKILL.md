@@ -51,7 +51,7 @@ Hard rules, not defaults:
 1. Resolve the open PR for the checked-out branch (`gh pr view` or GitHub MCP). No open PR → stop and report.
 2. Preflight `gh auth status` **once**; on failure fall back to GitHub MCP. Do not re-check every round unless posting fails.
 3. Detect toolchain mode **once** via `.cursor/hooks/run-python.sh --detect`. Do **not** run `npm run test:py` every round — only if detect fails or the user asks.
-4. Bootstrap pricing **once** if `.cursor/review-loop/pricing.json` is missing or lacks a `modes` table.
+4. Bootstrap pricing **once** if `.review-loop/pricing.json` is missing or lacks a `modes` table.
 5. Resolve **role models** (default both **`inherit`**):
    - Aliases: `auto`/`inherit` → `inherit`; `opus`/`opus-5` → `claude-opus-5-thinking-high`; `sonnet`/`sonnet-5` → `claude-sonnet-5-thinking-high`; see `references/loop-state.md`
 6. Detect **pricing mode** for loop caps (`auto` default; `api` only when user says so).
@@ -173,4 +173,4 @@ Read `state.json` and write the canvas per `references/summary-canvas.md`. Set `
 
 ## Closed findings (do not re-poop)
 
-Once fixed, accepted, or deferred, a finding's signature goes into `closed_findings` and the durable PR ledger (`.cursor/review-loop/closed-ledger.json`). A new loop on the same PR **seeds** that memory at init — do not rediscover fixed work. After the first fix, later rounds are **post-fix verify** (surface only) — not a fresh survey of the PR. True regressions use `Source: recurrence` / `Source: regression`. Opposite-shape findings on a path with a prior `fix_shape` are contested (`is_contested_against_ledger`) — escalate, never auto-revert.
+Once fixed, accepted, or deferred, a finding's signature goes into `closed_findings` and the durable PR ledger (`.review-loop/closed-ledger.json`). A new loop on the same PR **seeds** that memory at init — do not rediscover fixed work. After the first fix, later rounds are **post-fix verify** (surface only) — not a fresh survey of the PR. True regressions use `Source: recurrence` / `Source: regression`. Opposite-shape findings on a path with a prior `fix_shape` are contested (`is_contested_against_ledger`) — escalate, never auto-revert.

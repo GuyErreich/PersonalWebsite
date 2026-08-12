@@ -1,12 +1,16 @@
 # Loop State
 
-Runtime files under `.cursor/review-loop/` (gitignored):
+Runtime files under `.review-loop/` at the repo root (gitignored — **not** under `.cursor/`, so writes do not trigger Cursor permission prompts):
 
 | File | Role |
 |---|---|
 | `state.json` | This run’s ledger (rounds, costs, active flag) — reset each loop start |
 | `preferences.json` | **Durable** caps/models across runs — never reset to factory on preflight |
 | `pricing.json` | Local pricing table (bootstrapped from the skill asset) |
+| `closed-ledger.json` | Per-PR durable closed / accepted memory |
+| `review-lock.json` | Optional review-dedup fingerprints |
+
+On first access, files under the legacy `.cursor/review-loop/` (and `.cursor/review-lock.json`) are copied into `.review-loop/` when the new path is missing.
 
 ## Preferences (durable)
 
@@ -188,7 +192,7 @@ Stable id for dedup across rounds: `sha256(path + "|" + normalized_finding_text)
 
 ### Closed findings (do not re-poop)
 
-Every finding that was **fixed**, **accepted by design**, or **deferred** is appended here. Memory is **durable across loop runs** for the same PR via `.cursor/review-loop/closed-ledger.json` (gitignored with the rest of `review-loop/`).
+Every finding that was **fixed**, **accepted by design**, or **deferred** is appended here. Memory is **durable across loop runs** for the same PR via `.review-loop/closed-ledger.json` (gitignored with the rest of `.review-loop/`).
 
 ```json
 {

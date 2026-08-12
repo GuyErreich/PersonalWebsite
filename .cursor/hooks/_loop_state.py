@@ -14,11 +14,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-STATE_DIR = Path(".cursor/review-loop")
+STATE_DIR = Path(".review-loop")
+LEGACY_STATE_DIR = Path(".cursor/review-loop")
 STATE_PATH = STATE_DIR / "state.json"
 PRICING_PATH = STATE_DIR / "pricing.json"
 PREFERENCES_PATH = STATE_DIR / "preferences.json"
 CLOSED_LEDGER_PATH = STATE_DIR / "closed-ledger.json"
+LEGACY_RUNTIME_FILES = (
+    "state.json",
+    "pricing.json",
+    "preferences.json",
+    "closed-ledger.json",
+    "review-lock.json",
+)
 DEFAULT_PRICING_REL = Path(
     ".cursor/skills/code/ci/pr-review-loop/assets/pricing.default.json"
 )
@@ -107,8 +115,65 @@ def repo_root() -> Path:
     return Path.cwd()
 
 
+def migrate_legacy_runtime_dir(root: Path | None = None) -> Path:
+    """Ensure ``.review-loop/`` exists; copy once from ``.cursor/review-loop/``.
+
+    Runtime cache lives outside ``.cursor/`` so agents do not hit Cursor
+    permission prompts on every write. Legacy files are copied when present
+    and the new path is missing; never overwrite newer files.
+    """
+    base = root or repo_root()
+    dest_dir = base / STATE_DIR
+    try:
+        dest_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(f"review-loop: could not create {STATE_DIR}: {exc}", file=sys.stderr)
+        return dest_dir
+
+    legacy_dir = base / LEGACY_STATE_DIR
+    if not legacy_dir.is_dir():
+        # Also migrate a lone legacy review-lock sitting under .cursor/
+        legacy_lock = base / ".cursor" / "review-lock.json"
+        new_lock = dest_dir / "review-lock.json"
+        if legacy_lock.is_file() and not new_lock.exists():
+            try:
+                new_lock.write_bytes(legacy_lock.read_bytes())
+            except OSError as exc:
+                print(
+                    f"review-loop: could not migrate review-lock.json: {exc}",
+                    file=sys.stderr,
+                )
+        return dest_dir
+
+    for name in LEGACY_RUNTIME_FILES:
+        src = legacy_dir / name
+        dst = dest_dir / name
+        if not src.is_file() or dst.exists():
+            continue
+        try:
+            dst.write_bytes(src.read_bytes())
+        except OSError as exc:
+            print(
+                f"review-loop: could not migrate {name} from legacy dir: {exc}",
+                file=sys.stderr,
+            )
+
+    legacy_lock = base / ".cursor" / "review-lock.json"
+    new_lock = dest_dir / "review-lock.json"
+    if legacy_lock.is_file() and not new_lock.exists():
+        try:
+            new_lock.write_bytes(legacy_lock.read_bytes())
+        except OSError as exc:
+            print(
+                f"review-loop: could not migrate review-lock.json: {exc}",
+                file=sys.stderr,
+            )
+    return dest_dir
+
+
 def state_path(root: Path | None = None) -> Path:
     """Return absolute path to state.json."""
+    migrate_legacy_runtime_dir(root)
     base = root or repo_root()
     return base / STATE_PATH
 
@@ -135,12 +200,14 @@ def save_state(data: dict[str, Any], root: Path | None = None) -> None:
 
 def preferences_path(root: Path | None = None) -> Path:
     """Return absolute path to preferences.json (durable caps across runs)."""
+    migrate_legacy_runtime_dir(root)
     base = root or repo_root()
     return base / PREFERENCES_PATH
 
 
 def ledger_path(root: Path | None = None) -> Path:
     """Return absolute path to closed-ledger.json (durable per-PR memory)."""
+    migrate_legacy_runtime_dir(root)
     base = root or repo_root()
     return base / CLOSED_LEDGER_PATH
 
@@ -1120,6 +1187,7 @@ def ask(user_message: str, agent_message: str | None = None) -> None:
 
 def bootstrap_pricing(root: Path | None = None) -> Path:
     """Copy default pricing into place when missing or schema-stale; return path."""
+    migrate_legacy_runtime_dir(root)
     base = root or repo_root()
     dest = base / PRICING_PATH
     src = base / DEFAULT_PRICING_REL
