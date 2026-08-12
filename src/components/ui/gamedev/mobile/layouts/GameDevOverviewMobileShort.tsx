@@ -29,6 +29,7 @@ export const GameDevOverviewMobileShort = ({
   showreelUrl,
   featuredItems,
   vfxItems,
+  vfxError,
   isLoading,
   isVfxLoading,
   iconMap,
@@ -67,7 +68,11 @@ export const GameDevOverviewMobileShort = ({
       }
       vfx={
         <div className="gamedev-vfx-showcase">
-          <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
+          <GameDevVfxShowcasePanel
+            vfxItems={vfxItems}
+            isLoading={isVfxLoading}
+            vfxError={vfxError}
+          />
         </div>
       }
     />

@@ -26,6 +26,7 @@ export const GameDevOverviewDesktop = ({
   showreelUrl,
   featuredItems,
   vfxItems,
+  vfxError,
   isLoading,
   isVfxLoading,
   iconMap,
@@ -71,7 +72,11 @@ export const GameDevOverviewDesktop = ({
       }
       vfx={
         <div className="gamedev-vfx-showcase">
-          <GameDevVfxShowcasePanel vfxItems={vfxItems} isLoading={isVfxLoading} />
+          <GameDevVfxShowcasePanel
+            vfxItems={vfxItems}
+            isLoading={isVfxLoading}
+            vfxError={vfxError}
+          />
         </div>
       }
     />

@@ -12,6 +12,7 @@ import { GameDevVfxIntro } from "./GameDevVfxIntro";
 interface GameDevVfxShowcasePanelProps {
   vfxItems: GameDevVfxItem[];
   isLoading: boolean;
+  vfxError?: string | null;
 }
 
 const VfxLoadingStage = () => (
@@ -32,13 +33,36 @@ const VfxLoadingStage = () => (
   </div>
 );
 
-export const GameDevVfxShowcasePanel = ({ vfxItems, isLoading }: GameDevVfxShowcasePanelProps) => {
+export const GameDevVfxShowcasePanel = ({
+  vfxItems,
+  isLoading,
+  vfxError = null,
+}: GameDevVfxShowcasePanelProps) => {
   if (isLoading) {
     return (
       <div className="gamedev-vfx-showcase-stack">
         <GameDevVfxIntro effectCount={0} isLoading />
         <div className="gamedev-vfx-stage">
           <VfxLoadingStage />
+        </div>
+      </div>
+    );
+  }
+
+  if (vfxError) {
+    return (
+      <div className="gamedev-vfx-showcase-stack gamedev-vfx-showcase-stack--empty">
+        <GameDevVfxIntro effectCount={0} />
+        <div className="gamedev-vfx-stage gamedev-vfx-stage--empty">
+          <div
+            className="gamedev-vfx-empty-state rounded-2xl border border-amber-400/25 bg-amber-500/10 px-5 py-6"
+            role="status"
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-200/90">
+              Visual Effects
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-amber-50/90">{vfxError}</p>
+          </div>
         </div>
       </div>
     );

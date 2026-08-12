@@ -64,6 +64,7 @@ export interface GameDevOverviewLayoutProps {
   showreelUrl: string | null;
   featuredItems: GameDevItem[];
   vfxItems: GameDevVfxItem[];
+  vfxError: string | null;
   isLoading: boolean;
   isVfxLoading: boolean;
   iconMap: GameDevIconMap;

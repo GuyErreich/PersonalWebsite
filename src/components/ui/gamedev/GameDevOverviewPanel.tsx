@@ -13,6 +13,7 @@ export const GameDevOverviewPanel = ({
   showreelUrl,
   featuredItems,
   vfxItems,
+  vfxError,
   isLoading,
   isVfxLoading,
   iconMap,
@@ -26,6 +27,7 @@ export const GameDevOverviewPanel = ({
         showreelUrl={showreelUrl}
         featuredItems={featuredItems}
         vfxItems={vfxItems}
+        vfxError={vfxError}
         isLoading={isLoading}
         isVfxLoading={isVfxLoading}
         iconMap={iconMap}
@@ -39,6 +41,7 @@ export const GameDevOverviewPanel = ({
       showreelUrl={showreelUrl}
       featuredItems={featuredItems}
       vfxItems={vfxItems}
+      vfxError={vfxError}
       isLoading={isLoading}
       isVfxLoading={isVfxLoading}
       iconMap={iconMap}

@@ -24,7 +24,7 @@ const MemoizedGamingIconsBackground = memo(GamingIconsBackground);
 export const GameDevSection = () => {
   const [showAllProjectsView, setShowAllProjectsView] = useState(false);
 
-  const { galleryItems, featuredItems, vfxItems, isLoading, isVfxLoading, showreelUrl } =
+  const { galleryItems, featuredItems, vfxItems, vfxError, isLoading, isVfxLoading, showreelUrl } =
     useGameDevSectionData();
   const {
     filteredItems,
@@ -67,6 +67,7 @@ export const GameDevSection = () => {
               showreelUrl={showreelUrl}
               featuredItems={featuredItems}
               vfxItems={vfxItems}
+              vfxError={vfxError}
               isLoading={isLoading}
               isVfxLoading={isVfxLoading}
               iconMap={iconMap}

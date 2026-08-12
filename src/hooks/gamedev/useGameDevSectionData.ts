@@ -26,6 +26,7 @@ export const useGameDevSectionData = () => {
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
   const [featuredItems, setFeaturedItems] = useState<GameDevItem[]>([]);
   const [vfxItems, setVfxItems] = useState<GameDevVfxItem[]>([]);
+  const [vfxError, setVfxError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVfxLoading, setIsVfxLoading] = useState(true);
 
@@ -100,12 +101,14 @@ export const useGameDevSectionData = () => {
         }
 
         setVfxItems(items as GameDevVfxItem[]);
+        setVfxError(null);
       } catch {
         if (!isMounted) {
           return;
         }
 
         setVfxItems([]);
+        setVfxError("Visual effects could not be loaded.");
       } finally {
         if (isMounted) {
           setIsVfxLoading(false);
@@ -123,6 +126,7 @@ export const useGameDevSectionData = () => {
     galleryItems,
     featuredItems,
     vfxItems,
+    vfxError,
     isLoading,
     isVfxLoading,
   };
