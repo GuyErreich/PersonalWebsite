@@ -26,6 +26,7 @@ Deep conventions live in two places — read them rather than duplicating here:
 | Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop}` |
 | Project tactile UI | `project/ui-interactions` |
 | Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing` |
+| Local dev / worktrees | `project/dev/worktree-cleanup` |
 | Skill/rule maintenance | `meta/improvement-protocol` |
 
 ## Behaviors
