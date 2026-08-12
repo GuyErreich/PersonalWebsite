@@ -81,16 +81,16 @@ Use `_loop_state.resolve_round_focus(...)` when deciding the next launch. Only `
 ## Per-round protocol
 
 1. Best-effort debug: optionally stamp `started_at` / `reviewer_started_at` (informational only — cost accounting uses hook `_pending_subagent` + `agent_transcript_path`). Set `next_model` to `reviewer_model`.
-2. Resolve **focus** via progression above. Launch **`pr-reviewer`**:
+2. Resolve **focus** via progression above. After any `status: fixed` exists (`has_fixed_this_run`), tell the reviewer this is **post-fix verify mode** and pass verify-surface paths (`verify_surface_paths` + last fixer paths + one-hop dependents). Launch **`pr-reviewer`**:
    - `run_in_background: true`, `model: <reviewer_model>`
-   - Pass: PR, round, focus, `closed_findings`, `accepted_by_design`, `fix_hotspots`, `consecutive_clean_passes`, **`last_validate_fingerprint` / `last_lint` / `last_build`**, whether validate may be skipped, and the compact **fix ledger** from `_loop_state.format_fix_ledger_for_prompt(state)` (required every launch — not only the raw JSON dump).
-   - Fresh context. Do **not** pass prior fixer reasoning. Say when this is post-fixer or second-clean so it stays adversarial.
+   - Pass: PR, round, focus, `closed_findings`, `accepted_by_design`, `fix_hotspots`, `consecutive_clean_passes`, **`last_validate_fingerprint` / `last_lint` / `last_build`**, whether validate may be skipped, post-fix verify flag / surface paths, and the compact **fix ledger** from `_loop_state.format_fix_ledger_for_prompt(state)` (required every launch — not only the raw JSON dump).
+   - Fresh context. Do **not** pass prior fixer reasoning. Say when this is post-fixer verify (not a new discovery pass).
 3. Alert: *Subagent panel may stay blank — I'll continue when the review finishes.* Wait for Task completion.
-4. **Closed-finding filter.** Recurrence or contested → escalate once. Before Fix, run `is_contested_against_ledger` — if true, tag contested and escalate (never auto-fix). Post GitHub **only** for new open signatures. Never post clean-pass reviews on the PR.
+4. **Closed-finding filter** (`filter_open_findings`). Then **`filter_post_fix_findings`** — drive-by findings outside the verify surface → Defer (post-fix verify); keep recurrence/contested/regression, Critical, and in-surface rows. Contested-against-ledger → escalate once (never auto-fix). Post GitHub **only** for kept open signatures. Never post clean-pass reviews on the PR.
 5. Fetch unresolved threads; merge tagged `external`.
-6. Triage via `references/triage-policy.md`. **Self-check before escalate:** if Recommend is Fix with a concrete shape → `Decision: Fix` and launch fixer — never pause for High/Critical alone. Exception: contested-against-ledger → Escalate.
+6. Triage via `references/triage-policy.md`. **Self-check before escalate:** if Recommend is Fix with a concrete shape → `Decision: Fix` and launch fixer — never pause for High/Critical alone. Exceptions: contested-against-ledger → Escalate; outside verify surface (non-Critical) → Defer.
 7. Auto-approved rows → `pr-fixer` (`run_in_background: true`). Include the same **fix ledger** table in the fixer prompt. Fixer always validates before commit; then orchestrator updates `last_validate_*`.
-8. Record round outcome; append fixed / accepted / deferred to `closed_findings` via `append_closed_finding`. **`fix_shape` is required** on every `status=fixed` close (from the fixer's What changed / Why) — empty `fix_shape` on fixed is a process bug.
+8. Record round outcome; append fixed / accepted / deferred to `closed_findings` via `append_closed_finding` (including post-fix-verify deferred). **`fix_shape` is required** on every `status=fixed` close (from the fixer's What changed / Why) — empty `fix_shape` on fixed is a process bug.
 9. Projective budget before next launch.
 10. Stop conditions; if continuing, launch next review with resolved focus (including after a single clean → `confirm`). On confirmed clean / stop / escalation exit, call `mark_run_outcome(state, outcome, fingerprint)`.
 
@@ -124,15 +124,16 @@ Keep looping until one of:
 
 **Do not stop as “passed” when:** only one clean landed; the only zero-finding rounds were narrow (`delta`); open findings with no new signatures (recurrence/contested); unchanged fingerprint after a no-op fix.
 
-Findings deferred below `manage_severity` or by the diminishing-returns ratchet (`triage-policy.md`) are **closed** for this run — they do **not** block a clean verdict. List them on the summary canvas as follow-ups.
+Findings deferred below `manage_severity`, by the diminishing-returns ratchet, or by **post-fix verify** (`triage-policy.md`) are **closed** for this run — they do **not** block a clean verdict. List them on the summary canvas as follow-ups.
 
 ### After each reviewer report (orchestrator)
 
 1. Write findings / fingerprint / coverage / focus into the round entry (`counted_clean` set in step 5).
 2. Closed-finding filter (`filter_open_findings` — keeps `recurrence` / `contested` open).
-3. Open findings → `consecutive_clean_passes = 0`, triage, fixer.
-4. Zero open but coverage failed → not clean; next focus `full`.
-5. Zero open + coverage OK:
+3. Post-fix verify filter (`filter_post_fix_findings`) when `has_fixed_this_run` — defer drive-bys outside the verify surface; append deferred with rationale `post-fix verify`.
+4. Kept open findings → `consecutive_clean_passes = 0`, triage, fixer.
+5. Zero open but coverage failed → not clean; next focus `full` only if no fixes yet, else stay on verify surface / `confirm`.
+6. Zero open + coverage OK:
    - focus `full` / `confirm` → `apply_clean_pass(...)` (`counted_clean: true`); if below required, next focus `confirm`; if at requirement → canvas + `active: false`.
    - focus `delta` → **fix verified, not a clean pass** (`counted_clean: false`; counter untouched); next focus `confirm`.
 
@@ -172,4 +173,4 @@ Read `state.json` and write the canvas per `references/summary-canvas.md`. Set `
 
 ## Closed findings (do not re-poop)
 
-Once fixed, accepted, or deferred, a finding's signature goes into `closed_findings` and the durable PR ledger (`.cursor/review-loop/closed-ledger.json`). A new loop on the same PR **seeds** that memory at init — do not rediscover fixed work. Later reviews still scan for *other* issues but must not re-report the same closed defect. True regressions use `Source: recurrence` and escalate once. Opposite-shape findings on a path with a prior `fix_shape` are contested (`is_contested_against_ledger`) — escalate, never auto-revert.
+Once fixed, accepted, or deferred, a finding's signature goes into `closed_findings` and the durable PR ledger (`.cursor/review-loop/closed-ledger.json`). A new loop on the same PR **seeds** that memory at init — do not rediscover fixed work. After the first fix, later rounds are **post-fix verify** (surface only) — not a fresh survey of the PR. True regressions use `Source: recurrence` / `Source: regression`. Opposite-shape findings on a path with a prior `fix_shape` are contested (`is_contested_against_ledger`) — escalate, never auto-revert.

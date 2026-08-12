@@ -540,7 +540,7 @@ class TestRoundFollowup:
         assert state["consecutive_clean_passes"] == 0
         assert state["manage_severity"] == "medium"
         assert state["post_fix_focus"] == "delta"
-        assert state["diminishing_returns_round"] == 4
+        assert state["diminishing_returns_round"] == 2
         assert state["diminishing_returns_floor"] == "high"
         assert state["last_validate_fingerprint"] == ""
 
@@ -1107,3 +1107,164 @@ class TestDurableClosedLedger:
         assert "disable edits until hydrated" in text
         assert "ledger-sig" in text
         assert "Fix ledger" in text
+
+
+class TestPostFixVerifyFilter:
+    """After fixes exist, defer drive-bys outside the verify surface."""
+
+    def test_no_fixed_yet_keeps_unrelated_path(self) -> None:
+        from _loop_state import filter_post_fix_findings
+
+        state: dict = {"closed_findings": [], "accepted_by_design": []}
+        findings = [
+            {
+                "signature": "sig-b",
+                "location": "src/b.ts:1",
+                "severity": "Medium",
+                "finding": "nit",
+            }
+        ]
+        keep, defer = filter_post_fix_findings(findings, state)
+        assert len(keep) == 1
+        assert defer == []
+
+    def test_after_fixed_defers_outside_keeps_same_path(self) -> None:
+        from _loop_state import append_closed_finding, filter_post_fix_findings
+
+        state: dict = {
+            "pr_number": 0,
+            "closed_findings": [],
+            "accepted_by_design": [],
+        }
+        append_closed_finding(
+            state,
+            signature="sig-a",
+            location="src/a.ts:10",
+            finding="missing cleanup",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="added dispose",
+        )
+        keep, defer = filter_post_fix_findings(
+            [
+                {
+                    "signature": "sig-b",
+                    "location": "src/b.ts:1",
+                    "severity": "Medium",
+                    "finding": "drive-by nit",
+                },
+                {
+                    "signature": "sig-a2",
+                    "location": "src/a.ts:99",
+                    "severity": "High",
+                    "finding": "related leak",
+                },
+            ],
+            state,
+        )
+        assert len(keep) == 1
+        assert keep[0]["location"] == "src/a.ts:99"
+        assert len(defer) == 1
+        assert defer[0]["location"] == "src/b.ts:1"
+        assert defer[0]["_defer_reason"] == "post-fix verify"
+
+    def test_recurrence_and_contested_always_kept(self) -> None:
+        from _loop_state import append_closed_finding, filter_post_fix_findings
+
+        state: dict = {
+            "pr_number": 0,
+            "closed_findings": [],
+            "accepted_by_design": [],
+        }
+        append_closed_finding(
+            state,
+            signature="sig-a",
+            location="src/a.ts:10",
+            finding="x",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="shape-a",
+        )
+        keep, defer = filter_post_fix_findings(
+            [
+                {
+                    "signature": "sig-a",
+                    "location": "src/elsewhere.ts:1",
+                    "severity": "Medium",
+                    "source": "recurrence",
+                    "finding": "still broken",
+                },
+                {
+                    "signature": "sig-c",
+                    "location": "src/elsewhere.ts:2",
+                    "severity": "Medium",
+                    "source": "contested",
+                    "finding": "prefer other shape",
+                },
+            ],
+            state,
+        )
+        assert len(keep) == 2
+        assert defer == []
+
+    def test_critical_outside_surface_kept(self) -> None:
+        from _loop_state import append_closed_finding, filter_post_fix_findings
+
+        state: dict = {
+            "pr_number": 0,
+            "closed_findings": [],
+            "accepted_by_design": [],
+        }
+        append_closed_finding(
+            state,
+            signature="sig-a",
+            location="src/a.ts:10",
+            finding="x",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="shape-a",
+        )
+        keep, defer = filter_post_fix_findings(
+            [
+                {
+                    "signature": "sig-crit",
+                    "location": "src/secret.ts:1",
+                    "severity": "Critical",
+                    "finding": "hardcoded secret",
+                }
+            ],
+            state,
+        )
+        assert len(keep) == 1
+        assert keep[0]["severity"] == "Critical"
+        assert defer == []
+
+    def test_verify_surface_paths_strips_line(
+        self, tmp_path: Path
+    ) -> None:
+        from _loop_state import (
+            append_closed_finding,
+            start_loop_state,
+            verify_surface_paths,
+        )
+
+        state = start_loop_state(
+            pr_number=99,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        append_closed_finding(
+            state,
+            signature="sig",
+            location="src/a.ts:10",
+            finding="x",
+            status="fixed",
+            closed_in_round=1,
+            fix_shape="shape",
+            root=tmp_path,
+        )
+        surface = verify_surface_paths(state, fixer_paths=["src/dep.ts:3"])
+        assert "src/a.ts" in surface
+        assert "src/dep.ts" in surface
+        assert "src/a.ts:10" not in surface

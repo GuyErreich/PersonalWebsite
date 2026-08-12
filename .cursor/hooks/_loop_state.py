@@ -73,6 +73,8 @@ WIDE_FOCUS_VALUES = ("full", "confirm")
 
 # Finding sources that stay open even when their signature is already closed.
 ESCALATING_SOURCES = frozenset({"recurrence", "contested"})
+# Sources always kept in post-fix verify mode (even outside the surface).
+VERIFY_KEEP_SOURCES = frozenset({"recurrence", "contested", "regression"})
 
 
 def now_iso() -> str:
@@ -324,7 +326,7 @@ def default_preferences() -> dict[str, Any]:
         "clean_passes_required": 2,
         "manage_severity": manage,
         "post_fix_focus": "delta",
-        "diminishing_returns_round": 4,
+        "diminishing_returns_round": 2,
         "diminishing_returns_floor": default_diminishing_returns_floor(manage),
     }
 
@@ -363,13 +365,13 @@ def normalize_diminishing_returns_floor(value: Any, manage_severity: Any) -> str
 
 
 def normalize_diminishing_returns_round(value: Any) -> int:
-    """Return a positive int round threshold (default 4)."""
+    """Return a positive int round threshold (default 2)."""
     if value is None:
-        return 4
+        return 2
     try:
         parsed = int(value)  # type: ignore[arg-type]
     except (TypeError, ValueError):
-        return 4
+        return 2
     return max(1, parsed)
 
 
@@ -378,9 +380,9 @@ def should_defer_for_diminishing_returns(
 ) -> bool:
     """True when round has crossed the threshold and severity is below the ratcheted floor."""
     try:
-        threshold = int(state.get("diminishing_returns_round", 4) or 4)
+        threshold = int(state.get("diminishing_returns_round", 2) or 2)
     except (TypeError, ValueError):
-        threshold = 4
+        threshold = 2
     if round_n < threshold:
         return False
     floor = normalize_diminishing_returns_floor(
@@ -651,7 +653,7 @@ def start_loop_state(
             prefs.get("post_fix_focus", "delta")
         ),
         "diminishing_returns_round": normalize_diminishing_returns_round(
-            prefs.get("diminishing_returns_round", 4)
+            prefs.get("diminishing_returns_round", 2)
         ),
         "diminishing_returns_floor": normalize_diminishing_returns_floor(
             prefs.get("diminishing_returns_floor"),
@@ -873,6 +875,115 @@ def is_contested_against_ledger(
         if finding_path(entry["location"]) == path:
             return True
     return False
+
+
+def has_fixed_this_run(state: dict[str, Any]) -> bool:
+    """True when any closed finding has status fixed (including ledger-seeded)."""
+    for entry in state.get("closed_findings") or []:
+        if not isinstance(entry, dict):
+            continue
+        if str(entry.get("status") or "").strip().lower() == "fixed":
+            return True
+    return False
+
+
+def verify_surface_paths(
+    state: dict[str, Any],
+    fixer_paths: list[str] | None = None,
+) -> set[str]:
+    """Paths in scope for post-fix verify (fixed locations ∪ fixer-touched).
+
+    Orchestrator should pass one-hop dependents (imports/callers/siblings) in
+    ``fixer_paths`` alongside the last fixer diff.
+    """
+    out: set[str] = set()
+    for loc in fixed_locations(state):
+        path = finding_path(loc)
+        if path:
+            out.add(path)
+    for raw in fixer_paths or []:
+        path = finding_path(str(raw))
+        if path:
+            out.add(path)
+    return out
+
+
+def _finding_location(finding: dict[str, Any]) -> str:
+    return str(
+        finding.get("location")
+        or finding.get("Location")
+        or finding.get("path")
+        or ""
+    ).strip()
+
+
+def _finding_severity(finding: dict[str, Any]) -> str:
+    return str(
+        finding.get("severity") or finding.get("Severity") or ""
+    ).strip().lower()
+
+
+def _finding_source(finding: dict[str, Any]) -> str:
+    return str(
+        finding.get("source") or finding.get("Source") or ""
+    ).strip().lower()
+
+
+def is_outside_verify_surface(
+    finding: dict[str, Any] | None,
+    state: dict[str, Any],
+    fixer_paths: list[str] | None = None,
+) -> bool:
+    """True when a finding's path is not in the post-fix verify surface."""
+    if not isinstance(finding, dict):
+        return True
+    path = finding_path(_finding_location(finding))
+    if not path:
+        return True
+    return path not in verify_surface_paths(state, fixer_paths)
+
+
+def filter_post_fix_findings(
+    findings: list[dict[str, Any]],
+    state: dict[str, Any],
+    *,
+    fixer_paths: list[str] | None = None,
+    round_n: int = 0,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Split findings into (keep, defer) under post-fix verify mode.
+
+    When no fixed findings exist yet, all rows are kept (round-1 discovery).
+    Otherwise keep recurrence/contested/regression, Critical (any path), and
+    anything inside the verify surface; defer the rest as drive-by noise.
+    ``round_n`` is accepted for orchestrator logging / future policy hooks.
+    """
+    _ = round_n  # reserved for callers / future ratchets
+    if not has_fixed_this_run(state):
+        keep = [row for row in findings if isinstance(row, dict)]
+        return keep, []
+
+    surface = verify_surface_paths(state, fixer_paths)
+    keep: list[dict[str, Any]] = []
+    defer: list[dict[str, Any]] = []
+    for row in findings:
+        if not isinstance(row, dict):
+            continue
+        source = _finding_source(row)
+        if source in VERIFY_KEEP_SOURCES:
+            keep.append(row)
+            continue
+        severity = _finding_severity(row)
+        if severity == "critical":
+            keep.append(row)
+            continue
+        path = finding_path(_finding_location(row))
+        if path and path in surface:
+            keep.append(row)
+            continue
+        deferred = dict(row)
+        deferred["_defer_reason"] = "post-fix verify"
+        defer.append(deferred)
+    return keep, defer
 
 
 def filter_open_findings(

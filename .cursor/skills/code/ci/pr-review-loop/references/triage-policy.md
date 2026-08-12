@@ -39,16 +39,26 @@ After enough fix/review cycles, lingering non-Critical findings become follow-up
 
 | Preference | Default | Purpose |
 |---|---|---|
-| `diminishing_returns_round` | `4` | Round number at/after which the ratchet applies |
+| `diminishing_returns_round` | `2` | Round number at/after which the ratchet applies |
 | `diminishing_returns_floor` | one tier above `manage_severity` (capped at `critical`) | Minimum severity still auto-fixed / escalated after that round. Below → Defer |
 
 Examples with default `manage_severity=medium` → derived floor `high`:
-- Round 1–3: Medium+ still managed as usual.
-- Round ≥ 4: Medium (and Low) → `Decision: Defer (diminishing returns)`; High/Critical still Fix/Escalate.
+- Round 1: Medium+ still managed as usual.
+- Round ≥ 2: Medium (and Low) → `Decision: Defer (diminishing returns)`; High/Critical still Fix/Escalate.
 
 Overrides: `"diminishing after round 3"` · `diminishing_returns_round=5` · `diminishing_returns_floor=high` · `diminishing_returns_floor=critical`. Floor is fully independent of `manage_severity` when set explicitly.
 
 Deferred findings use the same `closed_findings` / `status: "deferred"` path as the severity floor, with rationale noting the round + floor so the summary canvas can list them as follow-ups.
+
+## Post-fix verify (convergence)
+
+Once any finding is closed with `status: fixed` this run (including ledger-seeded fixes), the loop is in **post-fix verify mode**:
+
+- Verify surface = fixed paths ∪ last fixer diff ∪ hotspots ∪ one-hop dependents the orchestrator passes into `filter_post_fix_findings(..., fixer_paths=...)`.
+- Keep: `Source: recurrence` / `contested` / `regression`, **Critical** (any path — escalate if outside surface), and any finding whose path is in the surface.
+- Defer: all other drive-by findings outside the surface → `Decision: Defer (post-fix verify)` → `append_closed_finding(..., status="deferred", rationale="post-fix verify")`.
+
+Use `_loop_state.has_fixed_this_run` / `filter_post_fix_findings`. Round-1 `full` discovery is unchanged until the first fix lands.
 
 ## Auto-fix (no ask)
 
@@ -119,10 +129,10 @@ The user only **confirms, corrects, or stops** — they should not have to inven
 
 Anything already in `state.closed_findings` is **done for this loop run**.
 
-- **Still scan** those files/areas on later full reviews — look for *other* issues.
+- After fixes exist, later reviews are **post-fix verify** on the verify surface — not a fresh PR survey.
 - **Do not** re-triage, re-fix, or re-comment the same closed issue (same signature, or same path + same underlying defect restated).
-- Drop accidental re-reports in the orchestrator before the triage table.
-- True regressions only via `Source: recurrence` → Escalate (above).
+- Drop accidental re-reports and outside-surface drive-bys in the orchestrator before the triage table.
+- True regressions via `Source: recurrence` / `Source: regression`. Contested opposite shapes escalate once.
 
 ## By design (keep)
 
@@ -143,22 +153,24 @@ Pre-existing Copilot or human threads (origin `external`) go through the same ma
 |---|---|---|---|---|---|---|---|
 | 1 | loop | path:line | Medium | logic | ... | Fix | unambiguous null check |
 | 2 | loop | path:line | Low | code-style | ... | Defer | below manage_severity=medium |
-| 3 | loop | path:line | Medium | best-practices | ... | Defer (diminishing returns) | round≥4, below diminishing_returns_floor=high |
+| 3 | loop | path:line | Medium | best-practices | ... | Defer (diminishing returns) | round≥2, below diminishing_returns_floor=high |
 | 4 | loop | path:line | High | security | ... | Fix | clear missing dispose / no design ambiguity |
 | 5 | loop | path:line | High | logic | ... | Fix | disable UI until hydrated (conservative) |
 | 6 | loop | path:line | High | security | ... | Escalate → recommend By design or Fix | unclear if role should keep SELECT |
-| 7 | external | path:line | Medium | best-practices | ... | By design | intentional … |
+| 7 | loop | other.ts:1 | Medium | best-practices | ... | Defer (post-fix verify) | outside verify surface after fixes |
+| 8 | external | path:line | Medium | best-practices | ... | By design | intentional … |
 ```
 
 ## Decision order (orchestrator)
 
 1. Closed-finding filter (drop re-reports; keep `recurrence` / `contested` open via `filter_open_findings`).
-2. **Anti-thrash path guard:** if `_loop_state.is_contested_against_ledger(finding, state)` (path already closed as `fixed` with a non-empty `fix_shape`) → tag `Source: contested` / **Escalate once** with both shapes — **never** `Decision: Fix`. Do not silently reverse a prior deliberate fix.
-3. Below `manage_severity` → **Defer**.
-4. Round ≥ `diminishing_returns_round` and severity below `diminishing_returns_floor` → **Defer (diminishing returns)** — same `closed_findings` / `status: deferred` as the severity floor; tag rationale with the round + floor (use `_loop_state.should_defer_for_diminishing_returns`).
-5. `Source: recurrence` or `Source: contested` → **Escalate once** (never auto-fix / never reverse a deliberate fix shape). After the user decides, append to `closed_findings` with the decided shape so it cannot reopen.
-6. Unambiguous must-fix (Recommend would be Fix) → **Fix** (any severity) — including migrations/hydration/data-loss with a clear shape.
-7. Clear intentional trade-off → **By design**.
-8. Real design/policy **ambiguity** or infra/budget → **Escalate**.
+2. **Post-fix verify filter** (`filter_post_fix_findings`) when `has_fixed_this_run` — outside surface (non-Critical) → **Defer (post-fix verify)**; never Fix. Critical outside surface stays in keep for Escalate.
+3. **Anti-thrash path guard:** if `_loop_state.is_contested_against_ledger(finding, state)` (path already closed as `fixed` with a non-empty `fix_shape`) → tag `Source: contested` / **Escalate once** with both shapes — **never** `Decision: Fix`. Do not silently reverse a prior deliberate fix.
+4. Below `manage_severity` → **Defer**.
+5. Round ≥ `diminishing_returns_round` and severity below `diminishing_returns_floor` → **Defer (diminishing returns)** — same `closed_findings` / `status: deferred` as the severity floor; tag rationale with the round + floor (use `_loop_state.should_defer_for_diminishing_returns`).
+6. `Source: recurrence` or `Source: contested` → **Escalate once** (never auto-fix / never reverse a deliberate fix shape). After the user decides, append to `closed_findings` with the decided shape so it cannot reopen.
+7. Unambiguous must-fix (Recommend would be Fix) → **Fix** (any severity) — including migrations/hydration/data-loss with a clear shape. `Source: regression` in-surface → Fix.
+8. Clear intentional trade-off → **By design**.
+9. Real design/policy **ambiguity** or infra/budget → **Escalate**.
 
 After a successful fixer report, `append_closed_finding(..., status="fixed", fix_shape=<What changed / Why>)` is **required**. Empty `fix_shape` on `status=fixed` is a process bug (breaks anti-thrash).

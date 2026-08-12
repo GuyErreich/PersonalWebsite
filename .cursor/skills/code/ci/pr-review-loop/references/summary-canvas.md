@@ -22,9 +22,10 @@ Read `.cursor/review-loop/state.json` in full. Optionally run `rtk gain -p -f js
 6. **Follow-ups (deferred)** — findings closed as `status: "deferred"`. Distinguish:
    - **Severity floor** — below `manage_severity` (never managed this run).
    - **Diminishing returns** — round ≥ `diminishing_returns_round` and severity below `diminishing_returns_floor` (rationale should note round + floor).
+   - **Post-fix verify** — drive-by findings outside the verify surface after fixes existed (rationale `post-fix verify`).
    Omit section if none. These are intentional leftover work — surface them; do not bury silently.
 7. **Escalations** — list with category, why-it-is-an-issue, orchestrator recommendations (Fix vs By design), and the user’s final choice. Call out **contested** escalations (opposite of a prior `fix_shape`) separately when present. Omit if empty.
-8. **Seeded memory / anti-thrash** — when relevant: how many closed findings were seeded from the durable ledger; short-circuit confirm used or not; contested path guards that blocked auto-fix. Omit if none of those applied.
+8. **Seeded memory / anti-thrash / verify mode** — when relevant: how many closed findings were seeded from the durable ledger; short-circuit confirm used or not; contested path guards that blocked auto-fix; post-fix verify deferred count. Omit if none of those applied.
 9. **Validate / commit trail** — per-round Validate suite results and commit SHAs.
 10. **Cost panel** (always when any round ran):
    - Estimated tokens per round (input vs output) — labeled chart

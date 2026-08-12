@@ -21,7 +21,7 @@ Runtime files under `.cursor/review-loop/` (gitignored):
   "clean_passes_required": 2,
   "manage_severity": "medium",
   "post_fix_focus": "delta",
-  "diminishing_returns_round": 4,
+  "diminishing_returns_round": 2,
   "diminishing_returns_floor": "high"
 }
 ```
@@ -30,7 +30,7 @@ Runtime files under `.cursor/review-loop/` (gitignored):
 |---|---|---|
 | `manage_severity` | `medium` | Minimum finding severity the loop manages (`low` \| `medium` \| `high` \| `critical`). Below → Defer (see `triage-policy.md`). |
 | `post_fix_focus` | `delta` | Reviewer focus after a fixer round (`delta` \| `full`). |
-| `diminishing_returns_round` | `4` | Round at/after which lingering findings below `diminishing_returns_floor` are deferred as follow-ups. |
+| `diminishing_returns_round` | `2` | Round at/after which lingering findings below `diminishing_returns_floor` are deferred as follow-ups. |
 | `diminishing_returns_floor` | one tier above `manage_severity` (capped at `critical`) | Minimum severity still fixed/escalated after the ratchet round. Fully overridable. |
 
 Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior `max_rounds: null` (budget-only) is not overwritten with `3`. Only missing keys take factory defaults; invocation `overrides` update both preferences and the new state.
@@ -56,7 +56,7 @@ Invocation overrides: `manage medium` / `manage high` / `only critical` / `manag
   "clean_passes_required": 2,
   "manage_severity": "medium",
   "post_fix_focus": "delta",
-  "diminishing_returns_round": 4,
+  "diminishing_returns_round": 2,
   "diminishing_returns_floor": "high",
   "round": 0,
   "escalation_pending": false,
@@ -229,6 +229,7 @@ Helpers (`_loop_state`):
 | `should_short_circuit_confirm(state, fingerprint)` | Prior `confirmed_clean` at same fingerprint → round-1 `confirm` |
 | `fix_ledger_entries` / `format_fix_ledger_for_prompt` | Compact table for every reviewer/fixer launch |
 | `finding_path` / `is_contested_against_ledger` | Path-level anti-thrash: prior `fix_shape` → escalate, never Fix |
+| `has_fixed_this_run` / `verify_surface_paths` / `filter_post_fix_findings` | Post-fix verify: after first fix, defer drive-bys outside surface |
 | `append_closed_finding(..., fix_shape=)` | Closes a finding **and** merges into the durable ledger immediately |
 
 `start_loop_state` seeds `closed_findings` / `accepted_by_design` from the ledger (dedupe by signature), sets `seeded_from_ledger`, and copies `last_clean_fingerprint` / `last_outcome` when present.
@@ -237,9 +238,17 @@ Orchestrator rules:
 
 1. After each fix, by-design decision, or severity-floor / diminishing-returns defer, append via `append_closed_finding` (and to `accepted_by_design` when status is `accepted`). **`fix_shape` is required** from the fixer's "What changed / Why" when status is `fixed` — empty is a process bug.
 2. Pass the full `closed_findings` list **and** `format_fix_ledger_for_prompt(state)` into every `pr-reviewer` and `pr-fixer` launch.
-3. Before triage, drop re-reports via `filter_open_findings`. Then run `is_contested_against_ledger` — if true, escalate contested; never auto-fix the opposite shape.
+3. Before triage, drop re-reports via `filter_open_findings`. Then run `filter_post_fix_findings` when fixes exist — defer drive-bys outside the verify surface. Then run `is_contested_against_ledger` — if true, escalate contested; never auto-fix the opposite shape.
 4. Exceptions that stay open for one escalation — **recurrence** and **contested**. Never auto-fix either in a loop. After the user decides, append with the decided shape so it cannot reopen.
 5. On confirmed clean / stop / escalation exit, call `mark_run_outcome`.
+
+### Post-fix verify mode
+
+When `has_fixed_this_run(state)` is true:
+
+- Confirm / delta **M** = `verify_surface_paths(state, fixer_paths)` (fixed paths ∪ last fixer diff ∪ one-hop dependents), not the whole branch.
+- Orchestrator must call `filter_post_fix_findings` after `filter_open_findings` and append deferred rows with rationale `post-fix verify`.
+- Critical outside the surface stays in keep (escalate); Medium/Low/High drive-bys outside surface are deferred.
 
 ### Accepted-by-design entry
 
@@ -261,7 +270,7 @@ Orchestrator rules:
 | `max_usd_est` | 2.00 | 3.00 | "budget $1.50" |
 | `clean_passes_required` | 2 | 2 | `"1 clean pass"` (faster, riskier) / `"3 clean passes"` |
 | `post_fix_focus` | `delta` | `delta` | `"post_fix_focus=full"` to restore full review after every fixer |
-| `diminishing_returns_round` | 4 | 4 | `"diminishing after round 3"` / `diminishing_returns_round=5` |
+| `diminishing_returns_round` | 2 | 2 | `"diminishing after round 3"` / `diminishing_returns_round=5` |
 | `diminishing_returns_floor` | one above `manage_severity` | one above `manage_severity` | `diminishing_returns_floor=high` / `diminishing_returns_floor=critical` |
 
 When `max_rounds` is unlimited, stop conditions are **budget + consecutive clean reviews** — the loop may run round 4+ until projected spend would cross the token/USD caps, or until `consecutive_clean_passes >= clean_passes_required`. Do **not** stop on a single clean review, “no new signatures”, or fingerprint alone. After `diminishing_returns_round`, findings below `diminishing_returns_floor` are deferred (follow-ups) and do not block clean.
@@ -274,9 +283,9 @@ Default cycle: **full → (fix) → delta → … → confirm**. Success is **`c
 |---|---|---|
 | Round 1 (default) | `full` | Whole branch diff — all applicable phases. No mandatory re-lint if init validate fingerprint still matches. |
 | Round 1 when `should_short_circuit_confirm` | `confirm` | Prior run confirmed clean at this fingerprint — confirm only; if clean, meet `clean_passes_required` and stop |
-| After a fixer | `post_fix_focus` (default `delta`) | Fixer diff + hotspots + previously flagged paths |
-| After a clean `delta` (fix verified) | `confirm` | Wide pass — narrow clean does not count toward consecutive cleans |
-| After first counted clean | `confirm` | Verify fixed hotspots + one honest pass; only concrete reproducible defects (thoroughness-pass §5) |
+| After a fixer | `post_fix_focus` (default `delta`) | **Post-fix verify** — fixer diff + hotspots + fixed paths + one-hop dependents; not a new full-PR survey |
+| After a clean `delta` (fix verified) | `confirm` | Verify surface only when fixes exist (thoroughness-pass confirm M); narrow clean does not count toward consecutive cleans |
+| After first counted clean | `confirm` | Verify fixed hotspots + surface; only concrete reproducible defects (thoroughness-pass §5) |
 | Coverage fail / out-of-hotspot issues | `full` | One recovery full pass |
 | User override | `full` / `delta` / `confirm` | Invocation wins |
 
