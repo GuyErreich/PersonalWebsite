@@ -1131,9 +1131,19 @@ export const ItemFormModal = ({
 
     let normalizedGithubUrl: string | null;
     let normalizedLiveUrl: string | null;
+    let normalizedCardThumbnailUrl: string | null;
+    let normalizedHeaderThumbnailUrl: string | null;
     try {
       normalizedGithubUrl = normalizeOptionalHttpsUrl(githubUrl, "GitHub URL");
       normalizedLiveUrl = normalizeOptionalHttpsUrl(liveUrl, "Live URL");
+      normalizedCardThumbnailUrl = normalizeOptionalHttpsUrl(
+        selectedCardThumbnailUrl ?? "",
+        "Card thumbnail URL",
+      );
+      normalizedHeaderThumbnailUrl = normalizeOptionalHttpsUrl(
+        selectedHeaderThumbnailUrl ?? "",
+        "Header poster URL",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid URL value.");
       return;
@@ -1214,13 +1224,14 @@ export const ItemFormModal = ({
         const imageOnlyUrl = (url: string | null | undefined): string | null =>
           url && isImageUrl(url) ? url : null;
         // New projects: derive card thumb from header when unset. Edit: persist Clear as null.
+        // Card/header posters already passed HTTPS normalization above when pasted/set.
         const teaserThumbnailUrl = isEditingGameDev
           ? isComingSoon
-            ? imageOnlyUrl(selectedCardThumbnailUrl)
-            : selectedCardThumbnailUrl
+            ? imageOnlyUrl(normalizedCardThumbnailUrl)
+            : normalizedCardThumbnailUrl
           : isComingSoon
-            ? (imageOnlyUrl(selectedCardThumbnailUrl) ?? imageOnlyUrl(teaserMediaUrl) ?? null)
-            : (selectedCardThumbnailUrl ?? imageOnlyUrl(teaserMediaUrl) ?? null);
+            ? (imageOnlyUrl(normalizedCardThumbnailUrl) ?? imageOnlyUrl(teaserMediaUrl) ?? null)
+            : (normalizedCardThumbnailUrl ?? imageOnlyUrl(teaserMediaUrl) ?? null);
 
         const projectPayload = {
           title: normalizedTitle,
@@ -1229,7 +1240,7 @@ export const ItemFormModal = ({
           media_url: teaserMediaUrl,
           thumbnail_url: teaserThumbnailUrl,
           header_media_url: teaserMediaUrl,
-          header_thumbnail_url: selectedHeaderThumbnailUrl,
+          header_thumbnail_url: normalizedHeaderThumbnailUrl,
           icon_name: selectedIcon,
           github_url: normalizedGithubUrl,
           live_url: normalizedLiveUrl,

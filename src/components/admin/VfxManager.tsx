@@ -136,13 +136,15 @@ export const VfxManager = () => {
       ...current,
       mediaUrl: item.media_url,
       mediaType: item.media_type,
+      // Drop stale poster when the clip changes; keep only if the same media URL was re-selected.
+      thumbnailUrl: current.mediaUrl === item.media_url ? current.thumbnailUrl : null,
     }));
     setIsMediaLibraryOpen(false);
   }, []);
 
   const clearMediaLibrarySelection = useCallback(() => {
     setMediaFile(null);
-    setForm((current) => ({ ...current, mediaUrl: null }));
+    setForm((current) => ({ ...current, mediaUrl: null, thumbnailUrl: null }));
   }, []);
 
   const mediaLibraryActions = useMemo((): MediaLibraryPickerAction[] => {
@@ -530,6 +532,8 @@ export const VfxManager = () => {
                           setForm((c) => ({
                             ...c,
                             mediaType: inferMediaTypeFromFile(nextFile),
+                            // New upload replaces the clip; do not keep the previous poster.
+                            thumbnailUrl: null,
                           }));
                         }}
                       />
