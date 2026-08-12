@@ -32,5 +32,6 @@ Interactive behavior must live on semantic interactive elements so keyboard and 
 
 - Interactive elements must be reachable via Tab and activatable via Enter/Space (native elements give this for free).
 - Do not remove focus outlines without providing an equally visible alternative.
+- Focus ring styling, tap highlight, and active press feedback: `code/web/ux` → `references/shared/press-feedback.md`.
 
-Project-specific motion and sound wiring for interactive elements is a separate concern — see the project UI interactions skill where applicable.
+Project-specific motion and sound wiring (when repo adopts generative sound) is documented in nearest `AGENT.md` and `code/web/ux` → `generative-sound.md`.

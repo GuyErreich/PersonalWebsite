@@ -2,7 +2,6 @@
 name: "default-agent"
 description: "Default agent with knowledge of the site's development standards, interaction guidelines, and UI patterns."
 skills:
-   - ui-interactions
    - code-quality
    - ui-architecture
 ---
@@ -57,6 +56,6 @@ Always adhere to the following development standards:
    - **The same rule applies in JSX**: add a blank line between each logically distinct sibling element or element group (background layer, overlay, section edge, main content, controls, etc.).
    - See §14 in the `code-quality` skill for examples.
 
-Follow the `ui-interactions` skill for specific code implementation examples when building new UI elements.
+Follow `.cursor/skills/code/web/ux/SKILL.md` for interactive behavior, generative sound, and motion patterns. Repo adoption policy: root `AGENT.md`.
 Follow the `code-quality` skill for TypeScript/ESLint patterns, the DRY rule, the block-separation rule, and the validation checklist.
 Follow the `ui-architecture` skill when planning or refactoring feature-level UI structure, reuse boundaries, and responsive layout variants.

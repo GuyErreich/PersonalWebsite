@@ -75,7 +75,7 @@ Check every modified file for:
 
 ## Phase 4 — UI Interactions
 
-> Delegates interaction wiring to the `ui-interactions` skill. Load it if any issue is found here.
+> Delegates interaction wiring to `code/web/ux`. Load it if any issue is found here.
 
 Every interactive element **must** have all of these. Missing any one is a defect:
 
@@ -165,6 +165,6 @@ After all phases, provide a one-line verdict:
 
 ## Notes
 
-- This skill intentionally **delegates** to existing skills (`code-quality`, `performance`, `security`, `threejs`, `ui-architecture`, `ui-interactions`) rather than duplicating their content. Load the relevant skill when its phase surfaces issues.
+- This skill intentionally **delegates** to existing skills (`code-quality`, `performance`, `security`, `threejs`, `ui-architecture`, `code/web/ux`) rather than duplicating their content. Load the relevant skill when its phase surfaces issues.
 - The `pr-review` instructions handle the GitHub thread workflow (fetching, replying, resolving). This skill handles the **code inspection** step that precedes that workflow.
 - Known lint warnings in `IrisTransition.tsx` and `SectionEntranceOverlay.tsx` (fast-refresh) are acceptable — they are not errors.

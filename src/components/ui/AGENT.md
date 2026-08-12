@@ -25,5 +25,6 @@ Use this folder for shared UI primitives and feature-level UI composition.
 ## Skill Usage
 
 - Use `code/web/ui` when refactoring UI structure or deciding whether code belongs in shared UI primitives versus feature folders.
-- Use `project/ui-interactions` when changing buttons, links, hover states, click behavior, or motion/audio feedback.
+- Use `code/web/ux` when changing buttons, links, hover states, click behavior, motion, or audio feedback.
+- This repo adopts Framer motion + generative sound via `src/lib/sound/interactionSounds.ts`.
 - Use `code/foundations/engineering` for duplication and `code/languages/nodejs` for lint issues and tightening types while refactoring.

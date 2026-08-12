@@ -10,23 +10,25 @@ This is a React + TypeScript + Vite portfolio using Tailwind v4, Three.js (R3F),
 Deep conventions live in two places — read them rather than duplicating here:
 
 - **Project context and validate commands:** the `AGENT.md` chain. Start at the repository-root `AGENT.md`; when working in a folder with its own `AGENT.md`, follow it too (leaf → root).
-- **Engineering and domain rules:** the portable skill library under `.cursor/skills/code/**`, loaded by the glob rules in `.cursor/rules/code/**` and the always-applied engineering foundation.
+- **Engineering and domain rules:** the portable skill library under `.cursor/skills/foundations/**` and `.cursor/skills/code/**`, loaded by the matching rules in `.cursor/rules/foundations/**` / `.cursor/rules/code/**` and the always-applied foundations.
 
 ## Skill map
 
 | Area | Skill |
 |---|---|
+| Folder hierarchy | `foundations/hierarchy` (always applied) |
+| Agent library hierarchy | `ai-agent/hierarchy` |
 | Universal principles | `code/foundations/engineering` (always applied) |
 | TypeScript / JS | `code/languages/nodejs` |
 | Web UI structure & a11y | `code/web/ui` |
+| Web UX (motion, sound, overlays) | `code/web/ux` |
 | React | `code/web/libs/react` |
 | Three.js / R3F | `code/web/libs/threejs` |
 | Performance & security | `code/quality/performance`, `code/quality/security` |
-| Review & PR resolution | `code/review/reviewer`, `code/review/pr-resolver` |
-| Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop}` |
-| Project tactile UI | `project/ui-interactions` |
-| Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing` |
-| Skill/rule maintenance | `meta/improvement-protocol` |
+| Review & PR resolution | `code/review/reviewer` (staff bar + FE/BE/graphics/motion/TS lenses), `code/review/pr-resolver` |
+| Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop,pr-review-loop}` |
+| Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing`, `project/platform/deploy-secrets` |
+| Skill/rule maintenance | `~/.cursor/skills/ai-agent/improvement-protocol` |
 
 ## Behaviors
 

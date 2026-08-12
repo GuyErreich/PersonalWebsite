@@ -28,7 +28,7 @@ The base branch name (for example `dev` or `main`) is a project setting; read it
 
 ## PR tier — comment on the open PR
 
-When the user asks to review **the PR**, after the review completes load `references/pr-comments.md`: findings table in chat only; on GitHub post one review with inline comments per finding and a brief body (no table). If no open PR exists, report in chat only.
+When the user asks to review **the PR**, after the review completes load `references/pr-comments.md`: findings table in chat only; on GitHub post only when there is ≥1 finding (concise inline comments + one-sentence body). Clean passes and event-fallback notes stay in chat — do not post “Review passed” or status checklists on the PR. Always run `references/thoroughness-pass.md` before a clean verdict. If no open PR exists, report in chat only.
 
 ## Lockfile protocol (advisory)
 
@@ -36,7 +36,7 @@ If the repo ships a review-dedup helper (for example `scripts/review-lock.py`), 
 
 1. `check <tier>` — if it reports the tier already reviewed on the current tree, reply one line and stop, unless the user asked for a forced re-review.
 2. Run the phases on the tier scope.
-3. `record <tier> --verdict passed|failed` — record the outcome (failed if findings > 0 or lint/build fail).
+3. `record <tier> --verdict passed|failed` — record the outcome (failed if findings > 0 or Validate suite fails).
 4. After a commit with no further edits, the commit tier can inherit the change-tier verdict.
 
 This is advisory: never let the lockfile substitute for an actual review when the tree has changed, and never let its absence block work.

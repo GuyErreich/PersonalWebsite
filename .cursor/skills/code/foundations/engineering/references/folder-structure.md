@@ -2,6 +2,8 @@
 
 Organize by responsibility and feature, not by file type alone. The location of a file should tell the reader who owns it and whether it is shared.
 
+For **domain-agnostic** placement (nesting vs hoist, one axis per level, restructure when trees drift), load `foundations/hierarchy` first. This file keeps only the **code** application of those principles.
+
 ## Principles
 
 - **Shared vs feature-local is obvious from the path.** Reusable building blocks live in a shared/common boundary; feature-specific code lives under the feature.

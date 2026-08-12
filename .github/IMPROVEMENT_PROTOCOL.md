@@ -1,6 +1,6 @@
 # Improvement Protocol
 
-> **Canonical location:** [`.cursor/skills/meta/improvement-protocol/SKILL.md`](../.cursor/skills/meta/improvement-protocol/SKILL.md)
+> **Canonical location:** [`.cursor/skills/ai-agent/improvement-protocol/SKILL.md`](../.cursor/skills/ai-agent/improvement-protocol/SKILL.md)
 
 This document establishes a process for continuously improving skills, rules, prompts, and agent definitions.
 
@@ -10,8 +10,8 @@ Whenever a new improvement is discovered during development or code review, it *
 
 ## Target Files
 
-- `.cursor/rules/**/*.mdc` — ambient Cursor rules (`behaviors/`, `code/`, `project/`)
-- `.cursor/skills/**/SKILL.md` — deep domain workflows (`code/`, `project/`, `meta/`)
+- `.cursor/rules/**/*.mdc` — ambient Cursor rules (`behaviors/`, `code/`, `project/`, `foundations/`, `ai-agent/`)
+- `.cursor/skills/**/SKILL.md` — deep domain workflows (`code/`, `project/`, `foundations/`, `ai-agent/`)
 - `.github/copilot-instructions.md` — Copilot compatibility layer
 - `.github/workflows/` — CI only
 
@@ -49,6 +49,6 @@ The parallel session reads target files, drafts, implements, validates, and repo
 
 ## See Also
 
-- [`.cursor/skills/meta/improvement-protocol/SKILL.md`](../.cursor/skills/meta/improvement-protocol/SKILL.md) — full protocol
+- [`.cursor/skills/ai-agent/improvement-protocol/SKILL.md`](../.cursor/skills/ai-agent/improvement-protocol/SKILL.md) — full protocol
 - [`.cursor/rules/project/project-guidelines.mdc`](../.cursor/rules/project/project-guidelines.mdc) — always-on project context
-- [`.cursor/skills/`](../.cursor/skills/) — domain skills (`code/`, `project/`, `meta/`)
+- [`.cursor/skills/`](../.cursor/skills/) — domain skills (`code/`, `project/`, `foundations/`, `ai-agent/`)

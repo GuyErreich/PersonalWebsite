@@ -19,7 +19,7 @@ review (reviewer skill) → findings table
   → present triage: fix now | by design (keep) | defer
   → user approves which to fix
   → implement ONLY approved fixes (minimal, root-cause)
-  → validate (lint/build from AGENT.md)
+  → validate (AGENT.md Validate suite)
   → re-review
   → repeat until zero findings or user stops
 → offer to commit (never auto-commit)
@@ -30,7 +30,7 @@ review (reviewer skill) → findings table
 - **Not every finding must be fixed.** Some are intentional design — mark them "by design" and keep them, with a one-line rationale. The loop ends when the remaining findings are all accepted-by-design or fixed.
 - **Fix only what the user approved.** Minimal, root-cause changes; no drive-by refactors.
 - **No auto commit, no auto push.** When the loop ends clean, hand off to `code/ci/commit` only if the user asks to commit.
-- **Validate every iteration.** Run the project's lint and build (see the repo `AGENT.md`) before re-reviewing.
+- **Validate every iteration.** Run every command in the repo `AGENT.md` **Validate** section before re-reviewing.
 
 ## Triage table
 

@@ -22,5 +22,5 @@ Use this folder for DevOps-specific UI composition.
 ## Skill Usage
 
 - Use `code/web/ui` for common/desktop/mobile boundaries and extraction decisions.
-- Use `project/ui-interactions` when changing interactive project-card behavior or action controls.
+- Use `code/web/ux` when changing interactive project-card behavior or action controls (`src/lib/sound/interactionSounds.ts`).
 - Use `code/foundations/engineering` for duplication cleanup and `code/languages/nodejs` for typing and validation during structural refactors.

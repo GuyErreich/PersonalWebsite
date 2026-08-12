@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.12"
 # ///
-"""Review lockfile: fingerprint, check, and record reviewer tiers (change / commit / pr)."""
+"""Review lockfile: fingerprint, check, and record reviewer tiers."""
 
 from __future__ import annotations
 
@@ -15,7 +15,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 TIERS = frozenset({"change", "commit", "pr"})
-LOCK_PATH = Path(".cursor/review-lock.json")
+LOCK_PATH = Path(".review-loop/review-lock.json")
+LEGACY_LOCK_PATHS = (
+    Path(".cursor/review-lock.json"),
+    Path(".cursor/review-loop/review-lock.json"),
+)
 BASE_REFS = ("main", "master", "dev", "origin/main", "origin/master", "origin/dev")
 
 
@@ -89,7 +93,24 @@ def fingerprint_pr(root: Path) -> tuple[str, str, bool]:
 
 
 def lock_file(root: Path) -> Path:
-    return root / LOCK_PATH
+    """Return the lock path under ``.review-loop/``, migrating legacy if needed."""
+    dest = root / LOCK_PATH
+    if dest.is_file():
+        return dest
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return dest
+    for legacy in LEGACY_LOCK_PATHS:
+        src = root / legacy
+        if not src.is_file():
+            continue
+        try:
+            dest.write_bytes(src.read_bytes())
+        except OSError:
+            continue
+        break
+    return dest
 
 
 def load_lock(path: Path) -> dict:
@@ -124,10 +145,6 @@ def cmd_fingerprint(root: Path, tier: str, as_json: bool) -> int:
 
     if as_json:
         print(json.dumps(payload))
-    elif tier == "change":
-        print(payload.get("fingerprint", ""))
-    elif tier == "commit":
-        print(payload.get("fingerprint", ""))
     else:
         print(payload.get("fingerprint", ""))
     return 0
@@ -154,7 +171,9 @@ def tier_matches(root: Path, tier: str, entry: dict) -> bool:
         return entry.get("sha") == current.get("sha") and bool(current.get("sha"))
     if not current.get("has_diff"):
         return True
-    return entry.get("fingerprint") == current.get("fingerprint") and entry.get("base") == current.get("base")
+    same_fp = entry.get("fingerprint") == current.get("fingerprint")
+    same_base = entry.get("base") == current.get("base")
+    return bool(same_fp and same_base)
 
 
 def cmd_check(root: Path, tier: str) -> int:
