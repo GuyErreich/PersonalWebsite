@@ -13,12 +13,14 @@ interface GameDevProjectCardProps {
   tags?: string[];
   link?: string | null;
   detailsLink?: string;
+  statusBadge?: string | null;
   icon: ReactNode;
   index: number;
   compact?: boolean;
   contentSized?: boolean;
   openOnDoubleClick?: boolean;
   thumbnailUrl?: string;
+  skipRevealGate?: boolean;
 }
 
 export const GameDevProjectCard = ({
@@ -27,12 +29,14 @@ export const GameDevProjectCard = ({
   tags,
   link,
   detailsLink,
+  statusBadge,
   icon,
   index,
   compact = false,
   contentSized = false,
   openOnDoubleClick = false,
   thumbnailUrl,
+  skipRevealGate = false,
 }: GameDevProjectCardProps) => {
   const baseContainer =
     "group flex flex-col rounded-xl border border-white/10 bg-gray-800/90 backdrop-blur-sm";
@@ -47,12 +51,14 @@ export const GameDevProjectCard = ({
       tags={tags}
       link={link}
       detailsLink={detailsLink}
+      statusBadge={statusBadge}
       icon={icon}
       index={index}
       compact={compact}
       contentSized={contentSized}
       openOnDoubleClick={openOnDoubleClick}
       thumbnailUrl={thumbnailUrl}
+      skipRevealGate={skipRevealGate}
       theme={{
         containerClassName,
         iconShellClassName:

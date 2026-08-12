@@ -7,8 +7,9 @@
 import { motion, useInView } from "framer-motion";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useContext, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
+import { ComingSoonBadge } from "../badges/ComingSoonBadge";
 import { GitHubIcon } from "../icons/BrandIcons";
 import { SectionRevealContext } from "../sections/sectionRevealContext";
 
@@ -27,12 +28,14 @@ interface ProjectCardBaseProps {
   tags?: string[];
   link?: string | null;
   detailsLink?: string;
+  statusBadge?: string | null;
   icon: ReactNode;
   index: number;
   compact?: boolean;
   contentSized?: boolean;
   openOnDoubleClick?: boolean;
   thumbnailUrl?: string;
+  skipRevealGate?: boolean;
   theme: ProjectCardTheme;
 }
 
@@ -42,12 +45,14 @@ export const ProjectCardBase = ({
   tags,
   link,
   detailsLink,
+  statusBadge,
   icon,
   index,
   compact = false,
   contentSized = false,
   openOnDoubleClick = false,
   thumbnailUrl,
+  skipRevealGate = false,
   theme,
 }: ProjectCardBaseProps) => {
   const isRevealed = useContext(SectionRevealContext);
@@ -152,7 +157,12 @@ export const ProjectCardBase = ({
           </div>
         </div>
 
-        <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>{title}</h3>
+        <h3 className={`${theme.titleClassName} ${compact ? "text-sm" : "text-xl"}`}>
+          <span className="inline-flex flex-wrap items-center gap-2">
+            <span>{title}</span>
+            {statusBadge ? <ComingSoonBadge>{statusBadge}</ComingSoonBadge> : null}
+          </span>
+        </h3>
 
         <p
           className={`min-h-0 leading-relaxed text-gray-400 ${
@@ -183,9 +193,10 @@ export const ProjectCardBase = ({
   );
 
   const motionProps = {
-    initial: { opacity: 0, y: 16 },
-    animate: isRevealed && isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
-    transition: { duration: 0.3, delay: isRevealed ? 0.1 + index * 0.07 : 0 },
+    initial: skipRevealGate ? false : { opacity: 0, y: 16 },
+    animate:
+      skipRevealGate || (isRevealed && isInView) ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
+    transition: { duration: 0.3, delay: skipRevealGate ? 0 : isRevealed ? 0.1 + index * 0.07 : 0 },
   };
 
   return (

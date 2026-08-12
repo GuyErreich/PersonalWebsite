@@ -4,7 +4,11 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Search } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
+import { OptionDropdown } from "../../ui/common/controls/OptionDropdown";
+import { SearchInput } from "../../ui/common/controls/SearchInput";
+import { SortDropdown } from "../../ui/common/controls/SortDropdown";
+import { EXPLORER_ENTRY_TYPE_OPTIONS, EXPLORER_SORT_OPTIONS } from "./explorerOptions";
 import type { EntryTypeFilter, SortOption } from "./types";
 
 interface Props {
@@ -24,40 +28,30 @@ export const ExplorerToolbar = ({
   sortOption,
   setSortOption,
 }: Props) => (
-  <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-4">
-    <label className="relative md:col-span-2 lg:col-span-2">
-      <span className="sr-only">Search folders and media</span>
-      <Search className="pointer-events-none absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
-      <input
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search folders and media globally"
-        className="w-full rounded-md border border-gray-600 bg-gray-900/40 py-2 pl-8 pr-3 text-sm text-white"
-      />
-    </label>
+  <div className="mb-4 flex flex-wrap items-center gap-2">
+    <SearchInput
+      value={searchQuery}
+      onValueChange={setSearchQuery}
+      placeholder="Search folders and media"
+      className="relative min-w-0 flex-1"
+    />
 
-    <select
-      aria-label="Filter media explorer entries"
+    <OptionDropdown
       value={entryTypeFilter}
-      onChange={(e) => setEntryTypeFilter(e.target.value as EntryTypeFilter)}
-      className="rounded-md border border-gray-600 bg-gray-900/40 px-3 py-2 text-sm text-white"
-    >
-      <option value="all">Filter: All Entries</option>
-      <option value="folders">Filter: Folders</option>
-      <option value="image">Filter: Images</option>
-      <option value="video">Filter: Videos</option>
-    </select>
+      options={EXPLORER_ENTRY_TYPE_OPTIONS}
+      onChange={(value) => setEntryTypeFilter(value as EntryTypeFilter)}
+      label="Filter"
+      icon={SlidersHorizontal}
+      menuAriaLabel="Filter explorer entries"
+      activeButtonClassName="border-blue-500/50 bg-blue-500/15 text-blue-300"
+      activeOptionClassName="text-blue-300"
+      activeOptionIconClassName="text-blue-400"
+    />
 
-    <select
-      aria-label="Sort media explorer entries"
+    <SortDropdown
       value={sortOption}
-      onChange={(e) => setSortOption(e.target.value as SortOption)}
-      className="rounded-md border border-gray-600 bg-gray-900/40 px-3 py-2 text-sm text-white"
-    >
-      <option value="updated-desc">Sort: Recently Updated</option>
-      <option value="created-desc">Sort: Recently Created</option>
-      <option value="name-asc">Sort: Name A-Z</option>
-      <option value="size-desc">Sort: Largest Size</option>
-    </select>
+      options={EXPLORER_SORT_OPTIONS}
+      onChange={(value) => setSortOption(value as SortOption)}
+    />
   </div>
 );

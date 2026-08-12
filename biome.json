@@ -7,7 +7,15 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!dist", "!node_modules", "!public", "!**/*.css", "!supabase"]
+    "includes": [
+      "**",
+      "!dist",
+      "!node_modules",
+      "!public",
+      "!**/*.css",
+      "!supabase",
+      "!.cursor/review-loop"
+    ]
   },
   "formatter": {
     "enabled": true,

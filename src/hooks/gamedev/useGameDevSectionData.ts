@@ -6,22 +6,33 @@
 
 import { useEffect, useState } from "react";
 import { fallbackGameDevItems } from "../../components/ui/gamedev/common/data/items";
-import type { GameDevItem } from "../../components/ui/gamedev/common/data/types";
-import { buildGameDevSummary } from "../../lib/gamedev";
+import type { GameDevItem, GameDevVfxItem } from "../../components/ui/gamedev/common/data/types";
+import { resolveGameDevTeaserSummary, sortFeaturedGameDevItems } from "../../lib/gamedev";
+import { loadPublicVfxLibraryItems } from "../../lib/gamedev/vfxLibrary";
 import { supabase } from "../../lib/supabase";
 
 const withSummary = (items: GameDevItem[]): GameDevItem[] =>
   items.map((item) => ({
     ...item,
-    summary: item.summary ?? buildGameDevSummary(item.description),
+    description: item.description ?? "",
+    summary: resolveGameDevTeaserSummary(item),
   }));
+
+const isSupabaseNotConfiguredError = (error: unknown): boolean =>
+  error instanceof Error && error.message.includes("Supabase is not configured");
 
 export const useGameDevSectionData = () => {
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
+  const [featuredItems, setFeaturedItems] = useState<GameDevItem[]>([]);
+  const [vfxItems, setVfxItems] = useState<GameDevVfxItem[]>([]);
+  const [vfxError, setVfxError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isVfxLoading, setIsVfxLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
+
     void (async () => {
       try {
         const { data: showreelData, error: showreelError } = await supabase
@@ -30,31 +41,93 @@ export const useGameDevSectionData = () => {
           .eq("key", "showreel_url")
           .single();
 
+        if (!isMounted) {
+          return;
+        }
+
         if (!showreelError && showreelData) {
           setShowreelUrl(showreelData.value);
         }
 
         const { data: items, error: itemsError } = await supabase
-          .from("gamedev_items")
+          .from("gamedev_items_public")
           .select("*")
           .order("created_at", { ascending: false });
 
-        if (itemsError) {
-          setGalleryItems(withSummary(fallbackGameDevItems));
-        } else {
-          setGalleryItems(withSummary((items ?? []) as GameDevItem[]));
+        if (!isMounted) {
+          return;
         }
-      } catch {
-        setGalleryItems(withSummary(fallbackGameDevItems));
+
+        if (itemsError) {
+          const fallback = withSummary(fallbackGameDevItems);
+          setGalleryItems(fallback);
+          setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
+        } else {
+          const normalized = withSummary((items ?? []) as GameDevItem[]);
+          setGalleryItems(normalized);
+          setFeaturedItems(sortFeaturedGameDevItems(normalized.filter((item) => item.is_featured)));
+        }
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (isSupabaseNotConfiguredError(error)) {
+          const fallback = withSummary(fallbackGameDevItems);
+          setGalleryItems(fallback);
+          setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
+        }
       } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     })();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    void (async () => {
+      try {
+        const items = await loadPublicVfxLibraryItems();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setVfxItems(items as GameDevVfxItem[]);
+        setVfxError(null);
+      } catch {
+        if (!isMounted) {
+          return;
+        }
+
+        setVfxItems([]);
+        setVfxError("Visual effects could not be loaded.");
+      } finally {
+        if (isMounted) {
+          setIsVfxLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return {
-    galleryItems,
-    isLoading,
     showreelUrl,
+    galleryItems,
+    featuredItems,
+    vfxItems,
+    vfxError,
+    isLoading,
+    isVfxLoading,
   };
 };

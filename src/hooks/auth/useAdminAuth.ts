@@ -5,7 +5,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router";
 import { hasAdminRoleFromMetadata } from "../../lib/auth/roles";
 import { supabase } from "../../lib/supabase";
 
@@ -65,7 +65,13 @@ export const useAdminAuth = (): UseAdminAuthResult => {
       }
 
       if (!hasAdminRoleFromMetadata(session.user.app_metadata)) {
-        navigate("/");
+        void (async () => {
+          const { error: signOutError } = await supabase.auth.signOut();
+          if (signOutError) {
+            console.error(signOutError.message);
+          }
+          navigate("/");
+        })();
       }
     });
 

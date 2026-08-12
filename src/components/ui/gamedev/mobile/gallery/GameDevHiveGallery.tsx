@@ -14,11 +14,17 @@ import {
 import { Gamepad2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Link } from "react-router-dom";
-import { buildGameDevProjectPath, buildGameDevSummary } from "../../../../../lib/gamedev";
+import { Link } from "react-router";
+import {
+  buildGameDevProjectPath,
+  isGameDevComingSoon,
+  resolveGameDevTeaserSummary,
+  resolveGameDevTeaserThumbnail,
+} from "../../../../../lib/gamedev";
 import { useScrollContainer } from "../../../../../lib/ScrollContainerContext";
 import { playClickSound, playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../../../../../types/handles";
+import { ComingSoonBadge } from "../../../common/badges/ComingSoonBadge";
 import type { GameDevIconMap, GameDevItem } from "../../common/data/types";
 
 const MotionLink = motion(Link);
@@ -338,6 +344,7 @@ export const GameDevHiveGallery = ({
   }, [clusterX, clusterY]);
 
   const activeItem = items[previewIndex];
+  const activeItemComingSoon = activeItem ? isGameDevComingSoon(activeItem) : false;
   const ActiveProjectIcon = (
     activeItem?.icon_name ? (iconMap[activeItem.icon_name] ?? Gamepad2) : Gamepad2
   ) as React.ComponentType<{ className?: string }>;
@@ -578,7 +585,8 @@ export const GameDevHiveGallery = ({
               const showLabel =
                 ringDistance <
                 gridConfig.labelThreshold + (isSpreadMode ? gridConfig.spreadLabelBoost : 0);
-              const showThumbnail = !!item.thumbnail_url;
+              const teaserThumbnail = resolveGameDevTeaserThumbnail(item);
+              const showThumbnail = !!teaserThumbnail;
               const ProjectIcon = (
                 item.icon_name ? (iconMap[item.icon_name] ?? Gamepad2) : Gamepad2
               ) as React.ComponentType<{ className?: string }>;
@@ -611,7 +619,7 @@ export const GameDevHiveGallery = ({
                   {showThumbnail ? (
                     <div
                       className="gamedev-hive-node-thumb"
-                      style={{ backgroundImage: `url(${item.thumbnail_url})` }}
+                      style={{ backgroundImage: `url(${teaserThumbnail})` }}
                     />
                   ) : (
                     <div className="gamedev-hive-node-icon">
@@ -659,10 +667,15 @@ export const GameDevHiveGallery = ({
                       <p className="gamedev-hive-focus-index">
                         {focusIndex + 1} / {items.length}
                       </p>
-                      <h4 className="gamedev-hive-focus-title">{activeItem.title}</h4>
+                      <h4 className="gamedev-hive-focus-title">
+                        <span className="inline-flex flex-wrap items-center gap-2">
+                          <span>{activeItem.title}</span>
+                          {activeItemComingSoon ? <ComingSoonBadge /> : null}
+                        </span>
+                      </h4>
 
                       <p className="gamedev-hive-focus-description">
-                        {activeItem.summary ?? buildGameDevSummary(activeItem.description, 210)}
+                        {resolveGameDevTeaserSummary(activeItem, 210)}
                       </p>
 
                       {activeItem.tags?.length ? (
@@ -690,9 +703,13 @@ export const GameDevHiveGallery = ({
           whileTap={{ scale: 0.96 }}
           onMouseEnter={playHoverSound}
           onClick={playClickSound}
-          className="gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md border border-cyan-400/35 bg-cyan-500/15 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-cyan-100 transition-colors hover:border-cyan-300/60 hover:bg-cyan-400/20"
+          className={`gamedev-hive-open-link inline-flex w-full items-center justify-center rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] transition-colors${
+            activeItemComingSoon
+              ? " border border-amber-400/35 bg-amber-500/15 text-amber-100 hover:border-amber-300/60 hover:bg-amber-400/20"
+              : " border border-cyan-400/35 bg-cyan-500/15 text-cyan-100 hover:border-cyan-300/60 hover:bg-cyan-400/20"
+          }`}
         >
-          Open Project Page
+          {activeItemComingSoon ? "View Teaser" : "Open Project Page"}
         </MotionLink>
 
         <div className="gamedev-hive-meta-row">

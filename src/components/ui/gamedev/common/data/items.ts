@@ -13,6 +13,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A runtime dungeon generator using BSP trees and cellular automata, producing unique layouts with guaranteed connectivity.",
     media_url: "",
+    is_featured: true,
     icon_name: "cpu",
     github_url: "https://github.com",
     tags: ["C#", "Unity", "Procedural Gen", "Algorithms"],
@@ -23,6 +24,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A networked first-person shooter prototype built with authoritative server rollback and client-side prediction for smooth gameplay.",
     media_url: "",
+    is_featured: true,
     icon_name: "gamepad",
     github_url: "https://github.com",
     tags: ["Unity", "Netcode", "C#", "FPS"],
@@ -33,6 +35,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A 2D rigid-body physics engine from scratch featuring AABB collision detection, impulse resolution, and friction simulation.",
     media_url: "",
+    is_featured: true,
     icon_name: "rocket",
     github_url: "https://github.com",
     tags: ["C++", "Physics", "Math", "2D"],
@@ -43,6 +46,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A library of HLSL shaders and Unity Shader Graph assets — dissolve, hologram, water ripple, and stylised post-processing effects.",
     media_url: "",
+    is_featured: true,
     icon_name: "monitor",
     github_url: "https://github.com",
     tags: ["HLSL", "Unity", "Shader Graph", "VFX"],
@@ -53,6 +57,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A composable behaviour tree framework for NPC AI with support for parallel nodes, decorators, and runtime debugging visualisation.",
     media_url: "",
+    is_featured: true,
     icon_name: "cpu",
     github_url: "https://github.com",
     tags: ["C#", "Unity", "AI", "Behaviour Trees"],
@@ -63,6 +68,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A data-driven inventory and crafting system with drag-and-drop UI, stackable items, and recipe resolution via scriptable objects.",
     media_url: "",
+    is_featured: true,
     icon_name: "wrench",
     github_url: "https://github.com",
     tags: ["C#", "Unity", "UI", "Data-Driven"],
@@ -73,6 +79,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A top-down RPG demo featuring dialogue trees, quests, turn-based combat, and a tiled world built with Tiled and Godot.",
     media_url: "",
+    is_featured: true,
     icon_name: "globe",
     github_url: "https://github.com",
     tags: ["Godot", "GDScript", "RPG", "Tiled"],
@@ -83,6 +90,7 @@ export const fallbackGameDevItems: GameDevItem[] = [
     description:
       "A mobile endless runner with procedurally spawned obstacles, swipe controls, leaderboard integration, and adaptive difficulty.",
     media_url: "",
+    is_featured: true,
     icon_name: "smartphone",
     github_url: "https://github.com",
     tags: ["Unity", "C#", "Mobile", "Procedural Gen"],

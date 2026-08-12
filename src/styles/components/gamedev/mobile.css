@@ -63,6 +63,10 @@
     display: none;
   }
 
+  .gamedev-mobile-short-panel--clip {
+    @apply overflow-hidden;
+  }
+
   /* Hive shell always participates in flex layout — fills gamedev-panel-clip (flex column) */
   .gamedev-hive-shell {
     --gamedev-hive-stage-min-h: 18rem;

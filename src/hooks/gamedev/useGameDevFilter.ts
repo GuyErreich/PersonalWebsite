@@ -49,8 +49,9 @@ export const useGameDevFilter = (items: GameDevItem[]): UseGameDevFilterResult =
     const filtered = items.filter((item) => {
       const matchesSearch =
         needle.length === 0 ||
-        item.title.toLowerCase().includes(needle) ||
-        item.description.toLowerCase().includes(needle) ||
+        (item.title ?? "").toLowerCase().includes(needle) ||
+        (item.description ?? "").toLowerCase().includes(needle) ||
+        (item.summary ?? "").toLowerCase().includes(needle) ||
         (item.tags ?? []).some((tag) => tag.toLowerCase().includes(needle));
 
       const matchesStacks =

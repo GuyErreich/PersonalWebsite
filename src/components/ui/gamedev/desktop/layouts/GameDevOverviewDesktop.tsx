@@ -7,50 +7,78 @@
 import { ArrowRight } from "lucide-react";
 import type { GameDevOverviewLayoutProps } from "../../common/data/types";
 import { GameDevGallery } from "../../common/gallery/GameDevGallery";
+import { GameDevOverviewTabs } from "../../common/panels/GameDevOverviewTabs";
 import { GameDevPanelButton } from "../../common/panels/GameDevPanelButton";
 import { GameDevPanelShell } from "../../common/panels/GameDevPanelShell";
 import { GameDevShowreelPanel } from "../../common/panels/GameDevShowreelPanel";
+import { GameDevVfxShowcasePanel } from "../../common/panels/GameDevVfxShowcasePanel";
+
+const DESKTOP_OVERVIEW_TAB_CLASS_NAMES = {
+  root: "gamedev-overview-desktop-tabs-stack",
+  tabList: "gamedev-desktop-overview-tabs",
+  tab: "gamedev-desktop-overview-tab",
+  tabActive: "gamedev-desktop-overview-tab--active",
+  content: "gamedev-desktop-overview-content",
+  panel: "h-full",
+} as const;
 
 export const GameDevOverviewDesktop = ({
   showreelUrl,
-  galleryItems,
+  featuredItems,
+  vfxItems,
+  vfxError,
   isLoading,
+  isVfxLoading,
   iconMap,
   onViewAll,
 }: GameDevOverviewLayoutProps) => {
   return (
-    <div className="gamedev-overview-grid">
-      <GameDevShowreelPanel showreelUrl={showreelUrl} />
-
-      <GameDevPanelShell
-        eyebrow="Featured Gallery"
-        title="Selected Work"
-        clipScroll
-        description="A curated set of projects and prototypes highlighting gameplay, technical systems, and visual polish."
-        rightAction={
-          galleryItems.length > 0 ? (
-            <p className="gamedev-panel-meta">{galleryItems.length} items</p>
-          ) : undefined
-        }
-        footer={
-          <GameDevPanelButton
-            variant="primary"
-            hoverX={3}
-            onClick={onViewAll}
-            icon={<ArrowRight className="h-4 w-4" />}
+    <GameDevOverviewTabs
+      idScope="desktop"
+      classNames={DESKTOP_OVERVIEW_TAB_CLASS_NAMES}
+      tabIconClassName="h-4 w-4"
+      showreel={<GameDevShowreelPanel showreelUrl={showreelUrl} />}
+      projects={
+        <div className="gamedev-panel-frame">
+          <GameDevPanelShell
+            eyebrow="Featured Gallery"
+            title="Selected Work"
+            clipScroll
+            rightAction={
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                {featuredItems.length > 0 ? (
+                  <p className="gamedev-panel-meta">{featuredItems.length} items</p>
+                ) : null}
+                <GameDevPanelButton
+                  variant="primary"
+                  hoverX={3}
+                  onClick={onViewAll}
+                  icon={<ArrowRight className="h-4 w-4" />}
+                >
+                  View All Projects
+                </GameDevPanelButton>
+              </div>
+            }
           >
-            View All Projects
-          </GameDevPanelButton>
-        }
-      >
-        <GameDevGallery
-          items={galleryItems}
-          iconMap={iconMap}
-          isLoading={isLoading}
-          compact
-          maxCompactItems={3}
-        />
-      </GameDevPanelShell>
-    </div>
+            <GameDevGallery
+              items={featuredItems}
+              iconMap={iconMap}
+              isLoading={isLoading}
+              denseCards
+              emptyMessage="No featured projects yet."
+            />
+          </GameDevPanelShell>
+        </div>
+      }
+      vfx={
+        <div className="gamedev-vfx-showcase">
+          <GameDevVfxShowcasePanel
+            vfxItems={vfxItems}
+            isLoading={isVfxLoading}
+            vfxError={vfxError}
+          />
+        </div>
+      }
+    />
   );
 };

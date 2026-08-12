@@ -16,30 +16,34 @@ import type { MediaLibraryItem } from "../../../lib/storage/mediaLibrary";
 interface Props {
   item: MediaLibraryItem;
   onClose: () => void;
+  overlayClassName?: string;
 }
 
-export const MediaPreviewModal = ({ item, onClose }: Props) => (
-  <MediaPreviewModalContent item={item} onClose={onClose} />
+export const MediaPreviewModal = ({ item, onClose, overlayClassName }: Props) => (
+  <MediaPreviewModalContent item={item} onClose={onClose} overlayClassName={overlayClassName} />
 );
 
-const MediaPreviewModalContent = ({ item, onClose }: Props) => {
+const MediaPreviewModalContent = ({ item, onClose, overlayClassName }: Props) => {
   const titleId = useId();
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
+      // Capture + stopImmediatePropagation so parent document Escape
+      // handlers (e.g. MediaLibraryPickerModal) do not also dismiss.
+      event.stopImmediatePropagation();
       playMenuCloseSound();
       onClose();
     };
 
-    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown, true);
 
-    return () => document.removeEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [onClose]);
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className={overlayClassName ?? "fixed inset-0 z-50 flex items-center justify-center p-4"}
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
