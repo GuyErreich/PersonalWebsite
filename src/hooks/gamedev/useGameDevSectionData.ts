@@ -57,7 +57,11 @@ export const useGameDevSectionData = () => {
           return;
         }
 
-        if (!itemsError) {
+        if (itemsError) {
+          const fallback = withSummary(fallbackGameDevItems);
+          setGalleryItems(fallback);
+          setFeaturedItems(sortFeaturedGameDevItems(fallback.filter((item) => item.is_featured)));
+        } else {
           const normalized = withSummary((items ?? []) as GameDevItem[]);
           setGalleryItems(normalized);
           setFeaturedItems(sortFeaturedGameDevItems(normalized.filter((item) => item.is_featured)));

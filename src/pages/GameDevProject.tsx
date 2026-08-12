@@ -27,6 +27,8 @@ interface ProjectState {
   linkedVfx: GameDevVfxItem[];
   isLoading: boolean;
   error: string | null;
+  /** Link/VFX fetch failed after the project loaded — not the same as "no linked VFX". */
+  vfxError: string | null;
 }
 
 const MotionLink = motion(Link);
@@ -38,6 +40,7 @@ export const GameDevProject = () => {
     linkedVfx: [],
     isLoading: true,
     error: null,
+    vfxError: null,
   });
 
   useEffect(() => {
@@ -57,6 +60,7 @@ export const GameDevProject = () => {
         linkedVfx: [],
         isLoading: false,
         error: "Missing project id.",
+        vfxError: null,
       });
       return () => {
         isCurrent = false;
@@ -69,6 +73,7 @@ export const GameDevProject = () => {
         linkedVfx: [],
         isLoading: true,
         error: null,
+        vfxError: null,
       });
 
       try {
@@ -86,6 +91,7 @@ export const GameDevProject = () => {
               linkedVfx: [],
               isLoading: false,
               error: "Project not found.",
+              vfxError: null,
             });
             return;
           }
@@ -95,6 +101,7 @@ export const GameDevProject = () => {
             linkedVfx: [],
             isLoading: false,
             error: null,
+            vfxError: null,
           });
           return;
         }
@@ -110,6 +117,7 @@ export const GameDevProject = () => {
             linkedVfx: [],
             isLoading: false,
             error: null,
+            vfxError: null,
           });
           return;
         }
@@ -128,6 +136,7 @@ export const GameDevProject = () => {
             linkedVfx: [],
             isLoading: false,
             error: null,
+            vfxError: "Visual effects could not be loaded.",
           });
           return;
         }
@@ -145,6 +154,7 @@ export const GameDevProject = () => {
               linkedVfx: [],
               isLoading: false,
               error: null,
+              vfxError: "Visual effects could not be loaded.",
             });
             return;
           }
@@ -165,6 +175,7 @@ export const GameDevProject = () => {
           linkedVfx,
           isLoading: false,
           error: null,
+          vfxError: null,
         });
       } catch {
         const fallback = fallbackGameDevItems.find((item) => item.id === id) ?? null;
@@ -175,6 +186,7 @@ export const GameDevProject = () => {
             linkedVfx: [],
             isLoading: false,
             error: null,
+            vfxError: null,
           });
           return;
         }
@@ -184,6 +196,7 @@ export const GameDevProject = () => {
           linkedVfx: [],
           isLoading: false,
           error: "Project not found.",
+          vfxError: null,
         });
       }
     })();
@@ -242,7 +255,8 @@ export const GameDevProject = () => {
   const comingSoon = isGameDevComingSoon(project);
   const summary = resolveGameDevTeaserSummary(project, 240);
   const headerMediaUrl = project.header_media_url?.trim() || project.media_url?.trim() || null;
-  const showVfxSection = project.show_vfx_section !== false && state.linkedVfx.length > 0;
+  const showVfxSection = project.show_vfx_section !== false;
+  const hasLinkedVfx = state.linkedVfx.length > 0;
 
   const projectNav = (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -390,7 +404,20 @@ export const GameDevProject = () => {
               </aside>
             </section>
 
-            {showVfxSection ? <GameDevProjectVfxSection vfxItems={state.linkedVfx} /> : null}
+            {showVfxSection && state.vfxError ? (
+              <section
+                className="mt-10 mb-10 rounded-2xl border border-amber-400/25 bg-amber-500/10 p-5 md:p-6"
+                role="status"
+              >
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-200/90">
+                  Visual Effects
+                </p>
+                <p className="mt-2 text-sm leading-relaxed text-amber-50/90">{state.vfxError}</p>
+              </section>
+            ) : null}
+            {showVfxSection && !state.vfxError && hasLinkedVfx ? (
+              <GameDevProjectVfxSection vfxItems={state.linkedVfx} />
+            ) : null}
           </>
         )}
       </main>

@@ -31,6 +31,7 @@ import {
 import {
   buildProvisionalVfxFromMediaLibraryItem,
   getVfxByMediaUrl,
+  isProvisionalVfxId,
   markVfxShownInLibrary,
   materializeProvisionalLinkedVfx,
   normalizeLinkedVfxIds,
@@ -105,14 +106,55 @@ const MAX_STACK_LENGTH = 40;
 /**
  * Merge a server fetch into the in-modal catalog without dropping rows added
  * via in-modal VFX create while the fetch was in flight.
+ * When a provisional row loses to a persisted row with the same media_url,
+ * return remaps so callers can rewrite linkedVfxIds (avoids false unresolved).
  */
 const mergeFetchedAvailableVfx = (
   prev: AdminGameDevVfx[],
   fetched: AdminGameDevVfx[],
-): AdminGameDevVfx[] => {
+): { items: AdminGameDevVfx[]; provisionalToCanonical: Map<string, string> } => {
   const fetchedIds = new Set(fetched.map((item) => item.id));
   const localOnly = prev.filter((item) => !fetchedIds.has(item.id));
-  return dedupeGameDevVfxByMediaUrl([...fetched, ...localOnly]);
+  const items = dedupeGameDevVfxByMediaUrl([...fetched, ...localOnly]);
+
+  const canonicalByMedia = new Map(items.map((item) => [item.media_url.trim(), item.id]));
+  const provisionalToCanonical = new Map<string, string>();
+
+  for (const item of prev) {
+    if (!isProvisionalVfxId(item.id)) {
+      continue;
+    }
+
+    const canonicalId = canonicalByMedia.get(item.media_url.trim());
+    if (canonicalId && canonicalId !== item.id) {
+      provisionalToCanonical.set(item.id, canonicalId);
+    }
+  }
+
+  return { items, provisionalToCanonical };
+};
+
+const remapLinkedVfxIds = (
+  ids: string[],
+  provisionalToCanonical: Map<string, string>,
+): string[] => {
+  if (provisionalToCanonical.size === 0) {
+    return ids;
+  }
+
+  const remapped: string[] = [];
+  const seen = new Set<string>();
+
+  for (const id of ids) {
+    const nextId = provisionalToCanonical.get(id) ?? id;
+    if (seen.has(nextId)) {
+      continue;
+    }
+    seen.add(nextId);
+    remapped.push(nextId);
+  }
+
+  return remapped;
 };
 
 type BodyEditorTab = "write" | "preview";
@@ -444,7 +486,13 @@ export const ItemFormModal = ({
         }));
         const dedupedVfx = dedupeGameDevVfxByMediaUrl(rawVfx);
 
-        setAvailableVfx((prev) => mergeFetchedAvailableVfx(prev, dedupedVfx));
+        setAvailableVfx((prev) => {
+          const { items, provisionalToCanonical } = mergeFetchedAvailableVfx(prev, dedupedVfx);
+          if (provisionalToCanonical.size > 0) {
+            setLinkedVfxIds((ids) => remapLinkedVfxIds(ids, provisionalToCanonical));
+          }
+          return items;
+        });
 
         const orderedLinks = [...(linkData ?? [])].sort((left, right) => {
           const leftOrder = left.sort_order ?? Number.MAX_SAFE_INTEGER;
@@ -537,7 +585,13 @@ export const ItemFormModal = ({
           tags: item.tags ?? [],
         })),
       );
-      setAvailableVfx((prev) => mergeFetchedAvailableVfx(prev, fetched));
+      setAvailableVfx((prev) => {
+        const { items, provisionalToCanonical } = mergeFetchedAvailableVfx(prev, fetched);
+        if (provisionalToCanonical.size > 0) {
+          setLinkedVfxIds((ids) => remapLinkedVfxIds(ids, provisionalToCanonical));
+        }
+        return items;
+      });
     })();
 
     return () => {
