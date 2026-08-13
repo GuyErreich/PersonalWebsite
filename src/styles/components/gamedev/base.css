@@ -125,6 +125,16 @@
     @apply min-h-0 flex-1;
   }
 
+  /* Overview tab content — shared clip for desktop and mobile-short tab panels.
+   * `relative` anchors absolutely stacked panels during the crossfade. */
+  .gamedev-overview-tab-content {
+    @apply relative min-h-0 flex-1 overflow-hidden;
+  }
+
+  .gamedev-overview-tab-panel {
+    @apply absolute inset-0 w-full;
+  }
+
   /* Panel primitives */
 
   .gamedev-panel-frame {

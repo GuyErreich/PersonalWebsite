@@ -90,6 +90,7 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
     showreelTabId,
     switchTab,
     tabPulse,
+    visitedTabs,
     vfxPanelId,
     vfxTabId,
   };

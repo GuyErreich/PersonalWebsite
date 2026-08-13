@@ -18,7 +18,7 @@ const DESKTOP_OVERVIEW_TAB_CLASS_NAMES = {
   tabList: "gamedev-desktop-overview-tabs",
   tab: "gamedev-desktop-overview-tab",
   tabActive: "gamedev-desktop-overview-tab--active",
-  content: "gamedev-desktop-overview-content",
+  content: "gamedev-overview-tab-content",
   panel: "h-full",
 } as const;
 
@@ -37,8 +37,10 @@ export const GameDevOverviewDesktop = ({
       idScope="desktop"
       classNames={DESKTOP_OVERVIEW_TAB_CLASS_NAMES}
       tabIconClassName="h-4 w-4"
-      showreel={<GameDevShowreelPanel showreelUrl={showreelUrl} />}
-      projects={
+      showreel={(isActive) => (
+        <GameDevShowreelPanel showreelUrl={showreelUrl} isActive={isActive} />
+      )}
+      projects={() => (
         <div className="gamedev-panel-frame">
           <GameDevPanelShell
             eyebrow="Featured Gallery"
@@ -69,16 +71,17 @@ export const GameDevOverviewDesktop = ({
             />
           </GameDevPanelShell>
         </div>
-      }
-      vfx={
+      )}
+      vfx={(isActive) => (
         <div className="gamedev-vfx-showcase">
           <GameDevVfxShowcasePanel
             vfxItems={vfxItems}
             isLoading={isVfxLoading}
             vfxError={vfxError}
+            isActive={isActive}
           />
         </div>
-      }
+      )}
     />
   );
 };

@@ -17,7 +17,7 @@ export interface GameDevVfxRenderable {
 
 interface GameDevVfxMediaProps {
   item: GameDevVfxRenderable;
-  /** Hero shows full playback; thumb only autoplays video when `isActive`. */
+  /** Hero / selected thumb autoplay while `isActive`; inactive surfaces stay paused. */
   surface: "hero" | "thumb";
   isActive?: boolean;
   className?: string;
@@ -27,10 +27,11 @@ interface GameDevVfxMediaProps {
 
 const shouldAutoplayVideo = (
   item: GameDevVfxRenderable,
-  surface: GameDevVfxMediaProps["surface"],
+  _surface: GameDevVfxMediaProps["surface"],
   isActive: boolean,
   reduceMotion: boolean,
-): boolean => !reduceMotion && item.media_type === "video" && (surface === "hero" || isActive);
+): boolean => !reduceMotion && item.media_type === "video" && isActive;
+
 
 interface VfxLoopVideoProps {
   item: GameDevVfxRenderable;
@@ -97,7 +98,7 @@ const VfxLoopVideo = ({
 export const GameDevVfxMedia = ({
   item,
   surface,
-  isActive = false,
+  isActive = true,
   className = "h-full w-full",
   objectFit = "cover",
   imgLoading = "lazy",

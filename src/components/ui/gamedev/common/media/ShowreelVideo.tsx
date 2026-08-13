@@ -29,6 +29,8 @@ import type { TimeoutHandle } from "../../../../../types/handles";
 interface ShowreelVideoProps {
   url: string | null;
   className?: string;
+  /** When false, pause playback (used while the overview tab is hidden but still mounted). */
+  isActive?: boolean;
 }
 
 const TITLE_LETTERS = "SHOWREEL".split("");
@@ -56,7 +58,7 @@ const formatTime = (s: number) => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
+export const ShowreelVideo = ({ url, className = "", isActive = true }: ShowreelVideoProps) => {
   const hasCookie = !!Cookies.get("hero_visited");
   const volumePopupId = useId();
 
@@ -117,6 +119,28 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       volumeAnimatorRef.current = null;
     };
   }, []);
+
+  // Pause while the overview tab is hidden but still mounted; resume only if we paused it.
+  const pausedByTabHideRef = useRef(false);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isActive) {
+      if (!video.paused) {
+        pausedByTabHideRef.current = true;
+        video.pause();
+      }
+      return;
+    }
+
+    if (pausedByTabHideRef.current) {
+      pausedByTabHideRef.current = false;
+      void video.play().catch(() => {
+        // Browser autoplay policy may block until user gesture.
+      });
+    }
+  }, [isActive]);
 
   // Load default volume from DB
   useEffect(() => {

@@ -27,10 +27,6 @@
     @apply bg-cyan-500/20 text-cyan-200 shadow-sm;
   }
 
-  .gamedev-desktop-overview-content {
-    @apply min-h-0 flex-1 overflow-hidden;
-  }
-
   .gamedev-gallery-dense-grid {
     @apply md:min-h-0 md:flex-1;
   }

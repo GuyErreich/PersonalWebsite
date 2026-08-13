@@ -4,13 +4,16 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { AnimatePresence, motion } from "framer-motion";
-import { Film, Layers, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { Film, Layers, Sparkles, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import { useGameDevOverviewTabs } from "../hooks/useGameDevOverviewTabs";
 import { getOverviewSlideMotion } from "./overviewSlideVariants";
-import type { GameDevOverviewTab } from "./overviewTabPulse";
+import {
+  GAMEDEV_OVERVIEW_TAB_ORDER,
+  type GameDevOverviewTab,
+} from "./overviewTabPulse";
 
 export interface GameDevOverviewTabsClassNames {
   root: string;
@@ -23,15 +26,23 @@ export interface GameDevOverviewTabsClassNames {
   panelByTab?: Partial<Record<GameDevOverviewTab, string>>;
 }
 
+export type GameDevOverviewTabRender = (isActive: boolean) => ReactNode;
+
 export interface GameDevOverviewTabsProps {
   idScope: string;
   classNames: GameDevOverviewTabsClassNames;
   /** Optional icon size class applied to each tab icon (e.g. `h-4 w-4`). */
   tabIconClassName: string;
-  showreel: ReactNode;
-  projects: ReactNode;
-  vfx: ReactNode;
+  showreel: GameDevOverviewTabRender;
+  projects: GameDevOverviewTabRender;
+  vfx: GameDevOverviewTabRender;
 }
+
+const TAB_META: Record<GameDevOverviewTab, { label: string; Icon: LucideIcon }> = {
+  showreel: { label: "Showreel", Icon: Film },
+  projects: { label: "Selected Work", Icon: Layers },
+  vfx: { label: "VFX", Icon: Sparkles },
+};
 
 export const GameDevOverviewTabs = ({
   idScope,
@@ -52,19 +63,38 @@ export const GameDevOverviewTabs = ({
     showreelTabId,
     switchTab,
     tabPulse,
+    visitedTabs,
     vfxPanelId,
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope });
 
-  const { variants: activeSlideVariants, transition: slideTransition } =
-    getOverviewSlideMotion(reduceMotion);
+  const { variants: activeSlideVariants } = getOverviewSlideMotion(reduceMotion);
+
+  const tabIds: Record<GameDevOverviewTab, string> = {
+    showreel: showreelTabId,
+    projects: projectsTabId,
+    vfx: vfxTabId,
+  };
+
+  const panelIds: Record<GameDevOverviewTab, string> = {
+    showreel: showreelPanelId,
+    projects: projectsPanelId,
+    vfx: vfxPanelId,
+  };
+
+  const panelRender: Record<GameDevOverviewTab, GameDevOverviewTabRender> = {
+    showreel,
+    projects,
+    vfx,
+  };
 
   const tabClass = (tab: GameDevOverviewTab) =>
     `${classNames.tab}${activeTab === tab ? ` ${classNames.tabActive}` : ""}`;
 
   const panelClass = (tab: GameDevOverviewTab) => {
     const override = classNames.panelByTab?.[tab];
-    return override ? `${classNames.panel} ${override}` : classNames.panel;
+    const base = override ? `${classNames.panel} ${override}` : classNames.panel;
+    return `${base} gamedev-overview-tab-panel`;
   };
 
   return (
@@ -75,113 +105,53 @@ export const GameDevOverviewTabs = ({
         aria-label="GameDev overview"
         onKeyDown={handleTabListKeyDown}
       >
-        <motion.button
-          id={showreelTabId}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "showreel"}
-          aria-controls={showreelPanelId}
-          tabIndex={activeTab === "showreel" ? 0 : -1}
-          {...tabPulse("showreel")}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => switchTab("showreel")}
-          className={tabClass("showreel")}
-        >
-          <Film className={tabIconClassName} />
-          Showreel
-        </motion.button>
-
-        <motion.button
-          id={projectsTabId}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "projects"}
-          aria-controls={projectsPanelId}
-          tabIndex={activeTab === "projects" ? 0 : -1}
-          {...tabPulse("projects")}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => switchTab("projects")}
-          className={tabClass("projects")}
-        >
-          <Layers className={tabIconClassName} />
-          Selected Work
-        </motion.button>
-
-        <motion.button
-          id={vfxTabId}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "vfx"}
-          aria-controls={vfxPanelId}
-          tabIndex={activeTab === "vfx" ? 0 : -1}
-          {...tabPulse("vfx")}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.96 }}
-          onMouseEnter={playHoverSound}
-          onClick={() => switchTab("vfx")}
-          className={tabClass("vfx")}
-        >
-          <Sparkles className={tabIconClassName} />
-          VFX
-        </motion.button>
+        {GAMEDEV_OVERVIEW_TAB_ORDER.map((tab) => {
+          const { label, Icon } = TAB_META[tab];
+          return (
+            <motion.button
+              key={tab}
+              id={tabIds[tab]}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              aria-controls={panelIds[tab]}
+              tabIndex={activeTab === tab ? 0 : -1}
+              {...tabPulse(tab)}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.96 }}
+              onMouseEnter={playHoverSound}
+              onClick={() => switchTab(tab)}
+              className={tabClass(tab)}
+            >
+              <Icon className={tabIconClassName} />
+              {label}
+            </motion.button>
+          );
+        })}
       </div>
 
       <div className={classNames.content}>
-        <AnimatePresence mode="wait" custom={directionRef.current}>
-          {activeTab === "showreel" ? (
+        {GAMEDEV_OVERVIEW_TAB_ORDER.filter((tab) => visitedTabs.has(tab)).map((tab) => {
+          const isActive = activeTab === tab;
+          return (
             <motion.div
-              key="showreel"
+              key={tab}
               role="tabpanel"
-              id={showreelPanelId}
-              aria-labelledby={showreelTabId}
+              id={panelIds[tab]}
+              aria-labelledby={tabIds[tab]}
+              aria-hidden={!isActive}
+              inert={!isActive ? true : undefined}
               custom={directionRef.current}
               variants={activeSlideVariants}
               initial="enter"
-              animate="center"
-              exit="exit"
-              transition={slideTransition}
-              className={panelClass("showreel")}
+              animate={isActive ? "center" : "exit"}
+              style={{ zIndex: isActive ? 1 : 0 }}
+              className={panelClass(tab)}
             >
-              {showreel}
+              {panelRender[tab](isActive)}
             </motion.div>
-          ) : activeTab === "projects" ? (
-            <motion.div
-              key="projects"
-              role="tabpanel"
-              id={projectsPanelId}
-              aria-labelledby={projectsTabId}
-              custom={directionRef.current}
-              variants={activeSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={slideTransition}
-              className={panelClass("projects")}
-            >
-              {projects}
-            </motion.div>
-          ) : (
-            <motion.div
-              key="vfx"
-              role="tabpanel"
-              id={vfxPanelId}
-              aria-labelledby={vfxTabId}
-              custom={directionRef.current}
-              variants={activeSlideVariants}
-              initial="enter"
-              animate="center"
-              exit="exit"
-              transition={slideTransition}
-              className={panelClass("vfx")}
-            >
-              {vfx}
-            </motion.div>
-          )}
-        </AnimatePresence>
+          );
+        })}
       </div>
     </div>
   );

@@ -22,6 +22,8 @@ import { GameDevVfxMedia } from "./GameDevVfxMedia";
 
 interface GameDevVfxSliderProps {
   items: GameDevVfxItem[];
+  /** When false, pause hero/thumb video (overview tab hidden but mounted). */
+  isActive?: boolean;
 }
 
 const DECK_SPRING = {
@@ -33,12 +35,13 @@ const DECK_SPRING = {
   opacity: { duration: 0.24 },
 };
 
-export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
+export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderProps) => {
   const sliderRegionId = useId();
   const reduceMotion = useReducedMotion();
   const [activeIndex, setActiveIndex] = useState(0);
   const directionRef = useRef(1);
   const thumbRailRef = useRef<HTMLDivElement>(null);
+  const hasCenteredRailRef = useRef(false);
   const safeIndex = clampIndex(activeIndex, items.length);
   const activeItem = items[safeIndex];
   const canGoPrev = safeIndex > 0;
@@ -58,11 +61,15 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
 
     // Scroll only the thumb rail — never scrollIntoView, which can pan ancestor
     // tracks (GameDev overview ↔ all-projects) when centering edge thumbs.
+    // First mount centers instantly so the panel enter animation is not fighting
+    // a smooth rail scroll; later index changes keep smooth behavior.
     const nextLeft = activeThumb.offsetLeft - (rail.clientWidth - activeThumb.offsetWidth) / 2;
     const maxLeft = Math.max(0, rail.scrollWidth - rail.clientWidth);
+    const behavior = hasCenteredRailRef.current ? "smooth" : "auto";
+    hasCenteredRailRef.current = true;
     rail.scrollTo({
       left: Math.max(0, Math.min(maxLeft, nextLeft)),
-      behavior: "smooth",
+      behavior,
     });
   }, [safeIndex]);
 
@@ -200,6 +207,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
                   <GameDevVfxMedia
                     item={activeItem}
                     surface="hero"
+                    isActive={isActive}
                     className="h-full w-full object-cover"
                     imgLoading="eager"
                   />
@@ -259,7 +267,7 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
           <p className="gamedev-vfx-slider-rail-label">Browse</p>
           <div ref={thumbRailRef} className="gamedev-vfx-slider-rail">
             {items.map((item, index) => {
-              const isActive = index === safeIndex;
+              const isActiveThumb = index === safeIndex;
 
               return (
                 <motion.button
@@ -271,16 +279,16 @@ export const GameDevVfxSlider = ({ items }: GameDevVfxSliderProps) => {
                   onMouseEnter={playHoverSound}
                   onClick={() => goToIndex(index)}
                   aria-label={`Show ${item.title}`}
-                  aria-current={isActive ? "true" : undefined}
-                  className={`gamedev-vfx-slider-thumb${isActive ? " gamedev-vfx-slider-thumb--active" : ""}`}
+                  aria-current={isActiveThumb ? "true" : undefined}
+                  className={`gamedev-vfx-slider-thumb${isActiveThumb ? " gamedev-vfx-slider-thumb--active" : ""}`}
                 >
                   <div className="gamedev-vfx-slider-thumb-media">
                     <GameDevVfxMedia
                       item={item}
                       surface="thumb"
-                      isActive={isActive}
+                      isActive={isActive && isActiveThumb}
                       className="h-full w-full object-cover transition-transform duration-300"
-                      imgLoading={isActive ? "eager" : "lazy"}
+                      imgLoading={isActiveThumb ? "eager" : "lazy"}
                     />
                   </div>
                   <span className="gamedev-vfx-slider-thumb-title">{item.title}</span>
