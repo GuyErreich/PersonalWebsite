@@ -120,17 +120,18 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
     };
   }, []);
 
-  // Pause while the overview tab is hidden but still mounted; resume only if we paused it.
+  // Pause while the overview tab is hidden but still mounted; resume only if we paused/blocked it.
   const pausedByTabHideRef = useRef(false);
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (!isActive) {
-      if (!video.paused) {
+      // Always pause. Mark for resume unless the user already paused main playback.
+      if (!isPlaying || !video.paused) {
         pausedByTabHideRef.current = true;
-        video.pause();
       }
+      video.pause();
       return;
     }
 
@@ -140,7 +141,7 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
         // Browser autoplay policy may block until user gesture.
       });
     }
-  }, [isActive]);
+  }, [isActive, isPlaying]);
 
   // Load default volume from DB
   useEffect(() => {
@@ -470,8 +471,8 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
             <video
               ref={videoRef}
               src={url}
-              autoPlay={!isPlaying}
-              loop={!isPlaying}
+              autoPlay={!isPlaying && isActive}
+              loop={!isPlaying && isActive}
               muted={!isPlaying}
               preload="metadata"
               playsInline
