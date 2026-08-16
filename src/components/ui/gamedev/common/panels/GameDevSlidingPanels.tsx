@@ -16,7 +16,7 @@ import {
 interface GameDevSlidingPanelsProps {
   showSecondaryPanel: boolean;
   motionStyle: MotionStyle;
-  primaryPanel: ReactNode;
+  primaryPanel: (isPrimaryActive: boolean) => ReactNode;
   secondaryPanel: ReactNode;
 }
 
@@ -57,6 +57,7 @@ export const GameDevSlidingPanels = ({
   }, [showSecondaryPanel]);
 
   const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
+  const isPrimaryActive = !showSecondaryPanel && !trackSecondary && !isTrackMoving;
   const trackStyle = {
     "--gamedev-track-duration": `${durationS}s`,
     "--gamedev-track-ease": OVERVIEW_TRACK_EASE_CSS,
@@ -86,7 +87,7 @@ export const GameDevSlidingPanels = ({
             aria-hidden={showSecondaryPanel}
             inert={showSecondaryPanel ? true : undefined}
           >
-            {primaryPanel}
+            {primaryPanel(isPrimaryActive)}
           </div>
           <div
             className={`gamedev-slide${secondaryDormant ? " gamedev-slide--dormant" : ""}`}
