@@ -6,7 +6,14 @@
 
 import type { MotionStyle } from "framer-motion";
 import { motion, useReducedMotion } from "framer-motion";
-import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   OVERVIEW_TRACK_DURATION_S,
   OVERVIEW_TRACK_EASE_CSS,
@@ -33,6 +40,8 @@ export const GameDevSlidingPanels = ({
   const [isTrackMoving, setIsTrackMoving] = useState(false);
 
   const isFirstTrackSyncRef = useRef(true);
+  const trackSecondaryRef = useRef(trackSecondary);
+  trackSecondaryRef.current = trackSecondary;
 
   useLayoutEffect(() => {
     if (showSecondaryPanel) {
@@ -50,6 +59,10 @@ export const GameDevSlidingPanels = ({
     }
 
     const frame = requestAnimationFrame(() => {
+      // No-op when already synced (e.g. reverse toggle before rAF) — avoid stuck isTrackMoving.
+      if (trackSecondaryRef.current === showSecondaryPanel) {
+        return;
+      }
       setIsTrackMoving(true);
       setTrackSecondary(showSecondaryPanel);
     });
@@ -58,6 +71,7 @@ export const GameDevSlidingPanels = ({
 
   const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
   const isPrimaryActive = !showSecondaryPanel && !trackSecondary && !isTrackMoving;
+  const isSecondaryActive = showSecondaryPanel && trackSecondary && !isTrackMoving;
   const trackStyle = {
     "--gamedev-track-duration": `${durationS}s`,
     "--gamedev-track-ease": OVERVIEW_TRACK_EASE_CSS,
@@ -73,8 +87,9 @@ export const GameDevSlidingPanels = ({
             if (event.propertyName !== "transform") return;
             if (event.target !== event.currentTarget) return;
             setIsTrackMoving(false);
-            const landedOnSecondary =
-              event.currentTarget.classList.contains("gamedev-slider-track--secondary");
+            const landedOnSecondary = event.currentTarget.classList.contains(
+              "gamedev-slider-track--secondary",
+            );
             if (landedOnSecondary) {
               setPrimaryDormant(true);
               return;
@@ -84,15 +99,15 @@ export const GameDevSlidingPanels = ({
         >
           <div
             className={`gamedev-slide${primaryDormant ? " gamedev-slide--dormant" : ""}`}
-            aria-hidden={showSecondaryPanel}
-            inert={showSecondaryPanel ? true : undefined}
+            aria-hidden={!isPrimaryActive}
+            inert={!isPrimaryActive ? true : undefined}
           >
             {primaryPanel(isPrimaryActive)}
           </div>
           <div
             className={`gamedev-slide${secondaryDormant ? " gamedev-slide--dormant" : ""}`}
-            aria-hidden={!showSecondaryPanel}
-            inert={!showSecondaryPanel ? true : undefined}
+            aria-hidden={!isSecondaryActive}
+            inert={!isSecondaryActive ? true : undefined}
           >
             {secondaryPanel}
           </div>
