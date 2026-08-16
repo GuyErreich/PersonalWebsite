@@ -49,10 +49,26 @@
 
   .gamedev-slider-track {
     @apply flex h-full w-[200%];
+    transform: translate3d(0, 0, 0);
+    transition-property: transform;
+    transition-duration: var(--gamedev-track-duration, 0.24s);
+    transition-timing-function: var(--gamedev-track-ease, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+
+  .gamedev-slider-track--secondary {
+    transform: translate3d(-50%, 0, 0);
+  }
+
+  .gamedev-slider-track--moving {
+    will-change: transform;
   }
 
   .gamedev-slide {
     @apply h-full w-1/2;
+  }
+
+  .gamedev-slide--dormant {
+    visibility: hidden;
   }
 
   /* Showreel */
@@ -125,14 +141,22 @@
     @apply min-h-0 flex-1;
   }
 
-  /* Overview tab content — shared clip for desktop and mobile-short tab panels.
-   * `relative` anchors absolutely stacked panels during the crossfade. */
+  /* Overview tab content — clip; active panel stays in flow so height cannot collapse. */
   .gamedev-overview-tab-content {
     @apply relative min-h-0 flex-1 overflow-hidden;
   }
 
   .gamedev-overview-tab-panel {
-    @apply absolute inset-0 w-full;
+    @apply h-full w-full;
+    contain: layout paint;
+  }
+
+  .gamedev-overview-tab-panel--idle {
+    @apply pointer-events-none absolute inset-0;
+  }
+
+  .gamedev-overview-tab-panel--current {
+    @apply relative;
   }
 
   /* Panel primitives */

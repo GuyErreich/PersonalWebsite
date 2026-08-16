@@ -31,6 +31,7 @@ export const GameDevOverviewDesktop = ({
   isVfxLoading,
   iconMap,
   onViewAll,
+  isActive: isPanelActive = true,
 }: GameDevOverviewLayoutProps) => {
   return (
     <GameDevOverviewTabs
@@ -38,7 +39,10 @@ export const GameDevOverviewDesktop = ({
       classNames={DESKTOP_OVERVIEW_TAB_CLASS_NAMES}
       tabIconClassName="h-4 w-4"
       showreel={(isActive) => (
-        <GameDevShowreelPanel showreelUrl={showreelUrl} isActive={isActive} />
+        <GameDevShowreelPanel
+          showreelUrl={showreelUrl}
+          isActive={isPanelActive && isActive}
+        />
       )}
       projects={() => (
         <div className="gamedev-panel-frame">
@@ -78,7 +82,7 @@ export const GameDevOverviewDesktop = ({
             vfxItems={vfxItems}
             isLoading={isVfxLoading}
             vfxError={vfxError}
-            isActive={isActive}
+            isActive={isPanelActive && isActive}
           />
         </div>
       )}

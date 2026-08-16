@@ -200,8 +200,8 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
             >
               <motion.div
                 className="flex h-full w-full flex-col"
-                animate={reduceMotion ? undefined : vfxDeckFloatAnimate}
-                transition={reduceMotion ? undefined : vfxDeckFloatTransition}
+                animate={reduceMotion || !isActive ? undefined : vfxDeckFloatAnimate}
+                transition={reduceMotion || !isActive ? undefined : vfxDeckFloatTransition}
               >
                 <div className="gamedev-vfx-slider-card-media">
                   <GameDevVfxMedia

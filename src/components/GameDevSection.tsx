@@ -72,6 +72,7 @@ export const GameDevSection = () => {
               isVfxLoading={isVfxLoading}
               iconMap={iconMap}
               onViewAll={() => setShowAllProjectsView(true)}
+              isActive={!showAllProjectsView}
             />
           }
           secondaryPanel={

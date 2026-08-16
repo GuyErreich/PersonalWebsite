@@ -5,8 +5,13 @@
  */
 
 import type { MotionStyle } from "framer-motion";
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  OVERVIEW_TRACK_DURATION_S,
+  OVERVIEW_TRACK_EASE_CSS,
+  OVERVIEW_TRACK_REDUCED_DURATION_S,
+} from "./overviewSlideVariants";
 
 interface GameDevSlidingPanelsProps {
   showSecondaryPanel: boolean;
@@ -21,17 +26,76 @@ export const GameDevSlidingPanels = ({
   primaryPanel,
   secondaryPanel,
 }: GameDevSlidingPanelsProps) => {
+  const reduceMotion = Boolean(useReducedMotion());
+  const [trackSecondary, setTrackSecondary] = useState(false);
+  const [primaryDormant, setPrimaryDormant] = useState(false);
+  const [secondaryDormant, setSecondaryDormant] = useState(true);
+  const [isTrackMoving, setIsTrackMoving] = useState(false);
+
+  const isFirstTrackSyncRef = useRef(true);
+
+  useLayoutEffect(() => {
+    if (showSecondaryPanel) {
+      setSecondaryDormant(false);
+      return;
+    }
+    setPrimaryDormant(false);
+  }, [showSecondaryPanel]);
+
+  // Pause overview media / wake the incoming pane for one frame before the track moves.
+  useEffect(() => {
+    if (isFirstTrackSyncRef.current) {
+      isFirstTrackSyncRef.current = false;
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      setIsTrackMoving(true);
+      setTrackSecondary(showSecondaryPanel);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [showSecondaryPanel]);
+
+  const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
+  const trackStyle = {
+    "--gamedev-track-duration": `${durationS}s`,
+    "--gamedev-track-ease": OVERVIEW_TRACK_EASE_CSS,
+  } as CSSProperties;
+
   return (
     <motion.div style={motionStyle} className="gamedev-content-shell">
       <div className="gamedev-slider-viewport">
-        <motion.div
-          animate={{ x: showSecondaryPanel ? "-50%" : "0%" }}
-          transition={{ type: "spring", stiffness: 150, damping: 24 }}
-          className="gamedev-slider-track"
+        <div
+          style={trackStyle}
+          className={`gamedev-slider-track${trackSecondary ? " gamedev-slider-track--secondary" : ""}${isTrackMoving ? " gamedev-slider-track--moving" : ""}`}
+          onTransitionEnd={(event) => {
+            if (event.propertyName !== "transform") return;
+            if (event.target !== event.currentTarget) return;
+            setIsTrackMoving(false);
+            const landedOnSecondary =
+              event.currentTarget.classList.contains("gamedev-slider-track--secondary");
+            if (landedOnSecondary) {
+              setPrimaryDormant(true);
+              return;
+            }
+            setSecondaryDormant(true);
+          }}
         >
-          <div className="gamedev-slide">{primaryPanel}</div>
-          <div className="gamedev-slide">{secondaryPanel}</div>
-        </motion.div>
+          <div
+            className={`gamedev-slide${primaryDormant ? " gamedev-slide--dormant" : ""}`}
+            aria-hidden={showSecondaryPanel}
+            inert={showSecondaryPanel ? true : undefined}
+          >
+            {primaryPanel}
+          </div>
+          <div
+            className={`gamedev-slide${secondaryDormant ? " gamedev-slide--dormant" : ""}`}
+            aria-hidden={!showSecondaryPanel}
+            inert={!showSecondaryPanel ? true : undefined}
+          >
+            {secondaryPanel}
+          </div>
+        </div>
       </div>
     </motion.div>
   );

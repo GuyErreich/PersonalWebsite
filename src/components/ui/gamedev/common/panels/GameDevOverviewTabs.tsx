@@ -6,10 +6,13 @@
 
 import { motion } from "framer-motion";
 import { Film, Layers, Sparkles, type LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import { useGameDevOverviewTabs } from "../hooks/useGameDevOverviewTabs";
-import { getOverviewSlideMotion } from "./overviewSlideVariants";
+import {
+  getOverviewKeepAliveTransition,
+  OVERVIEW_SLIDE_DISTANCE,
+} from "./overviewSlideVariants";
 import {
   GAMEDEV_OVERVIEW_TAB_ORDER,
   type GameDevOverviewTab,
@@ -44,6 +47,99 @@ const TAB_META: Record<GameDevOverviewTab, { label: string; Icon: LucideIcon }> 
   vfx: { label: "VFX", Icon: Sparkles },
 };
 
+type PanelPhase = "in" | "snap-in" | "out";
+
+interface OverviewKeepAlivePanelProps {
+  isActive: boolean;
+  direction: number;
+  reduceMotion: boolean;
+  panelId: string;
+  tabId: string;
+  className: string;
+  children: ReactNode;
+}
+
+const OverviewKeepAlivePanel = ({
+  isActive,
+  direction,
+  reduceMotion,
+  panelId,
+  tabId,
+  className,
+  children,
+}: OverviewKeepAlivePanelProps) => {
+  const [phase, setPhase] = useState<PanelPhase>(isActive ? "in" : "out");
+  const [isPaintedHidden, setIsPaintedHidden] = useState(!isActive);
+  const wasActiveRef = useRef(isActive);
+  const shouldAnimateExitRef = useRef(false);
+
+  useLayoutEffect(() => {
+    const wasActive = wasActiveRef.current;
+    wasActiveRef.current = isActive;
+
+    if (isActive && !wasActive) {
+      setIsPaintedHidden(false);
+      setPhase("snap-in");
+      return;
+    }
+
+    if (!isActive && wasActive) {
+      shouldAnimateExitRef.current = true;
+      setPhase("out");
+    }
+  }, [isActive]);
+
+  // Wait until the enter-side snap has painted, then ease to center.
+  useEffect(() => {
+    if (phase !== "snap-in") {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      setPhase("in");
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [phase]);
+
+  const offsetX = reduceMotion ? 0 : direction * OVERVIEW_SLIDE_DISTANCE;
+  const isIn = phase === "in";
+  const isSnap = phase === "snap-in";
+  const animateExit = shouldAnimateExitRef.current;
+
+  return (
+    <motion.div
+      role="tabpanel"
+      id={panelId}
+      aria-labelledby={tabId}
+      aria-hidden={!isActive}
+      inert={!isActive ? true : undefined}
+      initial={false}
+      animate={{
+        x: isIn ? 0 : offsetX,
+        opacity: isIn ? 1 : 0,
+      }}
+      transition={getOverviewKeepAliveTransition(
+        reduceMotion,
+        isIn,
+        isSnap || (!isActive && !animateExit),
+      )}
+      onAnimationComplete={() => {
+        shouldAnimateExitRef.current = false;
+        if (!isActive) {
+          setIsPaintedHidden(true);
+        }
+      }}
+      style={{
+        zIndex: isActive ? 1 : 0,
+        visibility: isPaintedHidden ? "hidden" : "visible",
+      }}
+      className={`${className} ${isActive ? "gamedev-overview-tab-panel--current" : "gamedev-overview-tab-panel--idle"}`}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
 export const GameDevOverviewTabs = ({
   idScope,
   classNames,
@@ -54,7 +150,7 @@ export const GameDevOverviewTabs = ({
 }: GameDevOverviewTabsProps) => {
   const {
     activeTab,
-    directionRef,
+    direction,
     handleTabListKeyDown,
     projectsPanelId,
     projectsTabId,
@@ -63,12 +159,9 @@ export const GameDevOverviewTabs = ({
     showreelTabId,
     switchTab,
     tabPulse,
-    visitedTabs,
     vfxPanelId,
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope });
-
-  const { variants: activeSlideVariants } = getOverviewSlideMotion(reduceMotion);
 
   const tabIds: Record<GameDevOverviewTab, string> = {
     showreel: showreelTabId,
@@ -131,25 +224,20 @@ export const GameDevOverviewTabs = ({
       </div>
 
       <div className={classNames.content}>
-        {GAMEDEV_OVERVIEW_TAB_ORDER.filter((tab) => visitedTabs.has(tab)).map((tab) => {
+        {GAMEDEV_OVERVIEW_TAB_ORDER.map((tab) => {
           const isActive = activeTab === tab;
           return (
-            <motion.div
+            <OverviewKeepAlivePanel
               key={tab}
-              role="tabpanel"
-              id={panelIds[tab]}
-              aria-labelledby={tabIds[tab]}
-              aria-hidden={!isActive}
-              inert={!isActive ? true : undefined}
-              custom={directionRef.current}
-              variants={activeSlideVariants}
-              initial="enter"
-              animate={isActive ? "center" : "exit"}
-              style={{ zIndex: isActive ? 1 : 0 }}
+              isActive={isActive}
+              direction={direction}
+              reduceMotion={reduceMotion}
+              panelId={panelIds[tab]}
+              tabId={tabIds[tab]}
               className={panelClass(tab)}
             >
               {panelRender[tab](isActive)}
-            </motion.div>
+            </OverviewKeepAlivePanel>
           );
         })}
       </div>
