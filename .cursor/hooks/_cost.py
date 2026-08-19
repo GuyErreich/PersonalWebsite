@@ -183,8 +183,8 @@ def mode_budget_defaults(
     cfg = _as_dict(modes.get(pricing_mode))
     if pricing_mode == "auto":
         return {
-            "max_tokens_est": float(cfg.get("max_tokens_est", 1_000_000) or 1_000_000),
-            "max_usd_est": float(cfg.get("max_usd_est", 2.0) or 2.0),
+            "max_tokens_est": float(cfg.get("max_tokens_est", 3_000_000) or 3_000_000),
+            "max_usd_est": float(cfg.get("max_usd_est", 3.0) or 3.0),
             "cold_project_tokens": float(
                 cfg.get("cold_project_tokens", 120_000) or 120_000
             ),
@@ -501,6 +501,36 @@ def cold_projection(
         # Named model under Auto caps — use api-ish cold USD so we alert early.
         cold_u = max(cold_u, 0.75)
     return cold_t, cold_u
+
+
+def nominal_fallback_estimate(
+    state: dict[str, Any],
+    *,
+    model: str,
+    pricing_mode: str,
+    base: CostEstimate,
+) -> CostEstimate:
+    """Charge cold-start nominal cost when a completed subagent estimated 0.
+
+    Keeps the budget gate honest when transcripts are missing or hooks ran
+    degraded. Preserves wall-clock / turn / tool counts from ``base``.
+    """
+    cold_t, cold_u = cold_projection(state, model=model)
+    extra = "nominal fallback (no transcript)"
+    assumptions = f"{base.assumptions}; {extra}" if base.assumptions else extra
+    return CostEstimate(
+        tokens_in_est=int(cold_t),
+        tokens_out_est=0,
+        tokens_est=int(cold_t),
+        usd_est=round(float(cold_u), 4),
+        turns=base.turns,
+        tool_calls=base.tool_calls,
+        wall_clock_s=base.wall_clock_s,
+        model=model,
+        assumptions=assumptions,
+        known_model=False,
+        pricing_mode=pricing_mode,
+    )
 
 
 def project_next_cost(

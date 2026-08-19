@@ -7,6 +7,8 @@ block) before a subagent starts.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
@@ -250,7 +252,33 @@ class TestDecideSubagentStart:
         assert resolve_max_rounds({"max_rounds": "budget-only"}) is None
         assert resolve_max_rounds({"max_rounds": "unlimited"}) is None
         assert resolve_max_rounds({"max_rounds": 3}) == 3
-        assert resolve_max_rounds({}) == 3
+        assert resolve_max_rounds({}) is None
+
+    def test_hard_ceiling_applies_when_unlimited(self) -> None:
+        from _loop_state import HARD_MAX_ROUNDS, effective_max_rounds
+
+        assert effective_max_rounds({}) == HARD_MAX_ROUNDS
+        assert effective_max_rounds({"max_rounds": None}) == HARD_MAX_ROUNDS
+        assert effective_max_rounds({"max_rounds": 3}) == 3
+        assert effective_max_rounds({"max_rounds": 100}) == HARD_MAX_ROUNDS
+
+    def test_hard_ceiling_denies_past_25(self) -> None:
+        from _loop_state import HARD_MAX_ROUNDS
+
+        state = {
+            "active": True,
+            "round": HARD_MAX_ROUNDS + 1,
+            "max_rounds": None,
+            "max_tokens_est": 3_000_000,
+            "max_usd_est": 3.0,
+            "pricing_mode": "auto",
+            "reviewer_model": "inherit",
+            "rounds": [],
+            "totals": {"tokens_est": 1000, "usd_est": 0.01},
+        }
+        out = decide_subagent_start(state, self._loop_event(), fingerprint="")
+        assert out["permission"] == "deny"
+        assert "max_rounds" in out["user_message"]
 
     def test_cold_over_tiny_cap_denies_before_spend(self) -> None:
         state = {
@@ -1318,3 +1346,57 @@ class TestRuntimeDirOutsideCursor:
         migrate_legacy_runtime_dir(tmp_path)
         text = (dest / "preferences.json").read_text(encoding="utf-8")
         assert '"max_rounds": 99' in text
+
+
+class TestFactoryBudgetDefaults:
+    """Factory caps are budget-only at $3 / 3M tokens."""
+
+    def test_default_preferences(self) -> None:
+        from _loop_state import default_preferences
+
+        prefs = default_preferences()
+        assert prefs["max_rounds"] is None
+        assert prefs["max_tokens_est"] == 3_000_000
+        assert prefs["max_usd_est"] == 3.0
+
+    def test_start_loop_state_uses_factory_caps(self, tmp_path: Path) -> None:
+        from _loop_state import start_loop_state
+
+        state = start_loop_state(
+            pr_number=1,
+            pr_url="u",
+            branch="b",
+            root=tmp_path,
+        )
+        assert state["max_rounds"] is None
+        assert state["max_tokens_est"] == 3_000_000
+        assert state["max_usd_est"] == 3.0
+
+
+class TestRunPythonDetect:
+    """Interpreter detection must not depend on a rich inherited PATH."""
+
+    def test_stripped_path_still_resolves(self) -> None:
+        script = HOOKS / "run-python.sh"
+        result = subprocess.run(
+            [str(script), "--detect"],
+            capture_output=True,
+            text=True,
+            env={"PATH": "/usr/bin:/bin", "HOME": os.environ.get("HOME", "")},
+            check=False,
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() in {"uv", "python3 fallback"}
+
+    def test_env_dash_i_path_usr_bin_still_resolves(self) -> None:
+        script = HOOKS / "run-python.sh"
+        result = subprocess.run(
+            [str(script), "--detect"],
+            capture_output=True,
+            text=True,
+            env={"PATH": "/usr/bin"},
+            check=False,
+        )
+        assert result.returncode == 0
+        assert result.stdout.strip() in {"uv", "python3 fallback"}
+

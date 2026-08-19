@@ -14,15 +14,15 @@ Reads JSON on stdin::
       "pricing_updated": "2026-08",
       "overrides": {
         "max_rounds": null,
-        "max_usd_est": 2.0,
+        "max_usd_est": 3.0,
         "manage_severity": "high",
         "post_fix_focus": "delta"
       }
     }
 
 Writes ``preferences.json`` + ``state.json`` and prints the new state JSON.
-Never resets ``max_rounds`` to 3 unless preferences are missing that key and
-no override was provided.
+Factory default for ``max_rounds`` is budget-only (``null``); an explicit
+numeric cap in preferences is never overwritten unless an override is given.
 """
 
 from __future__ import annotations

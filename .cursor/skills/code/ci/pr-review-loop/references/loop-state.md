@@ -9,6 +9,7 @@ Runtime files under `.review-loop/` at the repo root (gitignored — **not** und
 | `pricing.json` | Local pricing table (bootstrapped from the skill asset) |
 | `closed-ledger.json` | Per-PR durable closed / accepted memory |
 | `review-lock.json` | Optional review-dedup fingerprints |
+| `hook-degraded.json` | Present only while `run-python.sh` cannot run Python (rewritten every degraded invocation; deleted on a successful run) |
 
 On first access, files under the legacy `.cursor/review-loop/` (and `.cursor/review-lock.json`) are copied into `.review-loop/` when the new path is missing.
 
@@ -17,8 +18,8 @@ On first access, files under the legacy `.cursor/review-loop/` (and `.cursor/rev
 ```json
 {
   "max_rounds": null,
-  "max_tokens_est": 1000000,
-  "max_usd_est": 2.0,
+  "max_tokens_est": 3000000,
+  "max_usd_est": 3.0,
   "pricing_mode": "auto",
   "reviewer_model": "inherit",
   "fixer_model": "inherit",
@@ -37,7 +38,7 @@ On first access, files under the legacy `.cursor/review-loop/` (and `.cursor/rev
 | `diminishing_returns_round` | `2` | Round at/after which lingering findings below `diminishing_returns_floor` are deferred as follow-ups. |
 | `diminishing_returns_floor` | one tier above `manage_severity` (capped at `critical`) | Minimum severity still fixed/escalated after the ratchet round. Fully overridable. |
 
-Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior `max_rounds: null` (budget-only) is not overwritten with `3`. Only missing keys take factory defaults; invocation `overrides` update both preferences and the new state.
+Preflight **must** call `review_loop_init.py` (or `start_loop_state`) so a prior numeric `max_rounds` is not overwritten with the factory default (`null` / budget-only). Only missing keys take factory defaults; invocation `overrides` update both preferences and the new state.
 
 Invocation overrides: `manage medium` / `manage high` / `only critical` / `manage_severity=high` / `post_fix_focus=full` / `focus delta` / `diminishing after round 3` / `diminishing_returns_round=5` / `diminishing_returns_floor=high`.
 
@@ -54,9 +55,9 @@ Invocation overrides: `manage medium` / `manage high` / `only critical` / `manag
   "reviewer_model": "inherit",
   "fixer_model": "inherit",
   "next_model": "inherit",
-  "max_rounds": 3,
-  "max_tokens_est": 1000000,
-  "max_usd_est": 2.0,
+  "max_rounds": null,
+  "max_tokens_est": 3000000,
+  "max_usd_est": 3.0,
   "clean_passes_required": 2,
   "manage_severity": "medium",
   "post_fix_focus": "delta",
@@ -123,7 +124,7 @@ Override examples: `review with opus, fix with auto` · `reviewer_model=opus fix
 
 | Mode | When | Effect |
 |---|---|---|
-| `auto` (default) | Always, unless user says otherwise | Cheap $/MTok table for Auto segments; defaults `max_tokens_est=1_000_000`, `max_usd_est=2` |
+| `auto` (default) | Always, unless user says otherwise | Cheap $/MTok table for Auto segments; defaults `max_tokens_est=3_000_000`, `max_usd_est=3` |
 | `api` | User override only (`pricing api`) | API-like list rates for caps; defaults `max_tokens_est=400_000`, `max_usd_est=3` |
 
 Token estimates are mode-invariant (same transcript math). Dollar estimates for a **named** reviewer/fixer segment use api-ish rates even when `pricing_mode` stays `auto`, so projective checks stay honest without defaulting everyone into expensive caps.
@@ -269,15 +270,19 @@ When `has_fixed_this_run(state)` is true:
 | `pricing_mode` | `auto` | `api` | "pricing api" / "use Auto rates" |
 | `reviewer_model` | `inherit` | `inherit` | "review with opus" |
 | `fixer_model` | `inherit` | `inherit` | "fix with auto" |
-| `max_rounds` | 3 | 3 | `"max 2 rounds"` · **budget-only / unlimited rounds:** `0`, `null`, `"none"`, `"unlimited"`, or `"budget-only"` |
-| `max_tokens_est` | 1000000 | 400000 | "budget 200k tokens" |
-| `max_usd_est` | 2.00 | 3.00 | "budget $1.50" |
+| `max_rounds` | `null` (budget-only) | `null` (budget-only) | `"max 2 rounds"` · **budget-only / unlimited rounds:** `0`, `null`, `"none"`, `"unlimited"`, or `"budget-only"`. Hard safety ceiling: `HARD_MAX_ROUNDS=25` even when unlimited. |
+| `max_tokens_est` | 3000000 | 400000 | "budget 200k tokens" |
+| `max_usd_est` | 3.00 | 3.00 | "budget $1.50" |
 | `clean_passes_required` | 2 | 2 | `"1 clean pass"` (faster, riskier) / `"3 clean passes"` |
 | `post_fix_focus` | `delta` | `delta` | `"post_fix_focus=full"` to restore full review after every fixer |
 | `diminishing_returns_round` | 2 | 2 | `"diminishing after round 3"` / `diminishing_returns_round=5` |
 | `diminishing_returns_floor` | one above `manage_severity` | one above `manage_severity` | `diminishing_returns_floor=high` / `diminishing_returns_floor=critical` |
 
-When `max_rounds` is unlimited, stop conditions are **budget + consecutive clean reviews** — the loop may run round 4+ until projected spend would cross the token/USD caps, or until `consecutive_clean_passes >= clean_passes_required`. Do **not** stop on a single clean review, “no new signatures”, or fingerprint alone. After `diminishing_returns_round`, findings below `diminishing_returns_floor` are deferred (follow-ups) and do not block clean.
+When `max_rounds` is unlimited, stop conditions are **budget + consecutive clean reviews + hard safety ceiling (`HARD_MAX_ROUNDS=25`)** — the loop may run round 4+ until projected spend would cross the token/USD caps, consecutive cleans hit the requirement, or round 26 is denied. Do **not** stop on a single clean review, “no new signatures”, or fingerprint alone. After `diminishing_returns_round`, findings below `diminishing_returns_floor` are deferred (follow-ups) and do not block clean.
+
+If a completed subagent estimates **0 tokens**, accounting charges the mode's `cold_project_tokens` / `cold_project_usd` as a **nominal fallback** (`assumptions` includes `nominal fallback (no transcript)`) so a dead transcript path cannot disable the budget gate. The orchestrator also records cost via `review_loop_cost.py record` after every subagent; `_cost_recorded_for` prevents double-counting with the `subagentStop` hook.
+
+`hook-degraded.json` is rewritten on every degraded `run-python.sh` invocation and deleted on a successful run. Preflight must surface it when present (`load_hook_degraded`) — do not proceed as if hooks were live.
 
 ## Round focus (reviewer → developer until zero)
 
@@ -309,7 +314,7 @@ Alert **before** spending — never start a loop/round that is already projected
 ### Before every subagent when `active` (orchestrator + `subagentStart` hook)
 
 1. If `escalation_pending` → deny.
-2. If `max_rounds` is set (not unlimited) and `round > max_rounds` → deny (the final allowed round, `round == max_rounds`, must still run — including its fixer). Unlimited / budget-only: skip this check.
+2. If `round > effective_max_rounds(state)` → deny (user cap, else hard ceiling 25). The final allowed round must still run — including its fixer.
 3. Projected next cost = max(last round cost, running average of round costs), or cold projection when no rounds yet. If `totals + projected` crosses `max_tokens_est` or `max_usd_est` → deny and escalate with spent / projected / cap.
 4. Unchanged fingerprint does **not** block `pr-reviewer` (re-scan for false cleans / recurrence). Unchanged fingerprint after a fix **does** block another `pr-fixer` — escalate instead.
 

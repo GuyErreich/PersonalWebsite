@@ -9,8 +9,8 @@
       "label": "Cursor Auto (routed / included usage)",
       "usd_multiplier": 1.0,
       "model_key": "auto",
-      "max_tokens_est": 1000000,
-      "max_usd_est": 2.0,
+      "max_tokens_est": 3000000,
+      "max_usd_est": 3.0,
       "cold_project_tokens": 120000,
       "cold_project_usd": 0.15
     },
