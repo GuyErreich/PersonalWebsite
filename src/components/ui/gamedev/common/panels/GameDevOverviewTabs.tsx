@@ -5,18 +5,12 @@
  */
 
 import { motion } from "framer-motion";
-import { Film, Layers, Sparkles, type LucideIcon } from "lucide-react";
+import { Film, Layers, type LucideIcon, Sparkles } from "lucide-react";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { playHoverSound } from "../../../../../lib/sound/interactionSounds";
 import { useGameDevOverviewTabs } from "../hooks/useGameDevOverviewTabs";
-import {
-  getOverviewKeepAliveTransition,
-  OVERVIEW_SLIDE_DISTANCE,
-} from "./overviewSlideVariants";
-import {
-  GAMEDEV_OVERVIEW_TAB_ORDER,
-  type GameDevOverviewTab,
-} from "./overviewTabPulse";
+import { getOverviewKeepAliveTransition, OVERVIEW_SLIDE_DISTANCE } from "./overviewSlideVariants";
+import { GAMEDEV_OVERVIEW_TAB_ORDER, type GameDevOverviewTab } from "./overviewTabPulse";
 
 export interface GameDevOverviewTabsClassNames {
   root: string;
@@ -159,6 +153,7 @@ export const GameDevOverviewTabs = ({
     showreelTabId,
     switchTab,
     tabPulse,
+    visitedTabs,
     vfxPanelId,
     vfxTabId,
   } = useGameDevOverviewTabs({ idScope });
@@ -225,6 +220,9 @@ export const GameDevOverviewTabs = ({
 
       <div className={classNames.content}>
         {GAMEDEV_OVERVIEW_TAB_ORDER.map((tab) => {
+          if (!visitedTabs.has(tab)) {
+            return null;
+          }
           const isActive = activeTab === tab;
           return (
             <OverviewKeepAlivePanel

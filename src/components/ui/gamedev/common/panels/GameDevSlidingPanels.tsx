@@ -42,6 +42,29 @@ export const GameDevSlidingPanels = ({
   const isFirstTrackSyncRef = useRef(true);
   const trackSecondaryRef = useRef(trackSecondary);
   trackSecondaryRef.current = trackSecondary;
+  const settleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
+
+  const clearSettleTimeout = () => {
+    if (settleTimeoutRef.current === null) {
+      return;
+    }
+    clearTimeout(settleTimeoutRef.current);
+    settleTimeoutRef.current = null;
+  };
+
+  const settleTrack = (landedOnSecondary: boolean) => {
+    clearSettleTimeout();
+    setIsTrackMoving(false);
+    if (landedOnSecondary) {
+      setPrimaryDormant(true);
+      return;
+    }
+    setSecondaryDormant(true);
+  };
+  const settleTrackRef = useRef(settleTrack);
+  settleTrackRef.current = settleTrack;
 
   useLayoutEffect(() => {
     if (showSecondaryPanel) {
@@ -50,6 +73,8 @@ export const GameDevSlidingPanels = ({
     }
     setPrimaryDormant(false);
   }, [showSecondaryPanel]);
+
+  useEffect(() => () => clearSettleTimeout(), []);
 
   // Pause overview media / wake the incoming pane for one frame before the track moves.
   useEffect(() => {
@@ -65,11 +90,16 @@ export const GameDevSlidingPanels = ({
       }
       setIsTrackMoving(true);
       setTrackSecondary(showSecondaryPanel);
+      clearSettleTimeout();
+      // Fallback if transitionend never fires (disabled CSS transitions / dropped event).
+      settleTimeoutRef.current = setTimeout(() => {
+        settleTimeoutRef.current = null;
+        settleTrackRef.current(showSecondaryPanel);
+      }, durationS * 1000 + 50);
     });
     return () => cancelAnimationFrame(frame);
-  }, [showSecondaryPanel]);
+  }, [showSecondaryPanel, durationS]);
 
-  const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
   const isPrimaryActive = !showSecondaryPanel && !trackSecondary && !isTrackMoving;
   const isSecondaryActive = showSecondaryPanel && trackSecondary && !isTrackMoving;
   const trackStyle = {
@@ -86,15 +116,9 @@ export const GameDevSlidingPanels = ({
           onTransitionEnd={(event) => {
             if (event.propertyName !== "transform") return;
             if (event.target !== event.currentTarget) return;
-            setIsTrackMoving(false);
-            const landedOnSecondary = event.currentTarget.classList.contains(
-              "gamedev-slider-track--secondary",
+            settleTrack(
+              event.currentTarget.classList.contains("gamedev-slider-track--secondary"),
             );
-            if (landedOnSecondary) {
-              setPrimaryDormant(true);
-              return;
-            }
-            setSecondaryDormant(true);
           }}
         >
           <div

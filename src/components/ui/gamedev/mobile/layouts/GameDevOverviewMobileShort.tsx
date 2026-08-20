@@ -42,10 +42,7 @@ export const GameDevOverviewMobileShort = ({
       classNames={MOBILE_SHORT_OVERVIEW_TAB_CLASS_NAMES}
       tabIconClassName="h-3.5 w-3.5"
       showreel={(isActive) => (
-        <GameDevShowreelPanel
-          showreelUrl={showreelUrl}
-          isActive={isPanelActive && isActive}
-        />
+        <GameDevShowreelPanel showreelUrl={showreelUrl} isActive={isPanelActive && isActive} />
       )}
       projects={() => (
         <GameDevPanelShell

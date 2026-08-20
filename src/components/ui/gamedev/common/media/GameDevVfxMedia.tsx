@@ -32,7 +32,6 @@ const shouldAutoplayVideo = (
   reduceMotion: boolean,
 ): boolean => !reduceMotion && item.media_type === "video" && isActive;
 
-
 interface VfxLoopVideoProps {
   item: GameDevVfxRenderable;
   autoPlay: boolean;

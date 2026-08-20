@@ -39,10 +39,7 @@ export const GameDevOverviewDesktop = ({
       classNames={DESKTOP_OVERVIEW_TAB_CLASS_NAMES}
       tabIconClassName="h-4 w-4"
       showreel={(isActive) => (
-        <GameDevShowreelPanel
-          showreelUrl={showreelUrl}
-          isActive={isPanelActive && isActive}
-        />
+        <GameDevShowreelPanel showreelUrl={showreelUrl} isActive={isPanelActive && isActive} />
       )}
       projects={() => (
         <div className="gamedev-panel-frame">
