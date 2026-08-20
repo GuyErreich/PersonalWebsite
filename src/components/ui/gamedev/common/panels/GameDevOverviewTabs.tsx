@@ -51,6 +51,8 @@ interface OverviewKeepAlivePanelProps {
   tabId: string;
   className: string;
   children: ReactNode;
+  /** True only for the initially painted showreel. First-visit mounts start in `snap-in`. */
+  restOnMount: boolean;
 }
 
 const OverviewKeepAlivePanel = ({
@@ -61,10 +63,16 @@ const OverviewKeepAlivePanel = ({
   tabId,
   className,
   children,
+  restOnMount,
 }: OverviewKeepAlivePanelProps) => {
-  const [phase, setPhase] = useState<PanelPhase>(isActive ? "in" : "out");
+  const [phase, setPhase] = useState<PanelPhase>(() => {
+    if (!isActive) {
+      return "out";
+    }
+    return restOnMount ? "in" : "snap-in";
+  });
   const [isPaintedHidden, setIsPaintedHidden] = useState(!isActive);
-  const wasActiveRef = useRef(isActive);
+  const wasActiveRef = useRef(restOnMount && isActive);
   const shouldAnimateExitRef = useRef(false);
 
   useLayoutEffect(() => {
@@ -233,6 +241,7 @@ export const GameDevOverviewTabs = ({
               panelId={panelIds[tab]}
               tabId={tabIds[tab]}
               className={panelClass(tab)}
+              restOnMount={tab === "showreel"}
             >
               {panelRender[tab](isActive)}
             </OverviewKeepAlivePanel>
