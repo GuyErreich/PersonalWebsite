@@ -97,7 +97,12 @@ export const GameDevSlidingPanels = ({
         settleTrackRef.current(showSecondaryPanel);
       }, durationS * 1000 + 50);
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      // Cancel any armed settle fallback so a reverse toggle cannot fire settleTrack
+      // for a superseded target (stale primaryDormant / secondaryDormant).
+      clearSettleTimeout();
+    };
   }, [showSecondaryPanel, durationS]);
 
   const isPrimaryActive = !showSecondaryPanel && !trackSecondary && !isTrackMoving;
