@@ -83,6 +83,8 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
   const volumePopupRef = useRef<HTMLDivElement>(null);
   const timeUpdateRafRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
   const pendingVideoReadyCleanupRef = useRef<(() => void) | null>(null);
   const isStartingPlaybackRef = useRef(false);
 
@@ -280,8 +282,13 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
         });
       };
 
-      videoRef.current.muted = false;
       await waitForVideoReady(videoRef.current);
+
+      if (!isMountedRef.current || !isActiveRef.current || !videoRef.current) {
+        return;
+      }
+
+      videoRef.current.muted = false;
       videoRef.current.currentTime = 0;
       applyVolumeToGraph(sliderVolume, isMuted);
       try {
@@ -292,6 +299,10 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
       }
     } finally {
       isStartingPlaybackRef.current = false;
+    }
+
+    if (!isMountedRef.current || !isActiveRef.current) {
+      return;
     }
 
     setIsPlaying(true);
