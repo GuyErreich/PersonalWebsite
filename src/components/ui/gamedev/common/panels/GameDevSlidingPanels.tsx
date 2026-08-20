@@ -20,6 +20,26 @@ import {
   OVERVIEW_TRACK_REDUCED_DURATION_S,
 } from "./overviewSlideVariants";
 
+const SLIDE_TABBABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const moveFocusIntoSlide = (slide: HTMLElement) => {
+  const candidates = slide.querySelectorAll<HTMLElement>(SLIDE_TABBABLE_SELECTOR);
+  const firstTabbable = Array.from(candidates).find((element) => {
+    if (element.tabIndex < 0) {
+      return false;
+    }
+    if (element.closest("[inert]") !== null) {
+      return false;
+    }
+    if (element.closest('[aria-hidden="true"]') !== null) {
+      return false;
+    }
+    return true;
+  });
+  (firstTabbable ?? slide).focus({ preventScroll: true });
+};
+
 interface GameDevSlidingPanelsProps {
   showSecondaryPanel: boolean;
   motionStyle: MotionStyle;
@@ -43,6 +63,9 @@ export const GameDevSlidingPanels = ({
   const trackSecondaryRef = useRef(trackSecondary);
   trackSecondaryRef.current = trackSecondary;
   const settleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const primarySlideRef = useRef<HTMLDivElement>(null);
+  const secondarySlideRef = useRef<HTMLDivElement>(null);
+  const pendingSlideFocusRef = useRef(false);
 
   const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
 
@@ -59,9 +82,10 @@ export const GameDevSlidingPanels = ({
     setIsTrackMoving(false);
     if (landedOnSecondary) {
       setPrimaryDormant(true);
-      return;
+    } else {
+      setSecondaryDormant(true);
     }
-    setSecondaryDormant(true);
+    pendingSlideFocusRef.current = true;
   };
   const settleTrackRef = useRef(settleTrack);
   settleTrackRef.current = settleTrack;
@@ -107,6 +131,24 @@ export const GameDevSlidingPanels = ({
 
   const isPrimaryActive = !showSecondaryPanel && !trackSecondary && !isTrackMoving;
   const isSecondaryActive = showSecondaryPanel && trackSecondary && !isTrackMoving;
+
+  // After settle commits inert/aria-hidden, move focus into the visible slide.
+  useLayoutEffect(() => {
+    if (!pendingSlideFocusRef.current || isTrackMoving) {
+      return;
+    }
+    const slide = isSecondaryActive
+      ? secondarySlideRef.current
+      : isPrimaryActive
+        ? primarySlideRef.current
+        : null;
+    if (!slide) {
+      return;
+    }
+    pendingSlideFocusRef.current = false;
+    moveFocusIntoSlide(slide);
+  }, [isPrimaryActive, isSecondaryActive, isTrackMoving]);
+
   const trackStyle = {
     "--gamedev-track-duration": `${durationS}s`,
     "--gamedev-track-ease": OVERVIEW_TRACK_EASE_CSS,
@@ -127,6 +169,8 @@ export const GameDevSlidingPanels = ({
           }}
         >
           <div
+            ref={primarySlideRef}
+            tabIndex={-1}
             className={`gamedev-slide${primaryDormant ? " gamedev-slide--dormant" : ""}`}
             aria-hidden={!isPrimaryActive}
             inert={!isPrimaryActive ? true : undefined}
@@ -134,6 +178,8 @@ export const GameDevSlidingPanels = ({
             {primaryPanel(isPrimaryActive)}
           </div>
           <div
+            ref={secondarySlideRef}
+            tabIndex={-1}
             className={`gamedev-slide${secondaryDormant ? " gamedev-slide--dormant" : ""}`}
             aria-hidden={!isSecondaryActive}
             inert={!isSecondaryActive ? true : undefined}
