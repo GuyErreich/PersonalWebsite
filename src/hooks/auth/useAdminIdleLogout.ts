@@ -31,21 +31,6 @@ export const useAdminIdleLogout = () => {
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
-      // #region agent log
-      fetch("http://127.0.0.1:7602/ingest/fe3726c4-9ddf-48a8-8526-d45977fb3425", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1d80fb" },
-        body: JSON.stringify({
-          sessionId: "1d80fb",
-          runId: "post-fix",
-          hypothesisId: "A",
-          location: "useAdminIdleLogout.ts:effect",
-          message: "Skipping idle logout — Supabase not configured",
-          data: { configured: false },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       return;
     }
 

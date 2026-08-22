@@ -148,21 +148,6 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
   // Load default volume from DB
   useEffect(() => {
     if (!isSupabaseConfigured()) {
-      // #region agent log
-      fetch("http://127.0.0.1:7602/ingest/fe3726c4-9ddf-48a8-8526-d45977fb3425", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1d80fb" },
-        body: JSON.stringify({
-          sessionId: "1d80fb",
-          runId: "post-fix",
-          hypothesisId: "B",
-          location: "ShowreelVideo.tsx:volumeEffect",
-          message: "Skipping showreel volume load — Supabase not configured",
-          data: { configured: false },
-          timestamp: Date.now(),
-        }),
-      }).catch(() => {});
-      // #endregion
       return;
     }
 
