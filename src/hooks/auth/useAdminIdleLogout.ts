@@ -6,7 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import { hasAdminRoleFromMetadata } from "../../lib/auth/roles";
-import { supabase } from "../../lib/supabase";
+import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import type { TimeoutHandle } from "../../types/handles";
 
 const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -30,6 +30,25 @@ export const useAdminIdleLogout = () => {
   const idleDeadlineRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      // #region agent log
+      fetch("http://127.0.0.1:7602/ingest/fe3726c4-9ddf-48a8-8526-d45977fb3425", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "1d80fb" },
+        body: JSON.stringify({
+          sessionId: "1d80fb",
+          runId: "post-fix",
+          hypothesisId: "A",
+          location: "useAdminIdleLogout.ts:effect",
+          message: "Skipping idle logout — Supabase not configured",
+          data: { configured: false },
+          timestamp: Date.now(),
+        }),
+      }).catch(() => {});
+      // #endregion
+      return;
+    }
+
     let hasAdminSession = false;
     let idleCheckIntervalId: TimeoutHandle | null = null;
 
