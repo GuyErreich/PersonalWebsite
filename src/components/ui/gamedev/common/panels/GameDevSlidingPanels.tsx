@@ -116,10 +116,13 @@ export const GameDevSlidingPanels = ({
       setTrackSecondary(showSecondaryPanel);
       clearSettleTimeout();
       // Fallback if transitionend never fires (disabled CSS transitions / dropped event).
-      settleTimeoutRef.current = setTimeout(() => {
-        settleTimeoutRef.current = null;
-        settleTrackRef.current(showSecondaryPanel);
-      }, durationS * 1000 + 50);
+      settleTimeoutRef.current = setTimeout(
+        () => {
+          settleTimeoutRef.current = null;
+          settleTrackRef.current(showSecondaryPanel);
+        },
+        durationS * 1000 + 50,
+      );
     });
     return () => {
       cancelAnimationFrame(frame);
@@ -163,9 +166,7 @@ export const GameDevSlidingPanels = ({
           onTransitionEnd={(event) => {
             if (event.propertyName !== "transform") return;
             if (event.target !== event.currentTarget) return;
-            settleTrack(
-              event.currentTarget.classList.contains("gamedev-slider-track--secondary"),
-            );
+            settleTrack(event.currentTarget.classList.contains("gamedev-slider-track--secondary"));
           }}
         >
           <div
