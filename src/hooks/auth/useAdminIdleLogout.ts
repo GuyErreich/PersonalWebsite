@@ -6,7 +6,7 @@
 
 import { useEffect, useRef } from "react";
 import { hasAdminRoleFromMetadata } from "../../lib/auth/roles";
-import { supabase } from "../../lib/supabase";
+import { isSupabaseConfigured, supabase } from "../../lib/supabase";
 import type { TimeoutHandle } from "../../types/handles";
 
 const ADMIN_IDLE_TIMEOUT_MS = 15 * 60 * 1000;
@@ -30,6 +30,10 @@ export const useAdminIdleLogout = () => {
   const idleDeadlineRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
     let hasAdminSession = false;
     let idleCheckIntervalId: TimeoutHandle | null = null;
 

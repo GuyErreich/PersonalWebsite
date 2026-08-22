@@ -5,7 +5,7 @@
  */
 
 import { useReducedMotion } from "framer-motion";
-import { type KeyboardEvent, useId, useRef, useState } from "react";
+import { type KeyboardEvent, useId, useState } from "react";
 import { playClickSound } from "../../../../../lib/sound/interactionSounds";
 import {
   GAMEDEV_OVERVIEW_TAB_ORDER,
@@ -24,6 +24,7 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
   const [visitedTabs, setVisitedTabs] = useState<Set<GameDevOverviewTab>>(
     () => new Set(["showreel"]),
   );
+  const [direction, setDirection] = useState(1);
   const tabPanelIdBase = useId();
   const showreelTabId = `${tabPanelIdBase}-${idScope}-tab-showreel`;
   const projectsTabId = `${tabPanelIdBase}-${idScope}-tab-projects`;
@@ -31,12 +32,13 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
   const showreelPanelId = `${tabPanelIdBase}-${idScope}-panel-showreel`;
   const projectsPanelId = `${tabPanelIdBase}-${idScope}-panel-projects`;
   const vfxPanelId = `${tabPanelIdBase}-${idScope}-panel-vfx`;
-  const directionRef = useRef(1);
 
-  const switchTab = (tab: GameDevOverviewTab) => {
+  const switchTab = (tab: GameDevOverviewTab, movementDirection?: number) => {
+    if (tab === activeTab) return;
+
     const from = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(activeTab);
     const to = GAMEDEV_OVERVIEW_TAB_ORDER.indexOf(tab);
-    directionRef.current = to > from ? 1 : -1;
+    setDirection(movementDirection ?? (to > from ? 1 : -1));
     setVisitedTabs((current) => {
       if (current.has(tab)) return current;
       return new Set([...current, tab]);
@@ -61,9 +63,21 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
 
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       nextIndex = (currentIndex + 1) % order.length;
-    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      switchTab(order[nextIndex], 1);
+      document.getElementById(getTabId(order[nextIndex]))?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       nextIndex = (currentIndex - 1 + order.length) % order.length;
-    } else if (event.key === "Home") {
+      event.preventDefault();
+      switchTab(order[nextIndex], -1);
+      document.getElementById(getTabId(order[nextIndex]))?.focus();
+      return;
+    }
+
+    if (event.key === "Home") {
       nextIndex = 0;
     } else if (event.key === "End") {
       nextIndex = order.length - 1;
@@ -81,7 +95,7 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
 
   return {
     activeTab,
-    directionRef,
+    direction,
     handleTabListKeyDown,
     projectsPanelId,
     projectsTabId,
@@ -90,6 +104,7 @@ export const useGameDevOverviewTabs = ({ idScope }: UseGameDevOverviewTabsOption
     showreelTabId,
     switchTab,
     tabPulse,
+    visitedTabs,
     vfxPanelId,
     vfxTabId,
   };

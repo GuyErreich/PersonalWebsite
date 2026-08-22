@@ -69,6 +69,8 @@ export interface GameDevOverviewLayoutProps {
   isVfxLoading: boolean;
   iconMap: GameDevIconMap;
   onViewAll: () => void;
+  /** False while the all-projects slide is showing — pauses overview media. */
+  isActive?: boolean;
 }
 
 export interface GameDevAllProjectsLayoutProps extends GameDevGalleryPanelProps {

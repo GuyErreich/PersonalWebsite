@@ -13,6 +13,8 @@ interface GameDevVfxShowcasePanelProps {
   vfxItems: GameDevVfxItem[];
   isLoading: boolean;
   vfxError?: string | null;
+  /** When false, pause VFX media (overview tab hidden but mounted). */
+  isActive?: boolean;
 }
 
 const VfxLoadingStage = () => (
@@ -37,6 +39,7 @@ export const GameDevVfxShowcasePanel = ({
   vfxItems,
   isLoading,
   vfxError = null,
+  isActive = true,
 }: GameDevVfxShowcasePanelProps) => {
   if (isLoading) {
     return (
@@ -89,7 +92,7 @@ export const GameDevVfxShowcasePanel = ({
     <div className="gamedev-vfx-showcase-stack">
       <GameDevVfxIntro effectCount={vfxItems.length} />
       <div className="gamedev-vfx-stage">
-        <GameDevVfxSlider items={vfxItems} />
+        <GameDevVfxSlider items={vfxItems} isActive={isActive} />
       </div>
     </div>
   );

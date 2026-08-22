@@ -23,12 +23,14 @@ import {
   createSteppedSliderAnimator,
   type SteppedSliderAnimator,
 } from "../../../../../lib/steppedSliderAnimator";
-import { supabase } from "../../../../../lib/supabase";
+import { isSupabaseConfigured, supabase } from "../../../../../lib/supabase";
 import type { TimeoutHandle } from "../../../../../types/handles";
 
 interface ShowreelVideoProps {
   url: string | null;
   className?: string;
+  /** When false, pause playback (used while the overview tab is hidden but still mounted). */
+  isActive?: boolean;
 }
 
 const TITLE_LETTERS = "SHOWREEL".split("");
@@ -56,7 +58,7 @@ const formatTime = (s: number) => {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 };
 
-export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
+export const ShowreelVideo = ({ url, className = "", isActive = true }: ShowreelVideoProps) => {
   const hasCookie = !!Cookies.get("hero_visited");
   const volumePopupId = useId();
 
@@ -81,6 +83,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
   const volumePopupRef = useRef<HTMLDivElement>(null);
   const timeUpdateRafRef = useRef<number | null>(null);
   const isMountedRef = useRef(true);
+  const isActiveRef = useRef(isActive);
+  isActiveRef.current = isActive;
   const pendingVideoReadyCleanupRef = useRef<(() => void) | null>(null);
   const isStartingPlaybackRef = useRef(false);
 
@@ -118,8 +122,35 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
     };
   }, []);
 
+  // Pause while the overview tab is hidden but still mounted; resume only if we paused/blocked it.
+  const pausedByTabHideRef = useRef(false);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (!isActive) {
+      // Always pause. Mark for resume unless the user already paused main playback.
+      if (!isPlaying || !video.paused) {
+        pausedByTabHideRef.current = true;
+      }
+      video.pause();
+      return;
+    }
+
+    if (pausedByTabHideRef.current) {
+      pausedByTabHideRef.current = false;
+      void video.play().catch(() => {
+        // Browser autoplay policy may block until user gesture.
+      });
+    }
+  }, [isActive, isPlaying]);
+
   // Load default volume from DB
   useEffect(() => {
+    if (!isSupabaseConfigured()) {
+      return;
+    }
+
     let isMounted = true;
     void (async () => {
       const { data, error } = await supabase
@@ -255,8 +286,13 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
         });
       };
 
-      videoRef.current.muted = false;
       await waitForVideoReady(videoRef.current);
+
+      if (!isMountedRef.current || !isActiveRef.current || !videoRef.current) {
+        return;
+      }
+
+      videoRef.current.muted = false;
       videoRef.current.currentTime = 0;
       applyVolumeToGraph(sliderVolume, isMuted);
       try {
@@ -267,6 +303,10 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
       }
     } finally {
       isStartingPlaybackRef.current = false;
+    }
+
+    if (!isMountedRef.current || !isActiveRef.current) {
+      return;
     }
 
     setIsPlaying(true);
@@ -446,8 +486,8 @@ export const ShowreelVideo = ({ url, className = "" }: ShowreelVideoProps) => {
             <video
               ref={videoRef}
               src={url}
-              autoPlay={!isPlaying}
-              loop={!isPlaying}
+              autoPlay={!isPlaying && isActive}
+              loop={!isPlaying && isActive}
               muted={!isPlaying}
               preload="metadata"
               playsInline

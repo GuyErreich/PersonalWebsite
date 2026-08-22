@@ -62,7 +62,7 @@ export const GameDevSection = () => {
         <GameDevSlidingPanels
           showSecondaryPanel={showAllProjectsView}
           motionStyle={motionStyle}
-          primaryPanel={
+          primaryPanel={(isPrimaryActive) => (
             <GameDevOverviewPanel
               showreelUrl={showreelUrl}
               featuredItems={featuredItems}
@@ -72,8 +72,9 @@ export const GameDevSection = () => {
               isVfxLoading={isVfxLoading}
               iconMap={iconMap}
               onViewAll={() => setShowAllProjectsView(true)}
+              isActive={isPrimaryActive}
             />
-          }
+          )}
           secondaryPanel={
             <GameDevAllProjectsPanel
               galleryItems={filteredItems}

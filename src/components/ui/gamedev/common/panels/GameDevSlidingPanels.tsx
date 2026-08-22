@@ -5,13 +5,45 @@
  */
 
 import type { MotionStyle } from "framer-motion";
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  OVERVIEW_TRACK_DURATION_S,
+  OVERVIEW_TRACK_EASE_CSS,
+  OVERVIEW_TRACK_REDUCED_DURATION_S,
+} from "./overviewSlideVariants";
+
+const SLIDE_TABBABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const moveFocusIntoSlide = (slide: HTMLElement) => {
+  const candidates = slide.querySelectorAll<HTMLElement>(SLIDE_TABBABLE_SELECTOR);
+  const firstTabbable = Array.from(candidates).find((element) => {
+    if (element.tabIndex < 0) {
+      return false;
+    }
+    if (element.closest("[inert]") !== null) {
+      return false;
+    }
+    if (element.closest('[aria-hidden="true"]') !== null) {
+      return false;
+    }
+    return true;
+  });
+  (firstTabbable ?? slide).focus({ preventScroll: true });
+};
 
 interface GameDevSlidingPanelsProps {
   showSecondaryPanel: boolean;
   motionStyle: MotionStyle;
-  primaryPanel: ReactNode;
+  primaryPanel: (isPrimaryActive: boolean) => ReactNode;
   secondaryPanel: ReactNode;
 }
 
@@ -21,17 +53,141 @@ export const GameDevSlidingPanels = ({
   primaryPanel,
   secondaryPanel,
 }: GameDevSlidingPanelsProps) => {
+  const reduceMotion = Boolean(useReducedMotion());
+  const [trackSecondary, setTrackSecondary] = useState(false);
+  const [primaryDormant, setPrimaryDormant] = useState(false);
+  const [secondaryDormant, setSecondaryDormant] = useState(true);
+  const [isTrackMoving, setIsTrackMoving] = useState(false);
+
+  const isFirstTrackSyncRef = useRef(true);
+  const trackSecondaryRef = useRef(trackSecondary);
+  trackSecondaryRef.current = trackSecondary;
+  const settleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const primarySlideRef = useRef<HTMLDivElement>(null);
+  const secondarySlideRef = useRef<HTMLDivElement>(null);
+  const pendingSlideFocusRef = useRef(false);
+
+  const durationS = reduceMotion ? OVERVIEW_TRACK_REDUCED_DURATION_S : OVERVIEW_TRACK_DURATION_S;
+
+  const clearSettleTimeout = () => {
+    if (settleTimeoutRef.current === null) {
+      return;
+    }
+    clearTimeout(settleTimeoutRef.current);
+    settleTimeoutRef.current = null;
+  };
+
+  const settleTrack = (landedOnSecondary: boolean) => {
+    clearSettleTimeout();
+    setIsTrackMoving(false);
+    if (landedOnSecondary) {
+      setPrimaryDormant(true);
+    } else {
+      setSecondaryDormant(true);
+    }
+    pendingSlideFocusRef.current = true;
+  };
+  const settleTrackRef = useRef(settleTrack);
+  settleTrackRef.current = settleTrack;
+
+  useLayoutEffect(() => {
+    if (showSecondaryPanel) {
+      setSecondaryDormant(false);
+      return;
+    }
+    setPrimaryDormant(false);
+  }, [showSecondaryPanel]);
+
+  useEffect(() => () => clearSettleTimeout(), []);
+
+  // Pause overview media / wake the incoming pane for one frame before the track moves.
+  useEffect(() => {
+    if (isFirstTrackSyncRef.current) {
+      isFirstTrackSyncRef.current = false;
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      // No-op when already synced (e.g. reverse toggle before rAF) — avoid stuck isTrackMoving.
+      if (trackSecondaryRef.current === showSecondaryPanel) {
+        return;
+      }
+      setIsTrackMoving(true);
+      setTrackSecondary(showSecondaryPanel);
+      clearSettleTimeout();
+      // Fallback if transitionend never fires (disabled CSS transitions / dropped event).
+      settleTimeoutRef.current = setTimeout(
+        () => {
+          settleTimeoutRef.current = null;
+          settleTrackRef.current(showSecondaryPanel);
+        },
+        durationS * 1000 + 50,
+      );
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      // Cancel any armed settle fallback so a reverse toggle cannot fire settleTrack
+      // for a superseded target (stale primaryDormant / secondaryDormant).
+      clearSettleTimeout();
+    };
+  }, [showSecondaryPanel, durationS]);
+
+  const isPrimaryActive = !showSecondaryPanel && !trackSecondary && !isTrackMoving;
+  const isSecondaryActive = showSecondaryPanel && trackSecondary && !isTrackMoving;
+
+  // After settle commits inert/aria-hidden, move focus into the visible slide.
+  useLayoutEffect(() => {
+    if (!pendingSlideFocusRef.current || isTrackMoving) {
+      return;
+    }
+    const slide = isSecondaryActive
+      ? secondarySlideRef.current
+      : isPrimaryActive
+        ? primarySlideRef.current
+        : null;
+    if (!slide) {
+      return;
+    }
+    pendingSlideFocusRef.current = false;
+    moveFocusIntoSlide(slide);
+  }, [isPrimaryActive, isSecondaryActive, isTrackMoving]);
+
+  const trackStyle = {
+    "--gamedev-track-duration": `${durationS}s`,
+    "--gamedev-track-ease": OVERVIEW_TRACK_EASE_CSS,
+  } as CSSProperties;
+
   return (
     <motion.div style={motionStyle} className="gamedev-content-shell">
       <div className="gamedev-slider-viewport">
-        <motion.div
-          animate={{ x: showSecondaryPanel ? "-50%" : "0%" }}
-          transition={{ type: "spring", stiffness: 150, damping: 24 }}
-          className="gamedev-slider-track"
+        <div
+          style={trackStyle}
+          className={`gamedev-slider-track${trackSecondary ? " gamedev-slider-track--secondary" : ""}${isTrackMoving ? " gamedev-slider-track--moving" : ""}`}
+          onTransitionEnd={(event) => {
+            if (event.propertyName !== "transform") return;
+            if (event.target !== event.currentTarget) return;
+            settleTrack(event.currentTarget.classList.contains("gamedev-slider-track--secondary"));
+          }}
         >
-          <div className="gamedev-slide">{primaryPanel}</div>
-          <div className="gamedev-slide">{secondaryPanel}</div>
-        </motion.div>
+          <div
+            ref={primarySlideRef}
+            tabIndex={-1}
+            className={`gamedev-slide${primaryDormant ? " gamedev-slide--dormant" : ""}`}
+            aria-hidden={!isPrimaryActive}
+            inert={!isPrimaryActive ? true : undefined}
+          >
+            {primaryPanel(isPrimaryActive)}
+          </div>
+          <div
+            ref={secondarySlideRef}
+            tabIndex={-1}
+            className={`gamedev-slide${secondaryDormant ? " gamedev-slide--dormant" : ""}`}
+            aria-hidden={!isSecondaryActive}
+            inert={!isSecondaryActive ? true : undefined}
+          >
+            {secondaryPanel}
+          </div>
+        </div>
       </div>
     </motion.div>
   );

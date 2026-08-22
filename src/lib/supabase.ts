@@ -315,6 +315,9 @@ if (supabaseUrl && supabaseAnonKey) {
   supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey);
 }
 
+/** True when VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY are both set. */
+export const isSupabaseConfigured = (): boolean => supabaseClient !== null;
+
 // Export a getter that throws only when actually used (not at module load time)
 export const getSupabaseClient = (): TypedClient => {
   if (!supabaseClient) {

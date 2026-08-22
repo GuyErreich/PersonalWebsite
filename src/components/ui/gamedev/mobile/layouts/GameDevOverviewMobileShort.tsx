@@ -18,7 +18,7 @@ const MOBILE_SHORT_OVERVIEW_TAB_CLASS_NAMES = {
   tabList: "gamedev-mobile-short-tabs",
   tab: "gamedev-mobile-short-tab-btn",
   tabActive: "gamedev-mobile-short-tab-btn--active",
-  content: "gamedev-mobile-short-content",
+  content: "gamedev-overview-tab-content",
   panel: "gamedev-mobile-short-panel",
   panelByTab: {
     vfx: "gamedev-mobile-short-panel--clip",
@@ -34,14 +34,17 @@ export const GameDevOverviewMobileShort = ({
   isVfxLoading,
   iconMap,
   onViewAll,
+  isActive: isPanelActive = true,
 }: GameDevOverviewLayoutProps) => {
   return (
     <GameDevOverviewTabs
       idScope="mobile"
       classNames={MOBILE_SHORT_OVERVIEW_TAB_CLASS_NAMES}
       tabIconClassName="h-3.5 w-3.5"
-      showreel={<GameDevShowreelPanel showreelUrl={showreelUrl} />}
-      projects={
+      showreel={(isActive) => (
+        <GameDevShowreelPanel showreelUrl={showreelUrl} isActive={isPanelActive && isActive} />
+      )}
+      projects={() => (
         <GameDevPanelShell
           eyebrow="Featured Gallery"
           title="Selected Work"
@@ -65,16 +68,17 @@ export const GameDevOverviewMobileShort = ({
             emptyMessage="No featured projects yet."
           />
         </GameDevPanelShell>
-      }
-      vfx={
+      )}
+      vfx={(isActive) => (
         <div className="gamedev-vfx-showcase">
           <GameDevVfxShowcasePanel
             vfxItems={vfxItems}
             isLoading={isVfxLoading}
             vfxError={vfxError}
+            isActive={isPanelActive && isActive}
           />
         </div>
-      }
+      )}
     />
   );
 };

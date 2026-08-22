@@ -18,6 +18,7 @@ export const GameDevOverviewPanel = ({
   isVfxLoading,
   iconMap,
   onViewAll,
+  isActive = true,
 }: GameDevOverviewLayoutProps) => {
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
@@ -32,6 +33,7 @@ export const GameDevOverviewPanel = ({
         isVfxLoading={isVfxLoading}
         iconMap={iconMap}
         onViewAll={onViewAll}
+        isActive={isActive}
       />
     );
   }
@@ -46,6 +48,7 @@ export const GameDevOverviewPanel = ({
       isVfxLoading={isVfxLoading}
       iconMap={iconMap}
       onViewAll={onViewAll}
+      isActive={isActive}
     />
   );
 };
