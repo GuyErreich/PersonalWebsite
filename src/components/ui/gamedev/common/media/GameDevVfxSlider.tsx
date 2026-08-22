@@ -10,6 +10,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useSwipeNavigation } from "../../../../../hooks/useSwipeNavigation";
 import { clampIndex } from "../../../../../lib/clampIndex";
 import {
+  snappyHoverTransition,
   vfxDeckCardVariants,
   vfxDeckFloatAnimate,
   vfxDeckFloatTransition,
@@ -274,7 +275,7 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
                   key={item.id}
                   type="button"
                   data-vfx-thumb-index={index}
-                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileHover={{ scale: 1.03, y: -2, transition: snappyHoverTransition }}
                   whileTap={{ scale: 0.97 }}
                   onMouseEnter={playHoverSound}
                   onClick={() => goToIndex(index)}
@@ -287,7 +288,7 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
                       item={item}
                       surface="thumb"
                       isActive={isActive && isActiveThumb}
-                      className="h-full w-full object-cover transition-transform duration-300"
+                      className="h-full w-full object-cover"
                       imgLoading={isActiveThumb ? "eager" : "lazy"}
                     />
                   </div>
