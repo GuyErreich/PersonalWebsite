@@ -102,7 +102,7 @@
   }
 
   .gamedev-vfx-showcase-stack {
-    @apply flex min-h-0 flex-1 flex-col gap-2 overflow-hidden md:gap-3;
+    @apply flex min-h-0 flex-1 flex-col gap-1 overflow-hidden md:gap-2;
   }
 
   .gamedev-vfx-showcase-stack--empty {
@@ -114,15 +114,15 @@
   }
 
   .gamedev-vfx-intro-copy {
-    @apply text-sm leading-relaxed text-slate-300 md:text-[0.95rem];
+    @apply text-xs leading-snug text-slate-300 md:text-sm;
   }
 
   .gamedev-vfx-intro-meta {
-    @apply mt-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/80;
+    @apply mt-0.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-300/80;
   }
 
   .gamedev-vfx-intro-meta-skeleton {
-    @apply mx-auto mt-2 h-3 w-16 rounded-full bg-slate-700/60 animate-pulse;
+    @apply mx-auto mt-1 h-3 w-16 rounded-full bg-slate-700/60 animate-pulse;
   }
 
   .gamedev-vfx-stage {
