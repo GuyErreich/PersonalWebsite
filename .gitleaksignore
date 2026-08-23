@@ -1,0 +1,6 @@
+# Known historical findings that are no longer present in HEAD.
+# Format: fingerprint from `gitleaks git --report-format json`
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+# Example JWT in a security skill "VULNERABLE" snippet (removed from tree later)
+b1dede69b6b5229cb56c90ded9415148610a2dcb:.github/skills/security/SKILL.md:generic-api-key:151

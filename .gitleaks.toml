@@ -1,0 +1,57 @@
+# Title for the gitleaks configuration file.
+title = "PersonalWebsite gitleaks config"
+
+# Extend the built-in default rules, then add project allowlists and high-signal rules.
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+#
+# Note: a global allowlist `paths` entry skips the *entire file* before content
+# scanning. Do not put broad dirs (workflows/, skills/) there — use regex-only
+# allowlists for documentation patterns instead.
+[extend]
+useDefault = true
+
+# ── Global allowlists ─────────────────────────────────────────────────────────
+[[allowlists]]
+description = "Example env file — placeholders only, never real secrets"
+paths = [
+  '''\.env\.example$''',
+]
+
+[[allowlists]]
+description = "Docs/workflows naming GitHub Actions secret keys (references, not values)"
+regexTarget = "line"
+regexes = [
+  '''secrets\.(VITE_|SUPABASE_|R2_|PRESIGN_|ALLOWED_|GITLEAKS_)''',
+  '''\$\{\{\s*secrets\.[A-Z0-9_]+''',
+]
+
+[[allowlists]]
+description = "Lockfiles and binary/generated assets"
+paths = [
+  '''package-lock\.json$''',
+  '''uv\.lock$''',
+  '''src/assets/''',
+]
+
+# ── Project-specific high-signal rules ────────────────────────────────────────
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase service role key (must never ship to the client)"
+regex = '''(?i)(?:service[_-]?role[_-]?key|SUPABASE_SERVICE_ROLE_KEY)\s*[=:]\s*['"]?(eyJ[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}|sb_secret_[A-Za-z0-9_\-]{20,})'''
+keywords = ["service_role", "SUPABASE_SERVICE_ROLE", "sb_secret_"]
+tags = ["supabase", "critical"]
+
+[[rules]]
+id = "cloudflare-r2-secret"
+description = "Cloudflare R2 secret access key assignment"
+regex = '''(?i)R2_SECRET_ACCESS_KEY\s*[=:]\s*['"]?[A-Za-z0-9+/=_\-]{32,}'''
+keywords = ["R2_SECRET_ACCESS_KEY"]
+tags = ["cloudflare", "r2"]
+
+[[rules]]
+id = "vite-non-public-secret-in-src"
+description = "Non-public secret env assignments under src/ (R2 / service role / Turnstile secret)"
+regex = '''(?i)(?:R2_SECRET_ACCESS_KEY|SUPABASE_SERVICE_ROLE_KEY|TURNSTILE_SECRET(?:_KEY)?)\s*[=:]\s*['"]?[^\s'"]{8,}'''
+path = '''^src/'''
+keywords = ["R2_SECRET", "SERVICE_ROLE", "TURNSTILE_SECRET"]
+tags = ["vite", "frontend"]
