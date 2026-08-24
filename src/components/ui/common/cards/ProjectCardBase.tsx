@@ -8,6 +8,7 @@ import { motion, useInView } from "framer-motion";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useCallback, useContext, useRef } from "react";
 import { Link, useNavigate } from "react-router";
+import { snappyHoverTransition } from "../../../../lib/motionVariants";
 import { playClickSound, playHoverSound } from "../../../../lib/sound/interactionSounds";
 import { ComingSoonBadge } from "../badges/ComingSoonBadge";
 import { GitHubIcon } from "../icons/BrandIcons";
@@ -204,7 +205,7 @@ export const ProjectCardBase = ({
       {useDoubleClickOpen ? (
         <motion.div
           {...motionProps}
-          whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
+          whileHover={{ y: -6, transition: snappyHoverTransition }}
           className={`relative ${theme.containerClassName}`}
         >
           <motion.div
@@ -225,7 +226,7 @@ export const ProjectCardBase = ({
       ) : (
         <motion.div
           {...motionProps}
-          whileHover={{ y: -6, transition: { duration: 0.12, ease: "easeOut" } }}
+          whileHover={{ y: -6, transition: snappyHoverTransition }}
           className={`relative ${theme.containerClassName}`}
         >
           {cardBody(true)}

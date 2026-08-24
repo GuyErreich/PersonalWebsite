@@ -97,3 +97,9 @@ export const vfxDeckStackSpring = {
   damping: 20,
   mass: 0.72,
 };
+
+/** Shared snappy hover for card lift / VFX thumb rail (Framer Motion `whileHover`). */
+export const snappyHoverTransition = {
+  duration: 0.12,
+  ease: "easeOut" as const,
+};
