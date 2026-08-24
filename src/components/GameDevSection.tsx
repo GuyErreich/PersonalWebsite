@@ -8,6 +8,7 @@ import { useInView } from "framer-motion";
 import { memo, useState } from "react";
 import { useGameDevFilter } from "../hooks/gamedev/useGameDevFilter";
 import { useGameDevSectionData } from "../hooks/gamedev/useGameDevSectionData";
+import { useWarmFirstVfxHeroAsset } from "../hooks/gamedev/useWarmFirstVfxHeroAsset";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { GamingIconsBackground } from "./backgrounds/tsparticles/GamingIconsBackground";
@@ -43,6 +44,11 @@ export const GameDevSection = () => {
     root: container ?? undefined,
     margin: "30% 0px 30% 0px",
   });
+
+  useWarmFirstVfxHeroAsset(
+    vfxItems,
+    shouldRenderBackground && !isVfxLoading && vfxItems.length > 0,
+  );
 
   return (
     <SectionEntranceOverlay theme="gamedev">
