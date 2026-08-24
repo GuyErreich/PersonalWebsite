@@ -44,7 +44,13 @@
   }
 
   .gamedev-vfx-slider {
-    @apply flex min-h-0 flex-1 flex-col gap-3;
+    --gamedev-vfx-deck-w: 22rem;
+    --gamedev-vfx-deck-w-sm: 24rem;
+    --gamedev-vfx-deck-w-md: 26rem;
+    --gamedev-vfx-deck-cqh: 82cqh;
+    --gamedev-vfx-thumb-w: 4.25rem;
+
+    @apply flex min-h-0 flex-1 flex-col gap-2;
   }
 
   .gamedev-vfx-slider--loading {
@@ -56,7 +62,13 @@
   }
 
   .gamedev-vfx-slider--loading .gamedev-vfx-slider-deck {
-    @apply w-full max-w-[min(100%,18rem)] sm:max-w-[min(100%,20rem)];
+    width: min(100%, var(--gamedev-vfx-deck-w));
+  }
+
+  @media (min-width: 640px) {
+    .gamedev-vfx-slider--loading .gamedev-vfx-slider-deck {
+      width: min(100%, var(--gamedev-vfx-deck-w-sm));
+    }
   }
 
   .gamedev-vfx-slider--loading .gamedev-vfx-slider-card-skeleton {
@@ -64,7 +76,9 @@
   }
 
   .gamedev-vfx-slider--loading .gamedev-vfx-slider-thumb {
-    @apply h-[4.5rem] w-[5.5rem] shrink-0 rounded-xl;
+    @apply shrink-0 rounded-xl;
+    width: var(--gamedev-vfx-thumb-w);
+    aspect-ratio: 3 / 4;
   }
 
   .gamedev-vfx-slider-deck-zone {
@@ -81,20 +95,20 @@
 
   .gamedev-vfx-slider-deck {
     @apply relative z-10 mx-auto max-h-full;
-    width: min(100%, 18rem, 70cqh);
+    width: min(100%, var(--gamedev-vfx-deck-w), var(--gamedev-vfx-deck-cqh));
     aspect-ratio: 3 / 4;
     perspective: 1600px;
   }
 
   @media (min-width: 640px) {
     .gamedev-vfx-slider-deck {
-      width: min(100%, 20rem, 70cqh);
+      width: min(100%, var(--gamedev-vfx-deck-w-sm), var(--gamedev-vfx-deck-cqh));
     }
   }
 
   @media (min-width: 768px) {
     .gamedev-vfx-slider-deck {
-      width: min(100%, 21rem, 70cqh);
+      width: min(100%, var(--gamedev-vfx-deck-w-md), var(--gamedev-vfx-deck-cqh));
     }
   }
 
@@ -141,7 +155,7 @@
   }
 
   .gamedev-vfx-slider-card-body {
-    @apply shrink-0 space-y-1 border-0 bg-transparent px-4 py-3;
+    @apply shrink-0 space-y-1 border-0 bg-transparent px-3 py-2;
   }
 
   .gamedev-vfx-slider-nav {
@@ -165,11 +179,11 @@
   }
 
   .gamedev-vfx-slider-title {
-    @apply mt-1.5 text-base font-semibold leading-tight text-white;
+    @apply mt-1 text-base font-semibold leading-tight text-white;
   }
 
   .gamedev-vfx-slider-description {
-    @apply mt-1 line-clamp-2 text-xs leading-relaxed text-slate-300;
+    @apply mt-0.5 line-clamp-2 text-xs leading-relaxed text-slate-300;
   }
 
   .gamedev-vfx-slider-tag {
@@ -181,11 +195,11 @@
   }
 
   .gamedev-vfx-slider-rail-label {
-    @apply mb-1.5 text-center text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-500;
+    @apply sr-only;
   }
 
   .gamedev-vfx-slider-rail {
-    @apply flex gap-2 overflow-x-auto pb-1;
+    @apply flex gap-1.5 overflow-x-auto pb-0.5;
     scrollbar-width: thin;
     scrollbar-color: rgba(34, 211, 238, 0.35) transparent;
     touch-action: pan-x;
@@ -201,7 +215,8 @@
   }
 
   .gamedev-vfx-slider-thumb {
-    @apply flex w-[5.5rem] shrink-0 flex-col gap-1.5 rounded-xl border border-white/10 bg-slate-900/50 p-1.5 text-left transition-[border-color,box-shadow,background-color] duration-300;
+    @apply flex shrink-0 flex-col gap-1 rounded-xl border border-white/10 bg-slate-900/50 p-1 text-left transition-[border-color,box-shadow,background-color] duration-300;
+    width: var(--gamedev-vfx-thumb-w);
   }
 
   .gamedev-vfx-slider-thumb--active {
@@ -213,7 +228,7 @@
   }
 
   .gamedev-vfx-slider-thumb-title {
-    @apply line-clamp-1 px-0.5 text-[11px] font-medium text-slate-200;
+    @apply line-clamp-1 px-0.5 text-[10px] font-medium text-slate-200;
   }
 
   .gamedev-vfx-showcase-card {
