@@ -1,0 +1,40 @@
+/*
+ * Copyright (c) 2026 Guy Erreich
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * Shared prev/next arrow chrome for desktop pagination and VFX deck nav.
+ */
+
+@layer components {
+  .ui-nav-arrow {
+    @apply inline-flex items-center justify-center border border-white/30 bg-slate-950/80 text-white shadow-[0_8px_24px_-12px_rgba(0,0,0,0.9)] backdrop-blur-md transition-[color,background-color,border-color,opacity,box-shadow];
+    @apply disabled:cursor-not-allowed disabled:opacity-40;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950;
+    @apply enabled:hover:border-white/45 enabled:hover:bg-slate-900/95 enabled:hover:text-white;
+  }
+
+  .ui-nav-arrow--sm {
+    @apply h-7 w-7 shrink-0 rounded-lg;
+  }
+
+  .ui-nav-arrow--md {
+    @apply h-8 w-8 rounded-lg;
+  }
+
+  .ui-nav-arrow--lg {
+    @apply h-10 w-10 rounded-full p-0;
+  }
+
+  .ui-nav-arrow--purple {
+    @apply focus-visible:ring-purple-400/55 enabled:hover:border-purple-400/55 enabled:hover:text-purple-100;
+  }
+
+  .ui-nav-arrow--blue {
+    @apply focus-visible:ring-blue-400/55 enabled:hover:border-blue-400/55 enabled:hover:text-blue-100;
+  }
+
+  .ui-nav-arrow--cyan {
+    @apply text-cyan-50 focus-visible:ring-cyan-400/55 enabled:hover:border-cyan-300/65 enabled:hover:bg-cyan-950/85 enabled:hover:text-white;
+  }
+}

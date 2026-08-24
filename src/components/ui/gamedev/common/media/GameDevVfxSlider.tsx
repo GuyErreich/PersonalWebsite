@@ -141,7 +141,7 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
               onKeyDown={handleNavKeyDown}
               aria-label="Previous effect"
               aria-controls={sliderRegionId}
-              className="gamedev-vfx-slider-nav gamedev-vfx-slider-nav--prev disabled:opacity-30"
+              className="ui-nav-arrow ui-nav-arrow--lg ui-nav-arrow--cyan gamedev-vfx-slider-nav gamedev-vfx-slider-nav--prev"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />
             </motion.button>
@@ -156,7 +156,7 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
               onKeyDown={handleNavKeyDown}
               aria-label="Next effect"
               aria-controls={sliderRegionId}
-              className="gamedev-vfx-slider-nav gamedev-vfx-slider-nav--next disabled:opacity-30"
+              className="ui-nav-arrow ui-nav-arrow--lg ui-nav-arrow--cyan gamedev-vfx-slider-nav gamedev-vfx-slider-nav--next"
             >
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </motion.button>

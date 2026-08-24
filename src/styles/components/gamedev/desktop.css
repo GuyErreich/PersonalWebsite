@@ -159,7 +159,7 @@
   }
 
   .gamedev-vfx-slider-nav {
-    @apply absolute top-1/2 z-20 inline-flex -translate-y-1/2 items-center justify-center rounded-full border-0 bg-transparent p-2 text-cyan-100 shadow-none transition-colors hover:bg-transparent hover:text-cyan-50;
+    @apply absolute top-1/2 z-20 -translate-y-1/2;
   }
 
   .gamedev-vfx-slider-nav--prev {

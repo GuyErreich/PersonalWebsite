@@ -20,5 +20,6 @@
 
 @import "./styles/base.css";
 @import "./styles/components/sections.css";
+@import "./styles/components/pagination-arrows.css";
 @import "./styles/components/devops.css";
 @import "./styles/components/gamedev/index.css";

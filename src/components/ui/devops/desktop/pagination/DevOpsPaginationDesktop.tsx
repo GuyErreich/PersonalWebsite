@@ -33,7 +33,7 @@ export const DevOpsPaginationDesktop = ({
       onControlClick={playClickSound}
       activeDotClassName="h-2 w-5 rounded-sm bg-blue-400"
       inactiveDotClassName="h-2 w-2 rounded-sm bg-gray-600 hover:bg-gray-400"
-      arrowsClassName="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-gray-400 transition-colors disabled:opacity-30 enabled:hover:border-blue-500/40 enabled:hover:text-white"
+      arrowsClassName="ui-nav-arrow ui-nav-arrow--sm ui-nav-arrow--blue"
     />
   );
 };
