@@ -19,6 +19,23 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
     },
     build: {
+      // Keep Three / particles off the critical preload path; they load with their lazy sections.
+      modulePreload: {
+        resolveDependencies(filename, deps) {
+          if (!filename.includes("index")) {
+            return deps;
+          }
+
+          return deps.filter(
+            (dep) =>
+              !dep.includes("three-vendor") &&
+              !dep.includes("particles-vendor") &&
+              !dep.includes("HeroWebGlBackground") &&
+              !dep.includes("DevOpsBackground") &&
+              !dep.includes("GamingIconsBackground"),
+          );
+        },
+      },
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -32,6 +49,21 @@ export default defineConfig(({ mode }) => {
 
             if (normalizedId.includes("/@supabase/")) {
               return "supabase-vendor";
+            }
+
+            if (
+              normalizedId.includes("/node_modules/three/") ||
+              normalizedId.includes("/node_modules/three-stdlib/") ||
+              normalizedId.includes("/node_modules/@react-three/")
+            ) {
+              return "three-vendor";
+            }
+
+            if (
+              normalizedId.includes("/node_modules/@tsparticles/") ||
+              normalizedId.includes("/node_modules/tsparticles")
+            ) {
+              return "particles-vendor";
             }
 
             return "vendor";
