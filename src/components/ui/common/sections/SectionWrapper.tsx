@@ -5,7 +5,7 @@
  */
 
 import { motion, useInView } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 import { useScrollReveal } from "../../../../hooks/useScrollReveal";
 import { useScrollContainer } from "../../../../lib/ScrollContainerContext";
 
@@ -17,6 +17,8 @@ interface SectionWrapperProps {
   background?: ReactNode;
   bottomFadeClassName?: string;
   backgroundInViewOnly?: boolean;
+  /** Fires when the section crosses the near-viewport margin (same signal as background gating). */
+  onNearViewChange?: (isNearView: boolean) => void;
 }
 
 export const SectionWrapper = ({
@@ -27,6 +29,7 @@ export const SectionWrapper = ({
   background,
   bottomFadeClassName = "",
   backgroundInViewOnly = false,
+  onNearViewChange,
 }: SectionWrapperProps) => {
   const { ref, motionStyle } = useScrollReveal();
   const container = useScrollContainer();
@@ -34,6 +37,10 @@ export const SectionWrapper = ({
     root: container ?? undefined,
     margin: "30% 0px 30% 0px",
   });
+
+  useEffect(() => {
+    onNearViewChange?.(shouldRenderBackground);
+  }, [onNearViewChange, shouldRenderBackground]);
 
   return (
     <section id={id} ref={ref} className={`snap-section overflow-hidden relative ${className}`}>

@@ -78,7 +78,7 @@ const VfxLoopVideo = ({
       loop
       playsInline
       autoPlay={autoPlay}
-      preload={autoPlay ? "auto" : "metadata"}
+      preload={autoPlay ? "auto" : "none"}
       disablePictureInPicture
       disableRemotePlayback
       className={className}

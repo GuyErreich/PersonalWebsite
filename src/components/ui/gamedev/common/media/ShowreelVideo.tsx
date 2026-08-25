@@ -489,7 +489,7 @@ export const ShowreelVideo = ({ url, className = "", isActive = true }: Showreel
               autoPlay={!isPlaying && isActive}
               loop={!isPlaying && isActive}
               muted={!isPlaying}
-              preload="metadata"
+              preload={isActive ? "metadata" : "none"}
               playsInline
               onTimeUpdate={() => {
                 if (timeUpdateRafRef.current !== null) return;

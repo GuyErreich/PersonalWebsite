@@ -10,6 +10,7 @@ import type { GameDevItem, GameDevVfxItem } from "../../components/ui/gamedev/co
 import { resolveGameDevTeaserSummary, sortFeaturedGameDevItems } from "../../lib/gamedev";
 import { loadPublicVfxLibraryItems } from "../../lib/gamedev/vfxLibrary";
 import { supabase } from "../../lib/supabase";
+import { useLatchedEnable } from "../useLatchedEnable";
 
 const withSummary = (items: GameDevItem[]): GameDevItem[] =>
   items.map((item) => ({
@@ -21,7 +22,13 @@ const withSummary = (items: GameDevItem[]): GameDevItem[] =>
 const isSupabaseNotConfiguredError = (error: unknown): boolean =>
   error instanceof Error && error.message.includes("Supabase is not configured");
 
-export const useGameDevSectionData = () => {
+interface UseGameDevSectionDataOptions {
+  /** When false, skip network work so hero first paint is not contested. Latches on once true. */
+  enabled?: boolean;
+}
+
+export const useGameDevSectionData = ({ enabled = true }: UseGameDevSectionDataOptions = {}) => {
+  const loadLatched = useLatchedEnable(enabled);
   const [showreelUrl, setShowreelUrl] = useState<string | null>(null);
   const [galleryItems, setGalleryItems] = useState<GameDevItem[]>([]);
   const [featuredItems, setFeaturedItems] = useState<GameDevItem[]>([]);
@@ -31,6 +38,10 @@ export const useGameDevSectionData = () => {
   const [isVfxLoading, setIsVfxLoading] = useState(true);
 
   useEffect(() => {
+    if (!loadLatched) {
+      return;
+    }
+
     let isMounted = true;
 
     void (async () => {
@@ -87,9 +98,13 @@ export const useGameDevSectionData = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadLatched]);
 
   useEffect(() => {
+    if (!loadLatched) {
+      return;
+    }
+
     let isMounted = true;
 
     void (async () => {
@@ -119,7 +134,7 @@ export const useGameDevSectionData = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [loadLatched]);
 
   return {
     showreelUrl,
@@ -127,7 +142,7 @@ export const useGameDevSectionData = () => {
     featuredItems,
     vfxItems,
     vfxError,
-    isLoading,
-    isVfxLoading,
+    isLoading: loadLatched ? isLoading : true,
+    isVfxLoading: loadLatched ? isVfxLoading : true,
   };
 };
