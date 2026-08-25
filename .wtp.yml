@@ -33,6 +33,10 @@ hooks:
       from: .cursor/skills/
       to: .cursor/skills/
 
+    - type: copy
+      from: .review-loop/
+      to: .review-loop/
+      
     # Share directories with symlinks:
     # - type: symlink
     #   from: .bin        # Shared tool cache
