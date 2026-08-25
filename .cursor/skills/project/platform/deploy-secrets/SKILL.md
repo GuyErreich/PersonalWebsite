@@ -65,27 +65,29 @@ From repo root (`gh` authenticated, git remote = this repo):
 
 ```bash
 # Public URLs — safe as secrets; vars also work for origins
-gh secret set ALLOWED_ORIGINS --body "https://dev.personal-website-5f5.pages.dev"
-gh secret set ALLOWED_ORIGIN --body "https://dev.personal-website-5f5.pages.dev"
+command gh secret set ALLOWED_ORIGINS --body "https://dev.personal-website-5f5.pages.dev"
+command gh secret set ALLOWED_ORIGIN --body "https://dev.personal-website-5f5.pages.dev"
 
 # Cloudflare Pages deploy (Profile → API Tokens, Pages permissions — not R2 S3 keys)
-gh secret set CLOUDFLARE_API_TOKEN --body "<token-value>"
-gh secret set CLOUDFLARE_ACCOUNT_ID --body "<account-id>"
-gh secret set CLOUDFLARE_PAGES_PROJECT_NAME --body "<pages-project-name>"
+command gh secret set CLOUDFLARE_API_TOKEN --body "<token-value>"
+command gh secret set CLOUDFLARE_ACCOUNT_ID --body "<account-id>"
+command gh secret set CLOUDFLARE_PAGES_PROJECT_NAME --body "<pages-project-name>"
 
 # Supabase (CI build + smoke tests)
-gh secret set VITE_SUPABASE_URL --body "https://<project-ref>.supabase.co"
-gh secret set VITE_SUPABASE_ANON_KEY --body "<anon-key>"
-gh secret set SUPABASE_SERVICE_ROLE_KEY --body "<service-role-key>"
+command gh secret set VITE_SUPABASE_URL --body "https://<project-ref>.supabase.co"
+command gh secret set VITE_SUPABASE_ANON_KEY --body "<anon-key>"
+command gh secret set SUPABASE_SERVICE_ROLE_KEY --body "<service-role-key>"
 ```
 
-Verify names: `gh secret list`
+Verify names: `command gh secret list`
 
 Re-run deploy: Actions → **Deploy to Cloudflare Pages** → Re-run, or:
 
 ```bash
-gh run rerun --workflow deploy.yml
+command gh run rerun --workflow deploy.yml
 ```
+
+Invoke the CLI as `command gh` to bypass interactive shell aliases — see `code/ci/pr/SKILL.md` `## GitHub CLI in agent shells`.
 
 ## After rotation checklist
 

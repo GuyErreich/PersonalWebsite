@@ -12,6 +12,17 @@ The milestone workflow for opening a pull request.
 
 Load `.cursor/skills/code/foundations/engineering/SKILL.md` first.
 
+## GitHub CLI in agent shells
+
+Invoke the CLI as **`command gh`**, never bare `gh`. Interactive shells often alias `gh` to a credential-manager wrapper — for example 1Password's `alias gh="op plugin run -- gh"` — and those wrappers fail in agent shells where the helper daemon cannot start:
+
+```
+couldn't start daemon: open /run/user/1000/op-daemon.pid: no such file or directory
+[ERROR] Shell Plugins can only be used with the 1Password app integration enabled.
+```
+
+This hits **every** subcommand and flag combination, and reads like an auth or flag-support problem rather than an alias problem — do not conclude that a flag such as `--json` is unsupported. `command gh` bypasses the alias and behaves identically on machines with no alias, so prefer it unconditionally. Only if `command gh auth status` itself fails should you fall back to the GitHub MCP server.
+
 ## Workflow
 
 1. **Understand the full branch.** Inspect status, the full diff since the branch diverged from the base, and the commit history — not just the latest commit.

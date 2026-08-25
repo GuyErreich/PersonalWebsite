@@ -34,7 +34,7 @@ Success stop: **`clean_passes_required` consecutive** reviews with zero open fin
 ## Performance (do not undo)
 
 - **Focus progression** — not `full` every round. See below.
-- **Init-once env/CI** — Validate suite from `AGENT.md`, `gh auth`, toolchain, pricing run at preflight (and after tree change / fixer). Reviewers skip phase-9 validate when fingerprint still matches — **including `full` / `confirm`**.
+- **Init-once env/CI** — Validate suite from `AGENT.md`, `command gh auth`, toolchain, pricing run at preflight (and after tree change / fixer). Reviewers skip phase-9 validate when fingerprint still matches — **including `full` / `confirm`**.
 - **Triage** — `Recommend: Fix` + concrete shape never pauses the user.
 
 ## Review first — never resolve before reviewing
@@ -48,8 +48,8 @@ Hard rules, not defaults:
 
 ## Preflight
 
-1. Resolve the open PR for the checked-out branch (`gh pr view` or GitHub MCP). No open PR → stop and report.
-2. Preflight `gh auth status` **once**; on failure fall back to GitHub MCP. Do not re-check every round unless posting fails.
+1. Resolve the open PR for the checked-out branch (`command gh pr view` or GitHub MCP). No open PR → stop and report.
+2. Preflight `command gh auth status` **once**; on failure fall back to GitHub MCP. Do not re-check every round unless posting fails. Always invoke the CLI as `command gh` — see `code/ci/pr/SKILL.md` `## GitHub CLI in agent shells`.
 3. Detect toolchain mode **once** via `.cursor/hooks/run-python.sh --detect`. If detect prints `hooks degraded` **or** `.review-loop/hook-degraded.json` exists (`load_hook_degraded`), print **accounting health: degraded (nominal estimates)** and do **not** treat cost as live — continue the loop; the meter will charge cold-start nominals. Do **not** run `npm run test:py` every round — only if detect fails or the user asks.
 4. Bootstrap pricing **once** if `.review-loop/pricing.json` is missing or lacks a `modes` table.
 5. Resolve **role models** (default both **`inherit`**):
@@ -118,6 +118,8 @@ Use `pr-fixer` after a fixer. Duplicate with the `subagentStop` hook is safe (`_
 | `pr-fixer` | Always raw Validate suite before commit; update `last_validate_*` on success |
 
 Never trust `rtk`-wrapped exit codes for pass/fail. Never record Validate `pass` when any command failed.
+
+**Composite lint trap:** if `AGENT.md` lint is `eslint && biome` (or similar) and shell output is an ESLint-only summary, that is **not** a lint pass — re-run with `RTK_DISABLED=1` (or raw `node_modules/.bin` stages) and require every stage exit 0 before setting `last_lint=pass`. See `code/languages/nodejs` → `npm-tooling.md`.
 
 ## Stop conditions
 

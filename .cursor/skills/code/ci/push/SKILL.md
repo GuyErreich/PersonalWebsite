@@ -19,8 +19,10 @@ Load `.cursor/skills/code/foundations/engineering/SKILL.md` first.
 3. **Check for an open PR** on the current branch:
 
 ```bash
-gh pr view --json number,url,state 2>/dev/null
+command gh pr view --json number,url,state 2>/dev/null
 ```
+
+`command gh` bypasses interactive shell aliases that break the CLI in agent shells — see `code/ci/pr/SKILL.md` `## GitHub CLI in agent shells`.
 
 4. **If an open PR exists**, fetch its review threads (see `code/review/pr-resolver` graphql reference). If there are unresolved threads, stop and hand off to pr-resolver — do not push unrelated changes on top. **Exception:** pr-resolver may push after validation when executing an approved fix plan (its Step 6).
 5. **If no open PR** (or no unresolved threads outside an active resolver fix push) and the local review passed, push.

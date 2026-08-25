@@ -2,8 +2,10 @@
 
 Always use GraphQL — REST tooling paginates incorrectly and silently misses threads beyond the first page.
 
+Invoke the CLI as `command gh` to bypass interactive shell aliases that break it in agent shells — see `code/ci/pr/SKILL.md` `## GitHub CLI in agent shells`.
+
 ```bash
-GH_PAGER=cat gh api graphql -f query='
+GH_PAGER=cat command gh api graphql -f query='
 query($owner: String!, $repo: String!, $pr: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $pr) {
@@ -27,7 +29,7 @@ Paginate with `-f after=<endCursor>` until `hasNextPage` is false. Filter `isRes
 ## Post a threaded reply
 
 ```bash
-GH_PAGER=cat gh api repos/OWNER/REPO/pulls/PR_NUMBER/comments/COMMENT_DATABASE_ID/replies \
+GH_PAGER=cat command gh api repos/OWNER/REPO/pulls/PR_NUMBER/comments/COMMENT_DATABASE_ID/replies \
   -f body="Fixed in abc1234. <one-sentence summary>."
 ```
 
@@ -40,7 +42,7 @@ Reply templates:
 ## Resolve a thread
 
 ```bash
-GH_PAGER=cat gh api graphql \
+GH_PAGER=cat command gh api graphql \
   --raw-field query='mutation($t:ID!){resolveReviewThread(input:{threadId:$t}){thread{isResolved}}}' \
   --raw-field t="THREAD_NODE_ID"
 ```

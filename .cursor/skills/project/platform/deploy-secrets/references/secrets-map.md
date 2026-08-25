@@ -102,39 +102,39 @@ Repository secrets (Settings → Secrets and variables → Actions). From repo r
 REPO="GuyErreich/PersonalWebsite"   # optional if cwd is git root
 
 # Must match Supabase ALLOWED_ORIGINS (smoke test Origin header)
-gh secret set ALLOWED_ORIGINS --body "https://dev.personal-website-5f5.pages.dev" --repo "$REPO"
-gh secret set ALLOWED_ORIGIN  --body "https://dev.personal-website-5f5.pages.dev" --repo "$REPO"
+command gh secret set ALLOWED_ORIGINS --body "https://dev.personal-website-5f5.pages.dev" --repo "$REPO"
+command gh secret set ALLOWED_ORIGIN  --body "https://dev.personal-website-5f5.pages.dev" --repo "$REPO"
 
 # Cloudflare Pages deploy
-gh secret set CLOUDFLARE_API_TOKEN          --body "<pages-api-token>" --repo "$REPO"
-gh secret set CLOUDFLARE_ACCOUNT_ID         --body "<account-id>"       --repo "$REPO"
-gh secret set CLOUDFLARE_PAGES_PROJECT_NAME --body "<pages-project>"    --repo "$REPO"
+command gh secret set CLOUDFLARE_API_TOKEN          --body "<pages-api-token>" --repo "$REPO"
+command gh secret set CLOUDFLARE_ACCOUNT_ID         --body "<account-id>"       --repo "$REPO"
+command gh secret set CLOUDFLARE_PAGES_PROJECT_NAME --body "<pages-project>"    --repo "$REPO"
 
 # Vite build + smoke tests (Supabase Dashboard → Settings → API)
-gh secret set VITE_SUPABASE_URL       --body "https://<ref>.supabase.co" --repo "$REPO"
-gh secret set VITE_SUPABASE_ANON_KEY  --body "<anon-key>"                --repo "$REPO"
-gh secret set SUPABASE_SERVICE_ROLE_KEY --body "<service-role-key>"      --repo "$REPO"
+command gh secret set VITE_SUPABASE_URL       --body "https://<ref>.supabase.co" --repo "$REPO"
+command gh secret set VITE_SUPABASE_ANON_KEY  --body "<anon-key>"                --repo "$REPO"
+command gh secret set SUPABASE_SERVICE_ROLE_KEY --body "<service-role-key>"      --repo "$REPO"
 
 # Optional fallbacks (workflows derive URLs from VITE_SUPABASE_URL if unset)
-gh secret set PRESIGN_URL       --body "https://<ref>.supabase.co/functions/v1/r2-presign" --repo "$REPO"
-gh secret set PROJECT_SEED_URL  --body "https://<ref>.supabase.co/functions/v1/github-project-seed" --repo "$REPO"
+command gh secret set PRESIGN_URL       --body "https://<ref>.supabase.co/functions/v1/r2-presign" --repo "$REPO"
+command gh secret set PROJECT_SEED_URL  --body "https://<ref>.supabase.co/functions/v1/github-project-seed" --repo "$REPO"
 ```
 
 **Avoid shell history for sensitive values:**
 
 ```bash
 read -s -p "Secret: " VAL; echo
-gh secret set SUPABASE_SERVICE_ROLE_KEY --body "$VAL"
+command gh secret set SUPABASE_SERVICE_ROLE_KEY --body "$VAL"
 unset VAL
 ```
 
-**List names:** `gh secret list --repo "$REPO"`
+**List names:** `command gh secret list --repo "$REPO"`
 
 **Re-run deploy:**
 
 ```bash
-gh run list --workflow deploy.yml --limit 3
-gh run rerun <run-id>
+command gh run list --workflow deploy.yml --limit 3
+command gh run rerun <run-id>
 ```
 
 ---

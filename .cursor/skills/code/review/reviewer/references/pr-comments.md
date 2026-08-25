@@ -28,8 +28,10 @@ Validate failure with no line-level finding still stays **chat only** unless you
 Use the PR for the **checked-out branch** — never guess a number.
 
 ```bash
-GH_PAGER=cat gh pr view --json number,url,title,state,headRefOid
+GH_PAGER=cat command gh pr view --json number,url,title,state,headRefOid
 ```
+
+Invoke the CLI as `command gh` to bypass interactive shell aliases — see `code/ci/pr/SKILL.md` `## GitHub CLI in agent shells`.
 
 | Result | Action |
 |---|---|
@@ -38,7 +40,7 @@ GH_PAGER=cat gh pr view --json number,url,title,state,headRefOid
 | PR closed/merged | Chat only; do not post |
 
 ```bash
-gh repo view --json nameWithOwner -q .nameWithOwner
+command gh repo view --json nameWithOwner -q .nameWithOwner
 ```
 
 ## 2. Chat first — table stays here
@@ -67,9 +69,9 @@ Post **exactly one** pull request review per review pass **that has ≥1 inline 
 **gh CLI:**
 
 ```bash
-# 1. pending — gh api POST .../pulls/PR/reviews with commit_id, no event
-# 2. each inline — gh api POST .../pulls/PR/comments with path, line, body, commit_id
-# 3. submit — gh api POST .../pulls/PR/reviews/REVIEW_ID/events with body + event
+# 1. pending — command gh api POST .../pulls/PR/reviews with commit_id, no event
+# 2. each inline — command gh api POST .../pulls/PR/comments with path, line, body, commit_id
+# 3. submit — command gh api POST .../pulls/PR/reviews/REVIEW_ID/events with body + event
 ```
 
 **GitHub MCP (when `gh` is unavailable):**
