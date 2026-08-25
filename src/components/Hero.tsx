@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: MIT
  */
 
-import { Canvas, useThree } from "@react-three/fiber";
 import {
   AnimatePresence,
   animate,
@@ -17,34 +16,42 @@ import {
 } from "framer-motion";
 import Cookies from "js-cookie";
 import { ChevronDown, Mail } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import type * as THREE from "three";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useAdaptiveCanvasDpr } from "../hooks/responsive/useAdaptiveCanvasDpr";
 import { shouldRenderHeavyEffects } from "../lib/performance";
 import { useScrollContainer } from "../lib/ScrollContainerContext";
 import { getAudioContextClass } from "../lib/sound/audioContext";
 import { playTagClickSound, playTagHoverSound } from "../lib/sound/interactionSounds";
 import type { TimeoutHandle } from "../types/handles";
-import { ReverseHyperspace } from "./backgrounds/three/hero/ReverseHyperspace";
-import { ThreeHeroBackground } from "./backgrounds/three/ThreeHeroBackground";
 import { HyperspaceLever } from "./HyperspaceLever";
 import { RocketReplayButton } from "./RocketReplayButton";
 import { GitHubIcon, LinkedInIcon } from "./ui/common/icons/BrandIcons";
 import { IrisTransition } from "./ui/common/transitions/IrisTransition";
 import { SectionEdge } from "./ui/edges/SectionEdge";
 
+const HeroWebGlBackground = lazy(async () => {
+  const module = await import("./HeroWebGlBackground");
+  return { default: module.HeroWebGlBackground };
+});
+
+const HeroBackgroundFallback = () => (
+  <div className="absolute inset-0 h-full w-full bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950" />
+);
+
 // Constants extracted outside component to prevent recreations
 const DEV_OPS_BADGES = ["AWS", "Kubernetes", "Terraform", "CI/CD", "Docker", "Helm"] as const;
 const GAME_DEV_BADGES = ["Unity", "C#", "Game Feel", "Shaders", "Godot"] as const;
+/** Offset for non-LCP cinematic UI (typewriter, badges). LCP card/title use short delays below. */
 const UI_DELAY_OFFSET = 3.0;
 const HERO_REWIND_DURATION_MS = 2000;
 const HERO_INITIAL_INTRO_LOCK_MS = 25000;
 
 const HERO_TIMINGS = {
   cinematic: {
-    cardReveal: 12.5,
-    titleReveal: 13.0,
-    titleShine: 13.9,
+    // Readable LCP in seconds; full cinematic BG continues independently behind.
+    cardReveal: 0.28,
+    titleReveal: 0.35,
+    titleShine: 0.95,
   },
   fast: {
     cardReveal: 0.18,
@@ -54,33 +61,6 @@ const HERO_TIMINGS = {
 } as const;
 
 type HeroTimingKey = keyof (typeof HERO_TIMINGS)["cinematic"];
-
-const ResponsiveCamera = () => {
-  const { camera, size } = useThree();
-
-  useEffect(() => {
-    const aspect = size.width / size.height;
-
-    // Always keep the natural FOV we built the scene with
-    (camera as THREE.PerspectiveCamera).fov = 50;
-
-    // Default base distance
-    let targetZ = 5;
-
-    // When the screen is narrow (portrait on mobile), the horizontal view frustum shrinks.
-    // Pull the camera back just enough so the full scene width (±2.2 units) stays in frame.
-    // Formula: targetZ = sceneHalfWidth / (aspect * tan(FOV/2))
-    // = 2.2 / (aspect * tan(25°)) ≈ 4.72 / aspect, clamped to minimum 5 (desktop default).
-    if (aspect < 1) {
-      targetZ = Math.max(5, 4.72 / aspect);
-    }
-
-    camera.position.z = targetZ;
-    camera.updateProjectionMatrix();
-  }, [size, camera]);
-
-  return null;
-};
 
 const TypewriterText = ({
   text,
@@ -324,23 +304,41 @@ export const Hero = () => {
 
   const getHeroTimingDelay = useCallback(
     (key: HeroTimingKey) => {
-      const baseDelay = HERO_TIMINGS[heroTimingMode][key];
-
-      if (heroTimingMode === "cinematic") {
-        return getDelay(baseDelay);
-      }
-
-      return getLcpDelay(baseDelay);
+      // Card/title are LCP — never wait on the long cinematic lock or UI_DELAY_OFFSET.
+      return getLcpDelay(HERO_TIMINGS[heroTimingMode][key]);
     },
-    [getDelay, getLcpDelay, heroTimingMode],
+    [getLcpDelay, heroTimingMode],
   );
 
-  const [showHeavyEffects, setShowHeavyEffects] = useState(true);
+  const [showHeavyEffects] = useState(() => shouldRenderHeavyEffects());
+  const [allowWebGlMount, setAllowWebGlMount] = useState(false);
   const canvasDPR = useAdaptiveCanvasDpr();
 
+  // Defer WebGL until after first paint so hero text/card can become LCP without Three parse cost.
   useEffect(() => {
-    setShowHeavyEffects(shouldRenderHeavyEffects());
-  }, []);
+    if (!showHeavyEffects) {
+      return;
+    }
+
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+    const enable = () => setAllowWebGlMount(true);
+
+    if (typeof window.requestIdleCallback === "function") {
+      idleId = window.requestIdleCallback(enable, { timeout: 1200 });
+    } else {
+      timeoutId = window.setTimeout(enable, 0);
+    }
+
+    return () => {
+      if (idleId !== undefined && typeof window.cancelIdleCallback === "function") {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [showHeavyEffects]);
 
   const heroSectionRef = useRef<HTMLElement>(null);
   const [canvasEventSource, setCanvasEventSource] = useState<HTMLElement | null>(null);
@@ -418,15 +416,17 @@ export const Hero = () => {
               className="absolute inset-0 h-full w-full"
             >
               {canvasEventSource ? (
-                <Canvas
-                  camera={{ position: [0, 0, 5], fov: 60 }}
-                  dpr={canvasDPR}
-                  eventSource={canvasEventSource}
-                >
-                  <ResponsiveCamera />
-                  <ReverseHyperspace />
-                </Canvas>
-              ) : null}
+                <Suspense fallback={<HeroBackgroundFallback />}>
+                  <HeroWebGlBackground
+                    mode="rewind"
+                    skipIntro={skipIntro}
+                    canvasDPR={canvasDPR}
+                    eventSource={canvasEventSource}
+                  />
+                </Suspense>
+              ) : (
+                <HeroBackgroundFallback />
+              )}
               <motion.div
                 className="absolute inset-0 bg-black"
                 initial={{ opacity: 0 }}
@@ -434,7 +434,7 @@ export const Hero = () => {
                 transition={{ duration: 2, times: [0, 0.9, 1] }}
               />
             </motion.div>
-          ) : showHeavyEffects && isHeroNearViewport ? (
+          ) : showHeavyEffects && allowWebGlMount && isHeroNearViewport ? (
             <motion.div
               key={`bg-${animationKey}`}
               initial={{ opacity: 0 }}
@@ -444,18 +444,22 @@ export const Hero = () => {
               style={{ opacity: heroBackgroundOpacity }}
             >
               {canvasEventSource ? (
-                <Canvas
-                  camera={{ position: [0, 0, 5], fov: 50 }}
-                  dpr={canvasDPR}
-                  eventSource={canvasEventSource}
-                >
-                  <ResponsiveCamera />
-                  <ThreeHeroBackground skipIntro={skipIntro} />
-                </Canvas>
-              ) : null}
+                <Suspense fallback={<HeroBackgroundFallback />}>
+                  <HeroWebGlBackground
+                    mode="cinematic"
+                    skipIntro={skipIntro}
+                    canvasDPR={canvasDPR}
+                    eventSource={canvasEventSource}
+                  />
+                </Suspense>
+              ) : (
+                <HeroBackgroundFallback />
+              )}
             </motion.div>
           ) : (
-            <div className="absolute inset-0 h-full w-full bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950" />
+            <motion.div key="hero-bg-fallback" className="absolute inset-0 h-full w-full">
+              <HeroBackgroundFallback />
+            </motion.div>
           )}
         </AnimatePresence>
       </div>
