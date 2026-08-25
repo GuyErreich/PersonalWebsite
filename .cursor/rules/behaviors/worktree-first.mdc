@@ -1,0 +1,33 @@
+---
+description: Every new branch lives in its own wtp worktree — hard stop before edits in the primary checkout
+alwaysApply: true
+---
+
+# Worktree First
+
+Every new branch lives in its own worktree created with `wtp`, unless the user **explicitly** says to work in place.
+
+## Hard gate (non-negotiable)
+
+Before the **first file edit** on branch-worthy work:
+
+1. Load `.cursor/skills/code/ci/worktree/SKILL.md`.
+2. Run the skill **Preflight** and **Detect checkout type** steps.
+3. If the open workspace is the **primary checkout** (not a linked worktree), **do not edit, commit, or push**. Create or reuse a worktree, print its absolute path, and **stop** until the user opens that path as the Cursor workspace — even when the user approved a plan or asked to implement an issue/PR.
+
+Branch-worthy work includes: features, fixes, chores, refactors, issue implementation, plan execution, and any task that will produce commits.
+
+## Allowed without a new worktree
+
+- Read-only exploration, questions, reviews, and planning (no file writes).
+- Edits when the user explicitly says **work in place**, **skip worktree**, or **stay in this checkout**.
+- Edits when the open workspace is already the **correct linked worktree** for the target branch (reuse via `wtp list` / `git worktree list`).
+
+## Branch creation
+
+- Do not `git checkout -b` / branch in the primary checkout by default.
+- If a worktree for the target branch already exists, reuse it — do not create a duplicate.
+
+## After create
+
+Tell the user the worktree path and that implementation must continue there. Agent file writes are scoped to the open workspace root; creating a worktree elsewhere does not move edits from the primary checkout.
