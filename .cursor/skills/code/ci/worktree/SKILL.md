@@ -98,6 +98,7 @@ In the new worktree directory (after the user opens it):
 - Run validate commands and commit / PR / push skills from the worktree cwd.
 - Diff against the base branch from `AGENT.md`, not against an arbitrary default.
 - Keep one concern per worktree/branch; start another worktree for unrelated work.
+- When the branch implements a GitHub issue, link it for Development “in progress” with `command gh issue develop <n> --name <current-branch>` (see `code/ci/pr/references/issue-linking.md`).
 
 ## Recovery (started in primary checkout by mistake)
 

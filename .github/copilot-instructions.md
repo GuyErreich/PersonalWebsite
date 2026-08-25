@@ -81,4 +81,4 @@ This is a React + TypeScript + Vite project using Tailwind CSS v4, Three.js (Rea
 | Performance | `.cursor/rules/code/quality/performance.mdc` | `code/quality/performance` |
 | UX (motion, sound, overlays) | `.cursor/rules/code/web/ux.mdc` | `code/web/ux` |
 
-Workflow skills: `foundations/hierarchy`, `ai-agent/hierarchy`, `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{commit,pr,push,local-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `ai-agent/improvement-protocol`
+Workflow skills: `foundations/hierarchy`, `ai-agent/hierarchy`, `code/review/reviewer`, `code/review/pr-resolver`, `code/ci/{worktree,commit,issue,pr,push,local-review-loop,pr-review-loop}`, `project/platform/supabase`, `project/platform/supabase-branch-testing`, `ai-agent/improvement-protocol`
