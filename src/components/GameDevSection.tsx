@@ -59,10 +59,7 @@ export const GameDevSection = () => {
     setSortKey,
   } = useGameDevFilter(galleryItems);
 
-  useWarmFirstVfxHeroAsset(
-    vfxItems,
-    shouldLoadSectionWork && !isVfxLoading && vfxItems.length > 0,
-  );
+  useWarmFirstVfxHeroAsset(vfxItems, shouldLoadSectionWork && !isVfxLoading && vfxItems.length > 0);
 
   return (
     <SectionEntranceOverlay theme="gamedev">

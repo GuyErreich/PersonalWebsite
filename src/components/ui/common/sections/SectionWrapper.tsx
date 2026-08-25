@@ -5,7 +5,7 @@
  */
 
 import { motion, useInView } from "framer-motion";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { useScrollReveal } from "../../../../hooks/useScrollReveal";
 import { useScrollContainer } from "../../../../lib/ScrollContainerContext";
 
