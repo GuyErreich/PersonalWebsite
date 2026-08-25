@@ -7,10 +7,7 @@
 import { useReducedMotion } from "framer-motion";
 import { useEffect } from "react";
 import type { GameDevVfxItem } from "../../components/ui/gamedev/common/data/types";
-import {
-  warmMediaAsset,
-  type WarmMediaAssetMode,
-} from "../../lib/media/warmMediaAsset";
+import { type WarmMediaAssetMode, warmMediaAsset } from "../../lib/media/warmMediaAsset";
 
 const resolveWarmMode = (
   item: Pick<GameDevVfxItem, "media_type" | "thumbnail_url">,
@@ -40,12 +37,7 @@ export const useWarmFirstVfxHeroAsset = (vfxItems: GameDevVfxItem[], enabled: bo
   const firstThumbnailUrl = firstItem?.thumbnail_url ?? null;
 
   useEffect(() => {
-    if (
-      !enabled ||
-      !firstItemId ||
-      !firstMediaUrl ||
-      !firstMediaType
-    ) {
+    if (!enabled || !firstItemId || !firstMediaUrl || !firstMediaType) {
       return;
     }
 
@@ -62,12 +54,5 @@ export const useWarmFirstVfxHeroAsset = (vfxItems: GameDevVfxItem[], enabled: bo
     );
 
     return cleanup;
-  }, [
-    enabled,
-    firstItemId,
-    firstMediaUrl,
-    firstMediaType,
-    firstThumbnailUrl,
-    reduceMotion,
-  ]);
+  }, [enabled, firstItemId, firstMediaUrl, firstMediaType, firstThumbnailUrl, reduceMotion]);
 };
