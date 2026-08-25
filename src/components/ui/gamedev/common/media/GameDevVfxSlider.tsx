@@ -209,6 +209,7 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
                     item={activeItem}
                     surface="hero"
                     isActive={isActive}
+                    isPanelActive={isActive}
                     className="h-full w-full object-cover"
                     imgLoading="eager"
                   />
@@ -288,6 +289,7 @@ export const GameDevVfxSlider = ({ items, isActive = true }: GameDevVfxSliderPro
                       item={item}
                       surface="thumb"
                       isActive={isActive && isActiveThumb}
+                      isPanelActive={isActive}
                       className="h-full w-full object-cover"
                       imgLoading={isActiveThumb ? "eager" : "lazy"}
                     />
