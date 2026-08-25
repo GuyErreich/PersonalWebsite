@@ -51,7 +51,7 @@ For UI-heavy features, prefer:
 - Tool: `wtp` (Worktree Plus). Config: `.wtp.yml`.
 - Worktree root: `../worktrees/PersonalWebsite` (relative to the primary checkout).
 - Base branch for new worktrees: `dev` (same as Validate below).
-- Post-create hooks copy `.env`, copy `.cursor/rules/` and `.cursor/skills/`, then run `npm install`.
+- Post-create hooks are defined in `.wtp.yml` (e.g. copy `.env`); they are project-local and unrelated to the worktree skill itself.
 - **Hard gate:** before the first edit on branch-worthy work, run the worktree skill preflight. If the open workspace is the primary checkout, create/reuse a worktree, report its path, and stop — plan or issue approval is not a waiver. See `behaviors/worktree-first.mdc`.
 - After create, open the new worktree path as the Cursor workspace before implementing.
 - Portable workflow: `.cursor/skills/code/ci/worktree/SKILL.md` (always-on trigger: `behaviors/worktree-first.mdc`).

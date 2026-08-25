@@ -88,7 +88,7 @@ After create:
 
 In the new worktree directory (after the user opens it):
 
-1. Confirm post-create hooks ran (typical: `.env` present if the project copies it; dependencies installed if hooks run install).
+1. Confirm project post-create hooks from `.wtp.yml` ran as configured (hooks are project-local, not part of this skill).
 2. Run `git status` — copy hooks that overwrite tracked paths (for example `.cursor/`) can leave the tree dirty relative to the new branch tip. Report dirtiness; do not silently commit hook noise.
 3. Confirm `git branch --show-current` matches the intended branch.
 4. Re-run **Detect checkout type** — must show `linked-worktree`.
@@ -137,8 +137,8 @@ When `wtp` or `.wtp.yml` is absent:
 ```bash
 git fetch origin
 git worktree add -b <prefix>/<slug> <absolute-or-relative-dir> <base>
-# Then manually: copy gitignored secrets (e.g. .env) from the main worktree;
-# install dependencies with the project package manager.
+# Then manually apply whatever the project normally needs from the main
+# worktree (e.g. copy gitignored secrets such as .env).
 ```
 
 Remove with `git worktree remove <path>` (and delete the branch separately if requested).

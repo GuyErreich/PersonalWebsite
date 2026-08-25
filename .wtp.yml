@@ -38,8 +38,8 @@ hooks:
     #   from: .bin        # Shared tool cache
     #   to: .bin
     
-    # Run setup commands:
-    - type: command
-      command: npm install
+    # Optional setup commands (project-local; not part of the worktree skill):
+    # - type: command
+    #   command: <project-setup>
     - type: command
       command: echo "Created new worktree!"
