@@ -21,8 +21,9 @@ interface GameDevVfxMediaProps {
   surface: "hero" | "thumb";
   isActive?: boolean;
   /**
-   * When false, the overview tab (or other host) is hidden but still mounted —
-   * keep the video node, pause, and use `preload="none"` to avoid offscreen decode.
+   * When false, the overview tab (or other host) is hidden but still mounted.
+   * Only affects surfaces that already render `<video>`: pause and use
+   * `preload="none"` — do not swap a poster `<img>` to `<video>`.
    */
   isPanelActive?: boolean;
   className?: string;
@@ -127,9 +128,9 @@ export const GameDevVfxMedia = ({
       );
     }
 
-    // Visible inactive thumbs may use a poster image (VFX media contract).
-    // Hidden panels keep the <video> mounted with preload="none" instead.
-    if (item.thumbnail_url && isPanelActive) {
+    // Non-playing video surfaces with a poster stay on <img> even when the
+    // host panel is hidden — avoid remounting as <video> on panel hide.
+    if (item.thumbnail_url) {
       return (
         <img
           src={item.thumbnail_url}
@@ -145,7 +146,7 @@ export const GameDevVfxMedia = ({
       <VfxLoopVideo
         item={item}
         autoPlay={false}
-        seekPreviewFrame={isPanelActive && !item.thumbnail_url}
+        seekPreviewFrame={isPanelActive}
         preload={videoPreload}
         className={className}
         objectFit={objectFit}

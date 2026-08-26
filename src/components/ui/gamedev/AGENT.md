@@ -29,7 +29,7 @@ Public VFX pickers (`GameDevVfxSlider`, `GameDevProjectVfxSection`) must support
 | Animated GIF | `media_type: "image"` (GIF URL) | `<img>` — browser animates |
 | Looping video | `media_type: "video"` | Muted `<video loop playsInline>` on hero and **active** thumb |
 
-**Performance rule:** never fix thumb-rail cost by making the whole rail image-only. Inactive video thumbs may use poster `<img>` when `thumbnail_url` is set, or a paused `<video preload="metadata">` with `seekThumbnailToVideoCenter` when it is not — **never** `<img src={video media_url}>`. The **selected** thumb and hero must still play looping video. When the host panel is mounted but hidden (`isPanelActive={false}`), keep the `<video>` node and use `preload="none"` (plus pause) instead of decoding offscreen.
+**Performance rule:** never fix thumb-rail cost by making the whole rail image-only. Inactive video thumbs may use poster `<img>` when `thumbnail_url` is set, or a paused `<video preload="metadata">` with `seekThumbnailToVideoCenter` when it is not — **never** `<img src={video media_url}>`. The **selected** thumb and hero must still play looping video. When the host panel is mounted but hidden (`isPanelActive={false}`), surfaces that already render `<video>` use `preload="none"` (plus pause) instead of decoding offscreen — do not swap a poster `<img>` to `<video>` just because the panel hid.
 
 **Shared primitive:** use `GameDevVfxMedia` from `common/media/GameDevVfxMedia.tsx` for every VFX hero and thumb surface. Do not duplicate `VfxLoopVideo` or poster-vs-video branching in feature components.
 
