@@ -17,6 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _cost import project_next_cost  # noqa: E402
 from _loop_state import (  # noqa: E402
+    HARD_MAX_ROUNDS,
+    effective_max_rounds,
     emit,
     is_active,
     is_loop_subagent,
@@ -24,7 +26,6 @@ from _loop_state import (  # noqa: E402
     loop_subagent_type,
     now_iso,
     read_stdin_json,
-    resolve_max_rounds,
     save_state,
 )
 
@@ -102,14 +103,15 @@ def decide_subagent_start(
         }
 
     round_n = int(state.get("round", 0) or 0)
-    max_rounds = resolve_max_rounds(state)
+    max_rounds = effective_max_rounds(state)
     rounds_raw = state.get("rounds")
     rounds: list[object] = rounds_raw if isinstance(rounds_raw, list) else []
-    if max_rounds is not None and round_n > max_rounds:
+    if round_n > max_rounds:
         return {
             "permission": "deny",
             "user_message": (
-                f"PR review loop hit max_rounds={max_rounds}. Raise the cap or stop."
+                f"PR review loop hit max_rounds={max_rounds} "
+                f"(hard ceiling {HARD_MAX_ROUNDS}). Raise the cap or stop."
             ),
             "agent_message": "Budget hook denied subagentStart: round cap reached.",
         }
@@ -166,8 +168,8 @@ def decide_subagent_start(
         extra_fallback=str(state.get("reviewer_model") or "") or None,
     )
     proj_t, proj_u = project_next_cost(state, model=upcoming_model)
-    max_t = float(state.get("max_tokens_est", 1_000_000) or 1_000_000)
-    max_u = float(state.get("max_usd_est", 2.0) or 2.0)
+    max_t = float(state.get("max_tokens_est", 3_000_000) or 3_000_000)
+    max_u = float(state.get("max_usd_est", 3.0) or 3.0)
 
     if spent_t + proj_t > max_t or spent_u + proj_u > max_u:
         return {

@@ -28,6 +28,7 @@ Read `.review-loop/state.json` in full. Optionally run `rtk gain -p -f json` for
 8. **Seeded memory / anti-thrash / verify mode** — when relevant: how many closed findings were seeded from the durable ledger; short-circuit confirm used or not; contested path guards that blocked auto-fix; post-fix verify deferred count. Omit if none of those applied.
 9. **Validate / commit trail** — per-round Validate suite results and commit SHAs.
 10. **Cost panel** (always when any round ran):
+   - Accounting health: `hooks: live` or `hooks: degraded (nominal estimates)` (from `hook-degraded.json` / `_cost_warnings`)
    - Estimated tokens per round (input vs output) — labeled chart
    - Loop totals vs `max_tokens_est` / `max_usd_est`
    - Role models used (`reviewer_model` / `fixer_model`) and `pricing_mode`

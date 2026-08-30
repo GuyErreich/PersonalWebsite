@@ -34,7 +34,7 @@ Success stop: **`clean_passes_required` consecutive** reviews with zero open fin
 ## Performance (do not undo)
 
 - **Focus progression** — not `full` every round. See below.
-- **Init-once env/CI** — Validate suite from `AGENT.md`, `gh auth`, toolchain, pricing run at preflight (and after tree change / fixer). Reviewers skip phase-9 validate when fingerprint still matches — **including `full` / `confirm`**.
+- **Init-once env/CI** — Validate suite from `AGENT.md`, `command gh auth`, toolchain, pricing run at preflight (and after tree change / fixer). Reviewers skip phase-9 validate when fingerprint still matches — **including `full` / `confirm`**.
 - **Triage** — `Recommend: Fix` + concrete shape never pauses the user.
 
 ## Review first — never resolve before reviewing
@@ -48,17 +48,17 @@ Hard rules, not defaults:
 
 ## Preflight
 
-1. Resolve the open PR for the checked-out branch (`gh pr view` or GitHub MCP). No open PR → stop and report.
-2. Preflight `gh auth status` **once**; on failure fall back to GitHub MCP. Do not re-check every round unless posting fails.
-3. Detect toolchain mode **once** via `.cursor/hooks/run-python.sh --detect`. Do **not** run `npm run test:py` every round — only if detect fails or the user asks.
+1. Resolve the open PR for the checked-out branch (`command gh pr view` or GitHub MCP). No open PR → stop and report.
+2. Preflight `command gh auth status` **once**; on failure fall back to GitHub MCP. Do not re-check every round unless posting fails. Always invoke the CLI as `command gh` — see `code/ci/pr/SKILL.md` `## GitHub CLI in agent shells`.
+3. Detect toolchain mode **once** via `.cursor/hooks/run-python.sh --detect`. If detect prints `hooks degraded` **or** `.review-loop/hook-degraded.json` exists (`load_hook_degraded`), print **accounting health: degraded (nominal estimates)** and do **not** treat cost as live — continue the loop; the meter will charge cold-start nominals. Do **not** run `npm run test:py` every round — only if detect fails or the user asks.
 4. Bootstrap pricing **once** if `.review-loop/pricing.json` is missing or lacks a `modes` table.
 5. Resolve **role models** (default both **`inherit`**):
    - Aliases: `auto`/`inherit` → `inherit`; `opus`/`opus-5` → `claude-opus-5-thinking-high`; `sonnet`/`sonnet-5` → `claude-sonnet-5-thinking-high`; see `references/loop-state.md`
 6. Detect **pricing mode** for loop caps (`auto` default; `api` only when user says so).
-7. Initialize state via **`.cursor/hooks/run-python.sh review_loop_init.py`**. Overrides: `max 2 rounds`, `budget $1.50`, `budget-only` → `max_rounds: null`, `manage high`, `post_fix_focus=full`, `diminishing after round 3`, `diminishing_returns_floor=high`.
+7. Initialize state via **`.cursor/hooks/run-python.sh review_loop_init.py`**. Overrides: `max 2 rounds`, `budget $1.50`, `budget-only` → `max_rounds: null` (this is also the factory default), `manage high`, `post_fix_focus=full`, `diminishing after round 3`, `diminishing_returns_floor=high`. Default caps: `max_usd_est=3.00`, `max_tokens_est=3_000_000`, `max_rounds=null` with hard ceiling 25.
 8. **Baseline validate (required once):** run every command in the repo `AGENT.md` **Validate** section via **raw** shell. Store `last_validate_fingerprint`, `last_lint`, `last_build` on `state.json` (`last_lint` / `last_build` are opaque pass/fail slots for the Validate suite — success means **all** listed commands passed). Fingerprint via `python3 scripts/review-lock.py fingerprint pr --json`.
 9. **Cold budget gate** before round 1. If over cap → escalate and stop; do not set `active: true`.
-10. Set `active: true`. Print: `pricing_mode`, models, `manage_severity`, `post_fix_focus`, `diminishing_returns_round`, `diminishing_returns_floor`, `max_rounds`, caps, cold projection, validate status, and whether `seeded_from_ledger` / short-circuit confirm applies.
+10. Set `active: true`. Print: `pricing_mode`, models, `manage_severity`, `post_fix_focus`, `diminishing_returns_round`, `diminishing_returns_floor`, `max_rounds`, caps, cold projection, validate status, accounting health (`hooks: live` or `hooks: degraded (nominal estimates)`), and whether `seeded_from_ledger` / short-circuit confirm applies.
 11. **Short-circuit check:** if `should_short_circuit_confirm(state, current_fingerprint)` → round 1 focus = `confirm` (see Focus progression).
 
 ## Focus progression
@@ -85,7 +85,14 @@ Use `_loop_state.resolve_round_focus(...)` when deciding the next launch. Only `
    - `run_in_background: true`, `model: <reviewer_model>`
    - Pass: PR, round, focus, `closed_findings`, `accepted_by_design`, `fix_hotspots`, `consecutive_clean_passes`, **`last_validate_fingerprint` / `last_lint` / `last_build`**, whether validate may be skipped, post-fix verify flag / surface paths, and the compact **fix ledger** from `_loop_state.format_fix_ledger_for_prompt(state)` (required every launch — not only the raw JSON dump).
    - Fresh context. Do **not** pass prior fixer reasoning. Say when this is post-fixer verify (not a new discovery pass).
-3. Alert: *Subagent panel may stay blank — I'll continue when the review finishes.* Wait for Task completion.
+3. Alert: *Subagent panel may stay blank — I'll continue when the review finishes.* Wait for Task completion. **Then record cost** (do not rely on the hook alone):
+
+```bash
+.cursor/hooks/run-python.sh review_loop_cost.py record \
+  --subagent pr-reviewer --transcript <agent_transcript_path> --duration-ms <n>
+```
+
+Use `pr-fixer` after a fixer. Duplicate with the `subagentStop` hook is safe (`_cost_recorded_for`). Print the returned `totals`.
 4. **Closed-finding filter** (`filter_open_findings`). Then **`filter_post_fix_findings`** — drive-by findings outside the verify surface → Defer (post-fix verify); keep recurrence/contested/regression, Critical, and in-surface rows. Contested-against-ledger → escalate once (never auto-fix). Post GitHub **only** for kept open signatures. Never post clean-pass reviews on the PR.
 5. Fetch unresolved threads; merge tagged `external`.
 6. Triage via `references/triage-policy.md`. **Self-check before escalate:** if Recommend is Fix with a concrete shape → `Decision: Fix` and launch fixer — never pause for High/Critical alone. Exceptions: contested-against-ledger → Escalate; outside verify surface (non-Critical) → Defer.
@@ -112,13 +119,15 @@ Use `_loop_state.resolve_round_focus(...)` when deciding the next launch. Only `
 
 Never trust `rtk`-wrapped exit codes for pass/fail. Never record Validate `pass` when any command failed.
 
+**Composite lint trap:** if `AGENT.md` lint is `eslint && biome` (or similar) and shell output is an ESLint-only summary, that is **not** a lint pass — re-run with `RTK_DISABLED=1` (or raw `node_modules/.bin` stages) and require every stage exit 0 before setting `last_lint=pass`. See `code/languages/nodejs` → `npm-tooling.md`.
+
 ## Stop conditions
 
 Keep looping until one of:
 
 - **Confirmed clean:** `consecutive_clean_passes >= clean_passes_required` (default **2**)
 - Projected spend would cross caps
-- Round cap (if set)
+- Round cap (`effective_max_rounds` — user cap or hard ceiling 25)
 - Escalation pending (design ambiguity only)
 - Validate suite failed and not fixed in-round
 

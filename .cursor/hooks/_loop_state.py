@@ -20,6 +20,9 @@ STATE_PATH = STATE_DIR / "state.json"
 PRICING_PATH = STATE_DIR / "pricing.json"
 PREFERENCES_PATH = STATE_DIR / "preferences.json"
 CLOSED_LEDGER_PATH = STATE_DIR / "closed-ledger.json"
+HOOK_DEGRADED_PATH = STATE_DIR / "hook-degraded.json"
+# Safety ceiling when max_rounds is unlimited (budget-only).
+HARD_MAX_ROUNDS = 25
 LEGACY_RUNTIME_FILES = (
     "state.json",
     "pricing.json",
@@ -384,9 +387,9 @@ def default_preferences() -> dict[str, Any]:
     """Built-in defaults used only when preferences.json is missing a key."""
     manage = "medium"
     return {
-        "max_rounds": 3,
-        "max_tokens_est": 1_000_000,
-        "max_usd_est": 2.0,
+        "max_rounds": None,
+        "max_tokens_est": 3_000_000,
+        "max_usd_est": 3.0,
         "pricing_mode": "auto",
         "reviewer_model": "inherit",
         "fixer_model": "inherit",
@@ -710,8 +713,8 @@ def start_loop_state(
         "fixer_model": prefs.get("fixer_model", "inherit"),
         "next_model": prefs.get("reviewer_model", "inherit"),
         "max_rounds": prefs.get("max_rounds"),
-        "max_tokens_est": prefs.get("max_tokens_est", 1_000_000),
-        "max_usd_est": prefs.get("max_usd_est", 2.0),
+        "max_tokens_est": prefs.get("max_tokens_est", 3_000_000),
+        "max_usd_est": prefs.get("max_usd_est", 3.0),
         "clean_passes_required": int(prefs.get("clean_passes_required") or 2),
         "manage_severity": normalize_manage_severity(
             prefs.get("manage_severity", "medium")
@@ -1109,12 +1112,13 @@ def is_loop_subagent(event: dict[str, Any] | None) -> bool:
 def resolve_max_rounds(state: dict[str, Any]) -> int | None:
     """Return the round cap, or ``None`` when rounds are unlimited (budget-only).
 
-    Unlimited when ``max_rounds`` is missing-as-explicit-null, ``0``, ``null``,
-    or the strings ``none`` / ``unlimited`` / ``budget`` / ``budget-only``.
-    Default when the key is absent: ``3``.
+    Unlimited when ``max_rounds`` is missing, ``0``, ``null``, or the strings
+    ``none`` / ``unlimited`` / ``budget`` / ``budget-only``. Default when the
+    key is absent: ``None`` (budget-only). Callers that *enforce* a cap must
+    use ``effective_max_rounds`` so the hard safety ceiling still applies.
     """
     if "max_rounds" not in state:
-        return 3
+        return None
     raw = state.get("max_rounds")
     if raw is None:
         return None
@@ -1125,16 +1129,38 @@ def resolve_max_rounds(state: dict[str, Any]) -> int | None:
         try:
             value = int(text)
         except ValueError:
-            return 3
+            return None
     elif isinstance(raw, bool):
-        return 3
+        return None
     elif isinstance(raw, int | float):
         value = int(raw)
     else:
-        return 3
+        return None
     if value <= 0:
         return None
     return value
+
+
+def effective_max_rounds(state: dict[str, Any]) -> int:
+    """Round cap actually enforced: user cap, else ``HARD_MAX_ROUNDS``.
+
+    Never returns above ``HARD_MAX_ROUNDS``. Budget-only (``None``) still
+    stops at the safety ceiling so a dead cost meter cannot loop forever.
+    """
+    resolved = resolve_max_rounds(state)
+    if resolved is None:
+        return HARD_MAX_ROUNDS
+    return min(resolved, HARD_MAX_ROUNDS)
+
+
+def load_hook_degraded(root: Path | None = None) -> dict[str, Any] | None:
+    """Return ``hook-degraded.json`` when present, else ``None``."""
+    path = migrate_legacy_runtime_dir(root) / HOOK_DEGRADED_PATH.name
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+    return data if isinstance(data, dict) else None
 
 
 def read_stdin_json() -> dict[str, Any]:
@@ -1224,8 +1250,8 @@ def bootstrap_pricing(root: Path | None = None) -> Path:
                             "label": "Cursor Auto (routed / included usage)",
                             "usd_multiplier": 1.0,
                             "model_key": "auto",
-                            "max_tokens_est": 1_000_000,
-                            "max_usd_est": 2.0,
+                            "max_tokens_est": 3_000_000,
+                            "max_usd_est": 3.0,
                             "cold_project_tokens": 120_000,
                             "cold_project_usd": 0.15,
                         },

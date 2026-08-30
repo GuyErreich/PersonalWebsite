@@ -489,9 +489,12 @@ class TestLoudZeroCost:
             },
             pricing,
         )
-        assert cost.tokens_est == 0
+        assert cost.tokens_est == 120_000
+        assert cost.usd_est == pytest.approx(0.15)
+        assert "nominal fallback" in cost.assumptions
         assert state.get("_cost_warnings")
         assert "0 tokens" in state["_cost_warnings"][-1]
+        assert float(state["totals"]["tokens_est"]) == 120_000
 
         msg = decide_round_followup(
             state,
@@ -499,6 +502,99 @@ class TestLoudZeroCost:
         )
         assert msg.startswith("WARNING:")
         assert "0 tokens" in msg
+
+
+class TestCostRecordDedup:
+    """Hook + orchestrator CLI must not double-count the same stop."""
+
+    def test_same_transcript_counts_once(
+        self, pricing: dict[str, Any], tmp_path: Path
+    ) -> None:
+        transcript = _write_transcript(tmp_path / "once.jsonl")
+        state: dict[str, Any] = {
+            "active": True,
+            "pricing_mode": "auto",
+            "totals": {"tokens_est": 0, "usd_est": 0, "turns": 0, "tool_calls": 0},
+            "rounds": [{"n": 1, "findings": []}],
+            "_pending_subagent": {
+                "type": "pr-reviewer",
+                "model": "inherit",
+                "started_at": "2026-01-01T00:00:00+00:00",
+            },
+        }
+        event = {
+            "subagent_type": "pr-reviewer",
+            "agent_transcript_path": str(transcript),
+            "status": "completed",
+        }
+        first = record_round_cost(state, event, pricing)
+        spent = float(state["totals"]["tokens_est"])
+        assert first.tokens_est > 0
+        second = record_round_cost(state, event, pricing)
+        assert second.assumptions == "already recorded"
+        assert float(state["totals"]["tokens_est"]) == spent
+
+
+class TestCostCliRecord:
+    """review_loop_cost.py record mutates temp state and prints totals."""
+
+    def test_record_end_to_end(
+        self,
+        pricing: dict[str, Any],
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        from review_loop_cost import main as cost_main
+
+        transcript = _write_transcript(tmp_path / "cli.jsonl")
+        state: dict[str, Any] = {
+            "active": True,
+            "pricing_mode": "auto",
+            "totals": {
+                "tokens_est": 0,
+                "usd_est": 0,
+                "turns": 0,
+                "tool_calls": 0,
+                "wall_clock_s": 0,
+            },
+            "rounds": [{"n": 1, "findings": []}],
+        }
+        monkeypatch.setattr("review_loop_cost.load_state", lambda: state)
+        monkeypatch.setattr("review_loop_cost.save_state", lambda _s, root=None: None)
+        monkeypatch.setattr("review_loop_cost.load_pricing", lambda root=None: pricing)
+        monkeypatch.setattr("review_loop_cost.load_hook_degraded", lambda root=None: None)
+
+        rc = cost_main(
+            [
+                "record",
+                "--subagent",
+                "pr-reviewer",
+                "--transcript",
+                str(transcript),
+                "--duration-ms",
+                "1200",
+            ]
+        )
+        assert rc == 0
+        out = json.loads(capsys.readouterr().out)
+        assert float(out["totals"]["tokens_est"]) > 0
+        assert out["recorded"]["tokens_est"] > 0
+        assert not out.get("skipped")
+
+        rc2 = cost_main(
+            [
+                "record",
+                "--subagent",
+                "pr-reviewer",
+                "--transcript",
+                str(transcript),
+            ]
+        )
+        assert rc2 == 0
+        out2 = json.loads(capsys.readouterr().out)
+        assert out2.get("skipped") == "already recorded"
+        assert out2["totals"]["tokens_est"] == out["totals"]["tokens_est"]
 
 
 class TestResolveUpcomingModel:

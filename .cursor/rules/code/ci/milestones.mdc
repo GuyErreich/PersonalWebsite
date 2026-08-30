@@ -1,18 +1,20 @@
 ---
-description: Use the CI skills when committing, opening a PR, or pushing
+description: Use the CI skills when starting work, opening an issue, committing, opening a PR, or pushing
 alwaysApply: false
 ---
 
 # CI Milestones
 
-When the user asks to commit, open a PR, or push, run the matching CI skill (each reviews before the git action and respects consent):
+When the user asks to start new work, open an issue, commit, open a PR, or push, run the matching CI skill (each reviews before the git action and respects consent):
 
 | Intent | Skill |
 |---|---|
+| Start new work / new branch | `.cursor/skills/code/ci/worktree/SKILL.md` |
+| Open / create a GitHub issue | `.cursor/skills/code/ci/issue/SKILL.md` |
 | Commit | `.cursor/skills/code/ci/commit/SKILL.md` |
 | Open / create a PR | `.cursor/skills/code/ci/pr/SKILL.md` |
 | Push | `.cursor/skills/code/ci/push/SKILL.md` |
 | Fix-until-clean self-review | `.cursor/skills/code/ci/local-review-loop/SKILL.md` |
 | Autonomous PR review-fix loop | `.cursor/skills/code/ci/pr-review-loop/SKILL.md` |
 
-See `.cursor/rules/behaviors/code-review-gate.mdc` for the gate and `behaviors/git-*-consent.mdc` for consent rules.
+See `.cursor/rules/behaviors/code-review-gate.mdc` for the gate, `behaviors/worktree-first.mdc` for worktree defaults, and `behaviors/git-*-consent.mdc` for consent rules.

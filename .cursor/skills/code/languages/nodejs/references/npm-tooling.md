@@ -8,6 +8,14 @@ npm lint scripts, dependency audit, and lockfile hygiene for Node projects. Conc
 - Run build / type-check via the project build script from `AGENT.md`.
 - Do not invent alternate flags that weaken the project's configured rules.
 
+## Composite lint + CLI wrappers
+
+Many repos chain formatters into lint (e.g. `eslint . && biome check .`). Token-saving proxies (`rtk`, similar hooks) often rewrite `npm run lint` into an **ESLint-only** summary and can report exit 0 while Biome/format still fails.
+
+- Treat an ESLint-only summary (`ESLint: N errors…` with no formatter/Biome section) as **incomplete** — not a Validate pass.
+- Re-run with wrappers disabled (commonly `RTK_DISABLED=1 npm run lint`) or run each stage via `node_modules/.bin/…` and require **every** stage exit 0.
+- Format check failures are lint failures; fix with the project's formatter write mode when appropriate (`biome check --write`, etc.).
+
 ## Audit
 
 - Run the audit command from `AGENT.md` (commonly `npm audit --audit-level=high`).

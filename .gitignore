@@ -18,6 +18,7 @@ dist-ssr
 .review-loop/
 .cursor/review-lock.json
 .cursor/review-loop/
+.cursor/hooks/state/
 .cursor/mcp.json
 .cursorrules
 .idea

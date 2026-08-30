@@ -33,13 +33,17 @@ hooks:
       from: .cursor/skills/
       to: .cursor/skills/
 
+    - type: copy
+      from: .review-loop/
+      to: .review-loop/
+      
     # Share directories with symlinks:
     # - type: symlink
     #   from: .bin        # Shared tool cache
     #   to: .bin
     
-    # Run setup commands:
-    - type: command
-      command: npm install
+    # Optional setup commands (project-local; not part of the worktree skill):
+    # - type: command
+    #   command: <project-setup>
     - type: command
       command: echo "Created new worktree!"

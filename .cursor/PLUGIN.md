@@ -53,5 +53,5 @@ code/foundations/engineering   (code base — always)
   └─ web/ux                (motion, press, overlays, sound)
   └─ quality/{performance,security}
   └─ review/{reviewer,pr-resolver}
-  └─ ci/{commit,pr,push,local-review-loop,pr-review-loop}
+  └─ ci/{worktree,commit,issue,pr,push,local-review-loop,pr-review-loop}
 ```

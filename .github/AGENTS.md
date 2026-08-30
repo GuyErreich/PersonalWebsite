@@ -34,7 +34,7 @@ GitHub Copilot agent definitions and instructions have been migrated to Cursor, 
 │   ├── quality/security          vulnerability prevention
 │   ├── review/reviewer           single-pass code reviewer
 │   ├── review/pr-resolver        controlled PR-thread resolution loop
-│   └── ci/{commit,pr,push,local-review-loop}
+│   └── ci/{worktree,commit,issue,pr,push,local-review-loop,pr-review-loop}
 └── project/                    PROJECT overlay (not exported)
     └── platform/                 supabase, supabase-branch-testing, deploy-secrets
 ```

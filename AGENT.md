@@ -46,6 +46,16 @@ For UI-heavy features, prefer:
 - Before implementing UI changes, decide and state the target split: global base primitive, section wrapper(s), and responsive variant composition.
 - Create or wire section wrappers first when section differences are known (theme, spacing, behavior), then implement through wrappers instead of direct base usage in feature screens.
 
+## Worktrees
+
+- Tool: `wtp` (Worktree Plus). Config: `.wtp.yml`.
+- Worktree root: `../worktrees/PersonalWebsite` (relative to the primary checkout).
+- Base branch for new worktrees: `dev` (same as Validate below).
+- Post-create hooks are defined in `.wtp.yml` (e.g. copy `.env`); they are project-local and unrelated to the worktree skill itself.
+- **Hard gate:** before the first edit on branch-worthy work, run the worktree skill preflight. If the open workspace is the primary checkout, create/reuse a worktree, report its path, and stop — plan or issue approval is not a waiver. See `behaviors/worktree-first.mdc`.
+- After create, open the new worktree path as the Cursor workspace before implementing.
+- Portable workflow: `.cursor/skills/code/ci/worktree/SKILL.md` (always-on trigger: `behaviors/worktree-first.mdc`).
+
 ## Validate
 
 - Base branch for branch/PR diffs: `dev`.
@@ -67,6 +77,7 @@ When reviewing, always materialize the full surface: the tier diff (for PR/push 
 
 ## Skill Usage
 
+- `code/ci/worktree` when starting new branch work (wtp worktrees); see Worktrees above.
 - `code/web/ui` for UI structure, reuse boundaries, responsive variant splitting, and component extraction decisions.
 - `code/web/ux` for interactive behavior — press feedback, motion, overlays, dismiss lifecycle, library choice, and generative sound patterns.
 - This repo **mandates** Framer motion + generative sound on interactive controls; helpers at `src/lib/sound/interactionSounds.ts`.

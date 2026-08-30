@@ -12,8 +12,15 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from _cost import CostEstimate, estimate_since, project_next_cost  # noqa: E402
+from _cost import (  # noqa: E402
+    CostEstimate,
+    estimate_since,
+    nominal_fallback_estimate,
+    project_next_cost,
+)
 from _loop_state import (  # noqa: E402
+    HARD_MAX_ROUNDS,
+    effective_max_rounds,
     emit,
     is_active,
     is_loop_subagent,
@@ -22,7 +29,6 @@ from _loop_state import (  # noqa: E402
     loop_subagent_type,
     now_iso,
     read_stdin_json,
-    resolve_max_rounds,
     save_state,
 )
 
@@ -76,13 +82,13 @@ def decide_round_followup(state: dict[str, Any], event: dict[str, Any] | None = 
         )
 
     round_n = int(state.get("round", 0) or 0)
-    max_rounds = resolve_max_rounds(state)
+    max_rounds = effective_max_rounds(state)
     totals_raw = state.get("totals")
     totals: dict[str, Any] = totals_raw if isinstance(totals_raw, dict) else {}
     proj_t, proj_u = project_next_cost(state)
     spent_t = float(totals.get("tokens_est", 0) or 0)
     spent_u = float(totals.get("usd_est", 0) or 0)
-    max_t = float(state.get("max_tokens_est", 400_000) or 400_000)
+    max_t = float(state.get("max_tokens_est", 3_000_000) or 3_000_000)
     max_u = float(state.get("max_usd_est", 3.0) or 3.0)
     required = resolve_clean_passes_required(state)
     consecutive = int(state.get("consecutive_clean_passes", 0) or 0)
@@ -107,11 +113,12 @@ def decide_round_followup(state: dict[str, Any], event: dict[str, Any] | None = 
             "then write the canvas if they stop."
         )
 
-    if max_rounds is not None and round_n > max_rounds:
+    if round_n > max_rounds:
         return (
             warn
-            + "PR review loop: round cap reached — write the summary canvas "
-            "and set active=false."
+            + "PR review loop: round cap reached "
+            f"(max_rounds={max_rounds}, hard ceiling {HARD_MAX_ROUNDS}) — "
+            "write the summary canvas and set active=false."
         )
 
     if consecutive >= required:
@@ -299,6 +306,26 @@ def _maybe_warn_zero_cost(
     warnings.append(warning)
 
 
+def cost_record_key(event: dict[str, Any]) -> str:
+    """Stable id for one subagentStop so hook + CLI do not double-count."""
+    transcript = event.get("agent_transcript_path")
+    path = str(transcript).strip() if transcript else ""
+    if path:
+        return path
+    sub = loop_subagent_type(event)
+    duration = event.get("duration_ms")
+    status = str(event.get("status") or "completed")
+    return f"{sub}|{duration}|{status}"
+
+
+def already_recorded_cost(state: dict[str, Any], event: dict[str, Any]) -> bool:
+    """True when this event's key was already charged into ``state``."""
+    key = cost_record_key(event)
+    if not key:
+        return False
+    return str(state.get("_cost_recorded_for") or "") == key
+
+
 def record_round_cost(
     state: dict[str, Any],
     event: dict[str, Any],
@@ -310,8 +337,24 @@ def record_round_cost(
     (written by ``subagentStart``) so accounting does not depend on the
     orchestrator stamping ``*_started_at``. Mutates ``state`` in place —
     clears ``_pending_subagent`` after consuming it. Returns the estimate
-    just recorded.
+    just recorded. Duplicate hook + CLI calls with the same
+    ``_cost_recorded_for`` key are no-ops.
     """
+    if already_recorded_cost(state, event):
+        return CostEstimate(
+            tokens_in_est=0,
+            tokens_out_est=0,
+            tokens_est=0,
+            usd_est=0.0,
+            turns=0,
+            tool_calls=0,
+            wall_clock_s=0.0,
+            model=str(event.get("model") or state.get("next_model") or "inherit"),
+            assumptions="already recorded",
+            known_model=False,
+            pricing_mode=str(state.get("pricing_mode") or "auto"),
+        )
+
     rounds_raw = state.get("rounds")
     rounds: list[Any] = rounds_raw if isinstance(rounds_raw, list) else []
 
@@ -334,6 +377,14 @@ def record_round_cost(
     )
     cost = _apply_event_ground_truth(cost, event, pending_mismatch=pending_mismatch)
     _maybe_warn_zero_cost(state, event, cost)
+    status = str(event.get("status") or "completed").strip().lower() or "completed"
+    if status == "completed" and cost.tokens_est <= 0:
+        cost = nominal_fallback_estimate(
+            state,
+            model=cost.model,
+            pricing_mode=cost.pricing_mode,
+            base=cost,
+        )
     cost_dict = cost.to_dict()
 
     totals = state.setdefault("totals", {})
@@ -371,6 +422,7 @@ def record_round_cost(
         else:
             rounds[-1]["cost"] = cost_dict
 
+    state["_cost_recorded_for"] = cost_record_key(event)
     state.pop("_pending_subagent", None)
     return cost
 
