@@ -28,6 +28,7 @@ Deep conventions live in two places — read them rather than duplicating here:
 | Review & PR resolution | `code/review/reviewer` (staff bar + FE/BE/graphics/motion/TS lenses), `code/review/pr-resolver` |
 | Commit / PR / push milestones | `code/ci/{commit,pr,push,local-review-loop,pr-review-loop}` |
 | Project backend | `project/platform/supabase`, `project/platform/supabase-branch-testing`, `project/platform/deploy-secrets` |
+| Local dev / worktrees | `project/dev/worktree-cleanup` |
 | Skill/rule maintenance | `~/.cursor/skills/ai-agent/improvement-protocol` |
 
 ## Behaviors
